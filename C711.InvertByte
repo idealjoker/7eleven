@@ -1,0 +1,18 @@
+#======================================================================
+#                    C 7 1 1 . I N V E R T B Y T E 
+#                    doc: Sun Oct 29 17:35:44 2023
+#                    dlm: Fri May 24 11:24:56 2024
+#                    (c) 2023 idealjoker@mailbox.orgXSxsq
+#                    uE-Info: 5 57 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+sub InvertByte($$)
+{
+	my($str,$addr) = @_;
+	my($i);
+	for ($i=0; !defined($LINE[$addr-$i]); $i++) {}
+	return 0xFF - labelValue(97,$str);
+}
+
+1;
+

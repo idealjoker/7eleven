@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+#======================================================================
+#                    / U S E R S / A N T / D E S K T O P / 7 E L E V E N / B I N / M K I N D E X 
+#                    doc: Wed Sep 29 19:38:02 2021
+#                    dlm: Wed Sep 29 19:44:56 2021
+#                    (c) 2021 A.M. Thurnherr
+#                    uE-Info: 13 19 NIL 0 0 72 2 2 4 NIL ofnI
+#======================================================================
+
+my($in_header) = 0;
+
+while (<>) {
+	$in_header = 0,next unless /^;/;
+	if ($in_header) {
+		print;
+		$in_header = 0 if /[-=]{5}/;
+	} else {
+		$in_header = 1,print if /[-=]{5}/;
+	}
+}
+
+exit(0);

@@ -1,0 +1,200 @@
+#!/usr/bin/perl
+#======================================================================
+#                    . . / . . / B I N / A N N O T A T E _ P I N M A M E _ T R A C E 
+#                    doc: Sat Nov 25 08:24:29 2023
+#                    dlm: Sun Nov 26 13:27:24 2023
+#                    (c) 2023 A.M. Thurnherr
+#                    uE-Info: 24 32 NIL 0 0 72 2 2 4 NIL ofnI
+#======================================================================
+
+# Annotate PinMAME TRACE output to help debugging
+
+# NOTES:
+#	- input from "TRACE <FILE> A B X" output
+#	- also removes all backend calls (ISR) from output
+#	- annotations:
+#		- thread switching
+#		- thread parking
+#		- WVM/IVM operations (interpreter)
+
+# HISTORY:
+#	Nov 25, 2023: - created to help debug TCM
+#	Nov 26, 2023: - added missing opcodes
+#				  - added usage error
+#				  - addeed notes
+# HISTORY END
+
+my($IRQ_handler) 			= 0xD24F;							# ROM addresses
+my($IRQ_RTI)				= 0xB212;
+my($resume_thread)			= 0xC32E;
+my($suspend_thread)			= 0xC371;
+my($exec_next_WVM_op) 		= 0xD8BB;
+my($next_codeByte)			= 0xD9B3;
+my($park_other_threads) 	= 0x5040;
+my($unpark_parked_threads)	= 0x50C1;
+
+my($output) = 1;
+
+unless (@ARGV == 1) {
+	print(STDERR "Usage: $0 <PinMAME TRACE output>\n");
+	exit(1);
+}
+
+while (<>) {
+	my($A,$B,$X,$PC,$code) = m{^A:([0-9A-F]{2}) B:([0-9A-F]{2}) X:([0-9A-F]{4}) ([0-9A-F]{4}): (.*)$};
+	
+	unless (defined($code)) {									# headers, empty lines, ...
+		print if $output;
+		next;
+	}
+
+	$A = hex($A); $B = hex($B); 								# decimalize
+	$X = hex($X); $PC = hex($PC);
+
+	$output=0 if ($PC == $IRQ_handler);							# suppress trace of backend
+	$output=1,next if ($code =~ /^rti/);
+
+	if ($PC == $resume_thread) {
+		die unless $output;
+		chomp;
+		print;
+		printf("\t\t; resume_thread <%04X>\n",$X);\
+		next;
+	}
+
+	if ($PC == $suspend_thread+4) {
+		die unless $output;
+		chomp;
+		print;
+		printf("\t\t; suspend_thread <%04X>\n",$X);\
+		next;
+	}
+
+	if ($PC == $next_codeByte+4) {
+		$WVM_PC = $X;
+	}
+
+	if ($PC == $exec_next_WVM_op+3) {
+		die unless $output;
+		chomp;
+		print;
+		printf("\t\t; exec_next_WVM_op <%04X: %s>\n",$WVM_PC,WVM_op($A));
+		next;
+	}
+
+	if ($PC == $park_other_threads) {
+		die unless $output;
+		chomp;
+		print;
+		printf("\t\t; park_other_threads\n");
+		next;
+	}
+
+	if ($PC == $unpark_parked_threads) {
+		die unless $output;
+		chomp;
+		print;
+		printf("\t\t; unpark_parked_threads\n");
+		next;
+	}
+
+	print if $output;
+}
+
+exit 0;
+
+#----------------------------------------------------------------------
+
+sub WVM_op($)
+{
+	my($opc) = @_;
+
+	return 'IVM_mode' 				if ($opc == 0x00);
+	return 'noOperation'			if ($opc == 0x01);
+	return 'return'					if ($opc == 0x02);
+	return 'exitThread'				if ($opc == 0x03);
+	return 'M6800_mode'				if ($opc == 0x04);
+	return 'awardSpecial'			if ($opc == 0x05);
+	return 'awardEB'				if ($opc == 0x06);
+	return 'spawnThread6800'		if ($opc == 0x07);
+	return 'spawnThread6800_id06'	if ($opc == 0x08);
+	return 'spawnThread'			if ($opc == 0x09);
+	return 'spawnThread_id06'		if ($opc == 0x0A);
+	return 'decAndBranchUnless0'	if ($opc == 0x0B);
+	return 'load Reg-A'				if ($opc == 0x0C);
+	return 'store Reg-A'			if ($opc == 0x0D);
+	return 'load Reg-B'				if ($opc == 0x0E);
+	return 'store Reg-B'			if ($opc == 0x0F);
+
+	return 'setBits' 				if ($opc == 0x10);
+	return 'clearBits'				if ($opc == 0x11);
+	return 'toggleBits'				if ($opc == 0x12);
+	return 'blinkLamps'				if ($opc == 0x13);
+	return 'setBits'				if ($opc == 0x14);
+	return 'clearBits'				if ($opc == 0x15);
+	return 'toggleBits'				if ($opc == 0x16);
+	return 'blinkLamps'				if ($opc == 0x17);
+	return 'setBitgroups'			if ($opc == 0x18);
+	return 'clearBitgroups'			if ($opc == 0x19);
+	return 'fillBitgroups'			if ($opc == 0x1A);
+	return 'fillWrapBitgroups'		if ($opc == 0x1B);
+	return 'drainBitgroups'			if ($opc == 0x1C);
+	return 'rotLeftBitgroups'		if ($opc == 0x1D);
+	return 'rotRightBitgroups'		if ($opc == 0x1E);
+	return 'toggleBitgroups'		if ($opc == 0x1F);
+
+	return 'setBitsAltbuf'			if ($opc == 0x20);
+	return 'clearBitsAltbuf'		if ($opc == 0x21);
+	return 'toggleBitsAltbuf'		if ($opc == 0x22);
+	return 'inc_audit'				if ($opc == 0x23);
+	return 'setBitsAltbuf'			if ($opc == 0x24);
+	return 'clearBitsAltbuf'		if ($opc == 0x25);
+	return 'toggleBitsAltbuf'		if ($opc == 0x26);
+	return 'soundcard_cmd'			if ($opc == 0x27);
+	return 'setBitgroupsAltbuf'		if ($opc == 0x28);
+	return 'clearBitgroupsAltbuf'	if ($opc == 0x29);
+	return 'fillBitgroupsAltbuf'	if ($opc == 0x2A);
+	return 'fillWrapBitgroupsAltbuf' if ($opc == 0x2B);
+	return 'drainBitgroupsAltbuf'	if ($opc == 0x2C);
+	return 'rotLeftBitgroupsAltbuf'	if ($opc == 0x2D);
+	return 'rotRightBitgroupsAltbuf' if ($opc == 0x2E);
+	return 'toggleBitgroupsAltbuf'	if ($opc == 0x2F);
+
+	return 'solControl'				if ($opc >= 0x30 && $opc <= 0x3E);
+	return 'display_str16'			if ($opc == 0x3F);
+
+	return 'playSound_score'		if ($opc == 0x40);
+	return 'queueScore'				if ($opc == 0x41);
+	return 'score'					if ($opc == 0x42);
+	return 'score_digitSound'		if ($opc == 0x43);
+	return 'begin6800/end6800'		if ($opc >= 0x44 && $opc <= 0x4F);
+
+	return 'addTo'	 				if ($opc == 0x50);
+	return 'copyTo'					if ($opc == 0x51);
+	return 'setThreadFlags'			if ($opc == 0x52);
+	return 'sleep'					if ($opc == 0x53);
+	return 'killThread'				if ($opc == 0x54);
+	return 'killThreads'			if ($opc == 0x55);
+	return 'jumpSubroutine'			if ($opc == 0x56);
+	return 'jumpSubroutine6800'		if ($opc == 0x57);
+	return 'jumpIf'					if ($opc == 0x58);
+	return 'jumpUnless'				if ($opc == 0x59);
+	return 'branchIf'				if ($opc == 0x5A);
+	return 'branchUnless'			if ($opc == 0x5B);
+	return 'jump6800'				if ($opc == 0x5C);
+	return 'triggerSwitches'		if ($opc == 0x5D);
+	return 'clearSwitches'			if ($opc == 0x5E);
+	return 'jump'					if ($opc == 0x5F);
+
+	return 'sleep'					if ($opc >= 0x60 && $opc <= 0x7F);
+	return 'branch'					if ($opc >= 0x80 && $opc <= 0x8F);
+	return 'branchSubroutine'		if ($opc >= 0x90 && $opc <= 0x9F);
+	return 'branchSubroutine6800'	if ($opc >= 0xA0 && $opc <= 0xAF);
+	return 'addTo'					if ($opc >= 0xB0 && $opc <= 0xBF);
+	return 'playSound'				if ($opc >= 0xC0 && $opc <= 0xFF);
+
+	die;
+}
+	
+	
+

@@ -1,0 +1,18 @@
+#======================================================================
+#                    C 7 1 1 . S C O R E B Y T E 
+#                    doc: Sun Oct 29 17:35:44 2023
+#                    dlm: Fri May 24 11:25:16 2024
+#                    (c) 2023 idealjoker@mailbox.org
+#                    uE-Info: 5 52 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+sub ScoreByte($$)
+{
+	my($str,$addr) = @_;
+	my($i);
+	for ($i=0; !defined($LINE[$addr-$i]); $i++) {}
+	return encode_scoreByte($str,"input line $LINE[$addr-$i]");
+}
+
+1;
+
