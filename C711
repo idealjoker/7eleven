@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon May 27 21:08:03 2024
+#                    dlm: Fri May 31 12:53:02 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 300 43 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 302 52 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -298,6 +298,8 @@
 #	Feb 18, 2024: - added -i and -k for GreenRom.s6
 #				  - BUG: TXS produced wrong opcode!!!
 #	May 27, 2024: - modularized System APIs
+#	May 31, 2024: - disallow Flag#3, Lamp#2, etc.
+#				  - added {BitMask} and {ByteOffset}
 # HISTORY END
 
 # RELEASE NOTES:
@@ -330,6 +332,8 @@
 #   		- {ScoreByte}
 #       	- {LSB} {MSB}
 #	       	- {InvertByte}
+#			- {BitMask}			for lamps and flags
+#			- {ByteOffset}		for lamps and flags
 #		- need {eval} for label arithmetic
 #			- simplistic arithmetic (+,-,&,|) needs to remain in eval_label() to allow
 #			  e.g. LDAA =SolBuf{LSB}+2
@@ -1056,7 +1060,7 @@ sub resolve_labels($)
                 $ROM[$a] = hex($1) . $';                                                # decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
                 next if numberp($ROM[$a]);                                              # we are done, if we have a number
         }
-        if ($ROM[$a] =~ m{^Flag#([0-9A-Fa-f]{2})}) {                                    # flags are lamps with bit 6 set
+        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})$/) {	                                # flags are lamps with bit 6 set
             $ROM[$a] = hex($1)+64 . $';
             next if numberp($ROM[$a]);                                                  # we are done, if we have a number
         }
@@ -1143,6 +1147,7 @@ sub resolve_labels($)
 
         my($str,$interpreter) = ($ROM[$a] =~ m/^([^{]+)\{([^}]+)\}/);                   # "interpreter" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
 		if (defined($interpreter)) {
+#			print(STDERR "interpreter $str,$interpreter\n");
 			require "$PATH/C711.$interpreter";
 			$ROM[$a] = sprintf("%d$'",eval("$interpreter(\$str,\$a);")) || die("$@");
 		}
@@ -2405,7 +2410,7 @@ sub asm_macros()																			# _SLEEP, _WVM_MODE, ...
 			my($argval);																	# determine numeric argument value if possible in order
 			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
 				$argval = $OP_ARG[0];
-			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{1,2})$}) {
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
 				$argval = hex($1);
 			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
 				$argval = hex($1);
@@ -2441,7 +2446,7 @@ sub asm_macros()																			# _SLEEP, _WVM_MODE, ...
 			my($argval);																	# determine numeric argument value if possible in order
 			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
 				$argval = $OP_ARG[0];
-			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{1,2})$}) {
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
 				$argval = hex($1);
 			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
 				$argval = hex($1);
@@ -2477,7 +2482,7 @@ sub asm_macros()																			# _SLEEP, _WVM_MODE, ...
 			my($argval);																	# determine numeric argument value if possible in order
 			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
 				$argval = $OP_ARG[0];
-			} elsif ($OP_ARG[0] =~ m{^Lamp#([0-9A-Fa-f]{1,2})$}) {
+			} elsif ($OP_ARG[0] =~ m{^Lamp#([0-9A-Fa-f]{2})$}) {
 				$argval = hex($1);
 			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
 				$argval = hex($1);
@@ -2513,7 +2518,7 @@ sub asm_macros()																			# _SLEEP, _WVM_MODE, ...
 			my($argval);																	# determine numeric argument value if possible in order
 			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
 				$argval = $OP_ARG[0];
-			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{1,2})$}) {
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
 				$argval = hex($1);
 			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
 				$argval = hex($1);
@@ -2549,7 +2554,7 @@ sub asm_macros()																			# _SLEEP, _WVM_MODE, ...
 			my($argval);																	# determine numeric argument value if possible in order
 			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
 				$argval = $OP_ARG[0];
-			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{1,2})$}) {
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
 				$argval = hex($1);
 			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
 				$argval = hex($1);
@@ -2585,7 +2590,7 @@ sub asm_macros()																			# _SLEEP, _WVM_MODE, ...
 			my($argval);																	# determine numeric argument value if possible in order
 			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
 				$argval = $OP_ARG[0];
-			} elsif ($OP_ARG[0] =~ m{^Lamp#([0-9A-Fa-f]{1,2})$}) {
+			} elsif ($OP_ARG[0] =~ m{^Lamp#([0-9A-Fa-f]{2})$}) {
 				$argval = hex($1);
 			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
 				$argval = hex($1);
@@ -2621,7 +2626,7 @@ sub asm_macros()																			# _SLEEP, _WVM_MODE, ...
 			my($argval);																	# determine numeric argument value if possible in order
 			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
 				$argval = $OP_ARG[0];
-			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{1,2})$}) {
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
 				$argval = hex($1);
 			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
 				$argval = hex($1);
@@ -2655,7 +2660,7 @@ sub asm_macros()																			# _SLEEP, _WVM_MODE, ...
 			my($argval);																	# determine numeric argument value if possible in order
 			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
 				$argval = $OP_ARG[0];
-			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{1,2})$}) {
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
 				$argval = hex($1);
 			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
 				$argval = hex($1);

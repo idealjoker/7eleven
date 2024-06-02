@@ -1,10 +1,14 @@
 #======================================================================
 #                    C 7 1 1 . S C O R E B Y T E 
 #                    doc: Sun Oct 29 17:35:44 2023
-#                    dlm: Fri May 24 11:25:16 2024
+#                    dlm: Fri May 31 11:54:23 2024
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 5 52 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 11 32 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
+
+# HISTORY:
+#	Oct 29, 2024: - created
+#	May 31, 2024: - added header
 
 sub ScoreByte($$)
 {
