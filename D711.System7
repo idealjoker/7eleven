@@ -1,13 +1,16 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 7 
 #                    doc: Mon May 27 16:50:53 2024
-#                    dlm: Mon May 27 21:29:18 2024
+#                    dlm: Tue May 28 19:44:02 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 5 52 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 13 73 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #   May 27, 2024: - created 
+#	May 28, 2024: - disabled
+
+die("\n\n\nSYSTEM 7 DISASSEMBLER NOT IMPLEMENTED YET. CONTACT IDEALJOKER\@MAILBOX.ORG FOR INFORMATION.\n\n\n");
 
 setLabel('WVM_start' ,0xF3AB);
 setLabel('WVM_sleepI',0xEA2F);
@@ -234,6 +237,5 @@ setLabel('WVM_sleepI',0xEA2F);
 	$Lbl{'vm_control_dx'}			  = 0xF57D; $Lbl{'vm_control_ex'}			= 0xF587;
 	$Lbl{'vm_control_fx'}			  = 0xF587; $Lbl{'write_range'} 			= 0xF840;
 	$Lbl{'wordplusbyte'}              = 0xFB17;
-}
 
 1;

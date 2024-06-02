@@ -1,13 +1,16 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 1 1 
 #                    doc: Mon May 27 16:52:24 2024
-#                    dlm: Mon May 27 21:29:00 2024
+#                    dlm: Tue May 28 19:44:08 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 5 52 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 13 74 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May 27, 2024: - created
+#	May 28, 2024: - disabled
+
+die("\n\n\nSYSTEM 11 DISASSEMBLER NOT IMPLEMENTED YET. CONTACT IDEALJOKER\@MAILBOX.ORG FOR INFORMATION.\n\n\n");
 
 setLabel('_Reg-A',0x00);			 # non-volatile registers
 setLabel('_Reg-B',0x01);

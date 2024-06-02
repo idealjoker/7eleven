@@ -1,9 +1,9 @@
 ======================================================================
-		    R E A D M E . T X T 
+		    R E A D M E . U S A G E 
 		    doc: Fri May 24 11:26:20 2024
-		    dlm: Tue May 28 14:37:51 2024
+		    dlm: Tue May 28 19:40:38 2024
 		    (c) 2024 idealjoker@mailbox.org
-		    uE-Info: 128 7 NIL 0 0 72 3 2 8 NIL ofnI
+		    uE-Info: 72 0 NIL 0 0 72 3 2 8 NIL ofnI
 ======================================================================
 
 COPYRIGHT AND LICENSE
@@ -24,10 +24,11 @@ CHANGE LOG
     May 10, 2019: - disassembler library created
     Jan  4, 2020: - compiler created
     May 25, 2024: - initial GitHub release
+    May 28, 2024: - updated docu
 
 ======================================================================
 
-PROGRAMMING LANGUAGE
+7ELEVEN PROGRAMMING LANGUAGE
 
 7eleven is a suite of tools for disassembling and compiling code for
 Williams System 6 -- 11 pinball games, implemented in the perl
@@ -62,9 +63,15 @@ include SolCmd, InvertByte, LSB and MSB. Multi-byte data types include
 fixed and variable-length character strings for 7- and 16-segment
 displays. 
 
-----------------------------------------------------------------------
+======================================================================
 
-COMPILER
+7ELEVEN TOOLS
+
+NB: The 7eleven tools cannot be run in the current working directory!
+
+-----------
+1. Compiler
+-----------
 
 Usage: C711 
     [system -6/-7 source] [-I)VM <stage>]
@@ -89,18 +96,17 @@ Examples:
 	    C711 -1 PEMBOT.s11			creates .OPTINFO_PEMBOT.s11
 	    C711 -2 PEMBOT.s11			creates PEMBOT_U26.bin and PEMBOT_U27.bin
 
-----------------------------------------------------------------------
-
-DISASSEMBLER
+---------------
+2. Disassembler
+---------------
 
 7eleven contains a powerful disassembly library (D711.pm) that works
 with System 7 -- 11 games. However, only System 6 games can be
-disassembled mostly automatically, whereas System 7 -- 11 games require
+disassembled easily automatically, whereas System 7 -- 11 games require
 manual intervention. Therefore, the 7eleven distribution only contains
 a ready-made disassembler for System 6 games, called disassemble_s6.
-System 7 - 11 games require game-specific disassemblers, which are perl
-programs that use the D711.pm library.
-
+Contact idealjoker@mailbox.org if you are interested in a disassembler
+for System 7 or 11. 
 
 Usage: disassemble_s6
 		[dump -l)abels] [-u)se <label-file>]
@@ -178,9 +184,9 @@ It may furthermore be useful to also use the "-A" option, which adds the
 API (labels of RAM locations and system calls) to the top of the
 assembly source. 
 	
-----------------------------------------------------------------------
-
-UTILITIES
+------------
+3. Utilities
+------------
 
 annotate_PinMAME_trace
      Annotate PinMAME TRACE output to help debugging

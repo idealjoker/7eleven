@@ -1,0 +1,13 @@
+======================================================================
+                    R E A D M E . I N S T A L L A T I O N 
+                    doc: Tue May 28 19:35:52 2024
+                    dlm: Tue May 28 19:36:03 2024
+                    (c) 2024 idealjoker@mailbox.org
+                    uE-Info: 5 51 NIL 0 0 72 0 2 4 NIL ofnI
+======================================================================
+
+1) Create a new directory and copy all files there. 
+2) Add the installation directory to your shell path.
+
+NOTE:
+	- you cannot run the 7eleven tools in the current working directory!
