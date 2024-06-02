@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 #======================================================================
-#                    . . / . . / B I N / C 7 1 1 
+#                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Feb 18 17:36:16 2024
+#                    dlm: Mon May 27 21:08:03 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 299 53 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 300 43 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -297,6 +297,7 @@
 #	Feb 12, 2024: - BUG: S11 checksum no longer worked
 #	Feb 18, 2024: - added -i and -k for GreenRom.s6
 #				  - BUG: TXS produced wrong opcode!!!
+#	May 27, 2024: - modularized System APIs
 # HISTORY END
 
 # RELEASE NOTES:
@@ -532,188 +533,10 @@ printf(STDERR "$ARGV[0] [$COMPILATION_INFO]\n")                 # report on scre
     unless defined($opt_1 || $opt_l);
     
 #----------------------------------------------------------------------
-# System 7 API
+# Load API (Labels)
 #----------------------------------------------------------------------
 
-if ($WMS_System == 7) {
-    define_label('RAM_Reg-A',                   0x00);          # CPU Registers
-    define_label('RAM_Reg-B',                   0x01);
-    define_label('RAM_Reg-C',                   0x02);          # Permanent Registers
-    define_label('RAM_Reg-D',                   0x03);
-    define_label('RAM_Reg-E',                   0x04);
-    define_label('RAM_Reg-F',                   0x05);
-    define_label('RAM_Reg-G',                   0x06);
-    define_label('RAM_Reg-H',                   0x07);
-    define_label('RAM_Reg-I',                   0x08);          # Volatile Registers
-    define_label('RAM_Reg-J',                   0x09);
-    define_label('RAM_Reg-K',                   0x0A);
-    define_label('RAM_Reg-L',                   0x0B);
-    define_label('RAM_Reg-M',                   0x0C);
-    define_label('RAM_Reg-N',                   0x0D);
-    define_label('RAM_Reg-O',                   0x0E);
-    define_label('RAM_Reg-P',                   0x0F);
-
-    define_label('RAM_Reg-P0',                  0x02);          # Permanent Registers (alternate names)
-    define_label('RAM_Reg-P1',                  0x03);
-    define_label('RAM_Reg-P2',                  0x04);
-    define_label('RAM_Reg-P3',                  0x05);
-    define_label('RAM_Reg-P4',                  0x06);
-    define_label('RAM_Reg-P5',                  0x07);
-
-    define_label('RAM_Reg-V0',                  0x08);          # Volatile Registers (alternate names)
-    define_label('RAM_Reg-V1',                  0x09);
-    define_label('RAM_Reg-V2',                  0x0A);
-    define_label('RAM_Reg-V3',                  0x0B);
-    define_label('RAM_Reg-V4',                  0x0C);
-    define_label('RAM_Reg-V5',                  0x0D);
-    define_label('RAM_Reg-V6',                  0x0E);
-    define_label('RAM_Reg-V7',                  0x0F);
-
-    define_label('RAM_lampBuf',                 0x10);
-    define_label('RAM_flagBuf',                 0x18);
-    define_label('RAM_bufSeltBuf',              0x20);
-    define_label('RAM_lampBuf_alt',             0x28);
-    define_label('RAM_blinkBuf',                0x30);
-
-    define_label('RAM_displayBuf_P1',           0x38);          # score display buffers
-    define_label('RAM_displayBuf_P2',           0x3C);
-    define_label('RAM_displayBuf_P3',           0x40);
-    define_label('RAM_displayBuf_P4',           0x44);
-    define_label('RAM_displayBuf_P1_alt',       0x48);
-    define_label('RAM_displayBuf_P2_alt',       0x4C);
-    define_label('RAM_displayBuf_P3_alt',       0x50);
-    define_label('RAM_displayBuf_P4_alt',       0x54);
-    
-    define_label('RAM_displayBuf_MBIP',         0x58);          # ball-in-play / match
-    define_label('RAM_displayBuf_MBIP_alt',     0x59);
-    
-    define_label('RAM_displayBuf_credits',      0x5A);
-    define_label('RAM_displayBuf_credits_alt',  0x5B);
-
-    define_label('RAM_comma_flags',             0x60);
-
-    define_label('RAM_switch_buf',              0x61);          # switch buffers
-    define_label('RAM_switch_masked_buf',       0x69);
-    define_label('RAM_switch_pending_buf',      0x71);
-    define_label('RAM_switch_aux_buf',          0x79);
-    
-    define_label('RAM_displayMask_P1',          0x5C);          # display masks
-    define_label('RAM_displayMask_P2',          0x5D);
-    define_label('RAM_displayMask_P3',          0x5E);
-    define_label('RAM_displayMask_P4',          0x5F);
-
-    define_label('RAM_sys_temp1',               0xA0);
-    define_label('RAM_sys_temp2',               0xA1);
-    define_label('RAM_sys_temp3',               0xA2);
-    define_label('RAM_sys_temp4',               0xA3);
-    define_label('RAM_sys_temp5',               0xA4);
-    define_label('RAM_sw_encoded',              0xA5);
-    define_label('RAM_sys_temp_w2',             0xA6);
-    define_label('RAM_sys_temp_w3',             0xA8);
-    define_label('RAM_WVM_next_spawn_id',       0xAA);
-
-    define_label('RAM_F_ballTilted',            0xC8);
-    define_label('RAM_F_count_bonus',           0xCA);
-    define_label('RAM_current_player',          0xCD);
-    define_label('RAM_current_score_buf',       0xCE);
-
-    define_label('RAM_extraballs_waiting?',     0xD0);          # email SC, 7/24/2021
-    define_label('RAM_F_ballInPlay',            0xD6);
-    define_label('RAM_sys_unknown',             0xDE);          # 2 bytes
-
-    define_label('RAM_GameVar0',                0xE0);
-    define_label('RAM_GameVar1',                0xE1);
-    define_label('RAM_GameVar2',                0xE2);
-    define_label('RAM_GameVar3',                0xE3);
-    define_label('RAM_GameVar4',                0xE4);
-    define_label('RAM_GameVar5',                0xE5);
-    define_label('RAM_GameVar6',                0xE6);
-
-    define_label('BBRAM_adj_cmoscsum',          0x017D);        # 4 bytes?
-    define_label('BBRAM_adj_backuphstd',        0x0181);        # 2 bytes each
-    define_label('BBRAM_adj_replay1',           0x0183);
-    define_label('BBRAM_adj_replay2',           0x0185);
-    define_label('BBRAM_adj_replay3',           0x0187);
-    define_label('BBRAM_adj_replay4',           0x0189);
-    define_label('BBRAM_adj_matchenable',       0x018B);
-    define_label('BBRAM_adj_specialaward',      0x018D);
-    define_label('BBRAM_adj_replayaward',       0x018F);
-    define_label('BBRAM_adj_maxplumbbobtilts',  0x0191);
-    define_label('BBRAM_adj_numberofballs',     0x0193);
-    define_label('BBRAM_adj_gameadjust1',       0x0195);
-    define_label('BBRAM_adj_gameadjust2',       0x0197);
-    define_label('BBRAM_adj_gameadjust3',       0x0199);
-    define_label('BBRAM_adj_gameadjust4',       0x019B);
-    define_label('BBRAM_adj_gameadjust5',       0x019D);
-    define_label('BBRAM_adj_gameadjust6',       0x019F);
-    define_label('BBRAM_adj_gameadjust7',       0x01A1);
-    define_label('BBRAM_adj_gameadjust8',       0x01A3);
-    define_label('BBRAM_adj_gameadjust9',       0x01A5);
-    define_label('BBRAM_adj_hstdcredits',       0x01A7);
-    define_label('BBRAM_adj_max_extraballs',    0x01A9);
-    define_label('BBRAM_adj_max_credits',       0x01AB);
-    define_label('BBRAM_adj_pricecontrol',      0x01AD);
-
-    define_label('RST_handler',                 0xE800);
-    define_label('WVM_sleepI',                  0xEA2F);
-    define_label('WVM_exitThread',              0xEA67);
-    define_label('WVM_spawnThread6800',         0xEA78);
-    define_label('WVM_spawnThread6800_id06',    0xEAC4);
-    define_label('WVM_killThread',              0xEAF3);
-    define_label('WVM_killThreads',             0xEAFB);
-    define_label('WVM_solControl',              0xEB23);
-    define_label('WVM_update_EB_count',         0xEBDB);
-    define_label('WVM_update_commas',           0xEBA1);
-    define_label('WVM_score',                   0xEC05);
-    define_label('WVM_score_update',            0xEC1D);
-    define_label('WVM_BCD2hex',                 0xEC86);
-    define_label('WVM_split_AB',                0xECF3);
-    define_label('WVM_playSound',               0xECFC);
-    define_label('X=X+A',                       0xEEFF);
-    define_label('X=X+B',                       0xEF4D);
-    define_label('WVM_LDAA_adjustment',         0xEF53);
-    define_label('WVM_LDAB_adjustment',         0xEF63);
-    define_label('WVM_reset_audits',            0xEF6F);
-    define_label('WVM_reset_highscore',         0xEF9D);
-    define_label('IRQ_handler',                 0xEFF7);
-
-    define_label('WVM_setBit',                  0xF13C);
-    define_label('WVM_clearBit',                0xF15B);
-    define_label('WVM_blinkLamp',               0xF169);
-    define_label('WVM_toggleBit',               0xF170);
-    define_label('WVM_clearBitgroup',           0xF1A7);
-    define_label('WVM_clearBitgroup_blinkBuf',  0xF1B6);
-    define_label('WVM_blinkLampgroup',          0xF1C7);
-    define_label('WVM_fillBitgroup',            0xF1D5);
-    define_label('WVM_unknown_bitgroup_op_1',   0xF1EE);
-    define_label('WVM_unknown_bitgroup_op_2',   0xF1F8);
-    define_label('WVM_setBitgroup',             0xF208);
-    define_label('WVM_fillWrapBitgroup',        0xF26B);    # this could also be fill and previous one fillWrap
-    define_label('WVM_rotRightBitGroup',        0xF27C);
-    define_label('WVM_rotLeftBitgroup',         0xF294);
-    define_label('WVM_drainBitgroup',           0xF2B3);
-    define_label('WVM_switchClosed',            0xF2EA);
-    define_label('WVM_testBit_blinkBuf',        0xF2EF);
-    define_label('WVM_testBit_altBuf',          0xF2F4);
-    define_label('WVM_testBit',                 0xF2F9);
-    define_label('WVM_copy_main_to_altBuf',     0xF302);
-    define_label('WVM_start',                   0xF3AB);
-    define_label('WVM_coin_accepted',           0xF7A2);
-    define_label('WVM_fill_mem',                0xF840);
-    define_label('WVM_set_displayMask',         0xF8A4);
-    define_label('WVM_init_ball',               0xF8DD);
-    define_label('WVM_load_displayMask',        0xF919);
-    define_label('WVM_end_of_ball',             0xF9AB);
-    define_label('WVM_clear_displays',          0xF926);
-    define_label('WVM_show_highscore',          0xFA0B);
-    define_label('WVM_trigger_bgSound',         0xFB30);
-    define_label('WVM_get_random',              0xFB80);
-    define_label('WVM_hex2bitpos',              0xEB8E);
-    define_label('WVM_hex2dec',                 0xEC7F);
-    define_label('WVM_start_button',            0xFB92);
-    define_label('WVM_tilt_warning',            0xFBDD);
-    define_label('WVM_tilt_game',               0xFBE9);
-}
+require "$PATH/System$WMS_System.API";
 
 #======================================================================
 # Main Program

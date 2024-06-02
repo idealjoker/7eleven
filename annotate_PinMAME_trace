@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 #======================================================================
-#                    . . / . . / B I N / A N N O T A T E _ P I N M A M E _ T R A C E 
+#                    A N N O T A T E _ P I N M A M E _ T R A C E 
 #                    doc: Sat Nov 25 08:24:29 2023
-#                    dlm: Sun Nov 26 13:27:24 2023
-#                    (c) 2023 A.M. Thurnherr
-#                    uE-Info: 24 32 NIL 0 0 72 2 2 4 NIL ofnI
+#                    dlm: Mon May 27 21:29:37 2024
+#                    (c) 2023 idealjoker@mailbox.org
+#                    uE-Info: 6 52 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Annotate PinMAME TRACE output to help debugging

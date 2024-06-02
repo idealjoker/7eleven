@@ -1,0 +1,338 @@
+#======================================================================
+#                    S Y S T E M 6 . A P I 
+#                    doc: Mon May 27 20:34:35 2024
+#                    dlm: Mon May 27 21:29:32 2024
+#                    (c) 2024 idealjoker@mailbox.org
+#                    uE-Info: 5 52 NIL 0 0 72 64 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	May 27, 2024: - created
+
+# NOTES:
+#	- file is read by both [C711] and [D711.pm]
+#	- only define_label() statements allowed in here
+# 	- labels with simple addition must be defined for [D711.pm]
+#	  to work correctly. They are, however, not output 
+
+#----------------------------------------------------------------------
+# RAM Labels
+#----------------------------------------------------------------------
+
+define_label('=display_p1', 						0x00);		# 3-byte data
+define_label('=display_p1+1', 						0x01);
+define_label('=display_p1+2', 						0x02);
+define_label('_display_bip',						0x03);
+define_label('=display_p2', 						0x04);		# 3-byte data
+define_label('=display_p2+1', 						0x05);
+define_label('=display_p2+2', 						0x06);
+define_label('_display_credits',					0x07);
+define_label('=display_p3', 						0x08);		# 3-byte data
+define_label('=display_p3+1', 						0x09);		
+define_label('=display_p3+2', 						0x0A);		
+define_label('=display_p4', 						0x0C);		# 3-byte data
+define_label('=display_p4+1', 						0x0D);		
+define_label('=display_p4+2', 						0x0E);		
+define_label('=Lamps',								0x10);		# 8 bytes
+define_label('=Lamps+1',							0x11);
+define_label('=Lamps+2',							0x12);
+define_label('=Lamps+3',							0x13);
+define_label('=Lamps+4',							0x14);
+define_label('=Lamps+5',							0x15);
+define_label('=Lamps+6',							0x16);
+define_label('=Lamps+7',							0x17);
+define_label('=Flags',								0x18);		# 2 bytes
+define_label('=Flags+1',							0x19);		
+define_label('=BlinkBuf',							0x1A);		# 8 bytes
+define_label('=BlinkBuf+1',							0x1B);
+define_label('=BlinkBuf+2',							0x1C);
+define_label('=BlinkBuf+3',							0x1D);
+define_label('=BlinkBuf+4',							0x1E);
+define_label('=BlinkBuf+5',							0x1F);
+define_label('=BlinkBuf+6',							0x20);
+define_label('=BlinkBuf+7',							0x21);
+define_label('=dontUse',							0x22);		# 2 bytes
+define_label('=dontUse+1',							0x23);
+define_label('=SwitchBuf',							0x24);	  	# 8 bytes; reverse column order
+define_label('=SwitchBuf+1',						0x25);
+define_label('=SwitchBuf+2',						0x26);
+define_label('=SwitchBuf+3',						0x27);
+define_label('=SwitchBuf+4',						0x28);
+define_label('=SwitchBuf+5',						0x29);
+define_label('=SwitchBuf+6',						0x2A);
+define_label('=SwitchBuf+7',						0x2B);
+define_label('=SwitchStuckBuf', 		  			0x2C);	  	# 8 bytes; reverse column order
+define_label('=SwitchStuckBuf+1', 		  			0x2D);
+define_label('=SwitchStuckBuf+2', 		  			0x2E);
+define_label('=SwitchStuckBuf+3', 		  			0x2F);
+define_label('=SwitchStuckBuf+4', 		  			0x30);
+define_label('=SwitchStuckBuf+5', 		  			0x31);
+define_label('=SwitchStuckBuf+6', 		  			0x32);
+define_label('=SwitchStuckBuf+7', 		  			0x33);
+define_label('=SwitchQueue',						0x34);		# 3 bytes
+define_label('=SwitchQueue+1',						0x35);		
+define_label('=SwitchQueue+2',						0x36);
+define_label('_tiltWarnings',						0x37);
+define_label('_solenoids_timer',					0x38);
+define_label('_last_solNo',							0x39);
+
+define_label('_soundAndDelay_timer',				0x3A);		# 3 bytes
+define_label('_soundAndDelay_timer_handler',		0x3B);		
+define_label('_soundAndDelay_timer_handler+1',		0x3C);		
+define_label('_solenoid_timer', 					0x3D);		# 3 bytes
+define_label('_solenoid_timer_handler',				0x3E);		
+define_label('_solenoid_timer_handler+1',			0x3F);		
+define_label('_script_timer1',	 					0x40);		# 3 bytes
+define_label('__script_timer1_handler',				0x41);
+define_label('__script_timer1_handler+1',			0x42);
+define_label('_script_timer2',	 					0x43);		# 3 bytes
+define_label('__script_timer2_handler',				0x44);
+define_label('__script_timer2_handler1',			0x45);
+define_label('_match',								0x46);
+define_label('_bonusX', 							0x47);
+
+define_label('=cycleCounter',						0x50);		# 4 bytes
+define_label('=cycleCounter+1',						0x51);		
+define_label('=cycleCounter+2',						0x52);		
+define_label('=cycleCounter+3',						0x53);
+define_label('_blink_counter',						0x54);
+define_label('_playerUp',							0x55);
+define_label('_maxPlayerInGame',					0x56);
+define_label('_sound_repeatCount',					0x57);
+define_label('_sound_id',							0x58);
+define_label('_sound_pinOp',						0x59);
+define_label('_sound_duration',						0x5A);
+define_label('_EB_pending',							0x5B);
+define_label('_bonusCountdown_score',				0x5C);
+define_label('=scoreQueue',							0x5D);		# 5 bytes
+define_label('=scoreQueue+1',						0x5E);
+define_label('=scoreQueue+2',						0x5F);
+
+define_label('=scoreQueue+3',						0x60);
+define_label('=scoreQueue+4',						0x61);
+define_label('=solQueue',							0x62);		# length
+define_label('=solQueue+1',							0x63);		# 1st elt
+define_label('=solQueue+2',							0x64);
+define_label('=solQueue+3',							0x65);
+define_label('_switchSolCmd',						0x66);
+define_label('_tmp1',								0x67);
+define_label('_tmp2',								0x68);
+define_label('_tmp3',								0x69);
+define_label('_tmp4',								0x6A);
+define_label('_tmp5',								0x6B);
+define_label('_tmp6',								0x6C);
+define_label('_tmp7',								0x6D);
+define_label('_switchScript_flags',					0x6E);
+
+define_label('_nextDT_p1',							0x70);	    
+define_label('_nextDT_p2',							0x71);	    
+define_label('_nextDT_p3',							0x72);	    
+define_label('_nextDT_p4',							0x73);	    
+define_label('_ballTime',							0x74);	    
+define_label('_gameStatusFlags',					0x78);	   # 01: gameOver 02:gameTilted  04:EBpending 08: EBearned 10:balltimeOverflow(1min passed) 80:playfield qualified
+define_label('=switchScanKillTimer',				0x7A);	    
+define_label('=timerHandler',						0x7E);	    
+define_label('=timerHandler+1',						0x7F);	    
+
+define_label('__score_tmpX',						0x80);
+define_label('__score_tmpX+1',						0x81);
+define_label('__tmp1_X',							0x82);	    
+define_label('__tmp1_X+1',							0x83);
+define_label('__RAM[X+B]_tmpX',						0x86);
+define_label('__RAM[X+B]_tmpX+1',					0x87);
+define_label('__lampMask[A]_Xin',					0x88);
+define_label('__lampMask[A]_Xin+1',					0x89);
+define_label('__tmp2_X',							0x8A);
+define_label('__tmp2_X+1',							0x8B);
+define_label('__switch_params',						0x8C);	    
+define_label('__switch_params+1',					0x8D);	    
+
+define_label('__copyRAM_tmpX',						0x90);	    
+define_label('__Xstore',							0x92);
+define_label('=data_p1',							0x94);		# 18 bytes
+define_label('=data_p2',							0xA6);		# 18 bytes
+define_label('=data_p3',							0xB8);		# 18 bytes
+define_label('=data_p4',							0xCA);		# 18 bytes
+
+define_label('_GameVarE0',							0xE0);		# 3 used in Alien Poker, more very likely possible (c.f. Sys 7); competes with stack
+define_label('_GameVarE1',							0xE1);
+define_label('_GameVarE2',							0xE2);
+define_label('TOP_OF_STACK',						0xFF);
+
+#----------------------------------------------------------------------
+# Battery Backed RAM Labels
+#----------------------------------------------------------------------
+
+define_label('=BB_RAM_START',						0x0100);						# Battery Backed RAM
+define_label('_BB_unused?_0101',					0x0101);
+define_label('_BB_unused_0102', 					0x0102);
+define_label('_BB_unused_0103', 					0x0103);
+define_label('_BB_unused_0104', 					0x0104);
+define_label('_BB_unused_0105', 					0x0105);
+define_label('_BB_unused_0106', 					0x0106);
+define_label('_BB_unused_0107', 					0x0107);
+define_label('_BB_unused_0108', 					0x0108);
+define_label('_BB_unused_0109', 					0x0109);
+define_label('=BB_AUDIT_START',						0x010A);
+define_label('=BB_AU01_leftCoins',					0x010A);	
+define_label('=BB_AU02_centerCoins',				0x0110);	
+define_label('=BB_AU03_rightCoins',					0x0116);	
+define_label('=BB_AU04_paidCredits',				0x011C);	
+define_label('=BB_AU05_Specials',					0x0122);	
+define_label('=BB_AU06_replayAwards',				0x0128);	
+define_label('=BB_AU07_match_HSTD_cred',			0x012E);	
+define_label('=BB_AU08_totalCredits',				0x0134);	
+define_label('=BB_AU09_extraballs',					0x013A);	
+define_label('=BB_AU10_ballTime',					0x0140);	
+define_label('=BB_AU11_ballsPlayed',				0x0146);	
+define_label('=BB_HSTD',							0x0148);
+define_label('=BB_HSTD+2',							0x014A);
+define_label('=BB_HSTD+4',							0x014C);
+
+define_label('_BB_Credits',							0x0152);
+
+define_label('_BB_AU12_HSTD',						0x017F);	
+define_label('_BB_AU12_HSTD+1',						0x0180);	
+define_label('_BB_AD13_BUHSTD',						0x0181);	
+define_label('_BB_AD13_BUHSTD+1',					0x0182);	
+define_label('_BB_AD14_replay1',					0x0183);	
+define_label('_BB_AD14_replay+1',					0x0184);	
+define_label('_BB_AD15_replay2',					0x0185);	
+define_label('_BB_AD15_replay2+1',					0x0186);	
+define_label('_BB_AD16_replay3',					0x0187);	
+define_label('_BB_AD16_replay3+1',					0x0188);	
+define_label('_BB_AD17_replay4',					0x0189);	
+define_label('_BB_AD17_replay4+1',					0x018A);	
+define_label('_BB_AD18_maxCredits',					0x018B);	
+define_label('_BB_AD18_maxCredits+1',				0x018C);	
+define_label('_BB_AD19_priceControl',				0x018D);	
+define_label('_BB_AD19_priceControl+1',				0x018E);	
+define_label('_BB_AD20_lCoinMult',					0x018F);	
+define_label('_BB_AD20_lCoinMult+1',				0x0190);	
+
+define_label('_BB_AD21_cCoinMult',					0x0191);	
+define_label('_BB_AD21_cCoinMult+1',				0x0192);	
+define_label('_BB_AD22_rCoinMult',					0x0193);	
+define_label('_BB_AD22_rCoinJult+1'	,				0x0194);	
+define_label('_BB_AD23_coins4credit',				0x0195);	
+define_label('_BB_AD23_coins4credit+1',				0x0196);	
+define_label('_BB_AD24_coinsBonus',					0x0197);	
+define_label('_BB_AD24_coinsBonus+1',				0x0198);	
+define_label('_BB_AD25_HScredits',					0x0199);	
+define_label('_BB_AD25_HScredits+1',				0x019A);	
+define_label('_BB_AD26_match_multipleEB',			0x019B);	
+define_label('_BB_AD26_match_multipleEB+1',			0x019C);	
+define_label('_BB_AD27_SpecialAward',				0x019D);	
+define_label('_BB_AD27_SpecialAward+1',				0x019E);	
+define_label('_BB_AD28_ScoringAward',				0x019F);	
+define_label('_BB_AD28_ScoringAward+1',				0x01A0);	
+define_label('_BB_AD29_tiltWarnings',				0x01A1);	
+define_label('_BB_AD29_tiltWarnings+1',				0x01A2);	
+define_label('_BB_AD30_ballsPerGame',				0x01A3);	
+define_label('_BB_AD30_ballsPerGame+1',				0x01A4);	
+define_label('_BB_AD31',							0x01A5);	
+define_label('_BB_AD31+1',							0x01A6);	
+define_label('_BB_AD32',							0x01A7);	
+define_label('_BB_AD32+1',							0x01A8);	
+define_label('_BB_AD33',							0x01A9);	
+define_label('_BB_AD33+1',							0x01AA);	
+define_label('_BB_AD34',							0x01AB);	
+define_label('_BB_AD34+1',							0x01AC);	
+define_label('_BB_AD35',							0x01AD);	
+define_label('_BB_AD35+1',							0x01AE);	
+
+#----------------------------------------------------------------------
+# PIA Addresses
+#----------------------------------------------------------------------
+
+define_label('PIA_2200_sol1-8(data)',				0x2200);					# Solenoids
+define_label('PIA_2200_sol1-8(ctrl)',				0x2201);
+define_label('PIA_2202_sol9-16(data)',				0x2202);
+define_label('PIA_2202_sol9-16(ctrl)',				0x2203);
+define_label('PIA_2202_sol17-24(data)',				0x2204);
+define_label('PIA_2202_sol17-24(ctrl)',				0x2205);
+define_label('PIA_2400_lampRow_input(data)',		0x2400);
+define_label('PIA_2400_lampRow_input(ctrl)',		0x2401);
+define_label('PIA_2402_lampCol_strobe(data)',		0x2402);
+define_label('PIA_2402_lampCol_strobe(ctrl)',		0x2403);
+define_label('PIA_2800_display_strobe(data)',		0x2800);
+define_label('PIA_2800_display_strobe(ctrl)',		0x2801);
+define_label('PIA_2802_display_digit(data)',		0x2802);
+define_label('PIA_2802_display_digit(ctrl)',		0x2803);
+define_label('PIA_3000_switchRow_input(data)',		0x3000);
+define_label('PIA_3000_switchRow_input(ctrl)',		0x3001);
+define_label('PIA_3002_switchCol_strobe(data)',		0x3002);
+define_label('PIA_3002_switchCol_strobe(ctrl)',		0x3003);
+
+#----------------------------------------------------------------------
+# System Calls
+#----------------------------------------------------------------------
+
+define_label('sys_reset_game', 							 	0x7000);
+define_label('sys_gameOver',								0x7045);
+define_label('sys_background_loop',						 	0x7062);
+define_label('sys_enter_audits_and_adjustments',			0x719A);
+define_label('sys_solCmdOrPlaySound[A]',					0x71CB);
+define_label('sys_solCmd[A]',								0x71EC);
+define_label('sys_exec_switchSolCmd',						0x71C9);
+define_label('sys_B=RAM[X+B]', 							 	0x721F);
+define_label('sys_award_SPECIAL',							0x72A8);
+define_label('sys_switch_script',							0x7230);
+define_label('sys_lampStatusUpdate_then_run_timedScripts',  0x7300);
+define_label('sys_clearScoreQueue_outhole_handler',		 	0x7306);
+define_label('sys_outhole_handler',						 	0x730D);
+define_label('sys_start_ball', 							 	0x73E9);
+define_label('sys_ball_kickout',							0x740A);
+define_label('sys_end_of_game',							 	0x7426);
+define_label('sys_match_handler',							0x7457);
+define_label('sys_endOfGame_noMatch',						0x746B);
+define_label('sys_load_playerData',						 	0x7520);
+define_label('sys_X=playerData',							0x7562);
+define_label('sys_creditButton_handler',					0x7571);
+define_label('sys_add_player_to_game', 					 	0x75C2);
+define_label('sys_init_game',								0x75D8);
+define_label('sys_clear_scoreQueue',						0x75F0);
+define_label('sys_coinLeft_handler',						0x75FE);
+define_label('sys_coinCenter_handler', 					 	0x7602);
+define_label('sys_coinRight_handler',						0x7606);
+define_label('sys_award_freeGame', 						 	0x766C);
+define_label('sys_delay[B]',								0x76CC);
+define_label('sys_delay[AB]',								0x76D9);
+define_label('sys_copyRAM',								 	0x76DD);
+define_label('sys_lampStatusUpdate',						0x76F1);
+define_label('sys_pinOp_solCmd',							0x7832);
+define_label('sys_exitOnGameOverOrTilt',					0x79BF);
+define_label('sys_exit',								  	0x79C6);
+define_label('sys_play_soundScript',						0x79CB);
+define_label('sys_execStatusupdate[X]',						0x7744);
+define_label('sys_testBit',									0x777C);
+define_label('sys_run_timedScripts',						0x77A8);
+define_label('sys_play_sound', 								0x77F0);
+define_label('sys_light_EBlamp',							0x7925);
+define_label('sys_setBitgroup',								0x7897);
+define_label('sys_pinOp[A]',								0x780E);
+define_label('sys_bitgroupOp[A]_until[B]', 					0x78A8);
+define_label('sys_checkAdjustment',							0x7980);
+define_label('sys_setBit', 									0x792C);
+define_label('sys_clearBit',								0x793D);
+define_label('sys_blinkLamps', 								0x794A);
+define_label('sys_BX=lampMask[A]', 							0x7953);
+define_label('sys_bobTilt_handler',							0x7993);
+define_label('sys_ballTilt_handler',						0x79A3);
+define_label('sys_tilt_sound', 								0x79B6);
+define_label('sys_score[A]',								0x79E4);
+define_label('sys_score[A]_now',							0x7A00);
+define_label('sys_clear_displays', 							0x7AD6);
+define_label('sys_fill_displays',							0x7AD8);
+define_label('sys_clear_BB_RAM',							0x7AE3);
+define_label('sys_bookkeeping_menu',						0x7B09);
+define_label('sys_start_game', 								0x7C8F);
+define_label('sys_mergeCopy_[X]_to_[Xptr]',					0x7DF8);
+define_label('sys_splitCopy_[X]_to_[Xptr]',					0x7E0B);
+define_label('sys_B=shiftLeft4[X,X+1]',						0x7E1E);
+define_label('sys_splitStore[B]',							0x7E2D);
+define_label('sys_HSreset_handler',							0x7E36);
+define_label('sys_IRQ_handler',								0x7E4C);
+define_label('sys_IRQ_handler_display[A]', 					0x7E9D);
+
+

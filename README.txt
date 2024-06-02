@@ -1,9 +1,9 @@
 ======================================================================
 		    R E A D M E . T X T 
 		    doc: Fri May 24 11:26:20 2024
-		    dlm: Sat May 25 11:00:08 2024
+		    dlm: Tue May 28 14:37:51 2024
 		    (c) 2024 idealjoker@mailbox.org
-		    uE-Info: 62 25 NIL 0 0 72 3 2 8 NIL ofnI
+		    uE-Info: 128 7 NIL 0 0 72 3 2 8 NIL ofnI
 ======================================================================
 
 COPYRIGHT AND LICENSE
@@ -23,7 +23,7 @@ https://creativecommons.org/licenses/by-nc-sa/4.0/).
 CHANGE LOG
     May 10, 2019: - disassembler library created
     Jan  4, 2020: - compiler created
-    May 24, 2024: - initial GitHub release
+    May 25, 2024: - initial GitHub release
 
 ======================================================================
 
@@ -80,27 +80,104 @@ Usage: C711
     [-c)hecksum info] [report free -m)emory blocks]
     [trace -C)onditional assembly]
     [-t)rust_but_verify <ROM_image[,...]> [check already during label -r)esolution]]
-    <asm file>
+    <source file>
 
 Examples:
-    1) Create ROM image from assembler source 
-	    C711 AlienPoker.s6			creates file AlienPoker_U14.bin
+    1) Create ROM image from source 
+	    C711 PEMBOT.s11			creates PEMBOT_U26.bin and PEMBOT_U27.bin
     2) Two-stage compilation with optimization
-	    C711 -1 AlienPoker.s6		creates file .OPTINFO_AlienPoker.s6
-	    C711 -2 AlienPoker.s6		creates file AlienPoker_U14.bin
+	    C711 -1 PEMBOT.s11			creates .OPTINFO_PEMBOT.s11
+	    C711 -2 PEMBOT.s11			creates PEMBOT_U26.bin and PEMBOT_U27.bin
 
 ----------------------------------------------------------------------
 
-DISASSEMBLY LIBRARY
+DISASSEMBLER
 
-D711.pm is a library of disassembly routines. In order to disassemble a
-game, a perl program has to be written that includes the library as follows
+7eleven contains a powerful disassembly library (D711.pm) that works
+with System 7 -- 11 games. However, only System 6 games can be
+disassembled mostly automatically, whereas System 7 -- 11 games require
+manual intervention. Therefore, the 7eleven distribution only contains
+a ready-made disassembler for System 6 games, called disassemble_s6.
+System 7 - 11 games require game-specific disassemblers, which are perl
+programs that use the D711.pm library.
 
-    use D711 (6);
 
-where (6) indicates that the ROM is a Williams System 6 image. There is
-currently no documentation for this library.
+Usage: disassemble_s6
+		[dump -l)abels] [-u)se <label-file>]
+		[include -A)PI in output]
+		[write code-structuring -h)ints to <file>]
+		[-i)nclude <file[,...]>
+		[list -a)ddressse in output] [list -c)ode bytes]
+		[suppress -g)ap data]
+		[suppress code-s)tructure analysis]
+		<ROM image>
 
+
+In order to disassemble a System 6 game the only requirement is a file
+with the ROM image --- e.g. Gorgar.bin. The command
+
+	disassemble_s6 -a Gorgar.bin > Gorgar.s6
+
+creates the file Gorgar.s6, which contains the game assembly code with
+ROM addresses. The game binary can be re-created with the command
+
+	C711 Gorgar.s6
+
+which creates the file Gorgar_U14.bin. In order to verify that the
+output is correct, use "cmp Gorgar.bin Gorgar_U14.bin". There should not
+be any output.
+
+
+The file Gorgar.s6 contains about 1000 lines of assembly code. To help
+the user orient themselves, there are comment headers. The utility
+command "mkIndex" lists these headers, essentially a table of contents.
+Another way to improve readability of the code is to use names, instead
+of numbers, for the switches and lamps. The first 9 switches (#0-8) are
+system switches and the lamps in columns 7 & 8 (#48-63) are system
+lamps, and those are always named. The names for the remaining switches
+and lamps are found in the game manual and they can be defined in the
+file "Gorgar.defs" as follows:
+
+	$D711::Switch[9]  = 'SW_left_outlane';                     
+	$D711::Switch[10] = 'SW_D_rollover';
+	...
+	$D711::Lamp[0] = 'L_samePlayerShootsAgain';                 
+	$D711::Lamp[1] = 'L_Special_left';
+	...
+
+Note that internally the switches and lamps are numbered starting at
+zero, which means that the internal switch numbers are one lower than
+the numbers listed in the manual. After this file has been created, a
+more readable source can be generated with
+
+	disassemble_s6 -a -i Gorgar.defs Gorgar > Gorgar.s6
+	
+
+It is important to note that the automatic disassembly is not perfect.
+There are usually blocks of data marked ANALYSIS_GAP in the assembly
+source code and these have to be fully to make the code relocatable.
+In the case of Gorgar, there is a 4-byte analysis gap at address $6235
+and free space at the end of the ROM is filled with zeroes starting at
+address $65A7. A search for "6253" yields the following code:
+
+	<64FC>		LDX	#$6235
+	<64FF>		STX	__switch_params
+	<6501>          JMP     sys_switch_script
+
+from which it s clear that the analysis gap at $6235 is a switch script.
+After adding a label at that address and removing the ANALYSIS_GAP lines
+at the end of the ROM, the disassembly is complete.
+
+
+Note that the addresses at the beginning of each line are ignored by
+"C711". Therefore it is best to remove them before starting to make
+changes to the assembly source. This can be done with any reasonably
+powerful text editor or, alternatively, an assembly file without
+addresses can be created with "disassemble_s6" without the "-a" option.
+It may furthermore be useful to also use the "-A" option, which adds the
+API (labels of RAM locations and system calls) to the top of the
+assembly source. 
+	
 ----------------------------------------------------------------------
 
 UTILITIES
@@ -123,7 +200,7 @@ cpx
 mkIndex
     Create "table of contents" from full-line comments in 7eleven source files
     EXAMPLE
-	mkIndex AlienPoker.s6 > AlienPoker.index
+	mkIndex Gorgar.s6 > Gorgar.index
     
 render_char
     Render 16-bit hex code as done by Sys 11 alphanumeric displays

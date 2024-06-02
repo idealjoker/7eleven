@@ -1,0 +1,93 @@
+#!/usr/bin/perl
+#======================================================================
+#					 D I S A S S E M B L E _ S 7 
+#					 doc: Mon May 27 21:21:01 2024
+#					 dlm: Mon May 27 21:25:15 2024
+#					 (c) 2014 idealjoker@mailbox.org
+#					 uE-Info: 62 26 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# WMS System 7 Game Disassembly Instructions
+
+# HISTORY:
+#	May 27, 2024: - created from [disassemble_s6]
+
+use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
+use D711 (7);		
+
+#----------------------------------------------------------------------
+# Usage
+#----------------------------------------------------------------------
+
+use Getopt::Std;
+
+die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
+			"[include -A)PI in output]\n\t\t" . 
+			"[write code-structuring -h)ints to <file>]\n\t\t" .
+			"[-i)nclude <file[,...]>\n\t\t" .
+			"[suppress -a)ddress from output] [list -c)ode bytes]\n\t\t" . 
+			"[suppress -g)ap data]\n\t\t" . 
+			"[suppress code-s)tructure analysis]\n\t\t" .
+			"<game name>\n")
+	unless &getopts('Aacgh:i:ls') && @ARGV==1;
+
+$D711::print_addrs	= !$opt_a;												# -a) suppress hex addresses in output
+$D711::print_code	=  $opt_c;												# -c) include code bytes in output
+$D711::fill_gaps	= !$opt_g;
+
+if (defined($opt_i)) {														# include files with perl code
+	my(@linc) = split(',',$opt_i);
+	while (@linc) {
+		require shift(@linc);
+	}	
+}
+
+#----------------------------------------------------------------------
+# Load ROM Images
+#----------------------------------------------------------------------
+
+if (-f $ARGV[0]) {
+	&D711::load_ROM($ARGV[0],0x6000); 									
+} elsif (-f "$ARGV[0].bin") {
+	&D711::load_ROM("$ARGV[0].bin",0x6000); 									
+} else {
+	&D711::load_ROM("$ARGV[0]_U14.bin",0x6000); 									
+}
+printf(STDERR "[Address range = %04X-%04X]\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR);
+
+#----------------------------------------------------------------------
+# Code Disassembly
+#----------------------------------------------------------------------
+
+&D711::disassemble_System7();
+
+#----------------------------------------------------------------------
+# Make Human Readable
+#----------------------------------------------------------------------
+
+&D711::disassemble_unfollowed_labels();										# left overs
+&D711::process_code_structure($D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR) 		# if, while, ...
+	unless ($opt_s);
+&D711::substitute_labels(); 												# resolve labels
+&D711::substitute_identifiers();											# rename game-specific ids
+
+#----------------------------------------------------------------------
+# Produce Output
+#----------------------------------------------------------------------
+
+if ($opt_l) {																# dump label information
+	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
+	exit(0);																# to make a disassembled file with all labels defined up-front
+}
+
+if (defined($opt_h)) {														# find structure-breaking labels and create file with hints
+	close(STDOUT);															# suppress code output
+	&D711::produce_output($opt_h);
+	exit(0);
+}
+
+if ($opt_A) { &D711::produce_output(); }									# include API in output
+else		{ &D711::produce_output(''); }
+
+exit(0);
+

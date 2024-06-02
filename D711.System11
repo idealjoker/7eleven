@@ -1,0 +1,92 @@
+#======================================================================
+#                    D 7 1 1 . S Y S T E M 1 1 
+#                    doc: Mon May 27 16:52:24 2024
+#                    dlm: Mon May 27 21:29:00 2024
+#                    (c) 2024 idealjoker@mailbox.org
+#                    uE-Info: 5 52 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	May 27, 2024: - created
+
+setLabel('_Reg-A',0x00);			 # non-volatile registers
+setLabel('_Reg-B',0x01);
+setLabel('_Reg-C',0x02);
+setLabel('_Reg-D',0x03);
+setLabel('_Reg-E',0x04);
+setLabel('_Reg-F',0x05);
+setLabel('_Reg-G',0x06);
+setLabel('_Reg-H',0x07);
+setLabel('_Reg-I',0x08);			 # volatile registers
+setLabel('_Reg-J',0x09);
+setLabel('_Reg-K',0x0A);
+setLabel('_Reg-L',0x0B);
+setLabel('_Reg-M',0x0C);
+setLabel('_Reg-N',0x0D);
+setLabel('_Reg-O',0x0E);
+setLabel('_Reg-P',0x0F);
+
+setLabel('_bufSel_p1',			0x3A);				# 0: main buffer, FF: alt buffer
+setLabel('_bufSel_p2',			0x3B);
+setLabel('_bufSel_p3',			0x3C);
+setLabel('_bufSel_p4',			0x3D);
+
+sub init_system_11() {				# system 11 magic (done after reading ROM)
+	$Address = 0xFFC6;
+		for (my($o)=1; $o<8; $o++) { setLabel("=Lamps+$o",WORD($Address)+$o); }
+		def_ptr_hex_alt('^=Lamps','=Lamps','Debugger Pointers');
+		for (my($o)=1; $o<8; $o++) { setLabel("=Flags+$o",WORD($Address)+$o); }
+		def_ptr_hex_alt('^=Flags','=Flags');
+		for (my($o)=1; $o<8; $o++) { setLabel("=Lamps_bufSel+$o",WORD($Address)+$o); }
+		def_ptr_hex_alt('^=Lamps_bufSel','=Lamps_bufSel');
+		for (my($o)=1; $o<8; $o++) { setLabel("=Lamps_altBuf+$o",WORD($Address)+$o); }
+		def_ptr_hex_alt('^=Lamps_altBuf','=Lamps_altBuf');
+		for (my($o)=1; $o<8; $o++) { setLabel("=Lamps_blinkBuf+$o",WORD($Address)+$o); }
+		def_ptr_hex_alt('^=Lamps_blinkBuf','=Lamps_blinkBuf');
+		for (my($o)=1; $o<8; $o++) { setLabel("=Switches+$o",WORD($Address)+$o); }
+		def_ptr_hex_alt('^=Switches','=Switches');
+		push(@Switch2WVMSubroutines,WORD($Address));
+		def_code_ptr('^WVM_start','WVM_start');
+		def_ptr_hex_alt('^_IRQ_tics_counter','_IRQ_tics_counter');
+		def_code_ptr('^WVM_exitThread','WVM_exitThread');
+		def_ptr_hex('^unknown_debug_ptr');
+		def_ptr_hex_alt('^__threads_running_ptr','__threads_running_ptr');
+		setLabel('__current_thread_ptr+1',WORD($Address)+1);
+		def_ptr_hex_alt('^__current_thread_ptr','__current_thread_ptr');
+		setLabel('__WVM_PC+1',WORD($Address)+1);
+		def_ptr_hex_alt('^__WVM_PC','__WVM_PC');
+		def_code_ptr('^WVM_sleep','WVM_sleep');
+		def_code_ptr('^WVM_sleepI','WVM_sleepI',undef,'_SLEEP macro (JSR WVM_sleepI; .DB #xx)');
+		def_code_ptr('^next_WVM_op_debugger_hook','next_WVM_op_debugger_hook','Debugger Hooks');
+		def_byteblock_code(3,'debugger_stepper_hook?');
+		def_byteblock_code(3,'kill_thread_debugger_hook');
+		def_byteblock_code(3,'thread_switch_debugger_hook');
+		def_byteblock_code(3,'pre_exec_debugger_hook');
+		def_byteblock_code(3,'WVM_halt_loop_debugger_hook');
+		def_byteblock_code(2,'debug_macro_hook');
+
+	$Address = $Lbl{'WVM_exitThread'}+0x11; 					# derived magic
+		$lbl = 'spawn_thread_WVM_id06'; def_code($lbl);
+	$Address = $Lbl{$lbl}+0x06;     
+		$lbl = 'spawn_thread_WVM'; def_code($lbl);
+	$Address = $Lbl{$lbl}+0x07;     
+		$lbl = 'spawn_thread_6800_[A]'; def_code($lbl);
+	$Address = $Lbl{$lbl}+0x02;     
+		$lbl = 'spawn_thread_6800'; def_code($lbl);
+	$Address = $Lbl{$lbl}+0x4C;     
+		$lbl = 'spawn_thread_6800_id06';
+		if (&BYTE($Address-1) == 0x39) {						# RTS, PinBot
+			# do nothing
+		} elsif (&BYTE($Address-1) == 0x01) {					# NOP, BadCats
+			$Address += 2;
+		} else {
+			die(sprintf("cannot find spawn_thread_6800_id06 routine (%02X)",&BYTE($Address-1)));
+		}
+		def_code($lbl);
+		$Address = $Lbl{$lbl}+0x08;
+		$lbl = 'kill_this_thread'; def_code($lbl);
+	$Address = $Lbl{$lbl}+0x2A;     
+		$lbl = 'kill_thread'; def_code($lbl);
+}
+
+1;

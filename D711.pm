@@ -1,9 +1,9 @@
 #======================================================================
-#					 . . / . . / B I N / D 7 1 1 . P M 
+#					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Feb 18 17:37:00 2024
+#					 dlm: Tue May 28 11:13:34 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 186 29 NIL 0 0 72 0 2 4 NIL ofnI
+#					 uE-Info: 194 56 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -184,13 +184,23 @@
 #	Jan  1, 2024: - made Sys 6 disassembly largely automatic with *.defs
 #	Jan 17, 2024: - "modernized" sys 6 labels
 #	Feb 18, 2024: - cosmetics
+#	May 25, 2024: - BUG: typo: extraneous '
+#				  - cosmetics
+#				  - BUG: system6 disassembly without switch names produced uncompilable code
+#	May 27, 2024: - exported different system disassembly routines
+#				  - added define_label
+#				  - suppressed output of labels with +1 .. +9
+#			      - BUG: copyright message was wrong
+#	May 28, 2024: - added return value to def_byte_hex()
 # END OF HISTORY
 
 # TO-DO:
-#	- make work with system 7 code (see setLabel below)
-#	- add more consisency checks like for predefined OP as in def_byteblock_hex()
+#	- make all def_ routines return values
+#	- add more consistency checks like for predefined OP as in def_byteblock_hex()
 
 package D711;
+
+$PATH = $0; $PATH =~ s{/[^/]*$}{};
 
 our $WMS_System;					# set to 7 or 11 or undef for MC6800 disassembly 
 our $verbose = 1;					# 0: quiet (for automatic scans); 1: error messages (default); 2: debug
@@ -240,825 +250,10 @@ sub import($@)
 	
 	$WMS_System = $sys;
 
-	print(STDERR "Disassembler for WVM System $WMS_System\n");
-	print(STDERR "(c) 2020 A.M. Thurnherr\n");
+	print(STDERR "\nDisassembler for WVM System $WMS_System\n");
+	print(STDERR "(c) 2019 idealjoker\@mailbox.org\n");
 
-	if ($WMS_System == 6) {
-		setLabel('=display_p1', 						0x00);		# 3-byte data
-		setLabel('=display_p1+1', 						0x01);
-		setLabel('=display_p1+2', 						0x02);
-		setLabel('_display_bip',						0x03);
-		setLabel('=display_p2', 						0x04);		# 3-byte data
-		setLabel('=display_p2+1', 						0x05);
-		setLabel('=display_p2+2', 						0x06);
-		setLabel('_display_credits',					0x07);
-		setLabel('=display_p3', 						0x08);		# 3-byte data
-		setLabel('=display_p3+1', 						0x09);		
-		setLabel('=display_p3+2', 						0x0A);		
-		setLabel('=display_p4', 						0x0C);		# 3-byte data
-		setLabel('=display_p4+1', 						0x0D);		
-		setLabel('=display_p4+2', 						0x0E);		
-		setLabel('=Lamps',								0x10);		# 8 bytes
-		setLabel('=Lamps+1',							0x11);
-		setLabel('=Lamps+2',							0x12);
-		setLabel('=Lamps+3',							0x13);
-		setLabel('=Lamps+4',							0x14);
-		setLabel('=Lamps+5',							0x15);
-		setLabel('=Lamps+6',							0x16);
-		setLabel('=Lamps+7',							0x17);
-		setLabel('=Flags',								0x18);		# 2 bytes
-		setLabel('=Flags+1',							0x19);		
-		setLabel('=BlinkBuf',							0x1A);		# 8 bytes
-		setLabel('=BlinkBuf+1',							0x1B);
-		setLabel('=BlinkBuf+2',							0x1C);
-		setLabel('=BlinkBuf+3',							0x1D);
-		setLabel('=BlinkBuf+4',							0x1E);
-		setLabel('=BlinkBuf+5',							0x1F);
-		setLabel('=BlinkBuf+6',							0x20);
-		setLabel('=BlinkBuf+7',							0x21);
-		setLabel('=dontUse',							0x22);		# 2 bytes
-		setLabel('=dontUse+1',							0x23);
-		setLabel('=SwitchBuf',							0x24);	  	# 8 bytes; reverse column order
-		setLabel('=SwitchBuf+1',						0x25);
-		setLabel('=SwitchBuf+2',						0x26);
-		setLabel('=SwitchBuf+3',						0x27);
-		setLabel('=SwitchBuf+4',						0x28);
-		setLabel('=SwitchBuf+5',						0x29);
-		setLabel('=SwitchBuf+6',						0x2A);
-		setLabel('=SwitchBuf+7',						0x2B);
-		setLabel('=SwitchStuckBuf', 		  			0x2C);	  	# 8 bytes; reverse column order
-		setLabel('=SwitchStuckBuf+1', 		  			0x2D);
-		setLabel('=SwitchStuckBuf+2', 		  			0x2E);
-		setLabel('=SwitchStuckBuf+3', 		  			0x2F);
-		setLabel('=SwitchStuckBuf+4', 		  			0x30);
-		setLabel('=SwitchStuckBuf+5', 		  			0x31);
-		setLabel('=SwitchStuckBuf+6', 		  			0x32);
-		setLabel('=SwitchStuckBuf+7', 		  			0x33);
-		setLabel('=SwitchQueue',						0x34);		# 3 bytes
-		setLabel('=SwitchQueue+1',						0x35);		
-		setLabel('=SwitchQueue+2',						0x36);
-		setLabel('_tiltWarnings',						0x37);
-		setLabel('_solenoids_timer',					0x38);
-		setLabel('_last_solNo',							0x39);
-
-		setLabel('_soundAndDelay_timer',				0x3A);		# 3 bytes
-		setLabel('_soundAndDelay_timer_handler',		0x3B);		
-		setLabel('_soundAndDelay_timer_handler+1',		0x3C);		
-		setLabel('_solenoid_timer', 					0x3D);		# 3 bytes
-		setLabel('_solenoid_timer_handler',				0x3E);		
-		setLabel('_solenoid_timer_handler+1',			0x3F);		
-		setLabel('_script_timer1',	 					0x40);		# 3 bytes
-		setLabel('__script_timer1_handler',				0x41);
-		setLabel('__script_timer1_handler+1',			0x42);
-		setLabel('_script_timer2',	 					0x43);		# 3 bytes
-		setLabel('__script_timer2_handler',				0x44);
-		setLabel('__script_timer2_handler1',			0x45);
-		setLabel('_match',								0x46);
-		setLabel('_bonusX', 							0x47);
-		
-		setLabel('=cycleCounter',						0x50);		# 4 bytes
-		setLabel('=cycleCounter+1',						0x51);		
-		setLabel('=cycleCounter+2',						0x52);		
-		setLabel('=cycleCounter+3',						0x53);
-		setLabel('_blink_counter',						0x54);
-		setLabel('_playerUp',							0x55);
-		setLabel('_maxPlayerInGame',					0x56);
-		setLabel('_sound_repeatCount',					0x57);
-		setLabel('_sound_id',							0x58);
-		setLabel('_sound_pinOp',						0x59);
-		setLabel('_sound_duration',						0x5A);
-		setLabel('_EB_pending',							0x5B);
-		setLabel('_bonusCountdown_score',				0x5C);
-		setLabel('=scoreQueue',							0x5D);		# 5 bytes
-		setLabel('=scoreQueue+1',						0x5E);
-		setLabel('=scoreQueue+2',						0x5F);
-
-		setLabel('=scoreQueue+3',						0x60);
-		setLabel('=scoreQueue+4',						0x61);
-		setLabel('=solQueue',							0x62);		# length
-		setLabel('=solQueue+1',							0x63);		# 1st elt
-		setLabel('=solQueue+2',							0x64);
-		setLabel('=solQueue+3',							0x65);
-		setLabel('_switchSolCmd',						0x66);
-		setLabel('_tmp1',								0x67);
-		setLabel('_tmp2',								0x68);
-		setLabel('_tmp3',								0x69);
-		setLabel('_tmp4',								0x6A);
-		setLabel('_tmp5',								0x6B);
-		setLabel('_tmp6',								0x6C);
-		setLabel('_tmp7',								0x6D);
-		setLabel('_switchScript_flags',					0x6E);
-		
-		setLabel('_nextDT_p1',							0x70);	    
-		setLabel('_nextDT_p2',							0x71);	    
-		setLabel('_nextDT_p3',							0x72);	    
-		setLabel('_nextDT_p4',							0x73);	    
-		setLabel('_ballTime',							0x74);	    
-		setLabel('_gameStatusFlags',					0x78);	   # 01: gameOver 02:gameTilted  04:EBpending 08: EBearned 10:balltimeOverflow(1min passed) 80:playfield qualified
-		setLabel('=switchScanKillTimer',				0x7A);	    
-		setLabel('=timerHandler',						0x7E);	    
-		setLabel('=timerHandler+1',						0x7F);	    
-		
-		setLabel('__score_tmpX',						0x80);
-		setLabel('__score_tmpX+1',						0x81);
-		setLabel('__tmp1_X',							0x82);	    
-		setLabel('__tmp1_X+1',							0x83);
-		setLabel('__RAM[X+B]_tmpX',						0x86);
-		setLabel('__RAM[X+B]_tmpX+1',					0x87);
-		setLabel('__lampMask[A]_Xin',					0x88);
-		setLabel('__lampMask[A]_Xin+1',					0x89);
-		setLabel('__tmp2_X',							0x8A);
-		setLabel('__tmp2_X+1',							0x8B);
-		setLabel('__switch_params',						0x8C);	    
-		setLabel('__switch_params+1',					0x8D);	    
-		
-		setLabel('__copyRAM_tmpX',						0x90);	    
-		setLabel('__Xstore',							0x92);
-		setLabel('=data_p1',							0x94);		# 18 bytes
-		setLabel('=data_p2',							0xA6);		# 18 bytes
-		setLabel('=data_p3',							0xB8);		# 18 bytes
-		setLabel('=data_p4',							0xCA);		# 18 bytes
-		
-		setLabel('_GameVarE0',							0xE0);		# 3 used in Alien Poker, more very likely possible (c.f. Sys 7); competes with stack
-		setLabel('_GameVarE1',							0xE1);
-		setLabel('_GameVarE2',							0xE2);
-		setLabel('TOP_OF_STACK',						0xFF);
-		
-		setLabel('=BB_RAM_START',						0x0100);						# Battery Backed RAM
-		setLabel('_BB_unused?_0101',					0x0101);
-		setLabel('_BB_unused_0102', 					0x0102);
-		setLabel('_BB_unused_0103', 					0x0103);
-		setLabel('_BB_unused_0104', 					0x0104);
-		setLabel('_BB_unused_0105', 					0x0105);
-		setLabel('_BB_unused_0106', 					0x0106);
-		setLabel('_BB_unused_0107', 					0x0107);
-		setLabel('_BB_unused_0108', 					0x0108);
-		setLabel('_BB_unused_0109', 					0x0109);
-		setLabel('=BB_AUDIT_START',						0x010A);
-		setLabel('=BB_AU01_leftCoins',					0x010A);	
-		setLabel('=BB_AU02_centerCoins',				0x0110);	
-		setLabel('=BB_AU03_rightCoins',					0x0116);	
-		setLabel('=BB_AU04_paidCredits',				0x011C);	
-		setLabel('=BB_AU05_Specials',					0x0122);	
-		setLabel('=BB_AU06_replayAwards',				0x0128);	
-		setLabel('=BB_AU07_match_HSTD_cred',			0x012E);	
-		setLabel('=BB_AU08_totalCredits',				0x0134);	
-		setLabel('=BB_AU09_extraballs',					0x013A);	
-		setLabel('=BB_AU10_ballTime',					0x0140);	
-		setLabel('=BB_AU11_ballsPlayed',				0x0146);	
-		setLabel('=BB_HSTD',							0x0148);
-		setLabel('=BB_HSTD+2',							0x014A);
-		setLabel('=BB_HSTD+4',							0x014C);
-		
-		setLabel('_BB_Credits',							0x0152);
-
-		setLabel('_BB_AU12_HSTD',						0x017F);	
-		setLabel('_BB_AU12_HSTD+1',						0x0180);	
-		setLabel('_BB_AD13_BUHSTD',						0x0181);	
-		setLabel('_BB_AD13_BUHSTD+1',					0x0182);	
-		setLabel('_BB_AD14_replay1',					0x0183);	
-		setLabel('_BB_AD14_replay+1',					0x0184);	
-		setLabel('_BB_AD15_replay2',					0x0185);	
-		setLabel('_BB_AD15_replay2+1',					0x0186);	
-		setLabel('_BB_AD16_replay3',					0x0187);	
-		setLabel('_BB_AD16_replay3+1',					0x0188);	
-		setLabel('_BB_AD17_replay4',					0x0189);	
-		setLabel('_BB_AD17_replay4+1',					0x018A);	
-		setLabel('_BB_AD18_maxCredits',					0x018B);	
-		setLabel('_BB_AD18_maxCredits+1',				0x018C);	
-		setLabel('_BB_AD19_priceControl',				0x018D);	
-		setLabel('_BB_AD19_priceControl+1',				0x018E);	
-		setLabel('_BB_AD20_lCoinMult',					0x018F);	
-		setLabel('_BB_AD20_lCoinMult+1',				0x0190);	
-
-		setLabel('_BB_AD21_cCoinMult',					0x0191);	
-		setLabel('_BB_AD21_cCoinMult+1',				0x0192);	
-		setLabel('_BB_AD22_rCoinMult',					0x0193);	
-		setLabel('_BB_AD22_rCoinJult+1'	,				0x0194);	
-		setLabel('_BB_AD23_coins4credit',				0x0195);	
-		setLabel('_BB_AD23_coins4credit+1',				0x0196);	
-		setLabel('_BB_AD24_coinsBonus',					0x0197);	
-		setLabel('_BB_AD24_coinsBonus+1',				0x0198);	
-		setLabel('_BB_AD25_HScredits',					0x0199);	
-		setLabel('_BB_AD25_HScredits+1',				0x019A);	
-		setLabel('_BB_AD26_match_multipleEB',			0x019B);	
-		setLabel('_BB_AD26_match_multipleEB+1',			0x019C);	
-		setLabel('_BB_AD27_SpecialAward',				0x019D);	
-		setLabel('_BB_AD27_SpecialAward+1',				0x019E);	
-		setLabel('_BB_AD28_ScoringAward',				0x019F);	
-		setLabel('_BB_AD28_ScoringAward+1',				0x01A0);	
-		setLabel('_BB_AD29_tiltWarnings',				0x01A1);	
-		setLabel('_BB_AD29_tiltWarnings+1',				0x01A2);	
-		setLabel('_BB_AD30_ballsPerGame',				0x01A3);	
-		setLabel('_BB_AD30_ballsPerGame+1',				0x01A4);	
-		setLabel('_BB_AD31',							0x01A5);	
-		setLabel('_BB_AD31+1',							0x01A6);	
-		setLabel('_BB_AD32',							0x01A7);	
-		setLabel('_BB_AD32+1',							0x01A8);	
-		setLabel('_BB_AD33',							0x01A9);	
-		setLabel('_BB_AD33+1',							0x01AA);	
-		setLabel('_BB_AD34',							0x01AB);	
-		setLabel('_BB_AD34+1',							0x01AC);	
-		setLabel('_BB_AD35',							0x01AD);	
-		setLabel('_BB_AD35+1',							0x01AE);	
-
-		setLabel('PIA_2200_sol1-8(data)',				0x2200);					# Solenoids
-		setLabel('PIA_2200_sol1-8(ctrl)',				0x2201);
-		setLabel('PIA_2202_sol9-16(data)',				0x2202);
-		setLabel('PIA_2202_sol9-16(ctrl)',				0x2203);
-		setLabel('PIA_2202_sol17-24(data)',				0x2204);
-		setLabel('PIA_2202_sol17-24(ctrl)',				0x2205);
-		setLabel('PIA_2400_lampRow_input(data)',		0x2400);
-		setLabel('PIA_2400_lampRow_input(ctrl)',		0x2401);
-		setLabel('PIA_2402_lampCol_strobe(data)',		0x2402);
-		setLabel('PIA_2402_lampCol_strobe(ctrl)',		0x2403);
-		setLabel('PIA_2800_display_strobe(data)',		0x2800);
-		setLabel('PIA_2800_display_strobe(ctrl)',		0x2801);
-		setLabel('PIA_2802_display_digit(data)',		0x2802);
-		setLabel('PIA_2802_display_digit(ctrl)',		0x2803);
-		setLabel('PIA_3000_switchRow_input(data)',		0x3000);
-		setLabel('PIA_3000_switchRow_input(ctrl)',		0x3001);
-		setLabel('PIA_3002_switchCol_strobe(data)',		0x3002);
-		setLabel('PIA_3002_switchCol_strobe(ctrl)',		0x3003);
-		
-		sub disassemble_System6()
-		{
-			$Address = 0x6000;
-			def_byte_hex('GAMEROM_CHECKSUM');
-			def_word_hex('GAME_NUMBER');
-			def_byte_hex('GAMEROM_VERSION');
-			def_byte_hex('CMOS_CHECKBYTE');
-	
-			def_byte_hex('DEFAULT_HIGHSCORE');
-			def_byte_hex('DEFAULT_REPLAYLVL_1');
-			def_byte_hex('DEFAULT_REPLAYLVL_2');
-			def_byte_hex('DEFAULT_REPLAYLVL_3');
-			def_byte_hex('DEFAULT_REPLAYLVL_4');
-			def_byte_hex('DEFAULT_MAXCREDITS');
-			def_byte_hex('DEFAULT_COINSELECT');
-			def_byte_hex('DEFAULT_COINSLOT_1');
-			def_byte_hex('DEFAULT_COINSLOT_2');
-			def_byte_hex('DEFAULT_COINSLOT_3');
-			def_byte_hex('DEFAULT_COINS4CREDIT');
-			def_byte_hex('DEFAULT_COINS4BONUSCREDIT');
-			def_byte_hex('DEFAULT_HIGHSCORE_CREDITS');
-			def_byte_hex('DEFAULT_MATCHAWARDS');
-			def_byte_hex('DEFAULT_SPECIALAWARD');
-			def_byte_hex('DEFAULT_REPLAYAWARD');
-			def_byte_hex('DEFAULT_TILTWARNINGS');
-			def_byte_hex('DEFAULT_BALLS_PER_GAME');
-			def_byte_hex('DEFAULT_AD31');
-			def_byte_hex('DEFAULT_AD32');
-			def_byte_hex('DEFAULT_AD33');
-			def_byte_hex('DEFAULT_AD34');
-			def_byte_hex('DEFAULT_AD35');
-			def_byteblock_hex(40,'DEFAULT_COIN_TABLE');
-			def_byte_hex('MAX_SWITCH');
-			def_byte_hex('BALLSERVE_SOLCMD_AND_1EB_FLAG');
-			def_byte_LampOrFlag('EXTRABALL_LAMP');
-			def_byte_hex('MAX_PLAYER');
-			def_byte_hex('CYCLECOUNTER_1');
-			def_byte_hex('CYCLECOUNTER_2');
-			def_byte_hex('CYCLECOUNTER_3');
-			def_byte_hex('CYCLECOUNTER_4');
-			def_byte_hex('BLINK_DELAY');
-			def_byte_hex('CYCLECOUNTER_PINOPP_1');
-			def_byte_hex('CYCLECOUNTER_PINOPP_2');
-			def_byte_hex('CYCLECOUNTER_PINOPP_3');
-			def_byte_hex('CYCLECOUNTER_PINOPP_4');
-#			def_byteblock_hex(8,'SCRIPT_LAMPS');
-			def_byte_LampOrFlag('SCRIPT_LAMPS');
-				def_byte_LampOrFlag('');
-				def_byte_LampOrFlag('');
-				def_byte_LampOrFlag('');
-				def_byte_LampOrFlag('');
-				def_byte_LampOrFlag('');
-				def_byte_LampOrFlag('');
-				def_byte_LampOrFlag('');
-			def_bitgrouptable(8,'BITGROUP_TABLE');
-			def_byteblock_hex(8,'LAMPS_INITDATA');
-			def_byteblock_hex(2,'FLAGS_INITDATA');
-			def_byteblock_hex(8,'BLINK_INITDATA');
-			def_byteblock_hex(8,'LAMPS_MEMDATA');
-			def_byteblock_hex(2,'FLAGS_MEMDATA');
-			def_byteblock_hex(8,'BLINK_MEMDATA');
-			def_wordblock_hex(32,'SOUND_TABLE');
-			def_byteblock_hex(8,'PBPINOPP_SOLCMD_TABLE_1');
-			def_byteblock_hex(8,'PBPINOPP_SOLCMD_TABLE_2');
-			def_byte_hex('BONUSCOUNT_BONUSX_DELAY');
-			def_byte_hex('BONUSCOUNT_SOUND');
-			def_byte_hex('BONUSCOUNT_DELAY');
-#			def_byteblock_hex(4,'BONUSLAMPS_TABLE');
-			def_byte_LampOrFlag('BONUSLAMPS_TABLE');
-				def_byte_LampOrFlag('');
-				def_byte_LampOrFlag('');
-				def_byte_LampOrFlag('');
-#			def_byteblock_hex(4,'BONUSX_LAMPS_TABLE');
-			def_byte_LampOrFlag('BONUSX_LAMPS_TABLE');
-				def_byte_LampOrFlag('');
-				def_byte_LampOrFlag('');
-				def_byte_LampOrFlag('');
-			def_byteblock_hex(4,'BONUSX_VALUE_TABLE');
-			def_byte_hex('SPECIAL_SCORE');
-			def_byte_hex('SND_CREDIT');
-			def_byte_hex('SND_CREDIT_DELAY');
-			def_byte_hex('SND_TILT');
-			def_ptr_hex('STATUSUPDATE_TABLE');
-			def_ptr_hex('STATUSUPDATE_TABLE_END');
-			def_ptr_hex('GAMEEVENTS_HANDLER_TABLE');
-			def_ptr_hex('GAMEEVENTS_HANDLER_TABLE_END');
-			def_code_ptr('GAME_BACKGROUND_HANDLER','game_background_handler','Game Background Event Handler');
-			def_code_ptr('BALLSTART_EVENT','ballstart_event_handler','Ball Start Event Handler');
-			def_code_ptr('BONUSX_COUNTDOWN_EVENT','bonusX_countdown_event_handler','BonusX Countdown Event Handler');
-			def_code_ptr('BALLDRAIN_EVENT','balldrain_event_handler','End of Ball Event Handler');
-			def_ptr_hex('SOUNDSCRIPT_P1');
-			def_ptr_hex('SOUNDSCRIPT_P2');
-			def_ptr_hex('SOUNDSCRIPT_P3');
-			def_ptr_hex('SOUNDSCRIPT_P4');
-			def_ptr_hex('SOUNDSCRIPT_MATCH');
-			def_ptr_hex('SOUNDSCRIPT_HIGHSCORE');
-			def_ptr_hex('SOUNDSCRIPT_GAMEOVER');
-			def_byteblock_code(3,'IRQ_HANDLER');
-			def_byte_hex('ATTRACT_DELAY');
-			def_byte_hex('ATTRACT_SEQ_MAX');
-	        def_ptr_hex('ATTRACT_DATA');
-
-	        $Address = 0x60F5;																				# Switch Table
-	        insert_divider($Address,'Switch Table');
-			my($n) = BYTE(0x6044);
-	        for (my($i)=0; $i<$n; $i++) {
-				my($sn) = defined($Switch[$i]) ? $Switch[$i] : sprintf('Switch#%02X',$i);
-	        	def_code_ptr($sn,$sn . '_handler','Switch Handler');
-	        	if (WORD($Address-2) == 0x7230) {
-	        		def_ptr_hex($sn . '_scriptPtr');
-	        	} else {
-	        		def_byteblock_hex(2,$sn . '_params');
-	        	}
-	        }
-
-			$Address = WORD(0x60D0);															# Status Update Table
-			my($n) = (WORD(0x60D2) - $Address) / 9;
-			if ($n > 0) {
-				die unless ($n==int($n));
-				insert_divider($Address,'Status Update Table');
-				def_byteblock_hex_cols(9,9,'statusUpdate_1');            
-				for (my($i)=2; $i<=$n; $i++) {
-					def_byteblock_hex_cols(9,9,"statusUpdate_$i");
-				}
-			}
-	        
-			$Address = WORD(0x60D4);															# Game Event Table
-			my($n) = (WORD(0x60D6) - $Address) / 4;
-			if ($n > 0) {
-				die("$n") unless ($n==int($n));
-				insert_divider($Address,'Game Event Table');
-                def_byte_LampOrFlag('gameEvent_table');
-				def_byte_dec('');
-				def_code_ptr('',$Gameevent[0] ? "${Gameevent[0]}_handler" : "gameEvent_1_handler");
-                for (my($i)=2; $i<=$n; $i++) {
-                        def_byte_LampOrFlag('');
-						def_byte_dec('');
-                        def_code_ptr('',$Gameevent[$i-1] ? "${Gameevent[$i-1]}_handler" : "gameEvent_${i}_handler");
-                }
-			}
-	        
-			my($len);
-			for (my($p)=0; $p<4; $p++) {
-				$Address = WORD(0x60E0+2*$p);													# Sound Scripts
-				next if $decoded[$Address];
-				def_byte_hex(sprintf('p%dStart_sndList',$p+1));
-				def_bytelist_hex(0,'');
-            }
-			$Address = WORD(0x60E8); 
-			unless ($decoded[$Address]) {
-				def_byte_hex('match_sndList');
-				def_bytelist_hex(0,'');
-            }
-			$Address = WORD(0x60EA); 
-			unless ($decoded[$Address]) {
-				def_byte_hex('highScore_sndList');
-				def_bytelist_hex(0,'');
-            }
-			$Address = WORD(0x60EC); 
-			unless ($decoded[$Address]) {
-				def_byte_hex('gameOver_sndList');
-				def_bytelist_hex(0,'');
-            }
-
-			$Address = WORD(0x60F3);															# Attract Mode Data
-			insert_divider($Address,'Attract Mode Lamp Data');
-			my($n) = BYTE(0x60F2) + 1;
-			def_byteblock_hex(6,'attract_mode_data');
-            for (my($i)=2; $i<=$n; $i++) {
-				def_byteblock_hex(6,'');
-            }
-
-			$Address = 0x7000; def_code('sys_reset_game');							# System Calls
-			$Address = 0x7045; def_code('sys_gameOver');
-			$Address = 0x7062; def_code('sys_background_loop');
-			$Address = 0x719A; def_code('sys_enter_audits_and_adjustments');
-			$Address = 0x71CB; def_code('sys_solCmdOrPlaySound[A]');
-			$Address = 0x71EC; def_code('sys_solCmd[A]');
-			$Address = 0x71C9; def_code('sys_exec_switchSolCmd');
-			$Address = 0x721F; def_code('sys_B=RAM[X+B]');
-			$Address = 0x72A8; def_code('sys_award_SPECIAL');
-			$Address = 0x7230; def_code('sys_switch_script');
-			$Address = 0x7300; def_code('sys_lampStatusUpdate_then_run_timedScripts');
-			$Address = 0x7306; def_code('sys_clearScoreQueue_outhole_handler');
-			$Address = 0x730D; def_code('sys_outhole_handler');
-			$Address = 0x73E9; def_code('sys_start_ball');
-			$Address = 0x740A; def_code('sys_ball_kickout');
-			$Address = 0x7426; def_code('sys_end_of_game');
-			$Address = 0x7457; def_code('sys_match_handler');
-			$Address = 0x746B; def_code('sys_endOfGame_noMatch');
-			$Address = 0x7520; def_code('sys_load_playerData');
-			$Address = 0x7562; def_code('sys_X=playerData');
-			$Address = 0x7571; def_code('sys_creditButton_handler');
-			$Address = 0x75C2; def_code('sys_add_player_to_game');
-			$Address = 0x75D8; def_code('sys_init_game');
-			$Address = 0x75F0; def_code('sys_clear_scoreQueue');
-			$Address = 0x75FE; def_code('sys_coinLeft_handler');
-			$Address = 0x7602; def_code('sys_coinCenter_handler');
-			$Address = 0x7606; def_code('sys_coinRight_handler');
-			$Address = 0x766C; def_code('sys_award_freeGame');
-			$Address = 0x76CC; def_code('sys_delay[B]');
-			$Address = 0x76D9; def_code('sys_delay[AB]');
-			$Address = 0x76DD; def_code('sys_copyRAM');
-			$Address = 0x76F1; def_code('sys_lampStatusUpdate');
-			$Address = 0x7832; def_code('sys_pinOp_solCmd');
-			$Address = 0x79BF; def_code('sys_exitOnGameOverOrTilt');
-			$Address = 0x79C6; def_code('sys_exit');
-			$Address = 0x79CB; def_code('sys_play_soundScript');
-			$Address = 0x7744; def_code('sys_execStatusupdate[X]');
-			$Address = 0x777C; def_code('sys_testBit');
-			$Address = 0x77A8; def_code('sys_run_timedScripts');
-			$Address = 0x77F0; def_code('sys_play_sound');
-			$Address = 0x7925; def_code('sys_light_EBlamp');
-			$Address = 0x7897; def_code('sys_setBitgroup');
-			$Address = 0x780E; def_code('sys_pinOp[A]');
-			$Address = 0x78A8; def_code('sys_bitgroupOp[A]_until[B]');
-			$Address = 0x7980; def_code('sys_checkAdjustment');
-			$Address = 0x792C; def_code('sys_setBit');
-			$Address = 0x793D; def_code('sys_clearBit');
-			$Address = 0x794A; def_code('sys_blinkLamps');
-			$Address = 0x7953; def_code('sys_BX=lampMask[A]');
-			$Address = 0x7993; def_code('sys_bobTilt_handler');
-			$Address = 0x79A3; def_code('sys_ballTilt_handler');
-			$Address = 0x79B6; def_code('sys_tilt_sound');
-			$Address = 0x79E4; def_code('sys_score[A]');
-			$Address = 0x7A00; def_code('sys_score[A]_now');
-			$Address = 0x7AD6; def_code('sys_clear_displays');
-			$Address = 0x7AD8; def_code('sys_fill_displays');
-			$Address = 0x7AE3; def_code('sys_clear_BB_RAM');
-			$Address = 0x7B09; def_code('sys_bookkeeping_menu');
-			$Address = 0x7C8F; def_code('sys_start_game');
-			$Address = 0x7DF8; def_code('sys_mergeCopy_[X]_to_[Xptr]');
-			$Address = 0x7E0B; def_code('sys_splitCopy_[X]_to_[Xptr]');
-			$Address = 0x7E1E; def_code('sys_B=shiftLeft4[X,X+1]');
-			$Address = 0x7E2D; def_code('sys_splitStore[B]');
-			$Address = 0x7E36; def_code('sys_HSreset_handler');
-			$Address = 0x7E4C; def_code('sys_IRQ_handler');
-			$Address = 0x7E9D; def_code('sys_IRQ_handler_display[A]');
-
-			$Address = 0x7FDC;
-			insert_divider($Address,'System Data');
-			setLabel('system_data-1',$Address-1);
-			def_byteblock_hex(16,'system_data');
-			def_ptrblock_hex(12,'PIA_list');
-
-			$Address = 0x7FF8;
-			insert_divider($Address,'CPU Vectors');
-			def_code_ptr('IRQ_vector','IRQ_handler','CPU Vector Handler');
-			def_code_ptr('SWI_vector','SWI_handler','CPU Vector Handler');
-			def_code_ptr('NMI_vector','NMI_handler','CPU Vector Handler');
-			def_code_ptr('RST_vector','RST_handler','CPU Vector Handler');
-
-		}
-
-    } elsif ($WMS_System == 7) {
-		setLabel('WVM_start' ,0xF3AB);
-		setLabel('WVM_sleepI',0xEA2F);
-
-		if (0) {
-		die("code adaptation incomplete (setLabel required)");	# I *think* this means that the following
-																# assignments need to be reformatted using
-																# setLabel()
-
-		$Lbl{'Reg-A'} = 0x00;								# Data Labels
-		$Lbl{'Reg-B'} = 0x01;
-	    
-		$Lbl{'Comma_Flags'} = 0x60;
-	    
-		$Lbl{'Spare_Ram_0'} = 0xE0; 					   # extra RAM, not accessible in WVM
-		$Lbl{'Spare_Ram_1'} = 0xE1;
-		$Lbl{'Spare_Ram_2'} = 0xE2;
-		$Lbl{'Spare_Ram_3'} = 0xE3;
-		$Lbl{'Spare_Ram_4'} = 0xE4;
-		$Lbl{'Spare_Ram_5'} = 0xE5;
-		$Lbl{'Spare_Ram_6'} = 0xE6; 					   # last used on JL
-		$Lbl{'Spare_Ram_7'} = 0xE7;
-		$Lbl{'Spare_Ram_8'} = 0xE8;
-		$Lbl{'Spare_Ram_9'} = 0xE9;
-		$Lbl{'Spare_Ram_10'} = 0xEA;
-		$Lbl{'Spare_Ram_11'} = 0xEB;
-		$Lbl{'Spare_Ram_12'} = 0xEC;
-		$Lbl{'Spare_Ram_13'} = 0xED;
-		$Lbl{'Spare_Ram_14'} = 0xEE;
-		$Lbl{'Spare_Ram_15'} = 0xEF;
-	    
-		$Lbl{'WVM_sleep'}				= 0xEA2F;		  # used internally
-		
-		$Lbl{'add_points'}					= 0xEC96; $Lbl{'a_cmosinc'} 			  = 0xEFAF;
-		$Lbl{'abx_ret'} 				  = 0xF213; $Lbl{'award_special'}			= 0xF6A5;
-		$Lbl{'award_replay'}			  = 0xF6BF; $Lbl{'addcredits'}				= 0xF6FE;
-		$Lbl{'addcredit2'}				  = 0xF701; $Lbl{'add_player'}				= 0xF858;
-		$Lbl{'adjust_func'} 			  = 0xFD0B; $Lbl{'adjust_a'}				= 0xFFF2;
-		$Lbl{'b_plus10'}				  = 0xECEE; $Lbl{'b_cmosinc'}				= 0xEF69;
-		$Lbl{'bit_switch'}				  = 0xF2EA; $Lbl{'bit_lamp_flash'}			= 0xF2EF;
-		$Lbl{'bit_lamp_buf_1'}			  = 0xF2F4; $Lbl{'bit_lamp_buf_0'}			= 0xF2F9;
-		$Lbl{'bit_main'}				  = 0xF2FC; $Lbl{'branch_lookup'}			= 0xF38B;
-		$Lbl{'breg_sto'}				  = 0xF3CF; $Lbl{'branchdata'}				= 0xF5F8;
-		$Lbl{'branch_toggle'}			  = 0xF636; $Lbl{'branch_lamp_on'}			= 0xF63B;
-		$Lbl{'branch_lamprangeoff'} 	  = 0xF647; $Lbl{'lamprangeon'} 			= 0xF64E;
-		$Lbl{'branch_tilt'} 			  = 0xF653; $Lbl{'branch_gameover'} 		= 0xF65A;
-		$Lbl{'branch_lampbuf1'} 		  = 0xF661; $Lbl{'branch_switch'}			= 0xF666;
-		$Lbl{'branch_and'}				  = 0xF66B; $Lbl{'branch_add'}				= 0xF670;
-		$Lbl{'branch_or'}				  = 0xF672; $Lbl{'branch_equal'}			= 0xF677;
-		$Lbl{'branch_ge'}				  = 0xF67C; $Lbl{'branch_threadpri'}		= 0xF67F;
-		$Lbl{'branch_bitwise'}			  = 0xF686; $Lbl{'balladjust'}				= 0xF9E6;
-		$Lbl{'block_copy'}				  = 0xFFD1; $Lbl{'csum1'}					= 0xE83F;
-		$Lbl{'clear_all'}				  = 0xE86C; $Lbl{'checkswitch'} 			= 0xE8D4;
-		$Lbl{'check_threads'}			  = 0xE9FC; $Lbl{'check_threadid'}			= 0xEB00;
-		$Lbl{'comma_million'}			  = 0xEB99; $Lbl{'comma_thousand'}			= 0xEB9D;
-		$Lbl{'checkreplay'} 			  = 0xECAC; $Lbl{'check_sw_mask'}			= 0xEDE7;
-		$Lbl{'check_sw_close'}			  = 0xEE61; $Lbl{'check_sw_open'}			= 0xEEBB;
-		$Lbl{'copy_word'}				  = 0xEF0F; $Lbl{'cmosinc_a'}				= 0xEF53;
-		$Lbl{'cmosinc_b'}				  = 0xEF63; $Lbl{'clr_ram_100'} 			= 0xEF74;
-		$Lbl{'clr_ram'} 				  = 0xEF77; $Lbl{'copyblock'}				= 0xEFBC;
-		$Lbl{'copyblock2'}				  = 0xEFE4; $Lbl{'csum2'}					= 0xF318;
-		$Lbl{'complexbranch'}			  = 0xF615; $Lbl{'credit_special'}			= 0xF6B8;
-		$Lbl{'coinlockout'} 			  = 0xF72C; $Lbl{'checkmaxcredits'} 		= 0xF749;
-		$Lbl{'creditq'} 				  = 0xF75F; $Lbl{'coin_accepted'}			= 0xF7A2;
-		$Lbl{'cmos_a_plus_b_cmos'}		  = 0xF80F; $Lbl{'clear_bonus_coins'}		= 0xF829;
-		$Lbl{'csum3'}					  = 0xF833; $Lbl{'clear_range'} 			= 0xF894;
-		$Lbl{'clear_displays'}			  = 0xF89A; $Lbl{'copyplayerdata'}			= 0xF8C8;
-		$Lbl{'check_hstd'}				  = 0xFA92; $Lbl{'credit_button'}			= 0xFB92;
-		$Lbl{'check_adv'}				  = 0xFC6A; $Lbl{'check_aumd'}				= 0xFC75;
-		$Lbl{'cmos_add_d'}				  = 0xFDE6; $Lbl{'cmos_a'}					= 0xFE1F;
-		$Lbl{'cmos_byteloc'}			  = 0x01BB; $Lbl{'cmos_error'}				= 0xFFCB;
-		$Lbl{'cmos_restore'}			  = 0xFFE5; $Lbl{'delaythread'} 			= 0xEA24;
-		$Lbl{'dump_thread'} 			  = 0xEA39; $Lbl{'dsnd_pts'}				= 0xEBFE;
-		$Lbl{'do_complex_snd'}			  = 0xEDA7; $Lbl{'dly_sto'} 				= 0xF4D4;
-		$Lbl{'do_eb'}					  = 0xF6D6; $Lbl{'divide_ab'}				= 0xF816;
-		$Lbl{'dec2hex'} 				  = 0xF834; $Lbl{'do_game_init'}			= 0xF847;
-		$Lbl{'disp_mask'}				  = 0xF919; $Lbl{'disp_clear'}				= 0xF926;
-		$Lbl{'dump_score_queue'}		  = 0xF994; $Lbl{'do_match'}				= 0xFB39;
-		$Lbl{'do_tilt'} 				  = 0xFBE9; $Lbl{'do_aumd'} 				= 0xFC57;
-		$Lbl{'do_audadj'}				  = 0xFCA5; $Lbl{'diag'}					= 0xFF2B;
-		$Lbl{'diag_showerror'}			  = 0xFF7B; $Lbl{'diag_ramtest'}			= 0xFF81;
-		$Lbl{'exe_buffer'}				  = 0x1130; $Lbl{'extraball'}				= 0xF6D5;
-		$Lbl{'flashlamp'}				  = 0xE957; $Lbl{'factory_zeroaudits'}		= 0xEF7D;
-		$Lbl{'fill_hstd_digits'}		  = 0xFB24; $Lbl{'fn_gameid'}				= 0xFD23;
-		$Lbl{'fn_gameaud'}				  = 0xFD2E; $Lbl{'fn_sysaud'}				= 0xFD30;
-		$Lbl{'fn_hstd'} 				  = 0xFDA9; $Lbl{'fn_replay'}				= 0xFDB1;
-		$Lbl{'fn_pricec'}				  = 0xFDEF; $Lbl{'fn_prices'}				= 0xFE09;
-		$Lbl{'fn_ret'}					  = 0xFE22; $Lbl{'fn_credit'}				= 0xFE26;
-		$Lbl{'fn_cdtbtn'}				  = 0xFE29; $Lbl{'fn_adj'}					= 0xFE33;
-		$Lbl{'fn_command'}				  = 0xFE3E; $Lbl{'get_hs_digits'}			= 0xECE4;
-		$Lbl{'getswitch'}				  = 0xEE98; $Lbl{'gettabledata_w'}			= 0xF48C;
-		$Lbl{'gettabledata_b'}			  = 0xF48E; $Lbl{'getx_rts'}				= 0xF49E;
-		$Lbl{'give_credit'} 			  = 0xF6CB; $Lbl{'gameover'}				= 0xFA1E;
-		$Lbl{'get_random'}				  = 0xFB80; $Lbl{'hex2bitpos'}				= 0xEB8E;
-		$Lbl{'hex2dec'} 				  = 0xEC7F; $Lbl{'hstd_nextp'}				= 0xFAC6;
-		$Lbl{'hstd_adddig'} 			  = 0xFB13; $Lbl{'has_credit'}				= 0xFBA3;
-		$Lbl{'init_done'}				  = 0xE840; $Lbl{'play_sound_and_score'}	= 0xEBFA;
-		$Lbl{'play_sound_A'}			  = 0xECFC; $Lbl{'play_sound_test'} 		= 0xED42;
-		$Lbl{'play_sound_times'}		  = 0xED53; $Lbl{'initialize_game'} 		= 0xF878;
-		$Lbl{'init_player_game'}		  = 0xF8D2; $Lbl{'init_player_up'}			= 0xF8D2;
-		$Lbl{'init_player_sys'} 		  = 0xF933; $Lbl{'irq_entry'}				= 0xFFF8;
-		$Lbl{'exit_thread'} 			  = 0xEA67; $Lbl{'exit_thread_sp'}			= 0xEACC;
-		$Lbl{'kill_thread'} 			  = 0xEAF3; $Lbl{'kill_threads'}			= 0xEAFB;
-		$Lbl{'loadpricing'} 			  = 0xEFD0; $Lbl{'lampbuffers'} 			= 0xF134;
-		$Lbl{'lamp_on'} 				  = 0xF13C; $Lbl{'lamp_or'} 				= 0xF141;
-		$Lbl{'lamp_commit'} 			  = 0xF147; $Lbl{'lamp_done'}				= 0xF157;
-		$Lbl{'lamp_off'}				  = 0xF15B; $Lbl{'lamp_and'}				= 0xF160;
-		$Lbl{'lamp_flash'}				  = 0xF169; $Lbl{'lamp_toggle'} 			= 0xF170;
-		$Lbl{'lamp_eor'}				  = 0xF175; $Lbl{'lamp_on_b'}				= 0xF17E;
-		$Lbl{'lamp_off_b'}				  = 0xF183; $Lbl{'lamp_toggle_b'}			= 0xF188;
-		$Lbl{'lamp_on_1'}				  = 0xF18D; $Lbl{'lamp_off_1'}				= 0xF192;
-		$Lbl{'lamp_toggle_1'}			  = 0xF197;
-		$Lbl{'lampm_off'}				  = 0xF1A7; 		    # turn off all lamps in group [sys7_macros.txt]
-		$Lbl{'lampm_noflash'}			  = 0xF1B6; $Lbl{'lampm_f'} 				= 0xF1C7;
-		$Lbl{'lampm_sr1'}				  = 0xF1D5; 			# used in JL to consecutively light 10-20-30 bonus lights
-		$Lbl{'lampm_a'} 				  = 0xF1EE;
-		$Lbl{'lampm_b'} 				  = 0xF1F8;
-		$Lbl{'lampm_8'} 				  = 0xF208; 			# turn on all lamps in group [sys7_macros.txt]
-		$Lbl{'lampr_start'} 			  = 0xF21A; $Lbl{'lr_ret'}					= 0xF21F;
-		$Lbl{'lampr_end'}				  = 0xF226; $Lbl{'lampr_setup'} 			= 0xF22C;
-		$Lbl{'lamp_left'}				  = 0xF255; $Lbl{'ls_ret'}					= 0xF25A;
-		$Lbl{'lamp_right'}				  = 0xF264; $Lbl{'lampm_c'} 				= 0xF26B;
-		$Lbl{'lm_test'} 				  = 0xF26D; $Lbl{'lampm_e'} 				= 0xF27C;
-		$Lbl{'lampm_d'} 				  = 0xF294; $Lbl{'lampm_z'} 				= 0xF2B3;
-		$Lbl{'lampm_x'} 				  = 0xF302; $Lbl{'load_sw_no'}				= 0xF5B0;
-		$Lbl{'lesscredit'}				  = 0xFBC1; $Lbl{'main'}					= 0xE8AD;
-		$Lbl{'master_vm_lookup'}		  = 0xF319; $Lbl{'WVM_start'}				= 0xF3AB;
-		$Lbl{'macro_rts'}				  = 0xF3AF; $Lbl{'macro_go'}				= 0xF3B5;
-		$Lbl{'macro_pcminus100'}		  = 0xF3DB; $Lbl{'macro_code_start'}		= 0xF3E2;
-		$Lbl{'macro_special'}			  = 0xF3EA; $Lbl{'macro_extraball'} 		= 0xF3EF;
-		$Lbl{'macro_x8f'}				  = 0xF3FB; $Lbl{'macro_17'}				= 0xF418;
-		$Lbl{'macro_x17'}				  = 0xF41B; $Lbl{'macro_exec'}				= 0xF46B;
-		$Lbl{'macro_getnextbyte'}		  = 0xF495; $Lbl{'macro_ramadd'}			= 0xF4AA;
-		$Lbl{'macro_ramcopy'}			  = 0xF4BF; $Lbl{'macro_set_pri'}			= 0xF4CA;
-		$Lbl{'macro_delay_imm_b'}		  = 0xF4D2; $Lbl{'macro_getnextword'}		= 0xF4E2;
-		$Lbl{'macro_get2bytes'} 		  = 0xF4EA; $Lbl{'macro_rem_th_s'}			= 0xF4EF;
-		$Lbl{'macro_rem_th_m'}			  = 0xF4F6; $Lbl{'macro_jsr_noreturn'}		= 0xF4FD;
-		$Lbl{'macro_a_ram'} 			  = 0xF509; $Lbl{'macro_b_ram'} 			= 0xF518;
-		$Lbl{'macro_jsr_return'}		  = 0xF527; $Lbl{'macro_jmp_cpu'}			= 0xF54F;
-		$Lbl{'macro_jmp_abs'}			  = 0xF566; $Lbl{'macro_pcadd'} 			= 0xF58E;
-		$Lbl{'macro_setswitch'} 		  = 0xF5A4; $Lbl{'macro_clearswitch'}		= 0xF5BC;
-		$Lbl{'macro_branch'}			  = 0xF5CD; $Lbl{'next_sw'} 				= 0xE910;
-		$Lbl{'nextthread'}				  = 0xE9FF; $Lbl{'spawn_thread_alt'}		= 0xEA78;
-		$Lbl{'spawn_thread'}			  = 0xEAC4; $Lbl{'nmi_entry'}				= 0xFFFC;
-		$Lbl{'end_of_ball'} 			  = 0xF9AB; 						  # called at end of left trough switch thread
-		$Lbl{'p1_gamedata'} 			  = 0x1140; 						  # gamedata buffers: 20 bytes per player
-		$Lbl{'p2_gamedata'} 			  = 0x1159; $Lbl{'p3_gamedata'} 			= 0x1172;
-		$Lbl{'p4_gamedata'} 			  = 0x118B; $Lbl{'pia_sound_data'}			= 0x2100;
-		$Lbl{'pia_sound_ctrl'}			  = 0x2101; $Lbl{'pia_comma_data'}			= 0x2102;
-		$Lbl{'pia_comma_ctrl'}			  = 0x2103; $Lbl{'pia_sol_low_data'}		= 0x2200;
-		$Lbl{'pia_sol_low_ctrl'}		  = 0x2201; $Lbl{'pia_sol_high_data'}		= 0x2202;
-		$Lbl{'pia_sol_high_ctrl'}		  = 0x2203; $Lbl{'pia_lamp_row_data'}		= 0x2400;
-		$Lbl{'pia_lamp_row_ctrl'}		  = 0x2401; $Lbl{'pia_lamp_col_data'}		= 0x2402;
-		$Lbl{'pia_lamp_col_ctrl'}		  = 0x2403; $Lbl{'pia_disp_digit_data'} 	= 0x2800;
-		$Lbl{'pia_disp_digit_ctrl'} 	  = 0x2801; $Lbl{'pia_disp_seg_data'}		= 0x2802;
-		$Lbl{'pia_disp_seg_ctrl'}		  = 0x2803; $Lbl{'pia_switch_return_data'}	= 0x3000;
-		$Lbl{'pia_switch_return_ctrl'}	  = 0x3001; $Lbl{'pia_switch_strobe_data'}	= 0x3002;
-		$Lbl{'pia_switch_strobe_ctrl'}	  = 0x3003; $Lbl{'pia_alphanum_digit_data'} = 0x4000;
-		$Lbl{'pia_alphanum_digit_ctrl'}   = 0x4001; $Lbl{'pia_alphanum_seg_data'}	= 0x4002;
-		$Lbl{'pia_alphanum_seg_ctrl'}	  = 0x4003; $Lbl{'pri_next'}				= 0xEB0A;
-		$Lbl{'pri_skipme'}				  = 0xEB17; $Lbl{'pack_done'}				= 0xEEB8;
-		$Lbl{'pia_ddr_data'}			  = 0xF10E; $Lbl{'pc_sto2'} 				= 0xF505;
-		$Lbl{'pc_sto'}					  = 0xF54A; $Lbl{'pull_ba_rts'} 			= 0xF75C;
-		$Lbl{'ptrx_plus_1'} 			  = 0xF77F; $Lbl{'ptrx_plus_a'} 			= 0xF784;
-		$Lbl{'ptrx_plus'}				  = 0xF785; $Lbl{'player_ready'}			= 0xF8DD;
-		$Lbl{'powerup_init'}			  = 0xFA34; $Lbl{'reset'}					= 0xE800;
-		$Lbl{'reset_audits'}			  = 0xEF6F; $Lbl{'restore_hstd'}			= 0xEF9D;
-		$Lbl{'ram_sto2'}				  = 0xF4BA; $Lbl{'ret_sto'} 				= 0xF529;
-		$Lbl{'ram_sto'} 				  = 0xF574; $Lbl{'ret_false'}				= 0xF657;
-		$Lbl{'ret_true'}				  = 0xF65E; $Lbl{'resetplayerdata'} 		= 0xF952;
-		$Lbl{'rambad'}					  = 0xFF1F; $Lbl{'res_entry'}				= 0xFFFE;
-		$Lbl{'switch_queue'}			  = 0x1100; $Lbl{'sol_queue'}				= 0x1118;
-		$Lbl{'score_queue'} 			  = 0x1128; $Lbl{'switches'}				= 0xE90D;
-		$Lbl{'sw_break'}				  = 0xE942; $Lbl{'solq'}					= 0xE970;
-		$Lbl{'snd_queue'}				  = 0xE98C; $Lbl{'solbuf'}					= 0xEB23;
-		$Lbl{'set_solenoid'}			  = 0xEB47; $Lbl{'set_ss_off'}				= 0xEB5F;
-		$Lbl{'set_s_pia'}				  = 0xEB62; $Lbl{'set_ss_on'}				= 0xEB6B;
-		$Lbl{'soladdr'} 				  = 0xEB71; $Lbl{'ssoladdr'}				= 0xEB82;
-		$Lbl{'set_comma_bit'}			  = 0xEBC4; $Lbl{'snd_pts'} 				= 0xEC01;
-		$Lbl{'score_main'}				  = 0xEC05; $Lbl{'score_update'}			= 0xEC1D;
-		$Lbl{'score2hex'}				  = 0xEC86; $Lbl{'sh_exit'} 				= 0xEC95;
-		$Lbl{'split_ab'}				  = 0xECF3; $Lbl{'sound_sub'}				= 0xED03;
-		$Lbl{'snd_exit_pull'}			  = 0xED99; $Lbl{'snd_exit'}				= 0xED9B;
-		$Lbl{'send_snd_save'}			  = 0xED9E; $Lbl{'send_snd'}				= 0xEDA0;
-		$Lbl{'store_csndFlag'}			  = 0xEDBF; $Lbl{'sw_ignore'}				= 0xEE01;
-		$Lbl{'sw_active'}				  = 0xEE02; $Lbl{'sw_down'} 				= 0xEE04;
-		$Lbl{'sw_dtime'}				  = 0xEE15; $Lbl{'sw_trig_yes'} 			= 0xEE19;
-		$Lbl{'sw_proc'} 				  = 0xEE48; $Lbl{'sw_pack'} 				= 0xEEAB;
-		$Lbl{'sw_get_time'} 			  = 0xEEDB; $Lbl{'sw_tbl_lookup'}			= 0xEEF7;
-		$Lbl{'x_plus_a'}				  = 0xEEFF; $Lbl{'setup_vm_stack'}			= 0xEF22;
-		$Lbl{'stack_done'}				  = 0xEF3F; $Lbl{'x_plus_b'}				= 0xEF4D;
-		$Lbl{'sys_irq'} 				  = 0xEFF7; $Lbl{'spec_sol_def'}			= 0xF122;
-		$Lbl{'switch_entry'}			  = 0xF3CB; $Lbl{'set_logic'}				= 0xF68B;
-		$Lbl{'store_display_mask'}		  = 0xF8A4; $Lbl{'set_playerbuffer'}		= 0xF8BC;
-		$Lbl{'saveplayertobuffer'}		  = 0xF9CB; $Lbl{'show_hstd'}				= 0xFA0B;
-		$Lbl{'set_gameover'}			  = 0xFA44; $Lbl{'show_all_scores'} 		= 0xFA58;
-		$Lbl{'set_hstd'}				  = 0xFAD7; $Lbl{'stop_background_sound'}	= 0xFB30;
-		$Lbl{'start_new_game'}			  = 0xFBBC; $Lbl{'selftest_entry'}			= 0xFC23;
-		$Lbl{'st_diagnostics'}			  = 0xFC31; $Lbl{'st_init'} 				= 0xFC80;
-		$Lbl{'st_nexttest'} 			  = 0xFC94; $Lbl{'show_func'}				= 0xFCCF;
-		$Lbl{'st_reset'}				  = 0xFD16; $Lbl{'st_display'}				= 0xFE43;
-		$Lbl{'st_sound'}				  = 0xFE62; $Lbl{'st_lamp'} 				= 0xFE8D;
-		$Lbl{'st_autocycle'}			  = 0xFEAC; $Lbl{'st_solenoid'} 			= 0xFECB;
-		$Lbl{'st_switch'}				  = 0xFEF0; $Lbl{'st_swnext'}				= 0xFEFC;
-		$Lbl{'swi_entry'}				  = 0xFFFA; $Lbl{'time'}					= 0xE8F0;
-		$Lbl{'test_mask_b'} 			  = 0xEBD0; $Lbl{'to_ldx_rts'}				= 0xEE95;
-		$Lbl{'to_macro_go1'}			  = 0xF433; $Lbl{'to_macro_go2'}			= 0xF4BC;
-		$Lbl{'to_getx_rts'} 			  = 0xF516; $Lbl{'to_macro_go4'}			= 0xF54C;
-		$Lbl{'to_macro_go3'}			  = 0xF5C7; $Lbl{'to_macro_getnextbyte'}	= 0xF5CA;
-		$Lbl{'to_rts3'} 				  = 0xF63A; $Lbl{'test_z'}					= 0xF643;
-		$Lbl{'test_c'}					  = 0xF64A; $Lbl{'to_rts4'} 				= 0xF68A;
-		$Lbl{'to_pula_rts'} 			  = 0xF898; $Lbl{'to_copyblock'}			= 0xF9E3;
-		$Lbl{'to_rts1'} 				  = 0xFB23; $Lbl{'to_rts2'} 				= 0xFB91;
-		$Lbl{'tilt_warning'}			  = 0xFBDD; $Lbl{'testdata'}				= 0xFBFA;
-		$Lbl{'testlists'}				  = 0xFC04; $Lbl{'to_clear_range'}			= 0xFC91;
-		$Lbl{'to_audadj'}				  = 0xFCA3; $Lbl{'tightloop'}				= 0xFF7F;
-		$Lbl{'update_commas'}			  = 0xEBA1; $Lbl{'update_eb_count'} 		= 0xEBDB;
-		$Lbl{'unpack_byte'} 			  = 0xF19C; $Lbl{'update_hstd'} 			= 0xFAF5;
-		$Lbl{'vm_irqcheck'} 			  = 0xE946; $Lbl{'vm_lookup_0x'}			= 0xF339;
-		$Lbl{'vm_lookup_1x_a'}			  = 0xF347; $Lbl{'vm_lookup_1x_b'}			= 0xF357;
-		$Lbl{'vm_lookup_2x'}			  = 0xF35F; $Lbl{'vm_lookup_4x'}			= 0xF365;
-		$Lbl{'vm_lookup_5x'}			  = 0xF36B; $Lbl{'vm_control_0x'}			= 0xF3D3;
-		$Lbl{'vm_control_1x'}			  = 0xF3F4; $Lbl{'vm_control_2x'}			= 0xF436;
-		$Lbl{'vm_control_3x'}			  = 0xF442; $Lbl{'vm_control_4x'}			= 0xF44F;
-		$Lbl{'vm_control_5x'}			  = 0xF4A1; $Lbl{'vm_control_6x'}			= 0xF540;
-		$Lbl{'vm_control_7x'}			  = 0xF544; $Lbl{'vm_control_8x'}			= 0xF548;
-		$Lbl{'vm_control_9x'}			  = 0xF558; $Lbl{'vm_control_ax'}			= 0xF562;
-		$Lbl{'vm_control_bx'}			  = 0xF56B; $Lbl{'vm_control_cx'}			= 0xF578;
-		$Lbl{'vm_control_dx'}			  = 0xF57D; $Lbl{'vm_control_ex'}			= 0xF587;
-		$Lbl{'vm_control_fx'}			  = 0xF587; $Lbl{'write_range'} 			= 0xF840;
-		$Lbl{'wordplusbyte'}			  = 0xFB17;
-        }
-	} # if ($WMS_System == 7)
-
-#----------------------------------------------------------------------
-# WVM11 Interface
-#	- fixed
-#	- magic
-#----------------------------------------------------------------------
-
-	elsif ($WMS_System == 11) {
- 
-			setLabel('_Reg-A',0x00);			 # non-volatile registers
-			setLabel('_Reg-B',0x01);
-			setLabel('_Reg-C',0x02);
-			setLabel('_Reg-D',0x03);
-			setLabel('_Reg-E',0x04);
-			setLabel('_Reg-F',0x05);
-			setLabel('_Reg-G',0x06);
-			setLabel('_Reg-H',0x07);
-			setLabel('_Reg-I',0x08);			 # volatile registers
-			setLabel('_Reg-J',0x09);
-			setLabel('_Reg-K',0x0A);
-			setLabel('_Reg-L',0x0B);
-			setLabel('_Reg-M',0x0C);
-			setLabel('_Reg-N',0x0D);
-			setLabel('_Reg-O',0x0E);
-			setLabel('_Reg-P',0x0F);
-
-			setLabel('_bufSel_p1',			0x3A);			   	# 0: main buffer, FF: alt buffer
-			setLabel('_bufSel_p2',			0x3B);
-			setLabel('_bufSel_p3',			0x3C);
-			setLabel('_bufSel_p4',			0x3D);
-
-			sub init_system_11() {				# system 11 magic (done after reading ROM)
-				$Address = 0xFFC6;
-					for (my($o)=1; $o<8; $o++) { setLabel("=Lamps+$o",WORD($Address)+$o); }
-					def_ptr_hex_alt('^=Lamps','=Lamps','Debugger Pointers');
-					for (my($o)=1; $o<8; $o++) { setLabel("=Flags+$o",WORD($Address)+$o); }
-					def_ptr_hex_alt('^=Flags','=Flags');
-					for (my($o)=1; $o<8; $o++) { setLabel("=Lamps_bufSel+$o",WORD($Address)+$o); }
-					def_ptr_hex_alt('^=Lamps_bufSel','=Lamps_bufSel');
-					for (my($o)=1; $o<8; $o++) { setLabel("=Lamps_altBuf+$o",WORD($Address)+$o); }
-					def_ptr_hex_alt('^=Lamps_altBuf','=Lamps_altBuf');
-					for (my($o)=1; $o<8; $o++) { setLabel("=Lamps_blinkBuf+$o",WORD($Address)+$o); }
-					def_ptr_hex_alt('^=Lamps_blinkBuf','=Lamps_blinkBuf');
-					for (my($o)=1; $o<8; $o++) { setLabel("=Switches+$o",WORD($Address)+$o); }
-					def_ptr_hex_alt('^=Switches','=Switches');
-					push(@Switch2WVMSubroutines,WORD($Address));
-					def_code_ptr('^WVM_start','WVM_start');
-				    def_ptr_hex_alt('^_IRQ_tics_counter','_IRQ_tics_counter');
-					def_code_ptr('^WVM_exitThread','WVM_exitThread');
-					def_ptr_hex('^unknown_debug_ptr');
-					def_ptr_hex_alt('^__threads_running_ptr','__threads_running_ptr');
-					setLabel('__current_thread_ptr+1',WORD($Address)+1);
-					def_ptr_hex_alt('^__current_thread_ptr','__current_thread_ptr');
-					setLabel('__WVM_PC+1',WORD($Address)+1);
-					def_ptr_hex_alt('^__WVM_PC','__WVM_PC');
-					def_code_ptr('^WVM_sleep','WVM_sleep');
-					def_code_ptr('^WVM_sleepI','WVM_sleepI',undef,'_SLEEP macro (JSR WVM_sleepI; .DB #xx)');
-					def_code_ptr('^next_WVM_op_debugger_hook','next_WVM_op_debugger_hook','Debugger Hooks');
-					def_byteblock_code(3,'debugger_stepper_hook?');
-					def_byteblock_code(3,'kill_thread_debugger_hook');
-					def_byteblock_code(3,'thread_switch_debugger_hook');
-					def_byteblock_code(3,'pre_exec_debugger_hook');
-					def_byteblock_code(3,'WVM_halt_loop_debugger_hook');
-					def_byteblock_code(2,'debug_macro_hook');
-
-				$Address = $Lbl{'WVM_exitThread'}+0x11; 					# derived magic
-					$lbl = 'spawn_thread_WVM_id06'; def_code($lbl);
-				$Address = $Lbl{$lbl}+0x06;     
-					$lbl = 'spawn_thread_WVM'; def_code($lbl);
-				$Address = $Lbl{$lbl}+0x07;     
-					$lbl = 'spawn_thread_6800_[A]'; def_code($lbl);
-				$Address = $Lbl{$lbl}+0x02;     
-					$lbl = 'spawn_thread_6800'; def_code($lbl);
-				$Address = $Lbl{$lbl}+0x4C;     
-					$lbl = 'spawn_thread_6800_id06';
-					if (&BYTE($Address-1) == 0x39) {						# RTS, PinBot
-						# do nothing
-					} elsif (&BYTE($Address-1) == 0x01) {					# NOP, BadCats
-						$Address += 2;
-					} else {
-						die(sprintf("cannot find spawn_thread_6800_id06 routine (%02X)",&BYTE($Address-1)));
-					}
-					def_code($lbl);
-					$Address = $Lbl{$lbl}+0x08;
-					$lbl = 'kill_this_thread'; def_code($lbl);
-				$Address = $Lbl{$lbl}+0x2A;     
-                    $lbl = 'kill_thread'; def_code($lbl);
-	        }
-	} elsif (defined($WMS_System)) {
-		die("$0: unknown WMS_System $WMS_System\n");
-	}
+	require "$PATH/D711.System$WMS_System";
 	print(STDERR "\n");
 } # import
 
@@ -1096,6 +291,8 @@ sub load_ROM($$)
 #		- {}label is STICKY; address added between braces
 #		- first non-automatic label overwrites any previous auto lbl
 #		- otherwise, no overwriting
+#		- aliased to define_label to allow sharing of API definition
+#		  with [C711]
 #	- label_address:
 #		- set @AUTO_LBL[addr] to be used when no label is set during output
 #	- substitute_label:
@@ -1119,6 +316,8 @@ sub setLabel($$)
 	$Lbl{$lbl} = $addr;
 	return 1;
 }
+
+*define_label = \&setLabel;										# for compatibility with [C711]
 
 sub overwriteLabel($$)
 {
@@ -1466,7 +665,7 @@ sub disassemble_6800_nbytes(@)									# disassemble 6800 CPU code with byte lim
 	    
 		next if op_IMP(0x30,$ind,'TSX');  next if op_IMP(0x31,$ind,'INS');
 		next if op_IMP(0x32,$ind,'PULA'); next if op_IMP(0x33,$ind,'PULB');
-		next if op_IMP(0x34,$ind,'DES');  next if op_IMP(0x35',$ind,'TXS');
+		next if op_IMP(0x34,$ind,'DES');  next if op_IMP(0x35,$ind,'TXS');
 		next if op_IMP(0x36,$ind,'PSHA'); next if op_IMP(0x37,$ind,'PSHB');
 		if (op_IMP(0x39,$ind,'RTS')) {
 		    push(@{$EXTRA[$addr]},'');
@@ -2798,6 +1997,7 @@ sub def_byte_hex(@)
 	$REM[$Address] = $rem unless defined($REM[$Address]); 
 	insert_divider($Address,$divider_label);
 	$decoded[$Address] = 1; $Address++;
+	return BYTE($Address-1);
 }
 
 sub def_byte_bin(@)
@@ -4269,6 +3469,8 @@ sub output_labels($)
 	foreach my $lbl (sort { $Lbl{$a} <=> $Lbl{$b} } keys(%Lbl)) {
 		next unless defined($Lbl{$lbl});
 		next if defined($ROM[$Lbl{$lbl}]);
+		next if ($lbl =~ m{(.*)\+[1-9]$} && defined($Lbl{$1}));				# e.g. =Lamps+2
+			
 		$line = '.LBL';
 		$line .= indent($line,$hard_tab*$def_name_indent);
 		$line .= $lbl;
@@ -4281,11 +3483,11 @@ sub output_labels($)
 
 
 sub produce_output(@)														# with a filename arg, writes structure-hints into file
-{
+{																			# with empty string arg, API labels are suppressed
 	my($org,$line);
 	my($decoded) = my($ROMbytes) = 0;
 
-	if (@_) {
+	if (@_ && $_[0] ne '') {
 		open(F,">$_[0]") || die("$_[0]: $!\n");
 	}
 
@@ -4298,10 +3500,10 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 	output_aliases('Sound Aliases','Sound#%02X',@Sound);
 	output_aliases('Thread Aliases','Thread#%02X',@Thread);
 
-	output_labels('External Labels');										# manually defined labels outside ROM
+	output_labels("System$WMS_System API (external labels)")				# manually defined labels outside ROM
+		unless 	(@_ && $_[0] eq '');
 
 	my($gapLen,$codeStarted);
-#	for (my($addr)=0; $addr<@ROM; $addr++) {								# loop through addresses
 	for (my($addr)=$MIN_ROM_ADDR; $addr<=$MAX_ROM_ADDR; $addr++) {			# loop through addresses
 		$decoded++ if $decoded[$addr];
 		$ROMbytes++ if defined(BYTE($addr));
@@ -4432,7 +3634,7 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 			}
 		}
 	}
-	print(STDERR "decoded/ROMbytes = $decoded/$ROMbytes\n");
+#	print(STDERR "decoded/ROMbytes = $decoded/$ROMbytes\n");
 	return $decoded/$ROMbytes;
 }
 

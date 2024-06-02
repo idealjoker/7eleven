@@ -1,0 +1,239 @@
+#======================================================================
+#                    D 7 1 1 . S Y S T E M 7 
+#                    doc: Mon May 27 16:50:53 2024
+#                    dlm: Mon May 27 21:29:18 2024
+#                    (c) 2024 idealjoker@mailbox.org
+#                    uE-Info: 5 52 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#   May 27, 2024: - created 
+
+setLabel('WVM_start' ,0xF3AB);
+setLabel('WVM_sleepI',0xEA2F);
+
+	$Lbl{'Reg-A'} = 0x00;								# Data Labels
+	$Lbl{'Reg-B'} = 0x01;
+	
+	$Lbl{'Comma_Flags'} = 0x60;
+	
+	$Lbl{'Spare_Ram_0'} = 0xE0; 					   # extra RAM, not accessible in WVM
+	$Lbl{'Spare_Ram_1'} = 0xE1;
+	$Lbl{'Spare_Ram_2'} = 0xE2;
+	$Lbl{'Spare_Ram_3'} = 0xE3;
+	$Lbl{'Spare_Ram_4'} = 0xE4;
+	$Lbl{'Spare_Ram_5'} = 0xE5;
+	$Lbl{'Spare_Ram_6'} = 0xE6; 					   # last used on JL
+	$Lbl{'Spare_Ram_7'} = 0xE7;
+	$Lbl{'Spare_Ram_8'} = 0xE8;
+	$Lbl{'Spare_Ram_9'} = 0xE9;
+	$Lbl{'Spare_Ram_10'} = 0xEA;
+	$Lbl{'Spare_Ram_11'} = 0xEB;
+	$Lbl{'Spare_Ram_12'} = 0xEC;
+	$Lbl{'Spare_Ram_13'} = 0xED;
+	$Lbl{'Spare_Ram_14'} = 0xEE;
+	$Lbl{'Spare_Ram_15'} = 0xEF;
+	
+	$Lbl{'WVM_sleep'}				= 0xEA2F;		  # used internally
+	
+	$Lbl{'add_points'}					= 0xEC96; $Lbl{'a_cmosinc'} 			  = 0xEFAF;
+	$Lbl{'abx_ret'} 				  = 0xF213; $Lbl{'award_special'}			= 0xF6A5;
+	$Lbl{'award_replay'}			  = 0xF6BF; $Lbl{'addcredits'}				= 0xF6FE;
+	$Lbl{'addcredit2'}				  = 0xF701; $Lbl{'add_player'}				= 0xF858;
+	$Lbl{'adjust_func'} 			  = 0xFD0B; $Lbl{'adjust_a'}				= 0xFFF2;
+	$Lbl{'b_plus10'}				  = 0xECEE; $Lbl{'b_cmosinc'}				= 0xEF69;
+	$Lbl{'bit_switch'}				  = 0xF2EA; $Lbl{'bit_lamp_flash'}			= 0xF2EF;
+	$Lbl{'bit_lamp_buf_1'}			  = 0xF2F4; $Lbl{'bit_lamp_buf_0'}			= 0xF2F9;
+	$Lbl{'bit_main'}				  = 0xF2FC; $Lbl{'branch_lookup'}			= 0xF38B;
+	$Lbl{'breg_sto'}				  = 0xF3CF; $Lbl{'branchdata'}				= 0xF5F8;
+	$Lbl{'branch_toggle'}			  = 0xF636; $Lbl{'branch_lamp_on'}			= 0xF63B;
+	$Lbl{'branch_lamprangeoff'} 	  = 0xF647; $Lbl{'lamprangeon'} 			= 0xF64E;
+	$Lbl{'branch_tilt'} 			  = 0xF653; $Lbl{'branch_gameover'} 		= 0xF65A;
+	$Lbl{'branch_lampbuf1'} 		  = 0xF661; $Lbl{'branch_switch'}			= 0xF666;
+	$Lbl{'branch_and'}				  = 0xF66B; $Lbl{'branch_add'}				= 0xF670;
+	$Lbl{'branch_or'}				  = 0xF672; $Lbl{'branch_equal'}			= 0xF677;
+	$Lbl{'branch_ge'}				  = 0xF67C; $Lbl{'branch_threadpri'}		= 0xF67F;
+	$Lbl{'branch_bitwise'}			  = 0xF686; $Lbl{'balladjust'}				= 0xF9E6;
+	$Lbl{'block_copy'}				  = 0xFFD1; $Lbl{'csum1'}					= 0xE83F;
+	$Lbl{'clear_all'}				  = 0xE86C; $Lbl{'checkswitch'} 			= 0xE8D4;
+	$Lbl{'check_threads'}			  = 0xE9FC; $Lbl{'check_threadid'}			= 0xEB00;
+	$Lbl{'comma_million'}			  = 0xEB99; $Lbl{'comma_thousand'}			= 0xEB9D;
+	$Lbl{'checkreplay'} 			  = 0xECAC; $Lbl{'check_sw_mask'}			= 0xEDE7;
+	$Lbl{'check_sw_close'}			  = 0xEE61; $Lbl{'check_sw_open'}			= 0xEEBB;
+	$Lbl{'copy_word'}				  = 0xEF0F; $Lbl{'cmosinc_a'}				= 0xEF53;
+	$Lbl{'cmosinc_b'}				  = 0xEF63; $Lbl{'clr_ram_100'} 			= 0xEF74;
+	$Lbl{'clr_ram'} 				  = 0xEF77; $Lbl{'copyblock'}				= 0xEFBC;
+	$Lbl{'copyblock2'}				  = 0xEFE4; $Lbl{'csum2'}					= 0xF318;
+	$Lbl{'complexbranch'}			  = 0xF615; $Lbl{'credit_special'}			= 0xF6B8;
+	$Lbl{'coinlockout'} 			  = 0xF72C; $Lbl{'checkmaxcredits'} 		= 0xF749;
+	$Lbl{'creditq'} 				  = 0xF75F; $Lbl{'coin_accepted'}			= 0xF7A2;
+	$Lbl{'cmos_a_plus_b_cmos'}		  = 0xF80F; $Lbl{'clear_bonus_coins'}		= 0xF829;
+	$Lbl{'csum3'}					  = 0xF833; $Lbl{'clear_range'} 			= 0xF894;
+	$Lbl{'clear_displays'}			  = 0xF89A; $Lbl{'copyplayerdata'}			= 0xF8C8;
+	$Lbl{'check_hstd'}				  = 0xFA92; $Lbl{'credit_button'}			= 0xFB92;
+	$Lbl{'check_adv'}				  = 0xFC6A; $Lbl{'check_aumd'}				= 0xFC75;
+	$Lbl{'cmos_add_d'}				  = 0xFDE6; $Lbl{'cmos_a'}					= 0xFE1F;
+	$Lbl{'cmos_byteloc'}			  = 0x01BB; $Lbl{'cmos_error'}				= 0xFFCB;
+	$Lbl{'cmos_restore'}			  = 0xFFE5; $Lbl{'delaythread'} 			= 0xEA24;
+	$Lbl{'dump_thread'} 			  = 0xEA39; $Lbl{'dsnd_pts'}				= 0xEBFE;
+	$Lbl{'do_complex_snd'}			  = 0xEDA7; $Lbl{'dly_sto'} 				= 0xF4D4;
+	$Lbl{'do_eb'}					  = 0xF6D6; $Lbl{'divide_ab'}				= 0xF816;
+	$Lbl{'dec2hex'} 				  = 0xF834; $Lbl{'do_game_init'}			= 0xF847;
+	$Lbl{'disp_mask'}				  = 0xF919; $Lbl{'disp_clear'}				= 0xF926;
+	$Lbl{'dump_score_queue'}		  = 0xF994; $Lbl{'do_match'}				= 0xFB39;
+	$Lbl{'do_tilt'} 				  = 0xFBE9; $Lbl{'do_aumd'} 				= 0xFC57;
+	$Lbl{'do_audadj'}				  = 0xFCA5; $Lbl{'diag'}					= 0xFF2B;
+	$Lbl{'diag_showerror'}			  = 0xFF7B; $Lbl{'diag_ramtest'}			= 0xFF81;
+	$Lbl{'exe_buffer'}				  = 0x1130; $Lbl{'extraball'}				= 0xF6D5;
+	$Lbl{'flashlamp'}				  = 0xE957; $Lbl{'factory_zeroaudits'}		= 0xEF7D;
+	$Lbl{'fill_hstd_digits'}		  = 0xFB24; $Lbl{'fn_gameid'}				= 0xFD23;
+	$Lbl{'fn_gameaud'}				  = 0xFD2E; $Lbl{'fn_sysaud'}				= 0xFD30;
+	$Lbl{'fn_hstd'} 				  = 0xFDA9; $Lbl{'fn_replay'}				= 0xFDB1;
+	$Lbl{'fn_pricec'}				  = 0xFDEF; $Lbl{'fn_prices'}				= 0xFE09;
+	$Lbl{'fn_ret'}					  = 0xFE22; $Lbl{'fn_credit'}				= 0xFE26;
+	$Lbl{'fn_cdtbtn'}				  = 0xFE29; $Lbl{'fn_adj'}					= 0xFE33;
+	$Lbl{'fn_command'}				  = 0xFE3E; $Lbl{'get_hs_digits'}			= 0xECE4;
+	$Lbl{'getswitch'}				  = 0xEE98; $Lbl{'gettabledata_w'}			= 0xF48C;
+	$Lbl{'gettabledata_b'}			  = 0xF48E; $Lbl{'getx_rts'}				= 0xF49E;
+	$Lbl{'give_credit'} 			  = 0xF6CB; $Lbl{'gameover'}				= 0xFA1E;
+	$Lbl{'get_random'}				  = 0xFB80; $Lbl{'hex2bitpos'}				= 0xEB8E;
+	$Lbl{'hex2dec'} 				  = 0xEC7F; $Lbl{'hstd_nextp'}				= 0xFAC6;
+	$Lbl{'hstd_adddig'} 			  = 0xFB13; $Lbl{'has_credit'}				= 0xFBA3;
+	$Lbl{'init_done'}				  = 0xE840; $Lbl{'play_sound_and_score'}	= 0xEBFA;
+	$Lbl{'play_sound_A'}			  = 0xECFC; $Lbl{'play_sound_test'} 		= 0xED42;
+	$Lbl{'play_sound_times'}		  = 0xED53; $Lbl{'initialize_game'} 		= 0xF878;
+	$Lbl{'init_player_game'}		  = 0xF8D2; $Lbl{'init_player_up'}			= 0xF8D2;
+	$Lbl{'init_player_sys'} 		  = 0xF933; $Lbl{'irq_entry'}				= 0xFFF8;
+	$Lbl{'exit_thread'} 			  = 0xEA67; $Lbl{'exit_thread_sp'}			= 0xEACC;
+	$Lbl{'kill_thread'} 			  = 0xEAF3; $Lbl{'kill_threads'}			= 0xEAFB;
+	$Lbl{'loadpricing'} 			  = 0xEFD0; $Lbl{'lampbuffers'} 			= 0xF134;
+	$Lbl{'lamp_on'} 				  = 0xF13C; $Lbl{'lamp_or'} 				= 0xF141;
+	$Lbl{'lamp_commit'} 			  = 0xF147; $Lbl{'lamp_done'}				= 0xF157;
+	$Lbl{'lamp_off'}				  = 0xF15B; $Lbl{'lamp_and'}				= 0xF160;
+	$Lbl{'lamp_flash'}				  = 0xF169; $Lbl{'lamp_toggle'} 			= 0xF170;
+	$Lbl{'lamp_eor'}				  = 0xF175; $Lbl{'lamp_on_b'}				= 0xF17E;
+	$Lbl{'lamp_off_b'}				  = 0xF183; $Lbl{'lamp_toggle_b'}			= 0xF188;
+	$Lbl{'lamp_on_1'}				  = 0xF18D; $Lbl{'lamp_off_1'}				= 0xF192;
+	$Lbl{'lamp_toggle_1'}			  = 0xF197;
+	$Lbl{'lampm_off'}				  = 0xF1A7; 			# turn off all lamps in group [sys7_macros.txt]
+	$Lbl{'lampm_noflash'}			  = 0xF1B6; $Lbl{'lampm_f'} 				= 0xF1C7;
+	$Lbl{'lampm_sr1'}				  = 0xF1D5; 			# used in JL to consecutively light 10-20-30 bonus lights
+	$Lbl{'lampm_a'} 				  = 0xF1EE;
+	$Lbl{'lampm_b'} 				  = 0xF1F8;
+	$Lbl{'lampm_8'} 				  = 0xF208; 			# turn on all lamps in group [sys7_macros.txt]
+	$Lbl{'lampr_start'} 			  = 0xF21A; $Lbl{'lr_ret'}					= 0xF21F;
+	$Lbl{'lampr_end'}				  = 0xF226; $Lbl{'lampr_setup'} 			= 0xF22C;
+	$Lbl{'lamp_left'}				  = 0xF255; $Lbl{'ls_ret'}					= 0xF25A;
+	$Lbl{'lamp_right'}				  = 0xF264; $Lbl{'lampm_c'} 				= 0xF26B;
+	$Lbl{'lm_test'} 				  = 0xF26D; $Lbl{'lampm_e'} 				= 0xF27C;
+	$Lbl{'lampm_d'} 				  = 0xF294; $Lbl{'lampm_z'} 				= 0xF2B3;
+	$Lbl{'lampm_x'} 				  = 0xF302; $Lbl{'load_sw_no'}				= 0xF5B0;
+	$Lbl{'lesscredit'}				  = 0xFBC1; $Lbl{'main'}					= 0xE8AD;
+	$Lbl{'master_vm_lookup'}		  = 0xF319; $Lbl{'WVM_start'}				= 0xF3AB;
+	$Lbl{'macro_rts'}				  = 0xF3AF; $Lbl{'macro_go'}				= 0xF3B5;
+	$Lbl{'macro_pcminus100'}		  = 0xF3DB; $Lbl{'macro_code_start'}		= 0xF3E2;
+	$Lbl{'macro_special'}			  = 0xF3EA; $Lbl{'macro_extraball'} 		= 0xF3EF;
+	$Lbl{'macro_x8f'}				  = 0xF3FB; $Lbl{'macro_17'}				= 0xF418;
+	$Lbl{'macro_x17'}				  = 0xF41B; $Lbl{'macro_exec'}				= 0xF46B;
+	$Lbl{'macro_getnextbyte'}		  = 0xF495; $Lbl{'macro_ramadd'}			= 0xF4AA;
+	$Lbl{'macro_ramcopy'}			  = 0xF4BF; $Lbl{'macro_set_pri'}			= 0xF4CA;
+	$Lbl{'macro_delay_imm_b'}		  = 0xF4D2; $Lbl{'macro_getnextword'}		= 0xF4E2;
+	$Lbl{'macro_get2bytes'} 		  = 0xF4EA; $Lbl{'macro_rem_th_s'}			= 0xF4EF;
+	$Lbl{'macro_rem_th_m'}			  = 0xF4F6; $Lbl{'macro_jsr_noreturn'}		= 0xF4FD;
+	$Lbl{'macro_a_ram'} 			  = 0xF509; $Lbl{'macro_b_ram'} 			= 0xF518;
+	$Lbl{'macro_jsr_return'}		  = 0xF527; $Lbl{'macro_jmp_cpu'}			= 0xF54F;
+	$Lbl{'macro_jmp_abs'}			  = 0xF566; $Lbl{'macro_pcadd'} 			= 0xF58E;
+	$Lbl{'macro_setswitch'} 		  = 0xF5A4; $Lbl{'macro_clearswitch'}		= 0xF5BC;
+	$Lbl{'macro_branch'}			  = 0xF5CD; $Lbl{'next_sw'} 				= 0xE910;
+	$Lbl{'nextthread'}				  = 0xE9FF; $Lbl{'spawn_thread_alt'}		= 0xEA78;
+	$Lbl{'spawn_thread'}			  = 0xEAC4; $Lbl{'nmi_entry'}				= 0xFFFC;
+	$Lbl{'end_of_ball'} 			  = 0xF9AB; 						  # called at end of left trough switch thread
+	$Lbl{'p1_gamedata'} 			  = 0x1140; 						  # gamedata buffers: 20 bytes per player
+	$Lbl{'p2_gamedata'} 			  = 0x1159; $Lbl{'p3_gamedata'} 			= 0x1172;
+	$Lbl{'p4_gamedata'} 			  = 0x118B; $Lbl{'pia_sound_data'}			= 0x2100;
+	$Lbl{'pia_sound_ctrl'}			  = 0x2101; $Lbl{'pia_comma_data'}			= 0x2102;
+	$Lbl{'pia_comma_ctrl'}			  = 0x2103; $Lbl{'pia_sol_low_data'}		= 0x2200;
+	$Lbl{'pia_sol_low_ctrl'}		  = 0x2201; $Lbl{'pia_sol_high_data'}		= 0x2202;
+	$Lbl{'pia_sol_high_ctrl'}		  = 0x2203; $Lbl{'pia_lamp_row_data'}		= 0x2400;
+	$Lbl{'pia_lamp_row_ctrl'}		  = 0x2401; $Lbl{'pia_lamp_col_data'}		= 0x2402;
+	$Lbl{'pia_lamp_col_ctrl'}		  = 0x2403; $Lbl{'pia_disp_digit_data'} 	= 0x2800;
+	$Lbl{'pia_disp_digit_ctrl'} 	  = 0x2801; $Lbl{'pia_disp_seg_data'}		= 0x2802;
+	$Lbl{'pia_disp_seg_ctrl'}		  = 0x2803; $Lbl{'pia_switch_return_data'}	= 0x3000;
+	$Lbl{'pia_switch_return_ctrl'}	  = 0x3001; $Lbl{'pia_switch_strobe_data'}	= 0x3002;
+	$Lbl{'pia_switch_strobe_ctrl'}	  = 0x3003; $Lbl{'pia_alphanum_digit_data'} = 0x4000;
+	$Lbl{'pia_alphanum_digit_ctrl'}   = 0x4001; $Lbl{'pia_alphanum_seg_data'}	= 0x4002;
+	$Lbl{'pia_alphanum_seg_ctrl'}	  = 0x4003; $Lbl{'pri_next'}				= 0xEB0A;
+	$Lbl{'pri_skipme'}				  = 0xEB17; $Lbl{'pack_done'}				= 0xEEB8;
+	$Lbl{'pia_ddr_data'}			  = 0xF10E; $Lbl{'pc_sto2'} 				= 0xF505;
+	$Lbl{'pc_sto'}					  = 0xF54A; $Lbl{'pull_ba_rts'} 			= 0xF75C;
+	$Lbl{'ptrx_plus_1'} 			  = 0xF77F; $Lbl{'ptrx_plus_a'} 			= 0xF784;
+	$Lbl{'ptrx_plus'}				  = 0xF785; $Lbl{'player_ready'}			= 0xF8DD;
+	$Lbl{'powerup_init'}			  = 0xFA34; $Lbl{'reset'}					= 0xE800;
+	$Lbl{'reset_audits'}			  = 0xEF6F; $Lbl{'restore_hstd'}			= 0xEF9D;
+	$Lbl{'ram_sto2'}				  = 0xF4BA; $Lbl{'ret_sto'} 				= 0xF529;
+	$Lbl{'ram_sto'} 				  = 0xF574; $Lbl{'ret_false'}				= 0xF657;
+	$Lbl{'ret_true'}				  = 0xF65E; $Lbl{'resetplayerdata'} 		= 0xF952;
+	$Lbl{'rambad'}					  = 0xFF1F; $Lbl{'res_entry'}				= 0xFFFE;
+	$Lbl{'switch_queue'}			  = 0x1100; $Lbl{'sol_queue'}				= 0x1118;
+	$Lbl{'score_queue'} 			  = 0x1128; $Lbl{'switches'}				= 0xE90D;
+	$Lbl{'sw_break'}				  = 0xE942; $Lbl{'solq'}					= 0xE970;
+	$Lbl{'snd_queue'}				  = 0xE98C; $Lbl{'solbuf'}					= 0xEB23;
+	$Lbl{'set_solenoid'}			  = 0xEB47; $Lbl{'set_ss_off'}				= 0xEB5F;
+	$Lbl{'set_s_pia'}				  = 0xEB62; $Lbl{'set_ss_on'}				= 0xEB6B;
+	$Lbl{'soladdr'} 				  = 0xEB71; $Lbl{'ssoladdr'}				= 0xEB82;
+	$Lbl{'set_comma_bit'}			  = 0xEBC4; $Lbl{'snd_pts'} 				= 0xEC01;
+	$Lbl{'score_main'}				  = 0xEC05; $Lbl{'score_update'}			= 0xEC1D;
+	$Lbl{'score2hex'}				  = 0xEC86; $Lbl{'sh_exit'} 				= 0xEC95;
+	$Lbl{'split_ab'}				  = 0xECF3; $Lbl{'sound_sub'}				= 0xED03;
+	$Lbl{'snd_exit_pull'}			  = 0xED99; $Lbl{'snd_exit'}				= 0xED9B;
+	$Lbl{'send_snd_save'}			  = 0xED9E; $Lbl{'send_snd'}				= 0xEDA0;
+	$Lbl{'store_csndFlag'}			  = 0xEDBF; $Lbl{'sw_ignore'}				= 0xEE01;
+	$Lbl{'sw_active'}				  = 0xEE02; $Lbl{'sw_down'} 				= 0xEE04;
+	$Lbl{'sw_dtime'}				  = 0xEE15; $Lbl{'sw_trig_yes'} 			= 0xEE19;
+	$Lbl{'sw_proc'} 				  = 0xEE48; $Lbl{'sw_pack'} 				= 0xEEAB;
+	$Lbl{'sw_get_time'} 			  = 0xEEDB; $Lbl{'sw_tbl_lookup'}			= 0xEEF7;
+	$Lbl{'x_plus_a'}				  = 0xEEFF; $Lbl{'setup_vm_stack'}			= 0xEF22;
+	$Lbl{'stack_done'}				  = 0xEF3F; $Lbl{'x_plus_b'}				= 0xEF4D;
+	$Lbl{'sys_irq'} 				  = 0xEFF7; $Lbl{'spec_sol_def'}			= 0xF122;
+	$Lbl{'switch_entry'}			  = 0xF3CB; $Lbl{'set_logic'}				= 0xF68B;
+	$Lbl{'store_display_mask'}		  = 0xF8A4; $Lbl{'set_playerbuffer'}		= 0xF8BC;
+	$Lbl{'saveplayertobuffer'}		  = 0xF9CB; $Lbl{'show_hstd'}				= 0xFA0B;
+	$Lbl{'set_gameover'}			  = 0xFA44; $Lbl{'show_all_scores'} 		= 0xFA58;
+	$Lbl{'set_hstd'}				  = 0xFAD7; $Lbl{'stop_background_sound'}	= 0xFB30;
+	$Lbl{'start_new_game'}			  = 0xFBBC; $Lbl{'selftest_entry'}			= 0xFC23;
+	$Lbl{'st_diagnostics'}			  = 0xFC31; $Lbl{'st_init'} 				= 0xFC80;
+	$Lbl{'st_nexttest'} 			  = 0xFC94; $Lbl{'show_func'}				= 0xFCCF;
+	$Lbl{'st_reset'}				  = 0xFD16; $Lbl{'st_display'}				= 0xFE43;
+	$Lbl{'st_sound'}				  = 0xFE62; $Lbl{'st_lamp'} 				= 0xFE8D;
+	$Lbl{'st_autocycle'}			  = 0xFEAC; $Lbl{'st_solenoid'} 			= 0xFECB;
+	$Lbl{'st_switch'}				  = 0xFEF0; $Lbl{'st_swnext'}				= 0xFEFC;
+	$Lbl{'swi_entry'}				  = 0xFFFA; $Lbl{'time'}					= 0xE8F0;
+	$Lbl{'test_mask_b'} 			  = 0xEBD0; $Lbl{'to_ldx_rts'}				= 0xEE95;
+	$Lbl{'to_macro_go1'}			  = 0xF433; $Lbl{'to_macro_go2'}			= 0xF4BC;
+	$Lbl{'to_getx_rts'} 			  = 0xF516; $Lbl{'to_macro_go4'}			= 0xF54C;
+	$Lbl{'to_macro_go3'}			  = 0xF5C7; $Lbl{'to_macro_getnextbyte'}	= 0xF5CA;
+	$Lbl{'to_rts3'} 				  = 0xF63A; $Lbl{'test_z'}					= 0xF643;
+	$Lbl{'test_c'}					  = 0xF64A; $Lbl{'to_rts4'} 				= 0xF68A;
+	$Lbl{'to_pula_rts'} 			  = 0xF898; $Lbl{'to_copyblock'}			= 0xF9E3;
+	$Lbl{'to_rts1'} 				  = 0xFB23; $Lbl{'to_rts2'} 				= 0xFB91;
+	$Lbl{'tilt_warning'}			  = 0xFBDD; $Lbl{'testdata'}				= 0xFBFA;
+	$Lbl{'testlists'}				  = 0xFC04; $Lbl{'to_clear_range'}			= 0xFC91;
+	$Lbl{'to_audadj'}				  = 0xFCA3; $Lbl{'tightloop'}				= 0xFF7F;
+	$Lbl{'update_commas'}			  = 0xEBA1; $Lbl{'update_eb_count'} 		= 0xEBDB;
+	$Lbl{'unpack_byte'} 			  = 0xF19C; $Lbl{'update_hstd'} 			= 0xFAF5;
+	$Lbl{'vm_irqcheck'} 			  = 0xE946; $Lbl{'vm_lookup_0x'}			= 0xF339;
+	$Lbl{'vm_lookup_1x_a'}			  = 0xF347; $Lbl{'vm_lookup_1x_b'}			= 0xF357;
+	$Lbl{'vm_lookup_2x'}			  = 0xF35F; $Lbl{'vm_lookup_4x'}			= 0xF365;
+	$Lbl{'vm_lookup_5x'}			  = 0xF36B; $Lbl{'vm_control_0x'}			= 0xF3D3;
+	$Lbl{'vm_control_1x'}			  = 0xF3F4; $Lbl{'vm_control_2x'}			= 0xF436;
+	$Lbl{'vm_control_3x'}			  = 0xF442; $Lbl{'vm_control_4x'}			= 0xF44F;
+	$Lbl{'vm_control_5x'}			  = 0xF4A1; $Lbl{'vm_control_6x'}			= 0xF540;
+	$Lbl{'vm_control_7x'}			  = 0xF544; $Lbl{'vm_control_8x'}			= 0xF548;
+	$Lbl{'vm_control_9x'}			  = 0xF558; $Lbl{'vm_control_ax'}			= 0xF562;
+	$Lbl{'vm_control_bx'}			  = 0xF56B; $Lbl{'vm_control_cx'}			= 0xF578;
+	$Lbl{'vm_control_dx'}			  = 0xF57D; $Lbl{'vm_control_ex'}			= 0xF587;
+	$Lbl{'vm_control_fx'}			  = 0xF587; $Lbl{'write_range'} 			= 0xF840;
+	$Lbl{'wordplusbyte'}              = 0xFB17;
+}
+
+1;
