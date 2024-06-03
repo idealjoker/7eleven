@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Tue May 28 14:34:05 2024
+#					 dlm: Mon Jun  3 16:46:18 2024
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 33 23 NIL 0 0 72 0 2 4 NIL ofnI
+#					 uE-Info: 16 73 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -12,7 +12,8 @@
 # HISTORY:
 #	May 25, 2024: - created from [disassemble_AlienPoker]
 #	May 27, 2024: - added -A
-#	May 28, 2024: = negated -a
+#	May 28, 2024: - negated -a
+#	Jun  3, 2024: - made -A silently mandatory (requried for compilation)
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 (6);		
@@ -24,7 +25,6 @@ use D711 (6);
 use Getopt::Std;
 
 die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
-			"[include -A)PI in output]\n\t\t" . 
 			"[write code-structuring -h)ints to <file>]\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[list -a)ddressse in output] [list -c)ode bytes]\n\t\t" . 
@@ -33,7 +33,7 @@ die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
 			"<ROM image>\n")
 	unless &getopts('Aacgh:i:ls') && @ARGV==1;
 
-$D711::print_addrs	=  $opt_a;												# -a) suppress hex addresses in output
+$D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
 $D711::fill_gaps	= !$opt_g;
 
@@ -85,8 +85,7 @@ if (defined($opt_h)) {														# find structure-breaking labels and create 
 	exit(0);
 }
 
-if ($opt_A) { &D711::produce_output(); }									# include API in output
-else		{ &D711::produce_output(''); }
+&D711::produce_output(); 													# include API in output (has to be for compilation)
 
 exit(0);
 
