@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Mon Jun  3 16:46:18 2024
+#					 dlm: Fri Jun  7 21:54:52 2024
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 16 73 NIL 0 0 72 0 2 4 NIL ofnI
+#					 uE-Info: 75 35 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -14,6 +14,7 @@
 #	May 27, 2024: - added -A
 #	May 28, 2024: - negated -a
 #	Jun  3, 2024: - made -A silently mandatory (requried for compilation)
+#	Jun  7, 2024: - added new -A option for Sys 6A
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 (6);		
@@ -30,6 +31,7 @@ die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
 			"[list -a)ddressse in output] [list -c)ode bytes]\n\t\t" . 
 			"[suppress -g)ap data]\n\t\t" . 
 			"[suppress code-s)tructure analysis]\n\t\t" .
+			"[System 6-A) source]\n\t\t" .
 			"<ROM image>\n")
 	unless &getopts('Aacgh:i:ls') && @ARGV==1;
 
@@ -58,7 +60,7 @@ printf(STDERR "[Address range = %04X-%04X]\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM
 # Code Disassembly
 #----------------------------------------------------------------------
 
-&D711::disassemble_System6();
+&D711::disassemble_System6($opt_A);
 
 #----------------------------------------------------------------------
 # Make Human Readable
@@ -69,6 +71,8 @@ printf(STDERR "[Address range = %04X-%04X]\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM
 	unless ($opt_s);
 &D711::substitute_labels(); 												# resolve labels
 &D711::substitute_identifiers();											# rename game-specific ids
+
+&D711::apply_magic_System6($opt_A);											# e.g. ScoreByte
 
 #----------------------------------------------------------------------
 # Produce Output

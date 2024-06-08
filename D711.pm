@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Tue May 28 11:13:34 2024
+#					 dlm: Fri Jun  7 21:40:11 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 194 56 NIL 0 0 72 0 2 4 NIL ofnI
+#					 uE-Info: 3532 0 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -192,6 +192,8 @@
 #				  - suppressed output of labels with +1 .. +9
 #			      - BUG: copyright message was wrong
 #	May 28, 2024: - added return value to def_byte_hex()
+#	Jun  7, 2024: - added %systemConstants for System 6 disassembly
+#				  - turned formatting constants from my() to our()
 # END OF HISTORY
 
 # TO-DO:
@@ -212,6 +214,7 @@ our @no_autolabels;					# set to true to suppress system 7 auto labels
 
 our @ROM;
 our $MIN_ROM_ADDR,$MAX_ROM_ADDR;	# set by load_ROM
+our %systemConstants;				# set, e.g., by [D711.system6]
 
 sub BYTE($) { return $ROM[$_[0]]; }
 sub WORD($) { return $ROM[$_[0]]<<8|$ROM[$_[0]+1]; }
@@ -220,17 +223,17 @@ sub WORD($) { return $ROM[$_[0]]<<8|$ROM[$_[0]+1]; }
 # Output Format Defintion (Tweakables)
 #----------------------------------------------------------------------
 
-my($hard_tab)			= 4;							# length of tab stop
-my($code_base_indent)	= 2;							# base indent (tab stops) for code
-my($data_indent)		= 8;							# indent for data tables (long labels)
-my($rem_indent) 		= 17;							# indent for comments
-my($def_name_indent)	= 3;							# indent for .DEFINE .LBL statement args
-my($def_val_indent)		= 13;
-my(@op_width)			= (undef,2,5,1);				# typical operator width (tab stops) for (nil,6800,WVM7,Data)
+our($hard_tab)			= 4;							# length of tab stop
+our($code_base_indent)	= 2;							# base indent (tab stops) for code
+our($data_indent)		= 8;							# indent for data tables (long labels)
+our($rem_indent) 		= 17;							# indent for comments
+our($def_name_indent)	= 3;							# indent for .DEFINE .LBL statement args
+our($def_val_indent)	= 13;
+our(@op_width)			= (undef,2,5,1);				# typical operator width (tab stops) for (nil,6800,WVM7,Data)
 
-my($CodeType_6800)		= 1;							# different types of code in ROM
-my($CodeType_wvm)		= 2;							# for @TYPE[@addr]
-my($CodeType_data)		= 3;							# also, used as index in @op_width
+our($CodeType_6800)		= 1;							# different types of code in ROM
+our($CodeType_wvm)		= 2;							# for @TYPE[@addr]
+our($CodeType_data)		= 3;							# also, used as index in @op_width
 
 #----------------------------------------------------------------------
 # Tweakables
@@ -3458,6 +3461,26 @@ sub output_aliases($@)
 	print("\n");
 }
 
+sub output_keyValue_aliases($@)
+{
+	my($title,%kv) = @_;
+	return unless (%kv);
+
+	print(";----------------------------------------------------------------------\n");
+	print("; $title\n");
+	print(";----------------------------------------------------------------------\n\n");
+
+	foreach my $key (sort { $kv{$a} <=> $kv{$b} } keys(%kv)) {
+		next unless defined($kv{$key});
+		$line = '.DEFINE';
+		$line .= indent($line,$hard_tab*$def_name_indent);
+		$line .= $key;
+		$line .= indent($line,$hard_tab*$def_val_indent) . sprintf('$%02X',$kv{$key});
+		print("$line\n");
+	}
+	print("\n");
+}
+
 sub output_labels($)
 {
 	my($title) = @_;
@@ -3499,6 +3522,8 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 	output_aliases('Switch Aliases','Switch#%02X',@Switch);
 	output_aliases('Sound Aliases','Sound#%02X',@Sound);
 	output_aliases('Thread Aliases','Thread#%02X',@Thread);
+
+	output_keyValue_aliases('System Constants',%systemConstants); 			# symbolic identifiers, e.g. for sys6 switch scripts
 
 	output_labels("System$WMS_System API (external labels)")				# manually defined labels outside ROM
 		unless 	(@_ && $_[0] eq '');
