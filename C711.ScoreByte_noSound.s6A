@@ -1,15 +1,16 @@
 #======================================================================
 #                    C 7 1 1 . S C O R E B Y T E _ N O S O U N D . S 6 A 
 #                    doc: Sat Jun  8 12:22:52 2024
-#                    dlm: Sat Jun  8 21:13:34 2024
+#                    dlm: Sun Jun  9 17:49:29 2024
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 30 34 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 11 47 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jun  8, 2024: - created
+#	Jun  9, 2024: - BUG: routine had wrong name
 
-sub ScoreByte_s6A($$)
+sub ScoreByte_noSound_s6A($$)
 {
 	my($str,$src_line) = @_;
 
