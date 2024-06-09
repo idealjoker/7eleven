@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Sat Jun  8 20:42:51 2024
+#                    dlm: Sat Jun  8 21:32:08 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 412 47 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 68 29 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -65,6 +65,7 @@ $Lamp[0x3F] = 'L_sys_BB_highScore';
 sub def_switch_script($$@)
 {
 	my($sn,$addr,$stripBang) = @_;
+	return if $decoded[$addr];
 
 	$Address = $addr;
 	my($SC) = BYTE($Address);
@@ -407,7 +408,7 @@ sub score_str($$$)
 
 	my($sstr) = sprintf('%02X',$score_byte);
 	print(STDERR sprintf("score_str: invalid score string $sstr at address \$%04X\n",$addr))
-		unless (substr($sstr,1,1) =~ m{[0-5A-F]});
+		unless (substr($sstr,1,1) =~ m{[0-58-D]});
 	my($mult) = hex(substr($sstr,0,1));
 	my($expo) = (hex(substr($sstr,1,1)) & 0x07);
 	$expo += 1 if $opt_A;
