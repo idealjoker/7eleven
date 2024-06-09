@@ -1,33 +1,31 @@
 #======================================================================
 #                    C 7 1 1 . B I T M A S K 
 #                    doc: Fri May 31 11:52:25 2024
-#                    dlm: Fri May 31 12:46:36 2024
+#                    dlm: Sat Jun  8 12:40:20 2024
 #                    (c) 2023 idealjoker@mailbox.orgXSxsq
-#                    uE-Info: 26 26 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 11 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #   May 31, 2024: - created
+#	Jun  8, 2024: - adapted to new interface
 
 sub BitMask($$)
 {
-    my($str,$addr) = @_;														# works for Flags and Lamps, which by this stage have been decimalized
-
-    my($i);                                                                         # find base address of current line
-	for ($i=0; !defined($LINE[$addr-$i]); $i++) {}
+    my($str,$line) = @_;														# works for Flags and Lamps, which by this stage have been decimalized
 
 	if ($str =~ m{^Lamp#([0-9A-Fa-f]{2})$}) {
 		my($byte,$bit) = (substr($1,0,1),substr($1,1,1));
-		die("Invalid lamp number at input line $LINE[$addr-$i]\n")
+		die("Invalid lamp number at input line $line\n")
 			if ($byte > 3 || $bit > 7);
 		return 1<<$bit;
 	} elsif ($str =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
 		my($byte,$bit) = (substr($1,0,1),substr($1,1,1));
-		die("Invalid flag number at input line $LINE[$addr-$i]\n")
+		die("Invalid flag number at input line $line\n")
 			if ($byte > 3 || $bit > 7);
 		return 1<<$bit;
 	} else {
-		die("Invalid argument <$str> for {BitMask} at input line $LINE[$addr-$i]\n");
+		die("Invalid argument <$str> for {BitMask} at input line $line\n");
     }
 }
 

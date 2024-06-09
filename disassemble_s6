@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Fri Jun  7 21:54:52 2024
+#					 dlm: Sat Jun  8 17:42:34 2024
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 75 35 NIL 0 0 72 0 2 4 NIL ofnI
+#					 uE-Info: 118 26 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -15,6 +15,7 @@
 #	May 28, 2024: - negated -a
 #	Jun  3, 2024: - made -A silently mandatory (requried for compilation)
 #	Jun  7, 2024: - added new -A option for Sys 6A
+#	Jun  8, 2024: - added defSwitch() and defLamp()
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 (6);		
@@ -42,7 +43,7 @@ $D711::fill_gaps	= !$opt_g;
 if (defined($opt_i)) {														# include files with perl code
 	my(@linc) = split(',',$opt_i);
 	while (@linc) {
-		require shift(@linc);
+		require './' . shift(@linc);
 	}	
 }
 
@@ -92,4 +93,29 @@ if (defined($opt_h)) {														# find structure-breaking labels and create 
 &D711::produce_output(); 													# include API in output (has to be for compilation)
 
 exit(0);
+
+#======================================================================
+# Utilities
+#======================================================================
+
+sub defSwitch($$)
+{
+	my($no,$name) = @_;
+
+	die("defSwitch: invalid switch number $no\n")
+		unless ($no>=1 && $no<65);
+	$D711::Switch[$no-1] = $name;
+}
+
+sub defLamp($$$)
+{
+	my($row,$col,$name) = @_;
+
+	die("defLamp: invalid lamp row number $row\n")
+		unless ($row>=1 && $row<=8);
+	die("defLamp: invalid lamp column number $row\n")
+		unless ($col>=1 && $col<=8);
+	$D711::Lamp[8*($col-1)+$row-1] = $name;
+}
+
 

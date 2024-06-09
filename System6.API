@@ -1,13 +1,14 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Mon May 27 21:29:32 2024
+#                    dlm: Sat Jun  8 17:50:25 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 5 52 NIL 0 0 72 64 2 4 NIL ofnI
+#                    uE-Info: 11 70 NIL 0 0 72 64 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May 27, 2024: - created
+#	Jun  8, 2024: - changed sys_score[A]_now with sys_score[A]_noSound
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
@@ -321,7 +322,7 @@ define_label('sys_bobTilt_handler',							0x7993);
 define_label('sys_ballTilt_handler',						0x79A3);
 define_label('sys_tilt_sound', 								0x79B6);
 define_label('sys_score[A]',								0x79E4);
-define_label('sys_score[A]_now',							0x7A00);
+define_label('sys_score[A]_noSound',						0x7A00);
 define_label('sys_clear_displays', 							0x7AD6);
 define_label('sys_fill_displays',							0x7AD8);
 define_label('sys_clear_BB_RAM',							0x7AE3);

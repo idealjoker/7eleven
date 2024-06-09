@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Fri Jun  7 22:17:59 2024
+#                    dlm: Sat Jun  8 20:42:51 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 17 35 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 412 47 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -15,6 +15,7 @@
 #	Jun  7, 2024: - greatly improved disassembly of switch scripts
 #				  - implemented apply_magic_System6() to find
 #					all score bytes
+#	Jun  8, 2024: - improved error message
 
 #----------------------------------------------------------------------
 # System6 API
@@ -61,9 +62,62 @@ $Lamp[0x3F] = 'L_sys_BB_highScore';
 # Disassembly Routines
 #----------------------------------------------------------------------
 
+sub def_switch_script($$@)
+{
+	my($sn,$addr,$stripBang) = @_;
+
+	$Address = $addr;
+	my($SC) = BYTE($Address);
+	def_byte_hex($sn . '_script','Switch Script',		# script control byte
+					'control byte [' . (($SC & 0b0001) ? 'long' : 'short')
+									 . (($SC >> 4) ? sprintf(' with %d pinops',($SC >> 4)) : '')
+									 . ']');	    
+	my($slen) = 2;												# script statement length
+	$slen += 4 if ($SC & 0b0001);								# extended script
+	$slen += ($SC >> 4);										# pinops
+	def_byte_dec('',undef,'debounce timer') if ($SC & 0b0100);	# debounce timer
+	def_byteblock_hex(2,'',undef,'solenoid op') if ($SC & 0b1000);	# solenoid command & timer
+	do {
+		$bAddress = $Address;
+		$OP[$bAddress] = '.DB';
+		$IND[$bAddress] = 8; 
+		$TYPE[$bAddress] =	$CodeType_data;
+		$REM[$bAddress] = 'conditional branch';
+		push(@{$OPA[$bAddress]},(BYTE($Address) == 0)			# conditional
+									? 'SS_DEFAULT' 
+									: (BYTE($Address) < 0x40) 
+										? sprintf('Lamp#%02X',BYTE($Address)) 
+										: sprintf('Flag#%02X',BYTE($Address)-0x40));
+		$decoded[$Address++] = 1;
+
+		push(@{$OPA[$bAddress]},score_str(BYTE($Address),$Address,$opt_A));
+		$decoded[$Address++] = 1;
+
+		if ($SC & 0b0001) { 									# extended script
+			for (my($i)=0; $i<4; $i++) {
+				push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
+				$decoded[$Address++] = 1;
+			}
+		}
+
+		while ($Address < $bAddress+$slen) {
+			push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
+			$decoded[$Address++] = 1;
+		}
+	} while (BYTE($Address-$slen) != 0);						# script ends with SS_DEFAULT
+
+	if ($stripBang) {
+		for (my($a)=$addr; $a<$Address; $a++) {
+			foreach my $opa (@{$OPA[$a]}) {
+				$opa =~ s/(.*)!/\1/;
+            }
+        }
+    }
+}
+
 sub disassemble_System6($)
 {
-	my($opt_A) = @_;
+	our($opt_A) = @_;														# export into def_switch_script
 
 	$systemConstants{SS_DEFAULT} = 0;										# Switch Script conditional
 
@@ -177,48 +231,23 @@ sub disassemble_System6($)
 			$Address = WORD($Address-2);
 			def_byte_hex('_bonusScore','Outhole Bonus Value');
 			$OPA[$Address-1][0] =~ m{\$(..)};
-			$OPA[$Address-1][0] = score_str(hex($1),$opt_A);
+			$OPA[$Address-1][0] = score_str(hex($1),$Address-1,$opt_A);
 			$Address = $saddr;
         } elsif (WORD($Address-2) == 0x7230) {								# Switch Script
 			def_ptr_hex($sn . '_scriptPtr');
 			my($saddr) = $Address;
 			$Address = WORD($Address-2);
-			unless (defined($OP[$Address])) {
-				my($SC) = BYTE($Address);
-				def_byte_hex($sn . '_script','Switch Script',		# script control byte
-								'control byte [' . (($SC & 0b0001) ? 'long' : 'short')
-												 . (($SC >> 4) ? sprintf(' with %d pinops',($SC >> 4)) : '')
-												 . ']');		
-				my($slen) = 2;												# script statement length
-				$slen += 4 if ($SC & 0b0001);								# extended script
-				$slen += ($SC >> 4);										# pinops
-				def_byte_dec('',undef,'debounce timer') if ($SC & 0b0100); 	# debounce timer
-				def_byteblock_hex(2,'',undef,'solenoid op') if ($SC & 0b1000); 	# solenoid command & timer
-				do {
-#					def_byteblock_hex($slen);								# script statement
-					$bAddress = $Address;
-					$OP[$bAddress] = '.DB';
-					$IND[$bAddress] = 8; 
-					$TYPE[$bAddress] =  $CodeType_data;
-					$REM[$bAddress] = 'conditional branch';
-					push(@{$OPA[$bAddress]},(BYTE($Address) == 0) 			# conditional
-												? 'SS_DEFAULT' 
-												: (BYTE($Address) < 0x40) 
-													? sprintf('Lamp#%02X',BYTE($Address)) 
-													: sprintf('Flag#%02X',BYTE($Address)-0x40));
-					$decoded[$Address++] = 1;
-					push(@{$OPA[$bAddress]},score_str(BYTE($Address),$opt_A));
-					$decoded[$Address++] = 1;
-
-					for (my($i)=2; $i<$slen; $i++) {
-						push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
-						$decoded[$Address++] = 1;
-                   }
-	            } while (BYTE($Address-$slen) != 0);						# script ends with SS_DEFAULT
-            }
+			def_switch_script($sn,$Address)
+				unless (defined($OP[$Address]));
 			$Address = $saddr;												# return to switch table
 		} else {															# M6800 Switch Handler
-			def_byteblock_hex(2,$sn . '_params');
+			if (WORD($Address)>=$MIN_ROM_ADDR && WORD($Address)<=$MAX_ROM_ADDR) {
+				push(@switchScriptCandidateAddr,WORD($Address));
+				push(@switchScriptCandidateName,$sn);
+				def_ptr_hex($sn . '_scriptPtr');
+            } else {
+				def_byteblock_hex(2,$sn . '_params');
+            }
 		}
 	}
 
@@ -278,6 +307,11 @@ sub disassemble_System6($)
 	for (my($i)=2; $i<=$n; $i++) {
 		def_byteblock_hex(6,'');
 	}
+
+	for (my($i)=0; $i<@switchScriptCandidateAddr; $i++) {
+		next if $decoded[$switchScriptCandidateAddr[$i]];
+		def_switch_script($switchScriptCandidateName[$i],$switchScriptCandidateAddr[$i]);
+    }
 }
 
 sub disassemble_greenROM()
@@ -367,17 +401,22 @@ sub disassemble_greenROM()
 # Post Disassembly Magic
 #----------------------------------------------------------------------
 
-sub score_str($$)
+sub score_str($$$)
 {
-	my($score_byte,$opt_A) = @_;
+	my($score_byte,$addr,$opt_A) = @_;
 
 	my($sstr) = sprintf('%02X',$score_byte);
-	my($score) = substr($sstr,0,1) * 10**substr($sstr,1,1);
-	$score *= 10 if $opt_A;
-	my($scoreStr) = sprintf('%d',$score);
+	print(STDERR sprintf("score_str: invalid score string $sstr at address \$%04X\n",$addr))
+		unless (substr($sstr,1,1) =~ m{[0-5A-F]});
+	my($mult) = hex(substr($sstr,0,1));
+	my($expo) = (hex(substr($sstr,1,1)) & 0x07);
+	$expo += 1 if $opt_A;
+	my($scoreStr) = "${mult}x1";
+	$scoreStr .= '0' while ($expo-- > 0);
 	$scoreStr =~ s/000$/K/;
 	my($sys) = $opt_A ? 's6A' : 's6';
-    return "$scoreStr\{ScoreByte.$sys\}";
+    return (hex(substr($sstr,1,1)) & 0x08) ? "$scoreStr\{ScoreByte_noSound.$sys\}" 
+									  	   : "$scoreStr\{ScoreByte.$sys\}";
 }
 
 sub apply_magic_System6($)
@@ -385,15 +424,24 @@ sub apply_magic_System6($)
 	my($opt_A) = @_;
 
 	for (my($addr)=$MIN_ROM_ADDR+2; $addr<=$MAX_ROM_ADDR; $addr++) {			# loop through addresses
-		if ($OP[$addr] 	 eq 'JSR' && $OPA[$addr][0] =~ /^sys_score\[A\]/) {
+		if ($OP[$addr] eq 'JSR' && $OPA[$addr][0] =~ /^sys_score\[A\]/) {
 			if ($OP[$addr-2] eq 'LDAA') {
 				$OPA[$addr-2][0] =~ m{\$(..)};
-				$OPA[$addr-2][0] = score_str(hex($1),$opt_A);
+				$OPA[$addr-2][0] = '#' . score_str(hex($1),$addr,$opt_A);
             } else {
-				printf(STDERR "WARNING: scoring syscall $OPA[$addr][0] at address \$%04X not preceded by LDAA\n",$addr);
+				printf(STDERR "WARNING: unknown score for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
             }
         }
+		if ($OP[$addr] eq 'JMP' && $OPA[$addr][0] =~ /^sys_switch_script$/) {
+			if ($OP[$addr-5] eq 'LDX') {
+				$OPA[$addr-5][0] =~ m{\$(....)};
+				my($script_addr) = hex($1);
+				def_switch_script("unknown_$1",$script_addr,1);
+			} else {
+				printf(STDERR "WARNING: unknown switch script called at address \$%04X\n",$addr);
+			}
+	    }
     }
 }
 
-1; # return true
+1; 																# return true

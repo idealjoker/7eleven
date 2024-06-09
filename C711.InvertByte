@@ -1,18 +1,19 @@
 #======================================================================
 #                    C 7 1 1 . I N V E R T B Y T E 
 #                    doc: Sun Oct 29 17:35:44 2023
-#                    dlm: Fri May 31 11:53:15 2024
+#                    dlm: Sat Jun  8 12:38:44 2024
 #                    (c) 2023 idealjoker@mailbox.orgXSxsq
-#                    uE-Info: 11 50 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 16 17 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Oct 29, 2024: - created
 #	May 31, 2024: - removed unnecessary statements
+#	Jun  8, 2024: - adapted to new interface
 
 sub InvertByte($$)
 {
-	my($str,$addr) = @_;
+	my($str,$line) = @_;
 	return 0xFF - labelValue(97,$str);
 }
 

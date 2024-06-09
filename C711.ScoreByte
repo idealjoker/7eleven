@@ -1,21 +1,20 @@
 #======================================================================
 #                    C 7 1 1 . S C O R E B Y T E 
 #                    doc: Sun Oct 29 17:35:44 2023
-#                    dlm: Fri May 31 11:54:23 2024
+#                    dlm: Sat Jun  8 12:39:46 2024
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 11 32 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 17 50 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Oct 29, 2024: - created
 #	May 31, 2024: - added header
+#	Jun  8, 2024: - adapted to new interface
 
 sub ScoreByte($$)
 {
-	my($str,$addr) = @_;
-	my($i);
-	for ($i=0; !defined($LINE[$addr-$i]); $i++) {}
-	return encode_scoreByte($str,"input line $LINE[$addr-$i]");
+	my($str,$line) = @_;
+	return encode_scoreByte($str,"input line $line");
 }
 
 1;

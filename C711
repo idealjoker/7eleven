@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri May 31 12:53:02 2024
+#                    dlm: Sat Jun  8 21:09:17 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 302 52 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1159 26 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -241,11 +241,11 @@
 #   Apr 28, 2023: - BUG: -t produced output (completely pointless)
 #   Apr 29, 2023: - added support for -I5
 #   Apr 30, 2023: - BUG: I5 OPC did not process arguments
-#   May  4, 2023: - added {ScoreByte} interpreter
-#                 - added {zStrPtr} interpreter
-#                 - added {LSB} {MSB} interpreters
-#                 - BUG: interpreters did not allow arithmetic
-#   May 11, 2023: - added {InvertByte} interpreter
+#   May  4, 2023: - added {ScoreByte} encoder
+#                 - added {zStrPtr} encoder
+#                 - added {LSB} {MSB} encoders
+#                 - BUG: encoders did not allow arithmetic
+#   May 11, 2023: - added {InvertByte} encoder
 #   May 16, 2023: - allowed for value when using .UNDEF[INE]
 #                 - changed IVM_mode opcode to $00
 #   May 19, 2023: - BUG: label decimalization ignored {Interpreter}
@@ -281,7 +281,7 @@
 #				  - added .WVM_MODE
 #				  - added -R
 #	Oct 29, 2023: - gave mode checking teeth
-#				  - exported all interpreters to separate files (modularized design)
+#				  - exported all encoders to separate files (modularized design)
 #	Dec  3, 2023: - added support for << (left shift) to label arithmetic
 #				  - bug string length check did not allow for \xx codes
 #	Dec 18, 2023: - added _ENDUNLESS
@@ -326,7 +326,7 @@
 #       => when arithmetic is necessary, use labels
 #       => no arithmetic allowed switch numbers, for example!
 #   - Interpreters
-#		- are loaded from $PATH/C711.$interpreter
+#		- are loaded from $PATH/C711.$encoder
 #		- currently implemented
 # 	      	- {SolCmd}
 #   		- {ScoreByte}
@@ -453,7 +453,7 @@ if (defined($opt_a)) {											# override MAX_ROM_ADDR with -a
 my($FIRST_ADDR) = $MAX_ROM_ADDR + 1;                            # sentinel (true value set by .ORG)
 
 my(@SRC);														# source line 
-local(@LINE);													# source line number indexed by ADDR; accessed from interpreters
+local(@LINE);													# source line number indexed by ADDR; accessed from encoders
 
 my(%ALIAS,%ALIAS_REFD);                                         # aliases (defines), number of references
 my(%LBL,%LBL_TYPE);												# labels (name->address), label type
@@ -1135,7 +1135,7 @@ sub resolve_labels($)
         }
 
         #----------------------------------------------------------------------
-        # Label Interpreters
+        # Value Encoders / Data Types
         #   - should allow for simple arithmetic to be applied afterwards
         #     where this makes sense
         #   - Examples:
@@ -1145,11 +1145,19 @@ sub resolve_labels($)
         #       LDAB    =SolBuf{LSB}+2
         #----------------------------------------------------------------------
 
-        my($str,$interpreter) = ($ROM[$a] =~ m/^([^{]+)\{([^}]+)\}/);                   # "interpreter" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
-		if (defined($interpreter)) {
-#			print(STDERR "interpreter $str,$interpreter\n");
-			require "$PATH/C711.$interpreter";
-			$ROM[$a] = sprintf("%d$'",eval("$interpreter(\$str,\$a);")) || die("$@");
+        my($str,$encoder) = ($ROM[$a] =~ m/^([^{]+)\{([^}]+)\}/);                   	# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
+		if (defined($encoder)) {
+			my($remainder) = $';
+#			print(STDERR "encoder($str,$encoder)\n");
+			require "$PATH/C711.$encoder";
+			$encoder =~ s/\./_/g;														# replace . by _ in function name
+			my($ofs);																	# find statement base address
+			for ($ofs=0; !defined($LINE[$addr-$ofs]); $ofs++) {}
+			my($expr) = sprintf("$encoder('%s',%d);",$str,$LINE[$addr-$ofs]);
+#			print(STDERR "eval($expr)\n");
+            $ROM[$a] = sprintf("%d$remainder",eval($expr));
+            die($@) if $@;
+#           printf(STDERR "ROM[%04X] = %02X\n",$a,$ROM[$a]);            
 		}
 
         #----------------------------------------------------------------------
