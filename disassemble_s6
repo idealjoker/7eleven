@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Sat Jun  8 17:42:34 2024
+#					 dlm: Sun Jun  9 14:16:52 2024
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 118 26 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 19 63 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -16,6 +16,7 @@
 #	Jun  3, 2024: - made -A silently mandatory (requried for compilation)
 #	Jun  7, 2024: - added new -A option for Sys 6A
 #	Jun  8, 2024: - added defSwitch() and defLamp()
+#	Jun  9, 2024: - adapated to improved switch script decoding
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 (6);		
@@ -73,6 +74,7 @@ printf(STDERR "[Address range = %04X-%04X]\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM
 &D711::substitute_labels(); 												# resolve labels
 &D711::substitute_identifiers();											# rename game-specific ids
 
+&D711::grow_switch_scripts();												# needs to be done when space is known
 &D711::apply_magic_System6($opt_A);											# e.g. ScoreByte
 
 #----------------------------------------------------------------------

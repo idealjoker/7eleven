@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Sat Jun  8 21:32:08 2024
+#                    dlm: Sun Jun  9 14:16:27 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 68 29 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 20 44 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -16,6 +16,8 @@
 #				  - implemented apply_magic_System6() to find
 #					all score bytes
 #	Jun  8, 2024: - improved error message
+#	Jun  9, 2024: - improved switch script handling to grow
+#					scripts into empty space
 
 #----------------------------------------------------------------------
 # System6 API
@@ -59,17 +61,27 @@ $Lamp[0x3E] = 'L_sys_BB_samePlayerShootsAgain';
 $Lamp[0x3F] = 'L_sys_BB_highScore';
 
 #----------------------------------------------------------------------
-# Disassembly Routines
+# Switch Scripts
+#	- consists of preamble with control byte, debounce interval, etc.
+#	  followed by conditionals
+#	- usually, the last conditional is an SS_OTHERWISE (= always)
+#	- this is not the case in TriZone, however, where at least
+#	  one of the switch routines does not have an otherwise clause
+#	- the solution is to decode only the first conditional and,
+#	  if this is not SS_OTHERWISE, continue the script after 
+#	  everything else has been disassembled (before fillign the gaps)
+#	- stripBang flag is required because def_switch_script is
+#	  also called after label resolution (during magic)
 #----------------------------------------------------------------------
 
-sub def_switch_script($$@)
+sub def_switch_script($$@)										
 {
 	my($sn,$addr,$stripBang) = @_;
 	return if $decoded[$addr];
 
 	$Address = $addr;
 	my($SC) = BYTE($Address);
-	def_byte_hex($sn . '_script','Switch Script',		# script control byte
+	def_byte_hex($sn . '_script','Switch Script',				# script control byte
 					'control byte [' . (($SC & 0b0001) ? 'long' : 'short')
 									 . (($SC >> 4) ? sprintf(' with %d pinops',($SC >> 4)) : '')
 									 . ']');	    
@@ -78,34 +90,7 @@ sub def_switch_script($$@)
 	$slen += ($SC >> 4);										# pinops
 	def_byte_dec('',undef,'debounce timer') if ($SC & 0b0100);	# debounce timer
 	def_byteblock_hex(2,'',undef,'solenoid op') if ($SC & 0b1000);	# solenoid command & timer
-	do {
-		$bAddress = $Address;
-		$OP[$bAddress] = '.DB';
-		$IND[$bAddress] = 8; 
-		$TYPE[$bAddress] =	$CodeType_data;
-		$REM[$bAddress] = 'conditional branch';
-		push(@{$OPA[$bAddress]},(BYTE($Address) == 0)			# conditional
-									? 'SS_DEFAULT' 
-									: (BYTE($Address) < 0x40) 
-										? sprintf('Lamp#%02X',BYTE($Address)) 
-										: sprintf('Flag#%02X',BYTE($Address)-0x40));
-		$decoded[$Address++] = 1;
-
-		push(@{$OPA[$bAddress]},score_str(BYTE($Address),$Address,$opt_A));
-		$decoded[$Address++] = 1;
-
-		if ($SC & 0b0001) { 									# extended script
-			for (my($i)=0; $i<4; $i++) {
-				push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
-				$decoded[$Address++] = 1;
-			}
-		}
-
-		while ($Address < $bAddress+$slen) {
-			push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
-			$decoded[$Address++] = 1;
-		}
-	} while (BYTE($Address-$slen) != 0);						# script ends with SS_DEFAULT
+	def_switch_conditional($slen);
 
 	if ($stripBang) {
 		for (my($a)=$addr; $a<$Address; $a++) {
@@ -115,6 +100,64 @@ sub def_switch_script($$@)
         }
     }
 }
+
+sub grow_switch_scripts()
+{
+	for (my($i)=0; $i<@SSaddr; $i++) {
+		$Address = $SSaddr[$i];
+		my($slen) = $SSslen[$i];
+		while (!$decoded[$Address]) {
+			def_switch_conditional($slen);
+			for (my($a)=$SSaddr[$i]; $a<$Address; $a++) {					# remove bangs
+				foreach my $opa (@{$OPA[$a]}) {
+					$opa =~ s/(.*)!/\1/;
+				}
+	        }
+			last if (BYTE($Address-$slen) == 0);							# script ends with SS_DEFAULT
+		}
+	}
+}
+
+sub def_switch_conditional($)
+{
+	my($slen) = @_;
+
+	my($bAddress) = $Address;
+	$OP[$bAddress] = '.DB';
+	$IND[$bAddress] = 8; 
+	$TYPE[$bAddress] =	$CodeType_data;
+	$REM[$bAddress] = 'conditional branch';
+	push(@{$OPA[$bAddress]},(BYTE($Address) == 0)			# conditional
+								? 'SS_DEFAULT' 
+								: (BYTE($Address) < 0x40) 
+									? sprintf('Lamp#%02X',BYTE($Address)) 
+									: sprintf('Flag#%02X',BYTE($Address)-0x40));
+	$decoded[$Address++] = 1;
+
+	push(@{$OPA[$bAddress]},score_str(BYTE($Address),$Address,$opt_A));
+	$decoded[$Address++] = 1;
+
+#	if ($SC & 0b0001) { 													# extended script (code unnecessary)
+#		for (my($i)=0; $i<4; $i++) {
+#			push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
+#		$decoded[$Address++] = 1;
+#		}
+#	}
+
+	while ($Address < $bAddress+$slen) {
+		push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
+		$decoded[$Address++] = 1;
+	}
+
+	if (BYTE($Address-$slen) != 0) {										# other conditional exist, save info for later processing
+		push(@SSaddr,$Address);
+		push(@SSslen,$slen);
+    }
+}
+
+#----------------------------------------------------------------------
+# Game Disassembly Routine
+#----------------------------------------------------------------------
 
 sub disassemble_System6($)
 {
