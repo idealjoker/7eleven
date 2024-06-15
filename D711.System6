@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Sun Jun  9 14:16:27 2024
+#                    dlm: Sat Jun 15 10:39:53 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 20 44 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 264 52 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -18,6 +18,8 @@
 #	Jun  8, 2024: - improved error message
 #	Jun  9, 2024: - improved switch script handling to grow
 #					scripts into empty space
+#	Jun 15, 2024: - BUG: sound table was words, not bytes
+#				  - improved warning messages
 
 #----------------------------------------------------------------------
 # System6 API
@@ -171,7 +173,7 @@ sub disassemble_System6($)
 	def_byte_hex('GAMEROM_VERSION');
 	def_byte_hex('CMOS_CHECKBYTE');
 
-	def_byte_hex('DEFAULT_HIGHSCORE');										# Game Adjustments
+	def_byte_hex('DEFAULT_HIGHSCORE','Game Adjustments');										# Game Adjustments
 	def_byte_hex('DEFAULT_REPLAYLVL_1');
 	def_byte_hex('DEFAULT_REPLAYLVL_2');
 	def_byte_hex('DEFAULT_REPLAYLVL_3');
@@ -196,7 +198,7 @@ sub disassemble_System6($)
 	def_byte_hex('DEFAULT_AD35');
 	def_byteblock_hex(40,'DEFAULT_COIN_TABLE');							
 
-	def_byte_hex('MAX_SWITCH');												# Game Data
+	def_byte_hex('MAX_SWITCH','Misc Game Data');												# Game Data
 	def_byte_hex('BALLSERVE_SOLCMD_AND_1EB_FLAG');
 	def_byte_LampOrFlag('EXTRABALL_LAMP');
 	def_byte_hex('MAX_PLAYER');
@@ -218,16 +220,16 @@ sub disassemble_System6($)
 		def_byte_LampOrFlag('');
 		def_byte_LampOrFlag('');
 	def_bitgrouptable(8,'BITGROUP_TABLE');
-	def_byteblock_hex(8,'LAMPS_INITDATA');
+	def_byteblock_hex(8,'LAMPS_INITDATA','Lamp/Flag Initialization and Memory Data');
 	def_byteblock_hex(2,'FLAGS_INITDATA');
 	def_byteblock_hex(8,'BLINK_INITDATA');
 	def_byteblock_hex(8,'LAMPS_MEMDATA');
 	def_byteblock_hex(2,'FLAGS_MEMDATA');
 	def_byteblock_hex(8,'BLINK_MEMDATA');
-	def_wordblock_hex(32,'SOUND_TABLE');
-	def_byteblock_hex(8,'PBPINOPP_SOLCMD_TABLE_1');
+	def_byteblock_hex_cols(32,2,'SOUND_TABLE','Sound Table');
+	def_byteblock_hex(8,'PBPINOPP_SOLCMD_TABLE_1','PinOp Solenoid Tables');
 	def_byteblock_hex(8,'PBPINOPP_SOLCMD_TABLE_2');
-	def_byte_hex('BONUSCOUNT_BONUSX_DELAY');
+	def_byte_hex('BONUSCOUNT_BONUSX_DELAY','Outhole Bonus Data');
 	def_byte_hex('BONUSCOUNT_SOUND');
 	def_byte_hex('BONUSCOUNT_DELAY');
 	def_byte_LampOrFlag('BONUSLAMPS_TABLE');
@@ -239,11 +241,11 @@ sub disassemble_System6($)
 		def_byte_LampOrFlag('');
 		def_byte_LampOrFlag('');
 	def_byteblock_hex(4,'BONUSX_VALUE_TABLE');
-	def_byte_hex('SPECIAL_SCORE');
-	def_byte_hex('SND_CREDIT');
+	def_byte_hex('SPECIAL_SCORE','Misc Game Data');
+	def_byte_hex('SND_CREDIT','System Sounds');
 	def_byte_hex('SND_CREDIT_DELAY');
 	def_byte_hex('SND_TILT');
-	def_ptr_hex('STATUSUPDATE_TABLE');
+	def_ptr_hex('STATUSUPDATE_TABLE','System Pointers');
 	def_ptr_hex('STATUSUPDATE_TABLE_END');
 	def_ptr_hex('GAMEEVENTS_HANDLER_TABLE');
 	def_ptr_hex('GAMEEVENTS_HANDLER_TABLE_END');
@@ -251,15 +253,15 @@ sub disassemble_System6($)
 	def_code_ptr('BALLSTART_EVENT','ballstart_event_handler','Ball Start Event Handler');
 	def_code_ptr('BONUSX_COUNTDOWN_EVENT','bonusX_countdown_event_handler','BonusX Countdown Event Handler');
 	def_code_ptr('BALLDRAIN_EVENT','balldrain_event_handler','End of Ball Event Handler');
-	def_ptr_hex('SOUNDSCRIPT_P1');
+	def_ptr_hex('SOUNDSCRIPT_P1','System Soundscripts');
 	def_ptr_hex('SOUNDSCRIPT_P2');
 	def_ptr_hex('SOUNDSCRIPT_P3');
 	def_ptr_hex('SOUNDSCRIPT_P4');
 	def_ptr_hex('SOUNDSCRIPT_MATCH');
 	def_ptr_hex('SOUNDSCRIPT_HIGHSCORE');
 	def_ptr_hex('SOUNDSCRIPT_GAMEOVER');
-	def_byteblock_code(3,'IRQ_HANDLER');
-	def_byte_hex('ATTRACT_DELAY');
+	def_byteblock_code(3,'IRQ_HANDLER','IRQ hook');
+	def_byte_hex('ATTRACT_DELAY','Attract Mode Data');
 	def_byte_hex('ATTRACT_SEQ_MAX');
 	def_ptr_hex('ATTRACT_DATA');
 
@@ -473,7 +475,7 @@ sub apply_magic_System6($)
 				$OPA[$addr-2][0] =~ m{\$(..)};
 				$OPA[$addr-2][0] = '#' . score_str(hex($1),$addr,$opt_A);
             } else {
-				printf(STDERR "WARNING: unknown score for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+				printf(STDERR "WARNING: unknown score value (A) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
             }
         }
 		if ($OP[$addr] eq 'JMP' && $OPA[$addr][0] =~ /^sys_switch_script$/) {
@@ -482,7 +484,7 @@ sub apply_magic_System6($)
 				my($script_addr) = hex($1);
 				def_switch_script("unknown_$1",$script_addr,1);
 			} else {
-				printf(STDERR "WARNING: unknown switch script called at address \$%04X\n",$addr);
+				printf(STDERR "WARNING: unknown switch script (X) called at address \$%04X\n",$addr);
 			}
 	    }
     }
