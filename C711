@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Jun  8 21:09:17 2024
+#                    dlm: Mon Jun 17 16:03:36 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1159 26 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2285 27 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -2282,7 +2282,7 @@ sub assemble_pragma()
         return 1;
     }
 
-	die("Unknown .PRAGMA <@_> on line $.\n");
+	die("Unknown mode-$MODE .PRAGMA <@_> on line $.\n");
 }
     
 #----------------------------------------------------------------------
