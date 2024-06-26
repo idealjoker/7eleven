@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 #======================================================================
-#                    C 7 1 1 
+#                    . . / . . / B I N / C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon Jun 17 16:03:36 2024
+#                    dlm: Mon Jun 24 17:44:49 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 2285 27 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1123 106 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -1101,7 +1101,7 @@ sub resolve_labels($)
                            && ($offset+$a+$bo) >= $opt_f_from && ($offset+$a+$bo) <= $opt_f_to) {
                     my($opt) = "$LINE[$a-$bo] $SRC[$a-$bo]\n";
                     if (! -t 1) { print($opt); }
-                    else        { print(OPTF $opt); }
+                    else        { print(OPTF $opt); }									# Optimizer pass 1
                 }
             }
             $ROM[$a] = labelValue(8,$lbl);
@@ -1120,7 +1120,7 @@ sub resolve_labels($)
                            && ($offset+$a+1)    >= $opt_f_from && ($offset+$a+1) <= $opt_f_to) {
                     my($opt) = "$LINE[$a-1] $SRC[$a-1]\n";
                     if (! -t 1) { print($opt); }
-                    else        { print(OPTF $opt); }
+                    else        { print(OPTF $opt); }									# Optimizer pass 1
                 }
             }
             $ROM[$a] = labelValue(10,$lbl);
