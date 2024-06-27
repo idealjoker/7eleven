@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri Jun  7 21:40:11 2024
+#					 dlm: Sun Jun 16 19:47:55 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 3532 0 NIL 0 0 72 0 2 4 NIL ofnI
+#					 uE-Info: 2041 59 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -194,6 +194,7 @@
 #	May 28, 2024: - added return value to def_byte_hex()
 #	Jun  7, 2024: - added %systemConstants for System 6 disassembly
 #				  - turned formatting constants from my() to our()
+#	Jun 16, 2024: - improved error message
 # END OF HISTORY
 
 # TO-DO:
@@ -2037,8 +2038,9 @@ sub def_byte_LampOrFlag(@)
 	setLabel($lbl,$Address);
     $Address+=1,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
 	$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-	die if (($WMS_System == 6) && (BYTE($Address) > 0x4F)) ||
-		   (($WMS_System != 6) && (BYTE($Address) > 0x7F));
+	die(sprintf("Abort: Illegal System 6 Lamp or Flag byte (\$%02X) at address \$%04X\n",BYTE($Address),$Address))
+		 if (($WMS_System == 6) && (BYTE($Address) > 0x4F)) ||
+			(($WMS_System != 6) && (BYTE($Address) > 0x7F));
 	$OPA[$Address][0] = (BYTE($Address) < 0x40) 
 					  ? sprintf('Lamp#%02X',BYTE($Address)) 
 					  : sprintf('Flag#%02X',BYTE($Address)-0x40);

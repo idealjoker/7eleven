@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Sat Jun 15 10:39:53 2024
+#                    dlm: Fri Jun 21 07:53:55 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 264 52 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 24 56 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -20,6 +20,8 @@
 #					scripts into empty space
 #	Jun 15, 2024: - BUG: sound table was words, not bytes
 #				  - improved warning messages
+#	Jun 21, 2024: - added direct_code_path() to magic, because this
+#					is used commonly to avoid long jumps
 
 #----------------------------------------------------------------------
 # System6 API
@@ -465,12 +467,38 @@ sub score_str($$$)
 									  	   : "$scoreStr\{ScoreByte.$sys\}";
 }
 
+sub isMember($@)
+{
+	my($target,@list) = @_;
+
+	foreach my $le (@list) {
+		return 1 if ($le eq $target);
+	}
+	return 0;
+}
+
+sub direct_code_path($$)
+{
+	my($addr,$target_re) = @_;
+
+	my(@branch_ops) = ('BRA','BNE','BEQ','BHI','BLS','BCC','BCS','BVC','BVS','BMI','BPL','BLT','BGE','BGT','BLE');
+	my(@jump_ops) 	= ('JMP');
+	my(@sbr_ops) 	= ('JSR','BSR');
+
+	return 0 unless isMember($OP[$addr],@branch_ops,@jump_ops,@sbr_ops);
+	return 1 if ($OPA[$addr][0] =~ m{$target_re});
+
+	die unless defined($Lbl{$OPA[$addr][0]});
+	return direct_code_path($Lbl{$OPA[$addr][0]},$target_re);
+}
+	
+
 sub apply_magic_System6($)
 {
 	my($opt_A) = @_;
 
 	for (my($addr)=$MIN_ROM_ADDR+2; $addr<=$MAX_ROM_ADDR; $addr++) {			# loop through addresses
-		if ($OP[$addr] eq 'JSR' && $OPA[$addr][0] =~ /^sys_score\[A\]/) {
+		if (direct_code_path($addr,'^sys_score\[A\]')) {
 			if ($OP[$addr-2] eq 'LDAA') {
 				$OPA[$addr-2][0] =~ m{\$(..)};
 				$OPA[$addr-2][0] = '#' . score_str(hex($1),$addr,$opt_A);
@@ -478,7 +506,7 @@ sub apply_magic_System6($)
 				printf(STDERR "WARNING: unknown score value (A) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
             }
         }
-		if ($OP[$addr] eq 'JMP' && $OPA[$addr][0] =~ /^sys_switch_script$/) {
+		if (direct_code_path($addr,'^sys_switch_script$')) {
 			if ($OP[$addr-5] eq 'LDX') {
 				$OPA[$addr-5][0] =~ m{\$(....)};
 				my($script_addr) = hex($1);
