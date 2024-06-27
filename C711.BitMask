@@ -1,20 +1,27 @@
 #======================================================================
 #                    C 7 1 1 . B I T M A S K 
 #                    doc: Fri May 31 11:52:25 2024
-#                    dlm: Sat Jun  8 12:40:20 2024
+#                    dlm: Wed Jun 26 08:32:31 2024
 #                    (c) 2023 idealjoker@mailbox.orgXSxsq
-#                    uE-Info: 11 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 21 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #   May 31, 2024: - created
 #	Jun  8, 2024: - adapted to new interface
+#	Jun 26, 2024: - BUG: BITB    #L_2x{BitMask} did not work
+
+# NOTES:
+#	- it appears that when this routine is called, the Lamp numbers have
+#	  already been substituted and decimalized but not the flags
+#	- if this is correct, the if clause is never executed
 
 sub BitMask($$)
 {
-    my($str,$line) = @_;														# works for Flags and Lamps, which by this stage have been decimalized
+    my($str,$line) = @_;														# works for Flags and Lamps, the latter of which by this stage have been decimalized
 
 	if ($str =~ m{^Lamp#([0-9A-Fa-f]{2})$}) {
+		die;																	# see NOTES above
 		my($byte,$bit) = (substr($1,0,1),substr($1,1,1));
 		die("Invalid lamp number at input line $line\n")
 			if ($byte > 3 || $bit > 7);
@@ -25,7 +32,10 @@ sub BitMask($$)
 			if ($byte > 3 || $bit > 7);
 		return 1<<$bit;
 	} else {
-		die("Invalid argument <$str> for {BitMask} at input line $line\n");
+		die("Invalid argument <$str> for {BitMask} at input line $line\n")
+			unless numberp($str) && ($str>=0);
+		my($bit) = $str % 8;
+		return 1<<$bit;
     }
 }
 
