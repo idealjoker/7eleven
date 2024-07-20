@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Fri Jun 21 07:53:55 2024
+#                    dlm: Sat Jul 20 06:11:42 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 24 56 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 25 49 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -22,6 +22,7 @@
 #				  - improved warning messages
 #	Jun 21, 2024: - added direct_code_path() to magic, because this
 #					is used commonly to avoid long jumps
+#	Jul 20, 2024: - moved isMember() to [D711.pm]
 
 #----------------------------------------------------------------------
 # System6 API
@@ -467,15 +468,15 @@ sub score_str($$$)
 									  	   : "$scoreStr\{ScoreByte.$sys\}";
 }
 
-sub isMember($@)
-{
-	my($target,@list) = @_;
-
-	foreach my $le (@list) {
-		return 1 if ($le eq $target);
-	}
-	return 0;
-}
+#sub isMember($@)														# exported to [D711.pm]
+#{
+#	my($target,@list) = @_;
+#
+#	foreach my $le (@list) {
+#		return 1 if ($le eq $target);
+#	}
+#	return 0;
+#}
 
 sub direct_code_path($$)
 {

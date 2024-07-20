@@ -1,0 +1,450 @@
+#======================================================================
+#                    D 7 1 1 . M 6 8 0 0 
+#                    doc: Tue Jul 16 07:22:07 2024
+#                    dlm: Sat Jul 20 06:30:45 2024
+#                    (c) 2024 idealjoker@mailbox.org
+#                    uE-Info: 5 52 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# BUGS:
+#	- op_IND assumes unsigned offsets
+#	- op_IND supports unused(?) extra args
+
+#----------------------------------------------------------------------
+# Motorola 6800 Disassembler
+#----------------------------------------------------------------------
+
+# HISTORY:
+# 	Jul 16, 2024: - exported from [D711.pm]
+#	Jul 18, 2024: - adapted to M6809 support
+# HISTORY END
+
+sub op_IMP(@)													# operation with implied addressing
+{
+	my($opc,$ind,$op,@args) = @_;
+	return undef unless (BYTE($addr) == $opc);
+	$OP[$addr] = $op; $IND[$addr] = $ind;
+	@{$OPA[$addr]} = @args;
+	$decoded[$addr++] = 1;
+	return 1;
+}
+
+sub op_IMM(@)													# operation with immediate addressing
+{
+	my($opc,$ind,$op,@args) = @_;
+	return undef unless (BYTE($addr) == $opc);
+	$OP[$addr] = $op; $IND[$addr] = $ind;
+	push(@{$OPA[$addr]},@args);
+	push(@{$OPA[$addr]},sprintf('#$%02X',BYTE($addr+1)));
+	$decoded[$addr++] = $decoded[$addr++] = 1;
+	return 1;
+}
+
+sub op_IMM2(@)													# operation with immediate 2-byte addressing
+{
+	my($opc,$ind,$op,@args) = @_;
+	return undef unless (BYTE($addr) == $opc);
+	$OP[$addr] = $op; $IND[$addr] = $ind;
+	push(@{$OPA[$addr]},@args);
+	push(@{$OPA[$addr]},sprintf('#$%04X',WORD($addr+1)));
+	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
+	return 1;
+}
+
+sub op_DIR(@)													# operation with direct addressing
+{
+	my($opc,$ind,$op,@args) = @_;
+	return undef unless (BYTE($addr) == $opc);
+	my($op_DIR) = BYTE($addr+1);
+	$OP[$addr] = $op; $IND[$addr] = $ind;
+	push(@{$OPA[$addr]},@args);
+	push(@{$OPA[$addr]},label_address($op_DIR,$lbl_root));
+	$decoded[$addr++] = $decoded[$addr++] = 1;
+	return 1;
+}
+
+sub op_EXT(@)													# operation with extended addressing
+{
+	my($opc,$ind,$op,@args) = @_;
+	return undef unless (BYTE($addr) == $opc);
+	my($op_EXT) = WORD($addr+1);
+	$OP[$addr] = $op; $IND[$addr] = $ind;
+	push(@{$OPA[$addr]},@args);
+	push(@{$OPA[$addr]},label_address($op_EXT,$lbl_root));
+	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
+	return $op_EXT;												# return address!!
+}
+
+sub op_REL($$$$$)												# operation with relative addressing
+{
+	my($opc,$ind,$op,$lbl_root,$follow_code) = @_;
+	return undef unless (BYTE($addr) == $opc);
+	my($trg_addr) = $addr + 2 + ((BYTE($addr+1) < 128) ? BYTE($addr+1) : BYTE($addr+1)-256);
+	$OP[$addr] = $op; $IND[$addr] = $ind;
+	$OPA[$addr][0] = label_address($trg_addr,$lbl_root);
+	$decoded[$addr++] = $decoded[$addr++] = 1;
+	if ($follow_code) {
+		disassemble_asm($ind,$trg_addr,$lbl_root);
+	} else {				   									# don't follow code in byte-limited sections
+		push(@unfollowed_lbl,$trg_addr);
+	}
+		
+	return 1;
+}
+
+sub op_IND(@)													# operation with indirect addressing
+{
+	my($opc,$ind,$op,@args) = @_;
+	return undef unless (BYTE($addr) == $opc);
+	$OP[$addr] = $op; $IND[$addr] = $ind;
+	push(@{$OPA[$addr]},@args);
+	push(@{$OPA[$addr]},sprintf('%d,X',BYTE($addr+1)));
+	$decoded[$addr++] = $decoded[$addr++] = 1;
+	return 1;
+}
+
+
+sub disassemble_asm(@) 										# disassemble 6800 CPU code
+{
+	my($ind,$addr,$lbl_root,$divider_label) = @_;
+	return disassemble_asm_nbytes($ind,$addr,$lbl_root,9e99,1,$divider_label);		# follow_code = 1
+}
+
+sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limit
+{
+	local($ind,$addr,$lbl_root,$max_bytes,$follow_code,$divider_label) = @_;
+#	printf("disassemble_asm_nbytes($ind,%04X,$lbl_root,$max_bytes,$follow_code)\n",$addr);
+
+	unless (defined(BYTE($addr))) { 												# outside loaded ROM range
+		return unless ($WMS_System == 11);											# okay for Sys 7 and M6800 assembly
+		printf(STDERR "; WARNING: disassembly address %04X outside ROM range\n",$addr)
+			if ($verbose > 0);
+		$unclean = 1;
+		return;
+	}
+	if ($decoded[$addr] && !defined($OP[$addr])) {								   # not at start of instruction
+		printf("ABORT: disassembly M6800 code at \$%04X within already disassembled instruction code\n" .
+			   "\t[$lbl_root]\n",$addr)
+			if ($verbose > 0);
+		$unclean = 1;
+		return;
+	}
+	insert_divider($addr,$divider_label);  
+	$N_LABELS[$addr]++;
+
+	my($start_addr) = $addr;
+	while ($addr-$start_addr < $max_bytes) {
+#		printf("M6800 disassembling opcode %02X at %04X\n",BYTE($addr),$addr);
+		unless (defined(BYTE($addr))) {
+			printf(STDERR "; WARNING: disassembly address %04X outside ROM range\n",$addr)
+				if ($verbose > 0);
+			$unclean = 1;
+			return;
+		}
+		return if ($decoded[$addr]);
+#		printf("disassemble_asm(%04X) %d bytes to go\n",
+#			$addr,$max_bytes-$addr+$start_addr) if ($max_bytes < 1000);
+		$TYPE[$addr] = $CodeType_asm;
+
+		next if op_IMP(0x01,$ind,'NOP');
+		next if op_IMP(0x06,$ind,'TAP'); next if op_IMP(0x07,$ind,'TPA');
+		next if op_IMP(0x08,$ind,'INX'); next if op_IMP(0x09,$ind,'DEX');
+		next if op_IMP(0x0A,$ind,'CLV'); next if op_IMP(0x0B,$ind,'SEV');
+		next if op_IMP(0x0C,$ind,'CLC'); next if op_IMP(0x0D,$ind,'SEC');
+		next if op_IMP(0x0E,$ind,'CLI'); next if op_IMP(0x0F,$ind,'SEI');
+	    
+		next if op_IMP(0x10,$ind,'SBA'); next if op_IMP(0x11,$ind,'CBA');
+		next if op_IMP(0x16,$ind,'TAB'); next if op_IMP(0x17,$ind,'TBA');
+		next if op_IMP(0x19,$ind,'DAA');
+		next if op_IMP(0x1B,$ind,'ABA'); 
+
+		if (op_REL(0x20,$ind,'BRA',$lbl_root,$follow_code)) {
+		    push(@{$EXTRA[$addr]},'');
+	        push(@{$EXTRA_IND[$addr]},0);
+			$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+			return;
+		}
+
+		next if op_REL(0x22,$ind,'BHI',$lbl_root,$follow_code); next if op_REL(0x23,$ind,'BLS',$lbl_root,$follow_code);
+		next if op_REL(0x24,$ind,'BCC',$lbl_root,$follow_code); next if op_REL(0x25,$ind,'BCS',$lbl_root,$follow_code);
+		next if op_REL(0x26,$ind,'BNE',$lbl_root,$follow_code); next if op_REL(0x27,$ind,'BEQ',$lbl_root,$follow_code);
+		next if op_REL(0x28,$ind,'BVC',$lbl_root,$follow_code); next if op_REL(0x29,$ind,'BVS',$lbl_root,$follow_code);
+		next if op_REL(0x2A,$ind,'BPL',$lbl_root,$follow_code); next if op_REL(0x2B,$ind,'BMI',$lbl_root,$follow_code);
+		next if op_REL(0x2C,$ind,'BGE',$lbl_root,$follow_code); next if op_REL(0x2D,$ind,'BLT',$lbl_root,$follow_code);
+		next if op_REL(0x2E,$ind,'BGT',$lbl_root,$follow_code); next if op_REL(0x2F,$ind,'BLE',$lbl_root,$follow_code);
+	    
+		next if op_IMP(0x30,$ind,'TSX');  next if op_IMP(0x31,$ind,'INS');
+		next if op_IMP(0x32,$ind,'PULA'); next if op_IMP(0x33,$ind,'PULB');
+		next if op_IMP(0x34,$ind,'DES');  next if op_IMP(0x35,$ind,'TXS');
+		next if op_IMP(0x36,$ind,'PSHA'); next if op_IMP(0x37,$ind,'PSHB');
+		if (op_IMP(0x39,$ind,'RTS')) {
+		    push(@{$EXTRA[$addr]},'');
+	        push(@{$EXTRA_IND[$addr]},0);
+			$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+			return;
+		}
+		if (op_IMP(0x3B,$ind,'RTI')) {
+		    push(@{$EXTRA[$addr]},'');
+	        push(@{$EXTRA_IND[$addr]},0);
+			$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+			return;
+		}
+		next if op_IMP(0x3E,$ind,'WAI');
+		if (op_IMP(0x3F,$ind,'SWI')) {
+		    push(@{$EXTRA[$addr]},'');
+	        push(@{$EXTRA_IND[$addr]},0);
+			$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+			return;
+		}
+	    
+		next if op_IMP(0x40,$ind,'NEGA');
+		next if op_IMP(0x43,$ind,'COMA');
+		next if op_IMP(0x44,$ind,'LSRA');
+		next if op_IMP(0x46,$ind,'RORA'); next if op_IMP(0x47,$ind,'ASRA');
+		next if op_IMP(0x48,$ind,'ASLA'); next if op_IMP(0x49,$ind,'ROLA');
+		next if op_IMP(0x4A,$ind,'DECA');
+		next if op_IMP(0x4C,$ind,'INCA'); next if op_IMP(0x4D,$ind,'TSTA');
+		next if op_IMP(0x4F,$ind,'CLRA');
+
+		next if op_IMP(0x50,$ind,'NEGB');
+		next if op_IMP(0x53,$ind,'COMB');
+		next if op_IMP(0x54,$ind,'LSRB');
+		next if op_IMP(0x56,$ind,'RORB'); next if op_IMP(0x57,$ind,'ASRB');
+		next if op_IMP(0x58,$ind,'ASLB'); next if op_IMP(0x59,$ind,'ROLB');
+		next if op_IMP(0x5A,$ind,'DECB');
+		next if op_IMP(0x5C,$ind,'INCB'); next if op_IMP(0x5D,$ind,'TSTB');
+		next if op_IMP(0x5F,$ind,'CLRB');
+
+		next if op_IND(0x60,$ind,'NEG');
+		next if op_IND(0x63,$ind,'COM');
+		next if op_IND(0x64,$ind,'LSR');
+		next if op_IND(0x66,$ind,'ROR'); next if op_IND(0x67,$ind,'ASR');
+		next if op_IND(0x68,$ind,'ASL'); next if op_IND(0x69,$ind,'ROL');
+		next if op_IND(0x6A,$ind,'DEC');
+		next if op_IND(0x6C,$ind,'INC'); next if op_IND(0x6D,$ind,'TST');
+		if (op_IND(0x6E,$ind,'JMP')) {															  # NB: cannot follow an indexed jump
+		    push(@{$EXTRA[$addr]},'');
+	        push(@{$EXTRA_IND[$addr]},0);
+			$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+			return;
+		}
+
+		next if op_IND(0x6F,$ind,'CLR');
+
+		next if op_EXT(0x70,$ind,'NEG');
+		next if op_EXT(0x73,$ind,'COM');
+		next if op_EXT(0x74,$ind,'LSR');
+		next if op_EXT(0x76,$ind,'ROR'); next if op_EXT(0x77,$ind,'ASR');
+		next if op_EXT(0x78,$ind,'ASL'); next if op_EXT(0x79,$ind,'ROL');
+		next if op_EXT(0x7A,$ind,'DEC');
+		next if op_EXT(0x7C,$ind,'INC'); next if op_EXT(0x7D,$ind,'TST');
+		my($jmp_addr);
+		if ($jmp_addr=op_EXT(0x7E,$ind,'JMP')) {
+			if (hex(substr($OPA[$addr-3][0],1,4)) == $Lbl{'WVM_exitThread'}) {						# needs adaptation to system 7 !!!!!
+				$OP[$addr-3] = '_EXIT_THREAD'; undef($OPA[$addr-3][0]);
+			    push(@{$EXTRA[$addr]},'');
+		        push(@{$EXTRA_IND[$addr]},0);
+				$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr-3]}] = 1;
+			} else {
+			    push(@{$EXTRA[$addr]},'');
+		        push(@{$EXTRA_IND[$addr]},0);
+				$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+				if ($follow_code) {
+					disassemble_asm($ind,$jmp_addr,$lbl_root);
+				} else {
+					push(@unfollowed_lbl,$jmp_addr);
+				}
+					
+			}
+			return;
+		}
+		next if op_EXT(0x7F,$ind,'CLR');
+
+		next if op_IMM(0x80,$ind,'SUBA'); next if op_IMM(0x81,$ind,'CMPA');
+		next if op_IMM(0x82,$ind,'SBCA');
+		next if op_IMM(0x84,$ind,'ANDA'); next if op_IMM(0x85,$ind,'BITA');
+		next if op_IMM(0x86,$ind,'LDAA');
+		next if op_IMM(0x88,$ind,'EORA'); next if op_IMM(0x89,$ind,'ADCA');
+		next if op_IMM(0x8A,$ind,'ORAA'); next if op_IMM(0x8B,$ind,'ADDA');
+		next if op_IMM2(0x8C,$ind,'CPX');
+		
+		#
+		# Special Handling for BSR
+		#	- required, because of two OS subroutines with special behavior
+		#
+		if (defined($WMS_System)) {
+			if (BYTE($addr)==0x8D) {												# BSR
+				my($trg_addr) = $addr + 2 + ((BYTE($addr+1) < 128) ? BYTE($addr+1) : BYTE($addr+1)-256);
+				if ($trg_addr == $Lbl{'WVM_start'}) {								# BSR WVM_start => _WVM_MODE
+					$OP[$addr] = '_WVM_MODE'; $IND[$addr] = $ind;
+					$decoded[$addr] = $decoded[$addr+1] = 1;
+					disassemble_wvm($ind,$addr+2,$lbl_root);
+					$addr += 2;
+					return;
+				} elsif ($trg_addr == $Lbl{'WVM_sleepI'}) { 						# BSR WVM_sleepI, .DB tics => _SLEEP #tics
+					$OP[$addr] = '_SLEEP'; $IND[$addr] = $ind;
+					$OPA[$addr][0] = sprintf('#%d',BYTE($addr+2));
+					$decoded[$addr] = $decoded[$addr+1] = $decoded[$addr+2] = 1;
+					$addr += 3;
+				} else {															# regular BSR
+					$OP[$addr] = 'BSR'; $IND[$addr] = $ind;
+					my($jump_to) = $trg_addr;
+					$OPA[$addr][0] = label_address($jump_to,$lbl_root);
+					$decoded[$addr] = $decoded[$addr+1] = 1;
+					if ($follow_code) {
+						disassemble_asm($code_base_indent,$jump_to,$lbl_root);
+					} else {
+						push(@unfollowed_lbl,$jump_to);
+					}
+						
+					$addr += 2;
+	
+					foreach my $sraddr (@Switch2WVMSubroutines) {					# M6800 subroutines returning in WVM mode
+						next unless ($jump_to == $sraddr);
+						disassemble_wvm($ind,$addr,$lbl_root);
+						return;
+					}
+	
+				}
+				next;
+	        }
+        } elsif (BYTE($addr)==0x8D) {												# standard M6800 BSR (no WMS_System defined)
+			$OP[$addr] = 'BSR'; $IND[$addr] = $ind;
+			my($trg_addr) = $addr + 2 + ((BYTE($addr+1) < 128) ? BYTE($addr+1) : BYTE($addr+1)-256);
+			$OPA[$addr][0] = label_address($trg_addr,$lbl_root);
+			$decoded[$addr] = $decoded[$addr+1] = 1;
+			if ($follow_code) {
+				disassemble_asm($code_base_indent,$trg_addr,$lbl_root);
+			} else {
+				push(@unfollowed_lbl,$trg_addr);
+			}
+				
+			$addr += 2;
+			next;
+        }
+
+		next if op_IMM2(0x8E,$ind,'LDS');
+	    
+		next if op_DIR(0x90,$ind,'SUBA'); next if op_DIR(0x91,$ind,'CMPA');
+		next if op_DIR(0x92,$ind,'SBCA');
+		next if op_DIR(0x94,$ind,'ANDA'); next if op_DIR(0x95,$ind,'BITA');
+		next if op_DIR(0x96,$ind,'LDAA'); next if op_DIR(0x97,$ind,'STAA');
+		next if op_DIR(0x98,$ind,'EORA'); next if op_DIR(0x99,$ind,'ADCA');
+		next if op_DIR(0x9A,$ind,'ORAA'); next if op_DIR(0x9B,$ind,'ADDA');
+		next if op_DIR(0x9C,$ind,'CPX'); 
+		next if op_DIR(0x9E,$ind,'LDS'); next if op_DIR(0x9F,$ind,'STS');
+	    
+		next if op_IND(0xA0,$ind,'SUBA'); next if op_IND(0xA1,$ind,'CMPA');
+		next if op_IND(0xA2,$ind,'SBCA');
+		next if op_IND(0xA4,$ind,'ANDA'); next if op_IND(0xA5,$ind,'BITA');
+		next if op_IND(0xA6,$ind,'LDAA'); next if op_IND(0xA7,$ind,'STAA');
+		next if op_IND(0xA8,$ind,'EORA'); next if op_IND(0xA9,$ind,'ADCA');
+		next if op_IND(0xAA,$ind,'ORAA'); next if op_IND(0xAB,$ind,'ADDA');
+		next if op_IND(0xAC,$ind,'CPX'); next if op_IND(0xAD,$ind,'JSR');		# JSR 0,X
+		next if op_IND(0xAE,$ind,'LDS'); next if op_IND(0xAF,$ind,'STS');
+	    
+		next if op_EXT(0xB0,$ind,'SUBA'); next if op_EXT(0xB1,$ind,'CMPA');
+		next if op_EXT(0xB2,$ind,'SBCA');
+		next if op_EXT(0xB4,$ind,'ANDA'); next if op_EXT(0xB5,$ind,'BITA');
+		next if op_EXT(0xB6,$ind,'LDAA'); next if op_EXT(0xB7,$ind,'STAA');
+		next if op_EXT(0xB8,$ind,'EORA'); next if op_EXT(0xB9,$ind,'ADCA');
+		next if op_EXT(0xBA,$ind,'ORAA'); next if op_EXT(0xBB,$ind,'ADDA');
+		next if op_EXT(0xBC,$ind,'CPX');
+		next if op_EXT(0xBE,$ind,'LDS'); next if op_EXT(0xBF,$ind,'STS');
+
+		#
+		# Special Handling for JSR with extended addressing (EXT)
+		#	- required, because of two OS subroutines with special behavior
+		#
+		if (defined($WMS_System)) {
+			if (BYTE($addr)==0xBD) {												# JSR <ADDR>
+				if (WORD($addr+1) == $Lbl{'WVM_start'}) {							# JSR WVM_start => _WVM_MODE
+					$OP[$addr] = '_WVM_MODE'; $IND[$addr] = $ind;
+					$decoded[$addr] = $decoded[$addr+1] = $decoded[$addr+2] = 1;
+					disassemble_wvm($ind,$addr+3,$lbl_root);
+					$addr += 3;
+					return;
+				} elsif (WORD($addr+1) == $Lbl{'WVM_sleepI'}) { 					# JSR WVM_sleepI, .DB tics => _SLEEP #tics
+					$OP[$addr] = '_SLEEP'; $IND[$addr] = $ind;
+					$OPA[$addr][0] = sprintf('#%d',BYTE($addr+3));
+					$decoded[$addr] = $decoded[$addr+1] = $decoded[$addr+2] = $decoded[$addr+3] = 1;
+					$addr += 4;
+				} else {															# regular JSR
+					$OP[$addr] = 'JSR'; $IND[$addr] = $ind;
+					my($jump_to) = WORD($addr+1);
+					$OPA[$addr][0] = label_address($jump_to,$lbl_root);
+					$decoded[$addr] = $decoded[$addr+1] = $decoded[$addr+2] = 1;
+					if ($follow_code) {
+						disassemble_asm($code_base_indent,$jump_to,$lbl_root);
+					} else {
+						push(@unfollowed_lbl,$jump_to);
+					}
+					$addr += 3;
+	
+					foreach my $sraddr (@Switch2WVMSubroutines) {					# M6800 subroutines returning in WVM mode
+						next unless ($jump_to == $sraddr);
+						disassemble_wvm($ind,$addr,$lbl_root);
+						return;
+					}
+	
+				}
+				next;
+	        }
+        } elsif (BYTE($addr)==0xBD) {												# regular M6800 disassembly ($WMS_System not defined)
+			$OP[$addr] = 'JSR'; $IND[$addr] = $ind;
+			my($jump_to) = WORD($addr+1);
+			$OPA[$addr][0] = label_address($jump_to,$lbl_root);
+			$decoded[$addr] = $decoded[$addr+1] = $decoded[$addr+2] = 1;
+			if ($follow_code) {
+				disassemble_asm($code_base_indent,$jump_to,$lbl_root);
+			} else {
+				push(@unfollowed_lbl,$jump_to);
+			}
+			$addr += 3;
+			next;
+        }
+
+		next if op_IMM(0xC0,$ind,'SUBB'); next if op_IMM(0xC1,$ind,'CMPB');
+		next if op_IMM(0xC2,$ind,'SBCB');
+		next if op_IMM(0xC4,$ind,'ANDB'); next if op_IMM(0xC5,$ind,'BITB');
+		next if op_IMM(0xC6,$ind,'LDAB'); 
+		next if op_IMM(0xC8,$ind,'EORB'); next if op_IMM(0xC9,$ind,'ADCB');
+		next if op_IMM(0xCA,$ind,'ORAB'); next if op_IMM(0xCB,$ind,'ADDB');
+		next if op_IMM2(0xCE,$ind,'LDX'); 
+
+		next if op_DIR(0xD0,$ind,'SUBB'); next if op_DIR(0xD1,$ind,'CMPB');
+		next if op_DIR(0xD2,$ind,'SBCB');
+		next if op_DIR(0xD4,$ind,'ANDB'); next if op_DIR(0xD5,$ind,'BITB');
+		next if op_DIR(0xD6,$ind,'LDAB'); next if op_DIR(0xD7,$ind,'STAB');
+		next if op_DIR(0xD8,$ind,'EORB'); next if op_DIR(0xD9,$ind,'ADCB');
+		next if op_DIR(0xDA,$ind,'ORAB'); next if op_DIR(0xDB,$ind,'ADDB');
+		next if op_DIR(0xDE,$ind,'LDX'); next if op_DIR(0xDF,$ind,'STX');
+	    
+		next if op_IND(0xE0,$ind,'SUBB'); next if op_IND(0xE1,$ind,'CMPB');
+		next if op_IND(0xE2,$ind,'SBCB');
+		next if op_IND(0xE4,$ind,'ANDB'); next if op_IND(0xE5,$ind,'BITB');
+		next if op_IND(0xE6,$ind,'LDAB'); next if op_IND(0xE7,$ind,'STAB');
+		next if op_IND(0xE8,$ind,'EORB'); next if op_IND(0xE9,$ind,'ADCB');
+		next if op_IND(0xEA,$ind,'ORAB'); next if op_IND(0xEB,$ind,'ADDB');
+		next if op_IND(0xEE,$ind,'LDX'); next if op_IND(0xEF,$ind,'STX');
+	    
+		next if op_EXT(0xF0,$ind,'SUBB'); next if op_EXT(0xF1,$ind,'CMPB');
+		next if op_EXT(0xF2,$ind,'SBCB');
+		next if op_EXT(0xF4,$ind,'ANDB'); next if op_EXT(0xF5,$ind,'BITB');
+		next if op_EXT(0xF6,$ind,'LDAB'); next if op_EXT(0xF7,$ind,'STAB');
+		next if op_EXT(0xF8,$ind,'EORB'); next if op_EXT(0xF9,$ind,'ADCB');
+		next if op_EXT(0xFA,$ind,'ORAB'); next if op_EXT(0xFB,$ind,'ADDB');
+		next if op_EXT(0xFE,$ind,'LDX'); next if op_EXT(0xFF,$ind,'STX');
+	    
+        printf("ABORT: Unknown M6800 opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
+        	if ($verbose > 0);
+		$OP[$addr] = '.DB'; $IND[$addr] = $ind;
+		$OPA[$addr][0] = sprintf('$%02X!',BYTE($addr));
+		$REM[$addr] = 'WARNING: Unknown M6800 opcode';
+		$decoded[$addr++] = 1;
+		$unclean = 1;
+		return;
+	}
+}
+
+1;

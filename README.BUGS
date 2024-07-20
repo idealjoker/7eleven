@@ -1,0 +1,11 @@
+======================================================================
+                    R E A D M E . B U G S 
+                    doc: Thu Jul 18 05:13:33 2024
+                    dlm: Sat Jul 20 06:31:50 2024
+                    (c) 2024 idealjoker@mailbox.org
+                    uE-Info: 5 51 NIL 0 0 72 0 2 4 NIL ofnI
+======================================================================
+
+[D711.M6800]
+	- op_IND uses unsigned offsets
+	- op_IND has unused(?) extra args
