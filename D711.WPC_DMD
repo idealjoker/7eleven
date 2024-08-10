@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Aug 10 11:17:29 2024
+#                    dlm: Sat Aug 10 17:05:34 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 42 9 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 50 32 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -45,10 +45,12 @@ sub disassemble_WPC_DMD()
 		def_byte_hex('_ROMPG_ID');
 
 		insert_divider($Address,'System Pointers');
-		while ($Address < 0x8004) {
+#		while ($Address < 0x8004) {
+#		while ($Address < 0x8010) {
+		while ($Address < 0x8016) {
 			my($taddr) = sprintf('%04X',WORD($Address));
 			my($trpg) = sprintf('%02X',BYTE($Address+2));
-			def_WPC_codePtr("syscall_$tprg_$taddr","System Call");
+			def_WPC_codePtr("syscall_${trpg}_$taddr","System Call");
 		}
 	}
 }
