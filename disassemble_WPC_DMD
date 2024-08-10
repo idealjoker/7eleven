@@ -2,15 +2,17 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ D M D 
 #					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Sat Jul 20 02:54:39 2024
+#					 dlm: Sat Aug 10 14:13:27 2024
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 61 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 90 44 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
 
 # HISTORY:
 #	Jul 18, 2024: - created in Zermatt
+#	Aug  9, 2024: - continued
+#	Aug 10, 2024: - continued
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 ('WPC_DMD');		
@@ -22,13 +24,12 @@ use D711 ('WPC_DMD');
 use Getopt::Std;
 
 die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
-			"[write code-structuring -h)ints to <file>]\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[list -a)ddressse in output] [list -c)ode bytes]\n\t\t" . 
 			"[suppress -g)ap data]\n\t\t" . 
 			"[suppress code-s)tructure analysis]\n\t\t" .
 			"<ROM image>\n")
-	unless &getopts('acgh:i:ls') && @ARGV==1;
+	unless &getopts('acgi:ls') && @ARGV==1;
 
 $D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
@@ -42,28 +43,38 @@ if (defined($opt_i)) {														# include files with perl code
 }
 
 #----------------------------------------------------------------------
-# Load ROM Image
+# Load ROM
 #----------------------------------------------------------------------
 
-&D711::load_ROM($ARGV[0],0x8000,480,32);
-printf(STDERR "[Address range = %04X-%04X]\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR);
+&D711::load_ROM($ARGV[0],0x4000,0x20,16);									# Load ROM: first game page (512KB ROM)
+$D711::_cur_RPG = 0x20;
+&D711::load_ROM($ARGV[0],0x8000,0x3E,32);									# Load ROM: System pages
 
 #----------------------------------------------------------------------
-# Code Disassembly
+# Disassemble ROM
 #----------------------------------------------------------------------
 
-&D711::disassemble_WPC_DMD();
+&D711::disassemble_WPC_DMD();												# Code Disassembly
 
 #----------------------------------------------------------------------
 # Make Human Readable
 #----------------------------------------------------------------------
 
-&D711::process_code_structure($D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR) 		# if, while, ...
+&D711::process_code_structure(0x8000,0xFFFF)								# if, while, ...
 	unless ($opt_s);
-&D711::substitute_labels(); 												# resolve labels
-&D711::substitute_identifiers();											# rename game-specific ids
+&D711::substitute_labels(0x8000,0xFFFF); 									# resolve labels
+&D711::substitute_identifiers(0x8000,0xFFFF);								# rename game-specific ids
+&D711::apply_magic_WPC_DMD(0x8000,0xFFFF);  	                            # e.g. ScoreByte
 
-&D711::apply_magic_WPC_DMD();												# e.g. ScoreByte
+for (my($rpg)=0x20; $rpg<0x3E; $rpg++) {
+#	print(STDERR "select_WPC_RPG($rpg)\n");
+	&D711::select_WPC_RPG($rpg);
+	&D711::process_code_structure(0x4000,0x7FFF)							# if, while, ...
+		unless ($opt_s);
+	&D711::substitute_labels(0x4000,0x7FFF); 								# resolve labels
+	&D711::substitute_identifiers(0x4000,0x7FFF);							# rename game-specific ids
+	&D711::apply_magic_WPC_DMD(0x4000,0x7FFF);                              # e.g. ScoreByte
+}
 
 #----------------------------------------------------------------------
 # Produce Output
@@ -74,38 +85,13 @@ if ($opt_l) {																# dump label information
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 
-if (defined($opt_h)) {														# find structure-breaking labels and create file with hints
-	close(STDOUT);															# suppress code output
-	&D711::produce_output($opt_h);
-	exit(0);
+&D711::select_WPC_RPG(0x20);												# 1st game pg with headers
+&D711::produce_output(0x4000,0x7FFF,1);
+for (my($rpg)=0x21; $rpg<0x3E; $rpg++) {									# remaining game pages
+	&D711::select_WPC_RPG($rpg);		
+	&D711::produce_output(0x4000,0x7FFF,0);
 }
-
-&D711::produce_output(); 													# include API in output (has to be for compilation)
+&D711::produce_output(0x8000,0xFFFF,0);										# WPC System
 
 exit(0);
-
-#======================================================================
-# Utilities
-#======================================================================
-
-sub defSwitch($$)
-{
-	my($no,$name) = @_;
-
-	die("defSwitch: invalid switch number $no\n")
-		unless ($no>=1 && $no<65);
-	$D711::Switch[$no-1] = $name;
-}
-
-sub defLamp($$$)
-{
-	my($row,$col,$name) = @_;
-
-	die("defLamp: invalid lamp row number $row\n")
-		unless ($row>=1 && $row<=8);
-	die("defLamp: invalid lamp column number $row\n")
-		unless ($col>=1 && $col<=8);
-	$D711::Lamp[8*($col-1)+$row-1] = $name;
-}
-
 

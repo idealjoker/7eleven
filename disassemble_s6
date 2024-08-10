@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Sun Jun  9 17:43:57 2024
+#					 dlm: Sat Aug 10 11:01:48 2024
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 79 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 20 48 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -17,6 +17,7 @@
 #	Jun  7, 2024: - added new -A option for Sys 6A
 #	Jun  8, 2024: - added defSwitch() and defLamp()
 #	Jun  9, 2024: - adapated to improved switch script decoding
+#	Aug 10, 2024: - removed -h (structure hints)
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 (6);		
@@ -28,14 +29,13 @@ use D711 (6);
 use Getopt::Std;
 
 die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
-			"[write code-structuring -h)ints to <file>]\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[list -a)ddressse in output] [list -c)ode bytes]\n\t\t" . 
 			"[suppress -g)ap data]\n\t\t" . 
 			"[suppress code-s)tructure analysis]\n\t\t" .
 			"[System 6-A) source]\n\t\t" .
 			"<ROM image>\n")
-	unless &getopts('Aacgh:i:ls') && @ARGV==1;
+	unless &getopts('Aacgi:ls') && @ARGV==1;
 
 $D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
@@ -84,12 +84,6 @@ printf(STDERR "[Address range = %04X-%04X]\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM
 if ($opt_l) {																# dump label information
 	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
 	exit(0);																# to make a disassembled file with all labels defined up-front
-}
-
-if (defined($opt_h)) {														# find structure-breaking labels and create file with hints
-	close(STDOUT);															# suppress code output
-	&D711::produce_output($opt_h);
-	exit(0);
 }
 
 &D711::produce_output(); 													# include API in output (has to be for compilation)

@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Jul 20 06:10:30 2024
+#					 dlm: Sat Aug 10 14:07:02 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 2619 0 NIL 0 0 72 0 2 4 NIL ofnI
+#					 uE-Info: 308 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -200,6 +200,8 @@
 #	Jul 18, 2024: - made it work
 #	Jul 19, 2024: - modified load_ROM to allow loading a slice
 #				  - BUG: disabled error when using -ac w/o -g and gap is at end
+#	Aug  9, 2024: - added def_WPC_codePtr()
+#	Aug 10, 2024: - debugging
 # END OF HISTORY
 
 # TO-DO:
@@ -278,28 +280,35 @@ sub import($@)
 # Load ROM Image
 #----------------------------------------------------------------------
 
+{ my($start_page); 															# 0x20 for 512KB ROMs
+
 sub load_ROM($$@)
 {
-	my($fn,$saddr,$skipK,$lenK) = @_;
+	my($fn,$saddr,$RPG,$lenK) = @_;
 	my($nread,$buf,$eaddr);
 
 	$lenK = 9e99 unless defined($lenK);
 
 	open(RF,$fn) || die("$fn: $!");
-	if ($skipK) {
-		sysseek(RF,$skipK*1024,0) || die("sysseek: $!");
+	if (defined($RPG)) {
+		$start_page = (sysseek(RF,0,2) > 512*1024) ? 0 : 0x20
+			unless defined($start_page);
+		sysseek(RF,($RPG-$start_page)*16*1024,0) || die("sysseek($fn,($RPG-$start_page)*16K): $!");
     }
 	for (my($ofs)=0; ($lenK-- > 0) && ($nread = sysread(RF,$buf,1024)) > 0; $ofs+=$nread) {
 		@ROM[($saddr+$ofs)..($saddr+$ofs+$nread-1)] = unpack('C*',$buf);
 		$eaddr = $saddr + $ofs + $nread - 1;
 	}
 	close(RF);
-	printf(STDERR "ROM[\$%04X..\$%04X] loaded\n",$saddr,$eaddr)
-		if ($verbose > 1);
+
 	$MIN_ROM_ADDR = $saddr unless defined($MIN_ROM_ADDR);
 	$MIN_ROM_ADDR = $saddr if ($saddr < $MIN_ROM_ADDR);
 	$MAX_ROM_ADDR = $eaddr unless ($eaddr < $MAX_ROM_ADDR);
+
 	&init_system_11() if ($WMS_System==11 && WORD(0xFFFE)>0);				# this should be moved into a future [disassemble_s11]
+
+}
+
 }
 
 #----------------------------------------------------------------------
@@ -431,20 +440,26 @@ sub substitute_label($$)										# replace addresses in a single arg with label
 	return $imm.$auto_lbl;
 }
 
-sub substitute_labels()											# replace addresses with labels as much as possible
+sub substitute_labels(@)										# replace addresses with labels as much as possible
 {
-	for (local($addr)=0; $addr<@ROM; $addr++) {
+	my($fa,$la) = @_;
+	$fa = 0 unless defined($fa);
+	$la = $#ROM unless defined($la);
+
+	for (local($addr)=$fa; $addr<=$la; $addr++) {
 		for (my($i)=0; $i<@{$OPA[$addr]}; $i++) {
 			$OPA[$addr][$i] = substitute_label($OPA[$addr][$i],$addr);
 		}
 	}
 	foreach my $addr (keys(%label_arith_exprs)) {				# substitude expressions defined with def_lbl_arith()
 		die unless (@{$OPA[$addr-1]} == 1);
+		die if ($WMS_System eq 'WPC_DMD');
 		$OPA[$addr-1][0] = ($OPA[$addr-1][0] =~ /^#/) ? '#' : '';
 		$OPA[$addr-1][0] .= $label_arith_exprs{$addr};
 	}
 	foreach my $addr (keys(%pointer)) {							# substitude labels defined with def_ptr2lbl()
 		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless (@{$OPA[$addr]} == 1);
+		die if ($WMS_System eq 'WPC_DMD');
 		$OPA[$addr][0] = $pointer{$addr};
 	}
 }
@@ -2224,6 +2239,57 @@ sub def_wvm_code(@) 							 # does not update $Address
 	disassemble_wvm($code_base_indent,$Address,$lbl,$divider_label);
 }
 
+#----------------------------------------------------------------------
+# WPC Code in Paged ROM
+#----------------------------------------------------------------------
+
+sub select_WPC_RPG($)
+{
+	my($RPG) = @_;
+
+	return if ($RPG == $_cur_RPG);
+	
+	@{$OPPG[$_cur_RPG]} 	 = @OP[0x4000-0x7FFF];										# swap out active page
+	@{$INDPG[$_cur_RPG]}	 = @IND[0x4000-0x7FFF]; 		    
+	@{$TYPEPG[$_cur_RPG]}	 = @TYPE[0x4000-0x7FFF];		    
+	@{$OPAPG[$_cur_RPG]}	 = @OPA[0x4000-0x7FFF]; 		    
+	@{$REMPG[$_cur_RPG]}	 = @REM[0x4000-0x7FFF]; 		    
+	@{$decodedPG[$_cur_RPG]} = @decoded[0x4000-0x7FFF]; 		    
+    
+	load_ROM($ARGV[0],0x4000,$RPG,16);													# swap in new page
+	@OP[0x4000-0x7FFF]		= @{$OPPG[$RPG]};
+	@IND[0x4000-0x7FFF] 	= @{$INDPG[$RPG]};
+	@TYPE[0x4000-0x7FFF]	= @{$TYPEPG[$RPG]};
+	@OPA[0x4000-0x7FFF] 	= @{$OPAPG[$RPG]};
+	@REM[0x4000-0x7FFF] 	= @{$REMPG[$RPG]};
+	@decoded[0x4000-0x7FFF] = @{$decodedPG[$RPG]};
+
+    $_cur_RPG = $RPG;
+}
+
+
+sub def_WPC_codePtr($@)
+{
+	my($code_lbl,$divider_title,$rem) = @_;
+	die unless defined($Address);
+	setLabel("^$code_lbl",$Address);
+    die unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
+
+	my($code_addr) = WORD($Address);
+	my($usr_lbl) = $LBL[$code_addr];
+	$code_lbl = $usr_lbl if defined($usr_lbl);
+	setLabel($code_lbl,$code_addr);
+
+	my($RPG) = BYTE($Address+2);
+	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	$OPA[$Address][0] = $code_lbl; $OPA[$Address][1] = sprintf('%02X',$RPG);
+	$REM[$Address] = $rem unless defined($REM[$Address]); 
+	$decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
+
+	select_WPC_RPG($RPG);
+	disassemble_asm($code_base_indent,$code_addr,$code_lbl,$divider_label);
+	$Address += 3;
+}
 
 #----------------------------------------------------------------------
 
@@ -2983,9 +3049,13 @@ sub process_code_structure($$)
 # Game Specific Identifiers
 #----------------------------------------------------------------------
 
-sub substitute_identifiers()																# substitute game-specific identifiers
+sub substitute_identifiers(@)																# substitute game-specific identifiers
 {
-	for (my($addr)=0; $addr<@ROM; $addr++) {
+	my($fa,$la) = @_;
+	$fa = 0 unless defined($fa);
+	$la = $#ROM unless defined($la);
+
+	for (my($addr)=$fa; $addr<=$la; $addr++) {
 		next unless defined($OP[$addr]);
 		for (my($i)=0; $i<@{$OPA[$addr]}; $i++) {
 			if ($OPA[$addr][$i] =~ m{^Adj#}) {												# game adjustments
@@ -3102,32 +3172,43 @@ sub output_labels($)
 	print("\n");
 }
 
+sub print_addr($)
+{
+	my($addr) = @_;
+
+	if (defined($_cur_RPG) && $addr<0x8000) {
+		printf("<%02X:%04X>\t",$_cur_RPG,$addr);
+	} else {
+		printf("<%04X>\t",$addr);
+	}
+}
+
 
 sub produce_output(@)														# with a filename arg, writes structure-hints into file
 {																			# with empty string arg, API labels are suppressed
+	my($fa,$la,$hdr) = @_;
+	$fa = 0 unless defined($fa);
+	$la = $#ROM unless defined($la);
+	$hdr = 1 unless defined($hdr);
+
 	my($org,$line);
 	my($decoded) = my($ROMbytes) = 0;
 
-	if (@_ && $_[0] ne '') {
-		open(F,">$_[0]") || die("$_[0]: $!\n");
+	if ($hdr) {
+		output_aliases('Game Adjustment Aliases','Adj#%02X',@Adj);				# game-specific identifiers
+		output_aliases('Solenoid Aliases','Sol#%02X',@Sol);
+		output_aliases('Lamp Aliases','Lamp#%02X',@Lamp);
+		output_aliases('Flag Aliases','Flag#%02X',@Flag);
+		output_aliases('Bitgroup Aliases','Bitgroup#%02X',@BitGroup);
+		output_aliases('Switch Aliases','Switch#%02X',@Switch);
+		output_aliases('Sound Aliases','Sound#%02X',@Sound);
+		output_aliases('Thread Aliases','Thread#%02X',@Thread);
+		output_keyValue_aliases('System Constants',%systemConstants);			# symbolic identifiers, e.g. for sys6 switch scripts
+	    output_labels("System$WMS_System API (external labels)");               # manually defined labels outside ROM
 	}
 
-	output_aliases('Game Adjustment Aliases','Adj#%02X',@Adj);				# game-specific identifiers
-	output_aliases('Solenoid Aliases','Sol#%02X',@Sol);
-	output_aliases('Lamp Aliases','Lamp#%02X',@Lamp);
-	output_aliases('Flag Aliases','Flag#%02X',@Flag);
-	output_aliases('Bitgroup Aliases','Bitgroup#%02X',@BitGroup);
-	output_aliases('Switch Aliases','Switch#%02X',@Switch);
-	output_aliases('Sound Aliases','Sound#%02X',@Sound);
-	output_aliases('Thread Aliases','Thread#%02X',@Thread);
-
-	output_keyValue_aliases('System Constants',%systemConstants); 			# symbolic identifiers, e.g. for sys6 switch scripts
-
-	output_labels("System$WMS_System API (external labels)")				# manually defined labels outside ROM
-		unless 	(@_ && $_[0] eq '');
-
 	my($gapLen,$codeStarted);
-	for (my($addr)=$MIN_ROM_ADDR; $addr<=$MAX_ROM_ADDR; $addr++) {			# loop through addresses
+	for (my($addr)=$fa; $addr<=$la; $addr++) {								# loop through addresses
 		$decoded++ if $decoded[$addr];
 		$ROMbytes++ if defined(BYTE($addr));
 		if (defined($OP[$addr])) {											# there is code at this address
@@ -3135,22 +3216,28 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 				if ($code_started) {
 					print("\n");
 				} else {
-					printf("<%04X>\t",$addr) if ($print_addrs);
+					print_addr($addr) if ($print_addrs);
 					printf('			')	if ($print_code);
 					print(";----------------------------------------------------------------------\n");
-					printf("<%04X>\t",$addr) if ($print_addrs);
+					print_addr($addr) if ($print_addrs);
 					printf('			')	if ($print_code);
 					print("; GAME ROM START\n");
-					printf("<%04X>\t",$addr) if ($print_addrs);
+					print_addr($addr) if ($print_addrs);
 					printf('			')	if ($print_code);
 					print(";----------------------------------------------------------------------\n");
-					printf("<%04X>\t",$addr) if ($print_addrs);
+					print_addr($addr) if ($print_addrs);
 					print("\n");
 					$code_started = 1;
 				}
-				printf("<%04X>\t",$addr) if ($print_addrs);
+				print_addr($addr) if ($print_addrs);
 				printf('			')	if ($print_code);
-				$line = indent('',$hard_tab*$IND[$addr]) . sprintf(".ORG \$%04X",$org=$addr);
+				$line = indent('',$hard_tab*$IND[$addr]);
+				$org = $addr;
+				if ($WMS_System eq 'WPC_DMD' && $org < 0x8000) {
+					$line .= sprintf(".ORG %02X:%04X",$_cur_RPG,$org);
+				} else {
+					$line .= sprintf(".ORG %04X",$org);
+				}
 				$line .= indent($line,$hard_tab*$rem_indent)  . sprintf("; %d-byte gap",$gapLen)
 					if ($gapLen > 0);
 				$line .= "\n";					
@@ -3161,7 +3248,7 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 			for (my($i)=0; $i<@{$EXTRA[$addr]}; $i++) { 							# first, the pre-label constructs (ENDIF, ...)
 				next unless ($EXTRA_BEFORE_LABEL[$addr][$i]);
 				$line .= indent($line,$hard_tab*$EXTRA_IND[$addr][$i]) . $EXTRA[$addr][$i];
-				printf("<%04X>\t",$addr) if ($print_addrs);
+				print_addr($addr) if ($print_addrs);
 				printf('			')	   if ($print_code);
 				print("$line\n"); undef($line);
 			}
@@ -3182,7 +3269,7 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 				if (length($line) >= $hard_tab*$ind) {								# long label => separate line
 					$line .= indent($line,$hard_tab*$rem_indent)."\t; ".$REM[$addr],undef($REM[$addr])
 						if defined($REM[$addr]);									# comment
-					printf("<%04X>\t",$addr) if ($print_addrs);						# output the line
+					print_addr($addr) if ($print_addrs);						# output the line
 					printf('			')	if ($print_code);
 					print("$line\n"),undef($line)							   
 				}
@@ -3191,7 +3278,7 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 			for (my($i)=0; $i<@{$EXTRA[$addr]}; $i++) { 							# then, "extra" OPs (always pseudo ops)
 				next if ($EXTRA_BEFORE_LABEL[$addr][$i]);
 				$line .= indent($line,$hard_tab*$EXTRA_IND[$addr][$i]) . $EXTRA[$addr][$i];
-				printf("<%04X>\t",$addr) if ($print_addrs);
+				print_addr($addr) if ($print_addrs);
 				printf('			')	   if ($print_code);
 				print("$line\n"); undef($line);
 			}
@@ -3206,7 +3293,7 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 			$line .= indent($line,$hard_tab*$rem_indent)."\t; ".$REM[$addr],undef($REM[$addr])
 				if defined($REM[$addr]);
 
-			printf("<%04X>\t",$addr) if ($print_addrs);
+			print_addr($addr) if ($print_addrs);
 			if ($print_code) {
 				printf('%02X ',BYTE($addr));
 				my($i);
@@ -3228,7 +3315,7 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
                     }
 					last;													# gap extends to end of ROM
                 }
-				printf("<%04X>\t",$addr) if ($print_addrs);
+				print_addr($addr) if ($print_addrs);
 				$LBL[$addr] = 'ANALYSIS_GAP' unless defined($LBL[$addr]);
 				printf("$LBL[$addr]:") if defined($LBL[$addr]);
 				printf("%s.DB \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
@@ -3238,12 +3325,12 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 					$addr++;
 					if (defined($LBL[$addr])) {
 						printf("\n");
-						printf("<%04X>\t",$addr) if ($print_addrs);
+						print_addr($addr) if ($print_addrs);
 						printf("$LBL[$addr]:%s.DB  \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
 						$col = 1;
 					} elsif ($col == 8) {
 						printf("\n");
-						printf("<%04X>\t",$addr) if ($print_addrs);
+						print_addr($addr) if ($print_addrs);
 						printf("ANALYSIS_GAP:");
 						printf("%s.DB \$%02X",indent("ANALYSIS_GAP:",$hard_tab*$data_indent),BYTE($addr));
 						$col = 1;
@@ -3254,7 +3341,7 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 				}
 				printf("\n");
 ##			} elsif ($print_code && defined($org)) {						# print code in gaps
-##				printf("<%04X>\t",$addr) if ($print_addrs);					# code disabled 07/20 to avoid zillions of single-byte no-code lines
+##				print_addr($addr) if ($print_addrs);					# code disabled 07/20 to avoid zillions of single-byte no-code lines
 ##				printf("%02X		  $LBL[$addr]:\n",BYTE($addr));
 			} else {
 				undef($org);

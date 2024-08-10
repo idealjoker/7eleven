@@ -1,16 +1,17 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Jul 20 06:18:04 2024
+#                    dlm: Sat Aug 10 11:17:29 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 27 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 42 9 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
 
 # HISTORY:
 #	Jul 18, 2024: - created
-
+#	Aug  9, 2024: - imported load_ROM() call
+#	Aug 10, 2024: - undid Aug 9 change
 
 #----------------------------------------------------------------------
 # WPC API
@@ -37,14 +38,31 @@ sub disassemble_WPC_DMD()
 		def_code_ptr('NMI_vector','NMI_handler','CPU Vector Handler');
 	    def_code_ptr('RST_vector','RST_handler','CPU Vector Handler');
     }
+
+	if (1) {
+		$Address = 0x8000;
+		insert_divider($Address,'Bank Id');
+		def_byte_hex('_ROMPG_ID');
+
+		insert_divider($Address,'System Pointers');
+		while ($Address < 0x8004) {
+			my($taddr) = sprintf('%04X',WORD($Address));
+			my($trpg) = sprintf('%02X',BYTE($Address+2));
+			def_WPC_codePtr("syscall_$tprg_$taddr","System Call");
+		}
+	}
 }
 
 #----------------------------------------------------------------------
 # Post Disassembly Magic
 #----------------------------------------------------------------------
 
-sub apply_magic_WPC_DMD($)
+sub apply_magic_WPC_DMD($$)
 {
+	my($fa,$la) = @_;
 }
 
+#----------------------------------------------------------------------
+
 1; 																# return true
+
