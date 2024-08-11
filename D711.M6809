@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sun Aug 11 12:19:36 2024
+#                    dlm: Sun Aug 11 15:12:07 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 521 0 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 527 0 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -513,30 +513,34 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
 						push(@{$OPA[$oaddr]},sprintf('$%04X',$taddr));
 
-						my($usr_lbl) = $LBL[$taddr];										# adapted from def_WPC_codePtr
-						$tlbl = $usr_lbl if defined($usr_lbl);
+						my($orpg) = select_WPC_RPG($trpg);
+						my($tlbl) = sprintf("library_%02X_%04X",$_cur_RPG,$taddr);
+						$tlbl = $LBL[$taddr] if defined($LBL[$taddr]);
+#						print(STDERR "setLabel($tlbl,$taddr);\n");
 						setLabel($tlbl,$taddr);
 						if ($follow_code) {
 							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
 ##						} else {													
 ##							push(@unfollowed_lbl,$taddr);
 						}
+						select_WPC_RPG($orpg);
 					} elsif (substr($sargl,$i,1) eq 'R') {									# R: code reference (WB)
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
 						my($trpg)  = BYTE($addr); $decoded[$addr++] = 1;
 						push(@{$OPA[$oaddr]},sprintf('$%04X',$taddr));
 						push(@{$OPA[$oaddr]},sprintf('$%02X',$trpg));
 
-						my($usr_lbl) = $LBL[$taddr];										# adapted from def_WPC_codePtr
-						$tlbl = $usr_lbl if defined($usr_lbl);
+						my($orpg) = select_WPC_RPG($trpg);
+						my($tlbl) = sprintf("library_%02X_%04X",$trpg,$taddr);
+						$tlbl = $LBL[$taddr] if defined($LBL[$taddr]);
+#						print(STDERR "setLabel($tlbl,$taddr);\n");
 						setLabel($tlbl,$taddr);
 						if ($follow_code) {
-							my($orpg) = select_WPC_RPG($trpg);
 							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
-							select_WPC_RPG($orpg);
 ##						} else {													
 ##							push(@unfollowed_lbl,$taddr);
 						}
+						select_WPC_RPG($orpg);
 					} else {
 						die("invalid inline argument spec <$sargl>");
 					}

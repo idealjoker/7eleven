@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Aug 11 13:01:51 2024
+#                    dlm: Sun Aug 11 15:17:48 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 101 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 59 70 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -54,9 +54,9 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ABA','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ACA','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B3D','.DBW','BWW'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B77','.DWWB','WCB'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B9D','.DWWB','WCB'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8BF7','.DWWB','WCB'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B77','.DWWB','WR'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B9D','.DWWB','WR'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8BF7','.DWWB','WR'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_D799','.DWBW','WBW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDFC','.DB','B'));
 }
