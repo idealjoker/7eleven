@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Aug 10 21:40:28 2024
+#					 dlm: Sun Aug 11 11:43:22 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 360 1 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 2289 17 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -201,8 +201,9 @@
 #	Jul 19, 2024: - modified load_ROM to allow loading a slice
 #				  - BUG: disabled error when using -ac w/o -g and gap is at end
 #	Aug  9, 2024: - started adding WPC support
-#	Aug 10, 2024: - continued
+#	Aug 10, 2024: - continued WPC support
 #				  - added numberp()
+#	Aug 11, 2024: - continued WPC support
 # END OF HISTORY
 
 # TO-DO:
@@ -282,7 +283,7 @@ sub import($@)
 #----------------------------------------------------------------------
 
 sub numberp(@)
-{ return  $_[0] =~ /^([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?$/; }
+{ return  $_[0] =~ /^\d+$/; }
 
 
 #----------------------------------------------------------------------
@@ -2283,7 +2284,9 @@ sub select_WPC_RPG($)
 	@LBL[0x4000..0x7FFF] 	= @{$LBLPG[$RPG]};
 	@decoded[0x4000..0x7FFF] = @{$decodedPG[$RPG]};
 
+	my($oRPG) = $_cur_RPG;
     $_cur_RPG = $RPG;
+    return $oRPG;
 }
 
 
@@ -2303,7 +2306,7 @@ sub def_WPC_codePtr($@)
 	setLabel($code_lbl,$code_addr);
 
 	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-	$OPA[$Address][0] = $code_lbl; $OPA[$Address][1] = sprintf('%02X',$RPG);
+	$OPA[$Address][0] = $code_lbl; 
 	$REM[$Address] = $rem unless defined($REM[$Address]); 
 	$decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
 
@@ -3169,6 +3172,10 @@ sub output_keyValue_aliases($@)
 	print("\n");
 }
 
+sub byHexValue {
+	(numberp($Lbl{$a}) ? sprintf('  :%04X',$Lbl{$a}) : $Lbl{$a}) cmp (numberp($Lbl{$b}) ? sprintf('  :%04X',$Lbl{$b}) : $Lbl{$b});
+}
+
 sub output_labels($)
 {
 	my($title) = @_;
@@ -3177,16 +3184,25 @@ sub output_labels($)
 	print("; $title\n");
 	print(";----------------------------------------------------------------------\n\n");
 
-	foreach my $lbl (sort { $Lbl{$a} <=> $Lbl{$b} } keys(%Lbl)) {
-		next unless defined($Lbl{$lbl});
-		next if defined($ROM[$Lbl{$lbl}]);
+	foreach my $lbl (sort byHexValue keys %Lbl) {
 		next if ($lbl =~ m{(.*)\+[1-9]$} && defined($Lbl{$1}));				# e.g. =Lamps+2
-			
-		$line = '.LBL';
-		$line .= indent($line,$hard_tab*$def_name_indent);
-		$line .= $lbl;
-		$line .= indent($line,$hard_tab*$def_val_indent) .
-					sprintf($Lbl{$lbl}>0xFF?"\$%04X\n":"\$%02X\n",$Lbl{$lbl});
+		my($lv) = $Lbl{$lbl};
+		next unless defined($lv);											# undefined label?
+
+		if (numberp($lv)) {
+			next if defined($ROM[$lv]);										# not an external label
+			$line = '.LBL'; 
+			$line .= indent($line,$hard_tab*$def_name_indent) . $lbl;
+			$line .= indent($line,$hard_tab*$def_val_indent) .
+						sprintf(($lv > 0xFF)?"\$%04X\n":"\$%02X\n",$Lbl{$lbl});
+		} else {
+			my($pg,$addr) = split(':',$lv);
+#			die if $pg == 0x3D && $addr == 0x419C;
+			next if $decodedPG[hex($pg)][hex($addr)];						# not an external label
+			$line = '.LBL'; 
+			$line .= indent($line,$hard_tab*$def_name_indent) . $lbl;
+			$line .= indent($line,$hard_tab*$def_val_indent) . $lv . "\n";
+		}
 		print($line);
 	}
 	print("\n");

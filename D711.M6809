@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sat Aug 10 21:20:29 2024
+#                    dlm: Sun Aug 11 12:19:36 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 493 26 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 521 0 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -16,6 +16,8 @@
 # 	Jul 18, 2024: - continued in Zermatt
 #	Jul 19, 2024: - continued in Zurich
 #	Jul 20, 2024: - debugging until all CPU vectors can be disassembled
+#	Aug 10, 2024: - added support for @INLINE_ARG_SBR
+#	Aug 11, 2024: - debugging
 # HISTORY END
 
 sub op_INH($$$$)													# operation with inherent (implied) addressing
@@ -487,26 +489,56 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if op_EXT(0xB8,$addr,$ind,'EORA');		next if op_EXT(0xB9,$addr,$ind,'ADCA'); 	
 		next if op_EXT(0xBA,$addr,$ind,'ORA');		next if op_EXT(0xBB,$addr,$ind,'ADDA'); 	
 		next if op_EXT(0xBC,$addr,$ind,'CMPX');
-		if ($rv = op_EXT(0xBD,$addr,$ind,'JSR')) {
+		if ($rv = op_EXT(0xBD,$addr,$ind,'JSR')) {											# JSR to fixed address => handle inline args
 			foreach my $sbr (@INLINE_ARG_SBR) {
-				my($slbl,$sapgm,$sargl) = split('-',$sbr);				# e.g. sys_runtime_error-.DWB-WB
+				my($slbl,$sapgm,$sargl) = split('-',$sbr);									# e.g. sys_runtime_error-.DB-B
 				die($slbl) unless defined($Lbl{$slbl});
-				if (numberp($Lbl{$slbl})) {
+				if (numberp($Lbl{$slbl})) {													# numeric label => address above 8000
 					next unless ($Lbl{$slbl} == $rv);
 				} else {
-					my($rpg,$saddr) = split(':',$Lbl{$slbl});
+					my($rpg,$saddr) = split(':',$Lbl{$slbl});								# compond label => rom page & address between 40000 and 80000
 					$rpg = hex($rpg); $saddr = hex($saddr);
 					next unless ($saddr == $rv && $rpg == $_cur_RPG);
 				}
-				$OP[$addr] = $sapgm; $IND[$addr] = $ind;				# .DWB
-				$REM[$addr] = 'subroutine argument';
-				for (my($i)=0; $i<length($sargl); $i++) {
-					if (substr($sargl,$i,1) eq 'W') {
-						push(@{$OPA[$addr]},sprintf('$%04X',WORD($addr)));
+				my($oaddr) = $addr;															# address of OP
+				$OP[$oaddr] = $sapgm; $IND[$oaddr] = $ind; $REM[$oaddr] = 'inline args';
+				for (my($i)=0; $i<length($sargl); $i++) {		
+					if (substr($sargl,$i,1) eq 'W') {										# W: word
+						push(@{$OPA[$oaddr]},sprintf('$%04X',WORD($addr)));
 						$decoded[$addr++] = $decoded[$addr++] = 1;
-					} elsif (substr($sargl,$i,1) eq 'B') {
-						push(@{$OPA[$addr]},sprintf('$%02X',BYTE($addr)));
+					} elsif (substr($sargl,$i,1) eq 'B') {									# B: byte
+						push(@{$OPA[$oaddr]},sprintf('$%02X',BYTE($addr)));
 						$decoded[$addr++] = 1;
+					} elsif (substr($sargl,$i,1) eq 'C') {									# C: code ptr (W)
+						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
+						push(@{$OPA[$oaddr]},sprintf('$%04X',$taddr));
+
+						my($usr_lbl) = $LBL[$taddr];										# adapted from def_WPC_codePtr
+						$tlbl = $usr_lbl if defined($usr_lbl);
+						setLabel($tlbl,$taddr);
+						if ($follow_code) {
+							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
+##						} else {													
+##							push(@unfollowed_lbl,$taddr);
+						}
+					} elsif (substr($sargl,$i,1) eq 'R') {									# R: code reference (WB)
+						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
+						my($trpg)  = BYTE($addr); $decoded[$addr++] = 1;
+						push(@{$OPA[$oaddr]},sprintf('$%04X',$taddr));
+						push(@{$OPA[$oaddr]},sprintf('$%02X',$trpg));
+
+						my($usr_lbl) = $LBL[$taddr];										# adapted from def_WPC_codePtr
+						$tlbl = $usr_lbl if defined($usr_lbl);
+						setLabel($tlbl,$taddr);
+						if ($follow_code) {
+							my($orpg) = select_WPC_RPG($trpg);
+							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
+							select_WPC_RPG($orpg);
+##						} else {													
+##							push(@unfollowed_lbl,$taddr);
+						}
+					} else {
+						die("invalid inline argument spec <$sargl>");
 					}
 				}
 			}

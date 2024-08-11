@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Aug 10 21:49:25 2024
+#                    dlm: Sun Aug 11 12:23:52 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 84 46 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 104 26 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -79,18 +79,34 @@ define_label('_ZEROCROSS_IRQ_CLEAR', 	0x3FFF);	# 7: R: Set to 1 when AC is curre
 #----------------------------------------------------------------------
 
 define_label('sys_runtime_error',		0x8298);	# keep in sync with [D711.WPC_DMD]
-define_label('syscall_8553',			0x8553);
 define_label('syscall_82B6',			0x82B6);
+define_label('syscall_82F2',			0x82F2);
+define_label('syscall_82FF',			0x82FF);
+define_label('syscall_8346',			0x8346);
+define_label('syscall_8385',			0x8385);
+define_label('syscall_8319',			0x8319);
+define_label('syscall_83DB',			0x83DB);
+define_label('syscall_83E8',			0x83E8);
+define_label('syscall_842B',			0x842B);
+define_label('syscall_8480',			0x8480);
+define_label('syscall_848F',			0x848F);
+define_label('syscall_84AD',			0x84AD);
+define_label('syscall_8546',			0x8546);
+define_label('syscall_8553',			0x8553);
+define_label('syscall_85B2',			0x85B2);
+define_label('syscall_865B',			0x865B);
 define_label('syscall_8679',			0x8679);
 define_label('syscall_8690',			0x8690);
+define_label('syscall_8715',			0x8715);
+define_label('syscall_8722',			0x8722);
+define_label('syscall_88D5',			0x88D5);
 define_label('sys_JSRPG',				0x88F5);
+define_label('syscall_89DD',			0x89DD);
 define_label('syscall_8A9A',			0x8A9A);
 define_label('syscall_8AAA',			0x8AAA);
+define_label('syscall_8ACA',			0x8ACA);
 define_label('syscall_8ABA',			0x8ABA);
 define_label('syscall_8B3D',			0x8B3D);
-
-define_label('syscall_3B_83E8',			'3B:83E8');
-define_label('syscall_3B_848F',			'3B:848F');
-define_label('syscall_3B_84AD',			'3B:84AD');
+define_label('syscall_8B77',			0x8B77);
 
 1;

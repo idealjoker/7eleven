@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Aug 10 21:51:20 2024
+#                    dlm: Sun Aug 11 12:25:49 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 31 69 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 57 65 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -27,19 +27,34 @@ sub init_WPC_DMD()
 {
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_runtime_error','.DB','B'));	# keep in sync with [WPC_DMD.API]
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_82B6','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_82F2','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_82FF','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8385','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8346','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8319','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_83DB','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_83E8','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_842B','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8480','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_848F','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_84AD','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8546','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8553','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8679','.DB','???'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85B2','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_865B','.DW','W'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8679','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8690','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_JSRPG','.DWB','WB'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8715','.DW','W'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8722','.DW','W'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_88D5','.DW','W'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_JSRPG','.DWB','R'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_89DD','.DWB','WB'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8A9A','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8AAA','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ABA','.DW','WW'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ACA','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B3D','.DBW','BWW'));
-
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_3B_83E8','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_3B_848F','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_3B_84AD','.DB','B'));
-
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B77','.DWWB','WCB'));
 }
 
 #----------------------------------------------------------------------
@@ -70,7 +85,7 @@ sub disassemble_WPC_DMD()
 		insert_divider($Address,'System Pointers');
 #		while ($Address < 0x8004) {
 #		while ($Address < 0x8010) {
-		while ($Address < 0x8020) {
+		while ($Address < 0x801D) {
 			my($taddr) = sprintf('%04X',WORD($Address));
 			my($trpg) = sprintf('%02X',BYTE($Address+2));
 			def_WPC_codePtr("syscall_${trpg}_$taddr","System Call");
