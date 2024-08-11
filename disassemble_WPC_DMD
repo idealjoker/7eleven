@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ D M D 
 #					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Sat Aug 10 16:46:36 2024
+#					 dlm: Sat Aug 10 20:47:28 2024
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 59 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 57 22 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -54,6 +54,7 @@ $D711::_cur_RPG = 0x20;
 # Disassemble ROM
 #----------------------------------------------------------------------
 
+&D711::init_WPC_DMD();
 &D711::disassemble_WPC_DMD();												# Code Disassembly
 
 #----------------------------------------------------------------------

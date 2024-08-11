@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sat Jul 20 06:31:32 2024
+#                    dlm: Sat Aug 10 21:20:29 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 18 71 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 493 26 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -488,39 +488,27 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if op_EXT(0xBA,$addr,$ind,'ORA');		next if op_EXT(0xBB,$addr,$ind,'ADDA'); 	
 		next if op_EXT(0xBC,$addr,$ind,'CMPX');
 		if ($rv = op_EXT(0xBD,$addr,$ind,'JSR')) {
-			if ($rv == 0x88F5) {
-				$OP[$addr] = '.DWB'; $IND[$addr] = $ind;				# 3 bytes confirmed
-				push(@{$OPA[$addr]},sprintf('$%04X',WORD($addr)));
-				push(@{$OPA[$addr]},sprintf('$%02X',BYTE($addr+2)));
-				$REM[$addr] = 'address/bank';
-                $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-			}
-			if ($rv == 0x8298) {										# 1 byte confirmed
-				$OP[$addr] = '.DB'; $IND[$addr] = $ind;
-				push(@{$OPA[$addr]},sprintf('$%02X',BYTE($addr)));
+			foreach my $sbr (@INLINE_ARG_SBR) {
+				my($slbl,$sapgm,$sargl) = split('-',$sbr);				# e.g. sys_runtime_error-.DWB-WB
+				die($slbl) unless defined($Lbl{$slbl});
+				if (numberp($Lbl{$slbl})) {
+					next unless ($Lbl{$slbl} == $rv);
+				} else {
+					my($rpg,$saddr) = split(':',$Lbl{$slbl});
+					$rpg = hex($rpg); $saddr = hex($saddr);
+					next unless ($saddr == $rv && $rpg == $_cur_RPG);
+				}
+				$OP[$addr] = $sapgm; $IND[$addr] = $ind;				# .DWB
 				$REM[$addr] = 'subroutine argument';
-                $decoded[$addr++] = 1;
-			}
-			if ($rv == 0x82B6) {										# unconfirmed
-				$OP[$addr] = '.DB'; $IND[$addr] = $ind;
-				push(@{$OPA[$addr]},sprintf('$%02X',BYTE($addr)));
-				$REM[$addr] = 'subroutine argument';
-                $decoded[$addr++] = 1;
-			}
-			if (isMember($rv,0x8A9A,0x8AAA,0x8ABA)) {					# 2 words confirmed
-				$OP[$addr] = '.DW'; $IND[$addr] = $ind;
-				push(@{$OPA[$addr]},sprintf('$%04X',WORD($addr)));
-				push(@{$OPA[$addr]},sprintf('$%04X',WORD($addr+2)));
-				$REM[$addr] = 'subroutine arguments';
-                $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-			}
-			if ($rv == 0x8B3D) {										# 5 bytes confirmed
-				$OP[$addr] = '.DBW'; $IND[$addr] = $ind;
-				push(@{$OPA[$addr]},sprintf('$%02X',BYTE($addr)));
-				push(@{$OPA[$addr]},sprintf('$%04X',WORD($addr+1)));
-				push(@{$OPA[$addr]},sprintf('$%04X',WORD($addr+3)));
-				$REM[$addr] = 'subroutine arguments';
-				$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
+				for (my($i)=0; $i<length($sargl); $i++) {
+					if (substr($sargl,$i,1) eq 'W') {
+						push(@{$OPA[$addr]},sprintf('$%04X',WORD($addr)));
+						$decoded[$addr++] = $decoded[$addr++] = 1;
+					} elsif (substr($sargl,$i,1) eq 'B') {
+						push(@{$OPA[$addr]},sprintf('$%02X',BYTE($addr)));
+						$decoded[$addr++] = 1;
+					}
+				}
 			}
 			
 			if ($follow_code) {

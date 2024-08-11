@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Aug 10 16:59:38 2024
+#					 dlm: Sat Aug 10 21:40:28 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 204 29 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 360 1 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -202,6 +202,7 @@
 #				  - BUG: disabled error when using -ac w/o -g and gap is at end
 #	Aug  9, 2024: - started adding WPC support
 #	Aug 10, 2024: - continued
+#				  - added numberp()
 # END OF HISTORY
 
 # TO-DO:
@@ -277,6 +278,14 @@ sub import($@)
 } # import
 
 #----------------------------------------------------------------------
+# Utilities
+#----------------------------------------------------------------------
+
+sub numberp(@)
+{ return  $_[0] =~ /^([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?$/; }
+
+
+#----------------------------------------------------------------------
 # Load ROM Image
 #----------------------------------------------------------------------
 
@@ -348,6 +357,7 @@ sub setLabel($$)
 		if (($LBL[$addr] =~ m{_[0-9A-F]{4}$}) &&				#	otherwise, make duplicate
     		!($lbl =~ m{_[0-9A-F]{4}$}));
 	$LBL[$addr] = $lbl;											# define label
+#	print(STDERR "Lbl{$lbl} = $faddr;\n");
 	$Lbl{$lbl} = $faddr;
 	return 1;
 }

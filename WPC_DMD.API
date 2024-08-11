@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Jul 20 06:32:06 2024
+#                    dlm: Sat Aug 10 21:49:25 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 4 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 84 46 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -78,7 +78,19 @@ define_label('_ZEROCROSS_IRQ_CLEAR', 	0x3FFF);	# 7: R: Set to 1 when AC is curre
 # Own Analysis
 #----------------------------------------------------------------------
 
-define_label('sys_runtime_error?',		0x8298);
-define_label('sys_bank_JSR',			0x88F5);
+define_label('sys_runtime_error',		0x8298);	# keep in sync with [D711.WPC_DMD]
+define_label('syscall_8553',			0x8553);
+define_label('syscall_82B6',			0x82B6);
+define_label('syscall_8679',			0x8679);
+define_label('syscall_8690',			0x8690);
+define_label('sys_JSRPG',				0x88F5);
+define_label('syscall_8A9A',			0x8A9A);
+define_label('syscall_8AAA',			0x8AAA);
+define_label('syscall_8ABA',			0x8ABA);
+define_label('syscall_8B3D',			0x8B3D);
+
+define_label('syscall_3B_83E8',			'3B:83E8');
+define_label('syscall_3B_848F',			'3B:848F');
+define_label('syscall_3B_84AD',			'3B:84AD');
 
 1;
