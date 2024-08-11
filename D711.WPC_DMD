@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Aug 11 12:25:49 2024
+#                    dlm: Sun Aug 11 13:01:51 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 57 65 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 101 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -55,6 +55,10 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ACA','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B3D','.DBW','BWW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B77','.DWWB','WCB'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B9D','.DWWB','WCB'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8BF7','.DWWB','WCB'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_D799','.DWBW','WBW'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDFC','.DB','B'));
 }
 
 #----------------------------------------------------------------------
@@ -82,14 +86,30 @@ sub disassemble_WPC_DMD()
 		insert_divider($Address,'Bank Id');
 		def_byte_hex('_ROMPG_ID');
 
-		insert_divider($Address,'System Pointers');
-#		while ($Address < 0x8004) {
-#		while ($Address < 0x8010) {
-		while ($Address < 0x801D) {
+		insert_divider($Address,'System Call Pointers');
+		while ($Address < 0x812D) {
 			my($taddr) = sprintf('%04X',WORD($Address));
 			my($trpg) = sprintf('%02X',BYTE($Address+2));
-			def_WPC_codePtr("syscall_${trpg}_$taddr","System Call");
+			def_WPC_codePtr("syscall_${trpg}_$taddr",'System Call');
 		}
+
+#		insert_divider($Address,'System Data Pointers');
+#		$Address = 0x8133;
+#		def_WPC_stringPtr('sysstr_gameName','System String');
+#		def_WPC_stringPtr('sysstr_gameNumber','System String');
+#		def_WPC_stringPtr('sysstr_buildDate','System String');
+
+#		$Address = 0x81C5;
+#		my($addr) = def_ptr('^sys_switchTable');
+#		def_WPC_switchTable('sys_switchTable','Switch Table');
+
+#		$Address = 0x8285;
+#		my($addr) = def_ptr('^sys_fontTable');
+#		def_WPC_fontTable('sys_fontTable','Font Table');
+
+#		$Address = 0x8288;
+#		my($addr) = def_ptr('^sys_DMDtable');
+#		def_WPC_DMDTable('sys_DMDtable','DMD Table');
 	}
 }
 
