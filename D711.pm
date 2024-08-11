@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Aug 11 11:43:22 2024
+#					 dlm: Sun Aug 11 14:50:41 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 2289 17 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 3417 13 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -3405,12 +3405,16 @@ sub dump_labels($)
 		}	
 	} else {
 		print("Labels:\n");
-		foreach my $lbl (sort { $Lbl{$a} <=> $Lbl{$b} } keys(%Lbl)) {
+		foreach my $lbl (sort byHexValue keys %Lbl) {
 			next unless defined($Lbl{$lbl});
 			print("\t");
 			print($decoded[$Lbl{$lbl}]	? ' ' : 'D');
 			print(($Lbl_refs{$lbl} > 0) ? ' ' : 'O');
-			printf("\t0x%04X $lbl\n",$Lbl{$lbl});
+			if (numberp($Lbl{$lbl})) {
+				printf("\t0x%04X $lbl\n",$Lbl{$lbl});
+			} else {
+				printf("\t$Lbl{$lbl} $lbl\n");
+			}
 	    }
 	}
 #	print("Label Refs:\n");

@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ D M D 
 #					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Sat Aug 10 20:47:28 2024
+#					 dlm: Sun Aug 11 14:47:53 2024
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 57 22 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 85 23 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -82,7 +82,7 @@ for (my($rpg)=0x20; $rpg<0x3E; $rpg++) {
 #----------------------------------------------------------------------
 
 if ($opt_l) {																# dump label information
-	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
+	&D711::dump_labels();													# fmt == 1 generates code that can be used with -u
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 
