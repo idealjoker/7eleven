@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Aug 11 18:37:18 2024
+#                    dlm: Mon Aug 12 19:07:09 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 85 9 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 92 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -39,6 +39,7 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_848F','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_84AD','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8546','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85F1','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8553','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85B2','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_865B','.DW','W'));
@@ -55,9 +56,9 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ABA','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ACA','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B3D','.DBW','BWW'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B77','.DWWB','WR'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B9D','.DWWB','WR'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8BF7','.DWWB','WR'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B77','.DWWB','WR'));			# R unsure
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B9D','.DWWB','WR'));			# R unsure
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8BF7','.DWWB','WR'));			# R unsure
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_D799','.DWBW','WBW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDFC','.DB','B'));
 }
@@ -82,7 +83,7 @@ sub disassemble_WPC_DMD()
 	    def_code_ptr('RST_vector','RST_handler','CPU Vector Handler');				###
     }
 
-	if (0) {
+	if (1) {
 		$Address = 0x8000;
 		insert_divider($Address,'Bank Id');
 		def_byte_hex('_ROMPG_ID');

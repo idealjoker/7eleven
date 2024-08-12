@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Aug 11 18:27:40 2024
+#					 dlm: Mon Aug 12 19:06:18 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 2269 1 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 207 90 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -204,6 +204,7 @@
 #	Aug 10, 2024: - continued WPC support
 #				  - added numberp()
 #	Aug 11, 2024: - continued WPC support
+#	Aug 12, 2024: - BUG: select_WPC_RPG did not return correct value unless pg was changed
 # END OF HISTORY
 
 # TO-DO:
@@ -2265,8 +2266,9 @@ sub select_WPC_RPG($)
 {
 	my($RPG) = @_;
 
-	return if ($RPG == $_cur_RPG);
-#	printf(STDERR "RPG %02X -> %02X\n",$_cur_RPG,$RPG);
+#	printf(STDERR "RPG %02X($_cur_RPG) -> %02X($RPG)\n",$_cur_RPG,$RPG);
+	return $RPG if ($RPG == $_cur_RPG);
+	die unless defined($RPG);
 	
 	@{$OPPG[$_cur_RPG]} 	 = @OP[0x4000..0x7FFF];										# swap out active page
 	@{$INDPG[$_cur_RPG]}	 = @IND[0x4000..0x7FFF]; 		    

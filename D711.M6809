@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Mon Aug 12 16:17:57 2024
+#                    dlm: Mon Aug 12 19:02:13 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 355 121 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 324 1 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -321,7 +321,7 @@ sub op_2REGS($$$)																	# EXG/TFR
 sub disassemble_asm(@) 																# disassemble 6809 CPU code (always follow code)
 {
 	my($ind,$addr,$lbl_root,$divider_label,$follow_code) = @_;
-	printf(STDERR "disassemble_asm($ind,%04X,$lbl_root,$divider_label,$follow_code)\n",$addr);
+#	printf(STDERR "disassemble_asm($ind,%04X,$lbl_root,$divider_label,$follow_code)\n",$addr);
 	$follow_code = 1 unless defined($follow_code);
 	return disassemble_asm_nbytes($ind,$addr,$lbl_root,9e99,$follow_code,$divider_label);		# follow_code = 1
 }
@@ -352,7 +352,7 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 #	printf(STDERR "start_addr = %04X\n",$start_addr);
 	while ($addr-$start_addr < $max_bytes) {
 		my($rv);
-		printf(STDERR "M6809 disassembling opcode %02X at %02X:%04X (decoded = $decoded[$addr])\n",BYTE($addr),$_cur_RPG,$addr);
+#		printf(STDERR "M6809 disassembling opcode %02X at %02X:%04X (decoded = $decoded[$addr])\n",BYTE($addr),$_cur_RPG,$addr);
 		unless (defined(BYTE($addr))) {
 			printf(STDERR "; WARNING: disassembly address %04X outside ROM range\n",$addr)
 				if ($verbose > 0);
