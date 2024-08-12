@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sun Aug 11 15:12:07 2024
+#                    dlm: Mon Aug 12 16:17:57 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 527 0 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 355 121 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -321,7 +321,7 @@ sub op_2REGS($$$)																	# EXG/TFR
 sub disassemble_asm(@) 																# disassemble 6809 CPU code (always follow code)
 {
 	my($ind,$addr,$lbl_root,$divider_label,$follow_code) = @_;
-#	printf(STDERR "disassemble_asm($ind,%04X,$lbl_root,$divider_label,$follow_code)\n",$addr);
+	printf(STDERR "disassemble_asm($ind,%04X,$lbl_root,$divider_label,$follow_code)\n",$addr);
 	$follow_code = 1 unless defined($follow_code);
 	return disassemble_asm_nbytes($ind,$addr,$lbl_root,9e99,$follow_code,$divider_label);		# follow_code = 1
 }
@@ -329,7 +329,7 @@ sub disassemble_asm(@) 																# disassemble 6809 CPU code (always follo
 sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byte limit
 {
 	local($ind,$addr,$lbl_root,$max_bytes,$follow_code,$divider_label) = @_;
-#	printf(STDERR "disassemble_asm($ind,%04X,$lbl_root,$max_bytes,$follow_code,$divider_label)\n",$addr);
+#	printf(STDERR "disassemble_asm($ind,%02X:%04X,$lbl_root,$max_bytes,$follow_code,$divider_label)\n",$_cur_RPG,$addr);
 
 	unless (defined(BYTE($addr))) { 												# outside loaded ROM range
 		return if ($WMS_System==6 || $WMS_System==7);								# okay for Sys 6 & Sys 7 (OS separate)
@@ -349,9 +349,10 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 	$N_LABELS[$addr]++;
 
 	my($start_addr) = $addr;
+#	printf(STDERR "start_addr = %04X\n",$start_addr);
 	while ($addr-$start_addr < $max_bytes) {
 		my($rv);
-#		printf("M6809 disassembling opcode %02X at %04X\n",BYTE($addr),$addr);
+		printf(STDERR "M6809 disassembling opcode %02X at %02X:%04X (decoded = $decoded[$addr])\n",BYTE($addr),$_cur_RPG,$addr);
 		unless (defined(BYTE($addr))) {
 			printf(STDERR "; WARNING: disassembly address %04X outside ROM range\n",$addr)
 				if ($verbose > 0);
@@ -453,7 +454,15 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if op_EXT(0x77,$addr,$ind,'ASR'); 		next if op_EXT(0x78,$addr,$ind,'ASL');
 		next if op_EXT(0x79,$addr,$ind,'ROL'); 		next if op_EXT(0x7A,$addr,$ind,'DEC');
 		next if op_EXT(0x7C,$addr,$ind,'INC'); 		next if op_EXT(0x7D,$addr,$ind,'TST'); 
-		return if op_EXT(0x7E,$addr,$ind,'JMP');	next if op_EXT(0x7F,$addr,$ind,'CLR');
+		if ($rv = op_EXT(0x7E,$addr,$ind,'JMP')) {
+			if ($follow_code) {
+				disassemble_asm($ind,$rv,$lbl_root,undef,$follow_code);
+##			} else {													
+##				push(@unfollowed_lbl,$rv);
+		    }
+			return;
+        }
+		next if op_EXT(0x7F,$addr,$ind,'CLR');
 
 		next if op_IMM(0x80,$ind,'SUBA'); 			next if op_IMM(0x81,$ind,'CMPA');
 		next if op_IMM(0x82,$ind,'SBCA'); 			next if op_IMM2(0x83,$addr,$ind,'SUBD');
@@ -513,7 +522,6 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
 						push(@{$OPA[$oaddr]},sprintf('$%04X',$taddr));
 
-						my($orpg) = select_WPC_RPG($trpg);
 						my($tlbl) = sprintf("library_%02X_%04X",$_cur_RPG,$taddr);
 						$tlbl = $LBL[$taddr] if defined($LBL[$taddr]);
 #						print(STDERR "setLabel($tlbl,$taddr);\n");
@@ -523,7 +531,6 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 ##						} else {													
 ##							push(@unfollowed_lbl,$taddr);
 						}
-						select_WPC_RPG($orpg);
 					} elsif (substr($sargl,$i,1) eq 'R') {									# R: code reference (WB)
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
 						my($trpg)  = BYTE($addr); $decoded[$addr++] = 1;
@@ -657,7 +664,7 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 	        return;
         }
 
-        printf("ABORT: Unknown M6809 opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
+        printf("ABORT: Unknown M6809 opcode \$%02X at addr %02X:%04X (start addr = %04X)\n",BYTE($addr),$_cur_RPG,$addr,$start_addr)
         	if ($verbose > 0);
 		$OP[$addr] = '.DB'; $IND[$addr] = $ind;
 		$OPA[$addr][0] = sprintf('$%02X!',BYTE($addr));

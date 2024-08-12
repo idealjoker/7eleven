@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Aug 11 14:50:41 2024
+#					 dlm: Sun Aug 11 18:27:40 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 3417 13 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 2269 1 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -2266,6 +2266,7 @@ sub select_WPC_RPG($)
 	my($RPG) = @_;
 
 	return if ($RPG == $_cur_RPG);
+#	printf(STDERR "RPG %02X -> %02X\n",$_cur_RPG,$RPG);
 	
 	@{$OPPG[$_cur_RPG]} 	 = @OP[0x4000..0x7FFF];										# swap out active page
 	@{$INDPG[$_cur_RPG]}	 = @IND[0x4000..0x7FFF]; 		    
@@ -2273,6 +2274,7 @@ sub select_WPC_RPG($)
 	@{$OPAPG[$_cur_RPG]}	 = @OPA[0x4000..0x7FFF]; 		    
 	@{$REMPG[$_cur_RPG]}	 = @REM[0x4000..0x7FFF]; 		    
 	@{$LBLPG[$_cur_RPG]}	 = @LBL[0x4000..0x7FFF]; 		    
+	@{$AUTO_LBLPG[$_cur_RPG]} = @AUTO_LBL[0x4000..0x7FFF]; 		    
 	@{$decodedPG[$_cur_RPG]} = @decoded[0x4000..0x7FFF]; 		    
     
 	load_ROM($ARGV[0],0x4000,$RPG,16);													# swap in new page
@@ -2282,6 +2284,7 @@ sub select_WPC_RPG($)
 	@OPA[0x4000..0x7FFF] 	= @{$OPAPG[$RPG]};
 	@REM[0x4000..0x7FFF] 	= @{$REMPG[$RPG]};
 	@LBL[0x4000..0x7FFF] 	= @{$LBLPG[$RPG]};
+	@AUTO_LBL[0x4000..0x7FFF] 	= @{$AUTO_LBLPG[$RPG]};
 	@decoded[0x4000..0x7FFF] = @{$decodedPG[$RPG]};
 
 	my($oRPG) = $_cur_RPG;
@@ -3197,8 +3200,7 @@ sub output_labels($)
 						sprintf(($lv > 0xFF)?"\$%04X\n":"\$%02X\n",$Lbl{$lbl});
 		} else {
 			my($pg,$addr) = split(':',$lv);
-#			die if $pg == 0x3D && $addr == 0x419C;
-			next if $decodedPG[hex($pg)][hex($addr)];						# not an external label
+			next if $decodedPG[hex($pg)][hex($addr)-0x4000];				# not an external label
 			$line = '.LBL'; 
 			$line .= indent($line,$hard_tab*$def_name_indent) . $lbl;
 			$line .= indent($line,$hard_tab*$def_val_indent) . $lv . "\n";
