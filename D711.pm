@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Aug 12 19:06:18 2024
+#					 dlm: Mon Aug 12 20:44:57 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 207 90 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 208 49 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -205,6 +205,7 @@
 #				  - added numberp()
 #	Aug 11, 2024: - continued WPC support
 #	Aug 12, 2024: - BUG: select_WPC_RPG did not return correct value unless pg was changed
+#				  - added support for WPC strings
 # END OF HISTORY
 
 # TO-DO:
@@ -1791,6 +1792,60 @@ sub def_string_table(@)
 }
 
 #----------------------------------------------------------------------
+
+sub def_WPC_string(@)
+{
+	my($lbl,$divider_label,$rem) = @_;
+
+	die unless defined($Address);
+##	return if ($decoded[$Address]);		# disabled, since there are overlapping strings
+	return if defined($OP[$Address]);
+
+	insert_divider($Address,$divider_label);
+	setLabel($lbl,$Address);
+    $Address+=$len,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
+    
+	$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	$REM[$Address] = $rem unless defined($REM[$Address]); 
+	$OP[$Address] = '.STR';
+	my($o);
+	$OPA[$Address][0] = "'";
+	for ($o=0; BYTE($Address+$o)!=0; $o++) {
+		$OPA[$Address][0] .= decode_STR_char($Address+$o);
+		$decoded[$Address+$o] = 1;
+	}
+	$decoded[$Address+$o] = 1;
+	$OPA[$Address][0] .= "'";
+	$Address += $o;
+}   
+		    
+sub def_WPC_stringPtr($@)														# DOES NOT MAINTAIN RPG
+{
+	my($str_lbl,$divider_title,$rem) = @_;
+	die unless defined($Address);
+	setLabel("^$str_lbl",$Address);
+    die unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
+	my($str_addr) = WORD($Address);
+
+	my($RPG) = BYTE($Address+2);
+	select_WPC_RPG($RPG);
+
+	my($usr_lbl) = $LBL[$str_addr];
+	$str_lbl = $usr_lbl if defined($usr_lbl);
+	setLabel($str_lbl,$str_addr);
+
+	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $codeType_data;
+	$OPA[$Address][0] = $str_lbl; 
+	$REM[$Address] = $rem unless defined($REM[$Address]); 
+	$decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
+
+	my($sAddr) = $Address;
+	$Address = $str_addr;
+	def_WPC_string($str_lbl);
+	$Address = $sAddr + 3;
+}
+
+#----------------------------------------------------------------------
 # Grow Lengt-1 Strings
 #	- extend 1-long strings to fill short gaps
 #	- grows any string extending into a gap
@@ -2295,7 +2350,7 @@ sub select_WPC_RPG($)
 }
 
 
-sub def_WPC_codePtr($@)
+sub def_WPC_codePtr($@)														# DOES NOT MAINTAIN RPG
 {
 	my($code_lbl,$divider_title,$rem) = @_;
 	die unless defined($Address);

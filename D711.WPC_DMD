@@ -1,17 +1,20 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Aug 12 19:07:09 2024
+#                    dlm: Mon Aug 12 20:44:36 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 92 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 17 52 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
 
 # HISTORY:
-#	Jul 18, 2024: - created
-#	Aug  9, 2024: - imported load_ROM() call
-#	Aug 10, 2024: - undid Aug 9 change
+#	Jul 18, 2024: - created; WMS CPU vectors disassemble correctly
+#	Aug  9, 2024: - continued
+#	Aug 10, 2024: - added support for ROM pages
+#	Aug 11, 2024: - System Call Pointers disassemble correctly
+#				  - BUG: WMS CPU vectors no longer disassemble correctly
+#	Aug 12, 2024: - added support for system strings
 
 #----------------------------------------------------------------------
 # WPC API
@@ -95,11 +98,11 @@ sub disassemble_WPC_DMD()
 			def_WPC_codePtr("syscall_${trpg}_$taddr",'System Call');
 		}
 
-#		insert_divider($Address,'System Data Pointers');
-#		$Address = 0x8133;
-#		def_WPC_stringPtr('sysstr_gameName','System String');
-#		def_WPC_stringPtr('sysstr_gameNumber','System String');
-#		def_WPC_stringPtr('sysstr_buildDate','System String');
+		$Address = 0x8133;
+		insert_divider($Address,'System Data Pointers');
+		def_WPC_stringPtr('sysstr_gameName','System String');
+		def_WPC_stringPtr('sysstr_gameNumber','System String');
+		def_WPC_stringPtr('sysstr_buildDate','System String');
 
 #		$Address = 0x81C5;
 #		my($addr) = def_ptr('^sys_switchTable');
