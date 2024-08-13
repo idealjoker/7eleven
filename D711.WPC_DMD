@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Aug 12 20:44:36 2024
+#                    dlm: Tue Aug 13 08:00:02 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 17 52 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 91 1 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -76,20 +76,23 @@ sub disassemble_WPC_DMD()
 		$Address = 0xFFF0;														# CPU vectors
 		insert_divider($Address,'CPU Vectors');
 	
-		def_code_ptr('RESERVED_vector','RESERVED_handler','CPU Vector Handler');	##
+		def_code_ptr('RESERVED_vector','RESERVED_handler','CPU Vector Handler');	
 		def_code_ptr('SWI3_vector','SWI3_handler','CPU Vector Handler');
-		def_code_ptr('SWI2_vector','SWI2_handler','CPU Vector Handler');			##
+		def_code_ptr('SWI2_vector','SWI2_handler','CPU Vector Handler');			
 		def_code_ptr('FIRQ_vector','FIRQ_handler','CPU Vector Handler');
 		def_code_ptr('IRQ_vector','IRQ_handler','CPU Vector Handler');
 		def_code_ptr('SWI_vector','SWI_handler','CPU Vector Handler');
-		def_code_ptr('NMI_vector','NMI_handler','CPU Vector Handler');				###
-	    def_code_ptr('RST_vector','RST_handler','CPU Vector Handler');				###
+		def_code_ptr('NMI_vector','NMI_handler','CPU Vector Handler');				
+	    def_code_ptr('RST_vector','RST_handler','CPU Vector Handler');				
     }
 
 	if (1) {
+#		$Address = 0x4000;
+#		def_byte_hex('_ROMPG_ID');
+
 		$Address = 0x8000;
 		insert_divider($Address,'Bank Id');
-		def_byte_hex('_ROMPG_ID');
+		def_byte_hex('_ROMPG_SYS1_ID');
 
 		insert_divider($Address,'System Call Pointers');
 		while ($Address < 0x812D) {

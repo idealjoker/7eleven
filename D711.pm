@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Aug 12 20:44:57 2024
+#					 dlm: Tue Aug 13 08:31:46 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 208 49 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 210 58 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -206,6 +206,8 @@
 #	Aug 11, 2024: - continued WPC support
 #	Aug 12, 2024: - BUG: select_WPC_RPG did not return correct value unless pg was changed
 #				  - added support for WPC strings
+#	Aug 13, 2024: - added _ROMPG labels to all pages
+#				  - BUG: @EXTRA was not swapped out and in
 # END OF HISTORY
 
 # TO-DO:
@@ -1828,7 +1830,7 @@ sub def_WPC_stringPtr($@)														# DOES NOT MAINTAIN RPG
 	my($str_addr) = WORD($Address);
 
 	my($RPG) = BYTE($Address+2);
-	select_WPC_RPG($RPG);
+	select_WPC_RPG($RPG,1);
 
 	my($usr_lbl) = $LBL[$str_addr];
 	$str_lbl = $usr_lbl if defined($usr_lbl);
@@ -2330,22 +2332,32 @@ sub select_WPC_RPG($)
 	@{$TYPEPG[$_cur_RPG]}	 = @TYPE[0x4000..0x7FFF];		    
 	@{$OPAPG[$_cur_RPG]}	 = @OPA[0x4000..0x7FFF]; 		    
 	@{$REMPG[$_cur_RPG]}	 = @REM[0x4000..0x7FFF]; 		    
+	@{$EXTRAPG[$_cur_RPG]}	 = @EXTRA[0x4000..0x7FFF]; 		    
 	@{$LBLPG[$_cur_RPG]}	 = @LBL[0x4000..0x7FFF]; 		    
 	@{$AUTO_LBLPG[$_cur_RPG]} = @AUTO_LBL[0x4000..0x7FFF]; 		    
 	@{$decodedPG[$_cur_RPG]} = @decoded[0x4000..0x7FFF]; 		    
     
-	load_ROM($ARGV[0],0x4000,$RPG,16);													# swap in new page
-	@OP[0x4000..0x7FFF]		= @{$OPPG[$RPG]};
+	@OP[0x4000..0x7FFF]		= @{$OPPG[$RPG]};											# swap in new page
 	@IND[0x4000..0x7FFF] 	= @{$INDPG[$RPG]};
 	@TYPE[0x4000..0x7FFF]	= @{$TYPEPG[$RPG]};
 	@OPA[0x4000..0x7FFF] 	= @{$OPAPG[$RPG]};
 	@REM[0x4000..0x7FFF] 	= @{$REMPG[$RPG]};
+	@EXTRA[0x4000..0x7FFF] 	= @{$EXTRAPG[$RPG]};
 	@LBL[0x4000..0x7FFF] 	= @{$LBLPG[$RPG]};
 	@AUTO_LBL[0x4000..0x7FFF] 	= @{$AUTO_LBLPG[$RPG]};
 	@decoded[0x4000..0x7FFF] = @{$decodedPG[$RPG]};
 
+	load_ROM($ARGV[0],0x4000,$RPG,16);
 	my($oRPG) = $_cur_RPG;
     $_cur_RPG = $RPG;
+
+	unless ($decoded[0x4000]) {
+		my($oA) = $Address;
+		$Address = 0x4000;
+		def_byte_hex('_ROMPG_ID',sprintf('ROM PAGE %02X',$_cur_RPG));
+		$Address = $oA;
+	}
+	
     return $oRPG;
 }
 
