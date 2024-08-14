@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Aug 13 08:08:18 2024
+#                    dlm: Tue Aug 13 20:54:41 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 540 0 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 553 25 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -522,10 +522,13 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
 						push(@{$OPA[$oaddr]},sprintf('$%04X',$taddr));
 
-						my($tlbl) = sprintf("library_%02X_%04X",$_cur_RPG,$taddr);
+						my($tlbl) = sprintf("library_%04X",$taddr);
 						$tlbl = $LBL[$taddr] if defined($LBL[$taddr]);
 #						print(STDERR "setLabel($tlbl,$taddr);\n");
-						setLabel($tlbl,$taddr);
+						my($ftaddr) = $taddr;
+						$ftaddr = sprintf('%02X:%04X',$_cur_RPG,$taddr)
+							if defined($_cur_RPG) && ($taddr < 0x8000);
+						setLabel($tlbl,$ftaddr);
 						if ($follow_code) {
 							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
 ##						} else {													
@@ -537,16 +540,24 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 						push(@{$OPA[$oaddr]},sprintf('$%04X',$taddr));
 						push(@{$OPA[$oaddr]},sprintf('$%02X',$trpg));
 
+#						print(STDERR "select_WPC_RPG($trpg);\n");
 						my($orpg) = select_WPC_RPG($trpg);
-						my($tlbl) = sprintf("library_%02X_%04X",$trpg,$taddr);
+#						print(STDERR "orpg = $orpg\n");
+						my($tlbl) = sprintf("library_%04X",$taddr);
 						$tlbl = $LBL[$taddr] if defined($LBL[$taddr]);
 #						print(STDERR "setLabel($tlbl,$taddr);\n");
-						setLabel($tlbl,$taddr);
+						my($ftaddr) = $taddr;
+						if (defined($_cur_RPG) && ($taddr < 0x8000)) {
+							$ftaddr = sprintf('%02X:%04X',$_cur_RPG,$taddr);
+							$tlbl .= sprintf('[%02X]',$_cur_RPG);
+						}
+						setLabel($tlbl,$ftaddr);
 						if ($follow_code) {
 							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
 ##						} else {													
 ##							push(@unfollowed_lbl,$taddr);
 						}
+#						print(STDERR "select_WPC_RPG(orpg=$orpg);\n");
 						select_WPC_RPG($orpg);
 					} else {
 						die("invalid inline argument spec <$sargl>");

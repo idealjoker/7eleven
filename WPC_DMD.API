@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Aug 12 19:04:02 2024
+#                    dlm: Tue Aug 13 21:57:25 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 96 26 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 118 36 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -114,5 +114,7 @@ define_label('syscall_8B9D',			0x8B9D);
 define_label('syscall_8BF7',			0x8BF7);
 define_label('syscall_D799',			0xD799);
 define_label('syscall_FDFC',			0xFDFC);
+
+define_label('sys_printString?',		0xB97B);
 
 1;

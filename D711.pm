@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Tue Aug 13 08:31:46 2024
+#					 dlm: Tue Aug 13 22:01:31 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 210 58 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 1824 80 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -208,9 +208,14 @@
 #				  - added support for WPC strings
 #	Aug 13, 2024: - added _ROMPG labels to all pages
 #				  - BUG: @EXTRA was not swapped out and in
+#				  - added range check to setLabel
+#				  - BUG: PG 0xFF was not handled correctly
+#				  - made @ROM swap in and out (instead of reloading every time)
 # END OF HISTORY
 
 # TO-DO:
+#	! improve labeling of WPC code
+#	! modify WPC label syntax to use syscall_4135[3B]; no [] implies FF
 #	- make all def_ routines return values
 #	- add more consistency checks like for predefined OP as in def_byteblock_hex()
 
@@ -355,9 +360,12 @@ sub setLabel($$)
 	$lbl = sprintf('{%04X}%s',$addr,$') 						# STICKY -> fill address
 		if ($lbl =~ /^{}/);
 
-	my($faddr) = ($WMS_System eq 'WPC_DMD' && $addr>=0x4000 && $addr<0x8000)
-			   ? sprintf("%02X:%04X",$_cur_RPG,$addr)
-			   : $addr;
+	my($faddr) = $addr;
+	if ($WMS_System eq 'WPC_DMD' && $addr>=0x4000 && $addr<0x8000) {
+		die("setLabel($lbl,$addr) [$_cur_RPG]") unless ($_cur_RPG >= 0 && $_cur_RPG <= 0x3F || $_cur_RPG == 0xFF);
+		$faddr = sprintf("%02X:%04X",$_cur_RPG,$addr)
+			unless ($_cur_RPG == 0xFF);
+	}
 	undef($Lbl{$LBL[$addr]})									# overwrite existing auto label with non-auto label
 		if (($LBL[$addr] =~ m{_[0-9A-F]{4}$}) &&				#	otherwise, make duplicate
     		!($lbl =~ m{_[0-9A-F]{4}$}));
@@ -395,13 +403,12 @@ sub label_with_addr($$)											# add hex address to end of label for ROM addr
 {																# mark RAM and PIA addresses
 	my($lbl,$addr) = @_;
 
-	if ($addr > $MAX_ROM_ADDR) {								# ROM address
-		return sprintf('syscall_%04X',$addr);
-	}
-
 	if ($addr >= $MIN_ROM_ADDR) {								# ROM address
+		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$});				# remove previous RPG if there is one
 		$lbl = $` if ($lbl =~ m{_[0-9A-F]{4}$});				# remove previous address (if there is one)
-		return sprintf('%s_%04X',$lbl,$addr);
+		my($ssuffix) = defined($_cur_RPG) ? sprintf('[%02X]',$_cur_RPG) : ''
+			if ($addr < 0x8000);
+		return sprintf('%s_%04X',$lbl,$addr) . $ssuffix;
 	}
 
 	if ($WMS_System >= 6 && $WMS_System <= 7 && $addr > 0x7FF) {	# PIA address
@@ -418,11 +425,14 @@ sub label_with_addr($$)											# add hex address to end of label for ROM addr
 sub label_address($$@)											# save auto lbl for output and return hex address
 {
 	my($addr,$auto_lbl,$nosuffix) = @_;
-	if ($AUTO_LBL[$addr] =~ m{_[0-9A-F]{4}$}) {
-		$auto_lbl = ($WMS_System eq 'WPC_DMD' && $addr >= 0x8000)
+	if ($AUTO_LBL[$addr] =~ m{_[0-9A-F]{4}$} ||
+		$AUTO_LBL[$addr] =~ m{_[0-9A-F]{4}\[[0-9A-F]{2}\]$}) {
+		$auto_lbl = (defined($_cur_RPG) && $addr >= 0x8000)
 				  ? 'syscall' : 'library';
-	}				  
-	$AUTO_LBL[$addr] = $nosuffix ? $auto_lbl : label_with_addr($auto_lbl,$addr);
+	}
+	my($ssuffix) = defined($_cur_RPG) ? sprintf('[%02X]',$_cur_RPG) : ''
+		if ($addr < 0x8000);
+	$AUTO_LBL[$addr] = $nosuffix ? $auto_lbl.$ssuffix : label_with_addr($auto_lbl,$addr);
 	return ($addr > 255) ? sprintf('$%04X',$addr)
 						 : sprintf('$%02X',$addr);
 }
@@ -441,17 +451,28 @@ sub substitute_label($$)										# replace addresses in a single arg with label
 		if ($addr == 0 || ($imm && $addr<0x100 && $OP[$opaddr] ne 'LDX'));	
 
 	my($lbl) = $LBL[$addr]; 									# check if label is defined
-	$Lbl_refs{$lbl}++, return $imm.$lbl							# substitute its name
-		if defined($lbl);			
+	if (defined($lbl)) {
+		$Lbl_refs{$lbl}++;
+		return $imm.$lbl if numberp($Lbl{$lbl});				# global label
+		my($pg,$addr) = split(':',$Lbl{$lbl});
+		return $imm.$lbl."[$pg]";
+	}
 
 	my($auto_lbl) = $AUTO_LBL[$addr];							# use auto label if defined
 	return $opa unless defined($auto_lbl);
     
 	if (defined($Lbl{$auto_lbl})) { 							# auto label already defined
-		$Lbl_refs{$auto_lbl}++, return $imm.$auto_lbl			# and it matches
-			if ($Lbl{$auto_lbl} == $addr);	
+		if (numberp($Lbl{$auto_lbl})) {
+			$Lbl_refs{$auto_lbl}++,return $imm.$auto_lbl		# but it matches
+				if ($Lbl{$auto_lbl} == $addr);
+		} else {
+			my($pg,$ad) = split(':',$Lbl{$auto_lbl});
+			$pg = hex($pg); $ad = hex($ad);
+			$Lbl_refs{$auto_lbl}++,return $imm.$auto_lbl
+				if ($ad == $addr) && ($pg == $_cur_RPG);
+		}
 		my($i);
-		for ($i=1; defined($Lbl{"${auto_lbl}$i"}); $i++) {		# find unique alternative
+		for ($i=1; defined($Lbl{"${auto_lbl}$i"}); $i++) {		# otherwise, find unique alternative
 			return $imm."${auto_lbl}$i"							# already defined
 				if ($Lbl{"${auto_lbl}$i"} == $addr);
 		}
@@ -1800,10 +1821,13 @@ sub def_WPC_string(@)
 	my($lbl,$divider_label,$rem) = @_;
 
 	die unless defined($Address);
-##	return if ($decoded[$Address]);		# disabled, since there are overlapping strings
+	return if ($decoded[$Address]);												
 	return if defined($OP[$Address]);
 
 	insert_divider($Address,$divider_label);
+	$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$});             					# remove previous RPG if there is one
+	$lbl .= sprintf('[%02X]',$_cur_RPG)
+		unless ($_cur_RPG == 0xFF);
 	setLabel($lbl,$Address);
     $Address+=$len,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
     
@@ -1822,16 +1846,22 @@ sub def_WPC_string(@)
 }   
 		    
 sub def_WPC_stringPtr($@)														# DOES NOT MAINTAIN RPG
-{
+{																			
 	my($str_lbl,$divider_title,$rem) = @_;
 	die unless defined($Address);
-	setLabel("^$str_lbl",$Address);
+
     die unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
+    die("def_WPC_stringPtr(): addresses below 0x8000 not supported (implementation restriction)")
+    	unless ($Address >= 0x8000);
+
 	my($str_addr) = WORD($Address);
-
 	my($RPG) = BYTE($Address+2);
-	select_WPC_RPG($RPG,1);
+	select_WPC_RPG($RPG);
 
+	$str_lbl .= sprintf('[%02X]',$_cur_RPG)
+		unless ($_cur_RPG == 0xFF);
+	setLabel("^$str_lbl",$Address);
+	
 	my($usr_lbl) = $LBL[$str_addr];
 	$str_lbl = $usr_lbl if defined($usr_lbl);
 	setLabel($str_lbl,$str_addr);
@@ -2324,34 +2354,40 @@ sub select_WPC_RPG($)
 	my($RPG) = @_;
 
 #	printf(STDERR "RPG %02X($_cur_RPG) -> %02X($RPG)\n",$_cur_RPG,$RPG);
-	return $RPG if ($RPG == $_cur_RPG);
+	return $_cur_RPG if ($RPG == 0xFF || $RPG == $_cur_RPG);
 	die unless defined($RPG);
 	
-	@{$OPPG[$_cur_RPG]} 	 = @OP[0x4000..0x7FFF];										# swap out active page
-	@{$INDPG[$_cur_RPG]}	 = @IND[0x4000..0x7FFF]; 		    
-	@{$TYPEPG[$_cur_RPG]}	 = @TYPE[0x4000..0x7FFF];		    
-	@{$OPAPG[$_cur_RPG]}	 = @OPA[0x4000..0x7FFF]; 		    
-	@{$REMPG[$_cur_RPG]}	 = @REM[0x4000..0x7FFF]; 		    
-	@{$EXTRAPG[$_cur_RPG]}	 = @EXTRA[0x4000..0x7FFF]; 		    
-	@{$LBLPG[$_cur_RPG]}	 = @LBL[0x4000..0x7FFF]; 		    
-	@{$AUTO_LBLPG[$_cur_RPG]} = @AUTO_LBL[0x4000..0x7FFF]; 		    
-	@{$decodedPG[$_cur_RPG]} = @decoded[0x4000..0x7FFF]; 		    
+	@{$OPPG[$_cur_RPG]} 	 	= @OP[0x4000..0x7FFF];									# swap out active page
+	@{$INDPG[$_cur_RPG]}	 	= @IND[0x4000..0x7FFF]; 		    
+	@{$TYPEPG[$_cur_RPG]}	 	= @TYPE[0x4000..0x7FFF];		    
+	@{$OPAPG[$_cur_RPG]}	 	= @OPA[0x4000..0x7FFF]; 		    
+	@{$REMPG[$_cur_RPG]}	 	= @REM[0x4000..0x7FFF]; 		    
+	@{$EXTRAPG[$_cur_RPG]}	 	= @EXTRA[0x4000..0x7FFF]; 		    
+	@{$LBLPG[$_cur_RPG]}	 	= @LBL[0x4000..0x7FFF]; 		    
+	@{$AUTO_LBLPG[$_cur_RPG]} 	= @AUTO_LBL[0x4000..0x7FFF]; 		    
+	@{$decodedPG[$_cur_RPG]} 	= @decoded[0x4000..0x7FFF];
+	@{$ROMPG[$_cur_RPG]}	 	= @ROM[0x4000..0x7FFF]
+		unless(@{$ROMPG[$_cur_RPG]});
     
-	@OP[0x4000..0x7FFF]		= @{$OPPG[$RPG]};											# swap in new page
-	@IND[0x4000..0x7FFF] 	= @{$INDPG[$RPG]};
-	@TYPE[0x4000..0x7FFF]	= @{$TYPEPG[$RPG]};
-	@OPA[0x4000..0x7FFF] 	= @{$OPAPG[$RPG]};
-	@REM[0x4000..0x7FFF] 	= @{$REMPG[$RPG]};
-	@EXTRA[0x4000..0x7FFF] 	= @{$EXTRAPG[$RPG]};
-	@LBL[0x4000..0x7FFF] 	= @{$LBLPG[$RPG]};
+	@OP[0x4000..0x7FFF]			= @{$OPPG[$RPG]};										# swap in new page
+	@IND[0x4000..0x7FFF] 		= @{$INDPG[$RPG]};
+	@TYPE[0x4000..0x7FFF]		= @{$TYPEPG[$RPG]};
+	@OPA[0x4000..0x7FFF] 		= @{$OPAPG[$RPG]};
+	@REM[0x4000..0x7FFF] 		= @{$REMPG[$RPG]};
+	@EXTRA[0x4000..0x7FFF] 		= @{$EXTRAPG[$RPG]};
+	@LBL[0x4000..0x7FFF] 		= @{$LBLPG[$RPG]};
 	@AUTO_LBL[0x4000..0x7FFF] 	= @{$AUTO_LBLPG[$RPG]};
-	@decoded[0x4000..0x7FFF] = @{$decodedPG[$RPG]};
-
-	load_ROM($ARGV[0],0x4000,$RPG,16);
+	@decoded[0x4000..0x7FFF] 	= @{$decodedPG[$RPG]};
+	if (@{$ROMPG[$RPG]}) {
+		@ROM[0x4000..0x7FFF]	= @{$ROMPG[$RPG]};										# copy from page buffer
+	} else {
+		load_ROM($ARGV[0],0x4000,$RPG,16);												# load from file
+	}
+	
 	my($oRPG) = $_cur_RPG;
     $_cur_RPG = $RPG;
 
-	unless ($decoded[0x4000]) {
+	unless ($decoded[0x4000]) {															# decode page id
 		my($oA) = $Address;
 		$Address = 0x4000;
 		def_byte_hex('_ROMPG_ID',sprintf('ROM PAGE %02X',$_cur_RPG));
@@ -2362,20 +2398,26 @@ sub select_WPC_RPG($)
 }
 
 
-sub def_WPC_codePtr($@)														# DOES NOT MAINTAIN RPG
+sub def_WPC_codePtr($@)																	# ROUTINE DOES NOT MAINTAIN RPG
 {
 	my($code_lbl,$divider_title,$rem) = @_;
 	die unless defined($Address);
+
 	setLabel("^$code_lbl",$Address);
     die unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
 	my($code_addr) = WORD($Address);
 
 	my($RPG) = BYTE($Address+2);
+#	print(STDERR "select_WPC_RPG($RPG);\n");
 	select_WPC_RPG($RPG);
 
-	my($usr_lbl) = $LBL[$code_addr];
-	$code_lbl = $usr_lbl if defined($usr_lbl);
-	setLabel($code_lbl,$code_addr);
+	$code_lbl .= sprintf('[%02X]',$_cur_RPG)
+		unless ($_cur_RPG == 0xFF);
+	
+#	my($usr_lbl) = $LBL[$code_addr];
+#	$code_lbl = $usr_lbl if defined($usr_lbl);
+#	setLabel($code_lbl,$code_addr);
+	label_address($code_addr,$code_lbl);
 
 	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
 	$OPA[$Address][0] = $code_lbl; 
