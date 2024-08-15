@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Aug 14 18:23:38 2024
+#					 dlm: Thu Aug 15 12:32:09 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 3372 19 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 219 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -212,11 +212,10 @@
 #				  - BUG: PG 0xFF was not handled correctly
 #				  - made @ROM swap in and out (instead of reloading every time)
 #	Aug 14, 2024: - exported all WPC stuff to [D711.WPC_DMD]
+#				  - made setLabel return true label name
 # END OF HISTORY
 
 # TO-DO:
-#	! improve labeling of WPC code
-#	! modify WPC label syntax to use syscall_4135[3B]; no [] implies FF
 #	- make all def_ routines return values
 #	- add more consistency checks like for predefined OP as in def_byteblock_hex()
 
@@ -358,7 +357,7 @@ sub setLabel($$)
 
 #	die(sprintf("trying to define empty label [setLabel($lbl,0x%04X,$allow_multiple)]\n",$addr))
 #		if (length($lbl) == 0);
-	return 0 if (length($lbl) == 0);							# don't think return value is used for anything
+	return '' if (length($lbl) == 0);				
 
 	$lbl = sprintf('{%04X}%s',$addr,$') 						# STICKY -> fill address
 		if ($lbl =~ /^{}/);
@@ -377,7 +376,7 @@ sub setLabel($$)
     		!($lbl =~ m{_[0-9A-F]{4}$}));
 	$LBL[$addr] = $lbl;											# define label
 	$Lbl{$lbl} = $faddr;
-	return 1;
+	return $lbl;
 }
 
 *define_label = \&setLabel;										# for compatibility with [C711]

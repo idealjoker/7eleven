@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Aug 14 18:21:03 2024
+#                    dlm: Thu Aug 15 12:18:20 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 32 9 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 136 69 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -16,6 +16,7 @@
 #				  - BUG: WMS CPU vectors no longer disassemble correctly
 #	Aug 12, 2024: - added support for system strings
 #	Aug	14, 2024: - imported WPC specific code from [D711.pm]
+#	Aug 15, 2024: - BUG: def_WPC_codePtr() did not define target labels
 
 #----------------------------------------------------------------------
 # WPC API
@@ -29,7 +30,10 @@ require "$PATH/WPC_DMD.API";
 
 sub disassemble_WPC_DMD()
 {
-	if (1) {
+	my($dasm_CPU_vectors) 		= 1;
+	my($dasm_system_pointers) 	= 1;
+
+	if ($dasm_CPU_vectors) {
 		$Address = 0xFFF0;														# CPU vectors
 		insert_divider($Address,'CPU Vectors');
 	
@@ -43,7 +47,7 @@ sub disassemble_WPC_DMD()
 	    def_code_ptr('RST_vector','RST_handler','CPU Vector Handler');				
     }
 
-	if (1) {
+	if ($dasm_system_pointers) {
 		$Address = 0x8000;
 		insert_divider($Address,'Bank Id');
 		def_byte_hex('_ROMPG_SYS1_ID');
@@ -82,6 +86,14 @@ sub disassemble_WPC_DMD()
 sub apply_magic_WPC_DMD($$)
 {
 	my($fa,$la) = @_;
+
+	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
+		if ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_JSRPG') {
+			$OP[$addr] = '_JSR';
+			@{$OPA[$addr]} = @{$OPA[$addr+3]};
+			undef($OP[$addr+3]);
+		}
+	}
 }
 
 #----------------------------------------------------------------------
@@ -280,10 +292,9 @@ sub def_WPC_codePtr($@)																	# ROUTINE DOES NOT MAINTAIN RPG
 	$code_lbl .= sprintf('[%02X]',$_cur_RPG)
 		unless ($_cur_RPG == 0xFF);
 	
-#	my($usr_lbl) = $LBL[$code_addr];
-#	$code_lbl = $usr_lbl if defined($usr_lbl);
-#	setLabel($code_lbl,$code_addr);
-	label_address($code_addr,$code_lbl);
+	my($usr_lbl) = $LBL[$code_addr];
+	$code_lbl = $usr_lbl if defined($usr_lbl);
+	setLabel($code_lbl,$code_addr);
 
 	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
 	$OPA[$Address][0] = $code_lbl; 
