@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu Aug 15 12:32:09 2024
+#					 dlm: Fri Aug 16 19:18:20 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 219 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 217 29 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -213,6 +213,8 @@
 #				  - made @ROM swap in and out (instead of reloading every time)
 #	Aug 14, 2024: - exported all WPC stuff to [D711.WPC_DMD]
 #				  - made setLabel return true label name
+#	Aug 15, 2024: - development
+# 	Aug 16, 2024: - cosmetics
 # END OF HISTORY
 
 # TO-DO:
@@ -364,7 +366,8 @@ sub setLabel($$)
 
 	my($faddr) = $addr;
 	if (defined($_cur_RPG) && $addr>=0x4000 && $addr<0x8000) {
-		die("setLabel($lbl,$addr) [$_cur_RPG]") unless ($_cur_RPG >= 0 && $_cur_RPG <= 0x3F || $_cur_RPG == 0xFF);
+		die(sprintf("setLabel($lbl,%04X) [%02X]",$addr,$_cur_RPG))
+			 unless ($_cur_RPG >= 0 && $_cur_RPG <= 0x3F || $_cur_RPG == 0xFF);
 		unless ($_cur_RPG == 0xFF) {
 			$faddr = sprintf("%02X:%04X",$_cur_RPG,$addr);
 			$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$});				# remove previous RPG if there is one

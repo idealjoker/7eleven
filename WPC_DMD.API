@@ -1,15 +1,16 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Aug 13 21:57:25 2024
+#                    dlm: Fri Aug 16 19:17:11 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 118 36 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 13 56 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jul 18, 2024: - created
 #	Jul 19, 2024: - added info from FreeWPC
 #	Jul 20, 2024: - added first own labels
+#	Aug 16, 2024: - switch table disassembles error free
 
 #----------------------------------------------------------------------
 # https://bcd.github.io/freewpc/The-WPC-Hardware.html
@@ -84,25 +85,41 @@ define_label('syscall_82F2',			0x82F2);
 define_label('syscall_82FF',			0x82FF);
 define_label('syscall_8346',			0x8346);
 define_label('syscall_8385',			0x8385);
+define_label('syscall_830C',			0x830C);
 define_label('syscall_8319',			0x8319);
+define_label('syscall_8339',			0x8339);
+define_label('syscall_8392',			0x8392);
+define_label('syscall_839F',			0x839F);
 define_label('syscall_83DB',			0x83DB);
 define_label('syscall_83E8',			0x83E8);
+define_label('syscall_841C',			0x841C);
 define_label('syscall_842B',			0x842B);
+define_label('syscall_8449',			0x8449);
 define_label('syscall_8480',			0x8480);
 define_label('syscall_848F',			0x848F);
 define_label('syscall_84AD',			0x84AD);
+define_label('syscall_851F',			0x851F);
 define_label('syscall_8546',			0x8546);
+define_label('syscall_8539',			0x8539);
 define_label('syscall_8553',			0x8553);
+define_label('syscall_85E1',			0x85E1);
 define_label('syscall_85F1',			0x85F1);
 define_label('syscall_85B2',			0x85B2);
 define_label('syscall_865B',			0x865B);
+define_label('syscall_86AC',			0x86AC);
 define_label('syscall_8679',			0x8679);
 define_label('syscall_8690',			0x8690);
+define_label('syscall_869E',			0x869E);
+define_label('syscall_86D0',			0x86D0);
 define_label('syscall_8715',			0x8715);
 define_label('syscall_8722',			0x8722);
+define_label('syscall_873C',			0x873C);
 define_label('syscall_87BE',			0x87BE);
+define_label('syscall_87CB',			0x87CB);
 define_label('syscall_88D5',			0x88D5);
 define_label('sys_JSRPG',				0x88F5);
+define_label('syscall_8948',			0x8948);
+define_label('syscall_89BE',			0x89BE);
 define_label('syscall_89DD',			0x89DD);
 define_label('syscall_8A9A',			0x8A9A);
 define_label('syscall_8AAA',			0x8AAA);
@@ -110,11 +127,17 @@ define_label('syscall_8ACA',			0x8ACA);
 define_label('syscall_8ABA',			0x8ABA);
 define_label('syscall_8B3D',			0x8B3D);
 define_label('syscall_8B77',			0x8B77);
+define_label('syscall_8BC3',			0x8BC3);
 define_label('syscall_8B9D',			0x8B9D);
 define_label('syscall_8BF7',			0x8BF7);
+define_label('syscall_8C2B',			0x8C2B);
 define_label('syscall_D799',			0xD799);
+define_label('syscall_FDB4',			0xFDB4);
+define_label('syscall_FDC6',			0xFDC6);
+define_label('syscall_FDD8',			0xFDD8);
 define_label('syscall_FDFC',			0xFDFC);
 
+define_label('syscall_99A2',			0x99A2);
 define_label('sys_printString?',		0xB97B);
 
 1;
