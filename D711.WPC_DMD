@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Fri Aug 16 19:16:43 2024
+#                    dlm: Sat Aug 17 18:13:07 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 20 79 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 14 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -103,7 +103,15 @@ sub apply_magic_WPC_DMD($$)
 			@{$OPA[$addr]} = @{$OPA[$addr+3]};
 			undef($OP[$addr+3]);
 		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_runtime_error') {
-			$OP[$addr] = '_ERROR';
+			$OP[$addr] = '_Error';
+			@{$OPA[$addr]} = @{$OPA[$addr+3]};
+			undef($OP[$addr+3]);
+		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'CS=lampLit') {
+			$OP[$addr] = '_CS=lampLit';
+			@{$OPA[$addr]} = @{$OPA[$addr+3]};
+			undef($OP[$addr+3]);
+		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] =~ m{^sys_spawnThread}) {
+			$OP[$addr] = '_SpawnThread' . $';
 			@{$OPA[$addr]} = @{$OPA[$addr+3]};
 			undef($OP[$addr+3]);
 		}
@@ -133,7 +141,7 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_842B','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8480','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_848F','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8449','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CS=lampLit','.DB','L'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_84AD','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_851F','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8539','.DB','B'));
@@ -153,22 +161,26 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_873C','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_87CB','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_87BE','.DW','W'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_87D8','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_88D5','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_JSRPG','.DWB','R'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8948','.DWB','WB'));			# maybe R
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_89BE','.DWB','WB'));			# maybe R
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_89DD','.DWB','WB'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_892F','.DWB','R'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8948','.DWB','R'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_89BE','.DWB','WB'));			# not R
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_89DD','.DWB','WB'));			# not R
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8A9A','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8AAA','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ABA','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ACA','.DW','WW'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B3D','.DBW','BWW'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B77','.DWR','WR'));			# R unsure
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8B9D','.DWR','WR'));			# R unsure
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8BC3','.DWR','WR'));			# R unsure
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8BF7','.DWR','WR'));			# R unsure
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_0','.DBW','BWW'));		# neither W is R!
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_1','.DWR','WR'));	
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_2','.DWR','WR'));	
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_3','.DWR','WR'));	
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_4','.DWR','WR'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_5','.DWR','WR'));	
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8C2B','.DWWB','WWB'));			
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_D799','.DWBW','WBW'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDA2','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDB4','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDC6','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDD8','.DW','W'));
@@ -187,8 +199,14 @@ sub select_WPC_RPG($)
 {
 	my($RPG) = @_;
 
-	die(sprintf("select_WPC_RPG(%02X): bad page id\n",$RPG))
-		unless ($RPG == 0xFF || ($RPG >=0 && $RPG <= 0x3D));
+	if (!defined($RPG) || !numberp($RPG) || ($RPG != 0xFF && ($RPG<0 && $RPG>0x3D))) {
+		if (numberp($RPG)) {
+			die(sprintf("select_WPC_RPG(%02X): bad page id\n",$RPG))
+		} else {
+			die(sprintf("select_WPC_RPG($RPG): bad page id\n"))
+		}
+	}
+		
 
 #	printf(STDERR "RPG %02X($_cur_RPG) -> %02X($RPG)\n",$_cur_RPG,$RPG);
 	return $_cur_RPG if ($RPG == 0xFF || $RPG == $_cur_RPG);
@@ -247,13 +265,14 @@ sub def_WPC_switchTable(@)
 	return if defined($OP[$Address]);
 
 	if (defined($lbl)) {
-		insert_divider($Address,$divider_label);
 		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
 		$lbl .= sprintf('[%02X]',$_cur_RPG)
 			unless ($_cur_RPG == 0xFF);
 	    setLabel($lbl,$Address);
 	}
     
+	insert_divider($Address,$divider_label);
+
 	$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
 	$OP[$Address] = '.DWB';
 	my($rows,$cols) = (WORD($Address),BYTE($Address+2));
@@ -262,16 +281,21 @@ sub def_WPC_switchTable(@)
 	$REM[$Address] = 'number of switches, bytes per switch' unless defined($REM[$Address]);
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
-	for (my($swi)=0; $swi<$rows; $swi++) {
+	for (my($sw)=0; $sw<$rows; $sw++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $data_indent; $TYPE[$opaddr] =  $CodeType_data;
 		$OP[$opaddr] = '.DBBRB';
-		$REM[$opaddr] = sprintf('Switch#%02X',$swi);
+		$REM[$opaddr] = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('Switch#%02X',$sw);
 		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
-		push(@{$OPA[$opaddr]},sprintf('switch%02X_handler',$swi));
-		WPC_codeRef($OPA[$opaddr][$#{$OPA[$opaddr]}]);
+
+		my($ta,$tp) = (WORD($Address),BYTE($Address+2));
+		my($swn) = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('Switch#%02X',$sw);
+		push(@{$OPA[$opaddr]},label_address($ta,$swn.'_handler',1));		# suppress address suffix in label
+		push(@{$OPA[$opaddr]},sprintf('$%02X',$tp));
+		WPC_codeRef($swn.'_handler','Switch Handler');
 		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+
 		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
@@ -381,7 +405,9 @@ sub def_WPC_stringRef($@)														# DOES NOT MAINTAIN RPG
 	setLabel($str_lbl,$str_addr);
 
 	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $codeType_data;
-	$OPA[$Address][0] = $str_lbl; 
+	#$OPA[$Address][0] = $str_lbl;
+	push(@{$OPA[$Address]},label_address(WORD($Address),$str_lbl,1));        # suppress address suffix in label
+    push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address+2)));
 	$REM[$Address] = $rem unless defined($REM[$Address]); 
 	$decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
 
@@ -395,9 +421,9 @@ sub def_WPC_stringRef($@)														# DOES NOT MAINTAIN RPG
 # Code
 #----------------------------------------------------------------------
 
-sub WPC_codeRef($)
+sub WPC_codeRef($@)
 {
-	my($code_lbl) = @_;
+	my($code_lbl,$divider_label) = @_;
 	my($code_addr) = WORD($Address);
 
 	my($RPG) = BYTE($Address+2);
@@ -405,14 +431,13 @@ sub WPC_codeRef($)
 	my($orpg) = select_WPC_RPG($RPG);
 
 	$code_lbl = $` if ($code_lbl =~ m{\[[0-9A-F]{2}\]$});             					# remove previous RPG if there is one
-	$code_lbl .= sprintf('[%02X]',$_cur_RPG)
-		unless ($_cur_RPG == 0xFF);
+	$code_lbl .= sprintf('[%02X]',$RPG)
+		unless ($RPG == 0xFF);
 	
 	my($usr_lbl) = $LBL[$code_addr];
 	$code_lbl = $usr_lbl if defined($usr_lbl);
 	setLabel($code_lbl,$code_addr);
 
-##	die(sprintf("$code_lbl,$OP[$Address-5]:%04X",$Address-3)) if $_cur_RPG==0x31 && $decoded[0x499A]; ####
 	disassemble_asm($code_base_indent,$code_addr,$code_lbl,$divider_label);
 #	die if $unclean;
 
@@ -429,10 +454,12 @@ sub def_WPC_codeRef($@)																	# ROUTINE DOES NOT MAINTAIN RPG
     die unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
 
 	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-	$OPA[$Address][0] = $code_lbl; 
+#	$OPA[$Address][0] = $code_lbl;
+	push(@{$OPA[$Address]},label_address(WORD($Address),$code_lbl,1));        # suppress address suffix in label
+    push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address+2)));
 	$REM[$Address] = $rem unless defined($REM[$Address]); 
 
-	WPC_codeRef($code_lbl);    
+	WPC_codeRef($code_lbl,'System Call');    
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 }
 

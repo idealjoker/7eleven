@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ D M D 
 #					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Wed Aug 14 18:27:44 2024
+#					 dlm: Sat Aug 17 17:08:45 2024
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 97 10 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 130 10 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -35,20 +35,20 @@ $D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
 $D711::fill_gaps	= !$opt_g;
 
-if (defined($opt_i)) {														# include files with perl code
+#----------------------------------------------------------------------
+# Load ROM
+#----------------------------------------------------------------------
+
+$D711::_cur_RPG = 0x20;
+&D711::load_ROM($ARGV[0],0x4000,$D711::_cur_RPG,16);						# Load ROM: first game page (512KB ROM)
+&D711::load_ROM($ARGV[0],0x8000,0x3E,32);									# Load ROM: System pages
+
+if (defined($opt_i)) {														# include files with perl code AFTER ROM is loaded
 	my(@linc) = split(',',$opt_i);
 	while (@linc) {
 		require './' . shift(@linc);
 	}	
 }
-
-#----------------------------------------------------------------------
-# Load ROM
-#----------------------------------------------------------------------
-
-&D711::load_ROM($ARGV[0],0x4000,0x20,16);									# Load ROM: first game page (512KB ROM)
-$D711::_cur_RPG = 0x20;
-&D711::load_ROM($ARGV[0],0x8000,0x3E,32);									# Load ROM: System pages
 
 #----------------------------------------------------------------------
 # Disassemble ROM
@@ -98,3 +98,34 @@ printf("; %.1f KB decoded\n",$decoded/1024);
 
 exit(0);
 
+#======================================================================
+# Utilities
+#======================================================================
+
+sub defSwitch($$)
+{
+	my($no,$name) = @_;
+
+	die("defSwitch: invalid switch number $no\n")
+		unless ($no>=0 && $no<65);
+	$D711::Switch[$no] = $name;
+}
+
+sub defLamp($$$)
+{
+	my($row,$col,$name) = @_;
+
+	die("defLamp: invalid lamp row number $row\n")
+		unless ($row>=1 && $row<=8);
+	die("defLamp: invalid lamp column number $row\n")
+		unless ($col>=1 && $col<=8);
+	$D711::Lamp[8*($col-1)+$row] = $name;
+}
+
+sub defLabel($$$)
+{
+	my($pg,$addr,$lbl) = @_;
+
+	D711::select_WPC_RPG($pg);
+	D711::define_label($lbl,$addr);
+}

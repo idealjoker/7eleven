@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri Aug 16 19:18:20 2024
+#					 dlm: Sat Aug 17 17:05:27 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 217 29 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 371 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -301,7 +301,7 @@ sub numberp(@)
 # Load ROM Image
 #----------------------------------------------------------------------
 
-{ my($start_page); 															# 0x20 for 512KB ROMs
+#my($start_page); 															# 0x20 for 512KB ROMs
 
 sub load_ROM($$@)
 {
@@ -312,6 +312,7 @@ sub load_ROM($$@)
 
 	open(RF,$fn) || die("$fn: $!");
 	if (defined($RPG)) {
+		die("load_ROM($fn,$saddr,$RPG,$lenK)") unless numberp($RPG);
 		$start_page = (sysseek(RF,0,2) > 512*1024) ? 0 : 0x20
 			unless defined($start_page);
 		sysseek(RF,($RPG-$start_page)*16*1024,0) || die("sysseek($fn,($RPG-$start_page)*16K): $!");
@@ -327,8 +328,6 @@ sub load_ROM($$@)
 	$MAX_ROM_ADDR = $eaddr unless ($eaddr < $MAX_ROM_ADDR);
 
 	&init_system_11() if ($WMS_System==11 && WORD(0xFFFE)>0);				# this should be moved into a future [disassemble_s11]
-
-}
 
 }
 
@@ -447,7 +446,8 @@ sub label_address($$@)											# save auto lbl for output and return hex addre
 
 sub substitute_label($$)										# replace addresses in a single arg with labels
 {
-	my($opa,$opaddr) = @_;										# argument to process
+	my($opaddr,$ai) = @_;										# argument to process
+	my($opa) = $OPA[$opaddr][$ai];
 	return $opa if ($nolabel[$opaddr]);
 
 	my($pf,$addr,$mark) = ($opa =~ m{^(\#?\$)([0-9A-Fa-f]+)(!?)$});	# hex number ($ followed by hex digits) => potential address
@@ -456,10 +456,22 @@ sub substitute_label($$)										# replace addresses in a single arg with label
 	$addr = hex($addr);											# translate from hex
 	my($imm) = (substr($opa,0,1) eq '#') ? '#' : '';			# immediate addressing marker
 	return $opa													# don't substitute 8-bit immediate values
-		if ($addr == 0 || ($imm && $addr<0x100 && $OP[$opaddr] ne 'LDX'));	
+		if ($addr == 0 || ($imm && $addr<0x100 && $OP[$opaddr] ne 'LDX'));
 
+	my($opg);
+	if (defined($_cur_RPG) && defined($OPA[$opaddr][$ai+1]) && $_cur_RPG!=0xFF && $addr>=4000 && $addr<0x8000) {
+		my($pga) = $OPA[$opaddr][$ai+1];
+		$pga = hex($1) if ($pga =~ m{^\$([0-9A-F]{2})$});
+#		print(STDERR "select_WPC_RPG($OPA[$opaddr][$ai+1]=$pga)\n"),
+		$opg = select_WPC_RPG($pga),
+			if (numberp($pga) && $pga>=0 && $pga<0x3E);
+	}
+
+#	die(sprintf("$ai,$opa,$AUTO_LBL[$addr],$opg [%02X]",$_cur_RPG)) if $opaddr == 0x8133;
 	my($lbl) = $LBL[$addr]; 									# check if label is defined
 	if (defined($lbl)) {
+#		print(STDERR "select_WPC_RPG($opg)\n"),
+		select_WPC_RPG($opg) if defined($opg);
 		$Lbl_refs{$lbl}++;
 		return $imm.$lbl if numberp($Lbl{$lbl});				# global label
 		my($pg,$addr) = split(':',$Lbl{$lbl});
@@ -467,6 +479,9 @@ sub substitute_label($$)										# replace addresses in a single arg with label
 	}
 
 	my($auto_lbl) = $AUTO_LBL[$addr];							# use auto label if defined
+#	print(STDERR "select_WPC_RPG($opg)\n"),
+	select_WPC_RPG($opg) if defined($opg);
+#	die(sprintf("$ai,$opa,$AUTO_LBL[$addr],$opg [%02X]",$_cur_RPG)) if $opaddr == 0x8133;
 	return $opa unless defined($auto_lbl);
     
 	if (defined($Lbl{$auto_lbl})) { 							# auto label already defined
@@ -503,7 +518,7 @@ sub substitute_labels(@)										# replace addresses with labels wherever possi
 
 	for (local($addr)=$fa; $addr<=$la; $addr++) {
 		for (my($i)=0; $i<@{$OPA[$addr]}; $i++) {
-			$OPA[$addr][$i] = substitute_label($OPA[$addr][$i],$addr);
+			$OPA[$addr][$i] = substitute_label($addr,$i);
 		}
 	}
 	foreach my $addr (keys(%label_arith_exprs)) {				# substitude expressions defined with def_lbl_arith()
@@ -3250,7 +3265,7 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 				if ($WMS_System eq 'WPC_DMD' && $org < 0x8000) {
 					$line .= sprintf("%02X:%04X",$_cur_RPG,$org);
 				} else {
-					$line .= sprintf("%04X",$org);
+					$line .= sprintf('$%04X',$org);
 				}
 				$line .= indent($line,$hard_tab*$rem_indent)  . sprintf("; %d-byte gap",$gapLen)
 					if ($gapLen > 0);

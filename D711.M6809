@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Fri Aug 16 19:21:01 2024
+#                    dlm: Sat Aug 17 17:32:05 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 22 29 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 519 0 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -516,11 +516,16 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 				my($oaddr) = $addr;															# address of OP
 				$OP[$oaddr] = $sapgm; $IND[$oaddr] = $ind; $REM[$oaddr] = 'inline args';
 				for (my($i)=0; $i<length($sargl); $i++) {		
-					if (substr($sargl,$i,1) eq 'W') {										# W: word
-						push(@{$OPA[$oaddr]},sprintf('$%04X',WORD($addr)));
+					if (substr($sargl,$i,1) eq 'W') {										# W: word (not addr!)
+						push(@{$OPA[$oaddr]},sprintf('$%04X!',WORD($addr)));
 						$decoded[$addr++] = $decoded[$addr++] = 1;
 					} elsif (substr($sargl,$i,1) eq 'B') {									# B: byte
 						push(@{$OPA[$oaddr]},sprintf('$%02X',BYTE($addr)));
+						$decoded[$addr++] = 1;
+					} elsif (substr($sargl,$i,1) eq 'L') {									# L: Lamp
+						die(sprintf("Invalid lamp argument Lamp#%02X",BYTE($addr)))
+							unless (BYTE($addr)>=0 && BYTE($addr)<=65);
+						push(@{$OPA[$oaddr]},sprintf('Lamp#%02X',BYTE($addr)));
 						$decoded[$addr++] = 1;
 					} elsif (substr($sargl,$i,1) eq 'C') {									# C: code ptr (W)
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
@@ -534,7 +539,7 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 ##						} else {													
 ##							push(@unfollowed_lbl,$taddr);
 						}
-					} elsif (substr($sargl,$i,1) eq 'R') {												# R: code reference (WB)
+					} elsif (substr($sargl,$i,1) eq 'R') {									# R: code reference (WB)
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
 						my($trpg)  = BYTE($addr); $decoded[$addr++] = 1;
 
