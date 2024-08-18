@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Aug 17 18:13:07 2024
+#                    dlm: Sat Aug 17 23:30:55 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 14 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 148 67 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -68,6 +68,10 @@ sub disassemble_WPC_DMD()
 		def_WPC_stringRef('sysstr_gameName','System String');
 		def_WPC_stringRef('sysstr_gameNumber','System String');
 		def_WPC_stringRef('sysstr_buildDate','System String');
+
+		$Address = 0x8296;
+		def_ptr_hex('^=STATUS_AREA');
+		insert_divider($Address,'System Code');
 	}
 
 	if ($dasm_switchTable) {
@@ -99,21 +103,34 @@ sub apply_magic_WPC_DMD($$)
 
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
 		if ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_JSRPG') {
-			$OP[$addr] = '_JSR';
-			@{$OPA[$addr]} = @{$OPA[$addr+3]};
-			undef($OP[$addr+3]);
-		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_runtime_error') {
-			$OP[$addr] = '_Error';
-			@{$OPA[$addr]} = @{$OPA[$addr+3]};
-			undef($OP[$addr+3]);
+			$OP[$addr] = '!JSR';
+			splice(@{$OPA[$addr]},0,1);
+#		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_runtime_error') {
+#			$OP[$addr] = '!Error';
+#			splice(@{$OPA[$addr]},0,1);
 		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'CS=lampLit') {
-			$OP[$addr] = '_CS=lampLit';
-			@{$OPA[$addr]} = @{$OPA[$addr+3]};
-			undef($OP[$addr+3]);
+			$OP[$addr] = '!CS=lampLit';
+			splice(@{$OPA[$addr]},0,1);
 		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] =~ m{^sys_spawnThread}) {
-			$OP[$addr] = '_SpawnThread' . $';
-			@{$OPA[$addr]} = @{$OPA[$addr+3]};
-			undef($OP[$addr+3]);
+			$OP[$addr] = '!SpawnThread' . $';
+			splice(@{$OPA[$addr]},0,1);
+		} elsif ($OP[$addr] eq 'JSR' && ($OPA[$addr][0] eq 'sys_sleep' || $OPA[$addr][0] eq 'sys_longSleep')) {
+			$OP[$addr] = '!Sleep' . $';
+			splice(@{$OPA[$addr]},0,1);
+			$OPA[$addr][0] =~ m{^\$};
+			$OPA[$addr][0] = hex($');
+		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_solCmd') {
+			$OP[$addr] = '!SolCmd' . $';
+			splice(@{$OPA[$addr]},0,1);
+		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_solCmd_wait') {
+			$OP[$addr] = '!SolCmd_Wait' . $';
+			splice(@{$OPA[$addr]},0,1);
+		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_pulseFlasher') {
+			$OP[$addr] = '!PulseFlasher' . $';
+			splice(@{$OPA[$addr]},0,1);
+		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_setFlag') {
+			$OP[$addr] = '!SetFlag' . $';
+			splice(@{$OPA[$addr]},0,1);
 		}
 	}
 }
@@ -125,33 +142,33 @@ sub apply_magic_WPC_DMD($$)
 sub init_WPC_DMD()
 {
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_runtime_error','.DB','B'));	# keep in sync with [WPC_DMD.API]
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_82B6','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_82F2','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_82FF','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_830C','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8385','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8346','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_runtime_error_alt','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','Y=adjustment','.DB','A'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','A=adjustment','.DB','A'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','B=adjustment','.DB','A'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8319','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8339','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8392','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_839F','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_sleep','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_solCmd','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_pulseFlasher','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_solCmd_wait','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_83DB','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_83E8','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_841C','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_842B','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CS=lampLit','.DB','L'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8480','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_848F','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CS=lampLit','.DB','L'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_84AD','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_851F','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8539','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8546','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_playSound?','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85E1','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85F1','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8553','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85B2','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_setFlag','.DB','F'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_865B','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8679','.DW','W'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_longSleep','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8690','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_869E','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_86AC','.DW','W'));
@@ -297,7 +314,7 @@ sub def_WPC_switchTable(@)
 		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
-		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
+		push(@{$OPA[$opaddr]},sprintf('Lamp#%02X',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;

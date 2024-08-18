@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Aug 17 18:12:42 2024
+#                    dlm: Sat Aug 17 23:16:09 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 139 26 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 145 0 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -80,16 +80,16 @@ define_label('_ZEROCROSS_IRQ_CLEAR', 	0x3FFF);	# 7: R: Set to 1 when AC is curre
 #----------------------------------------------------------------------
 
 define_label('sys_runtime_error',		0x8298);	# keep in sync with [D711.WPC_DMD]
-define_label('syscall_82B6',			0x82B6);
-define_label('syscall_82F2',			0x82F2);
-define_label('syscall_82FF',			0x82FF);
-define_label('syscall_8346',			0x8346);
-define_label('syscall_8385',			0x8385);
-define_label('syscall_830C',			0x830C);
+define_label('sys_runtime_error_alt',	0x82B6);
+define_label('Y=adjustment',			0x82F2);
+define_label('A=adjustment',			0x82FF);
+define_label('B=adjustment',			0x830C);
 define_label('syscall_8319',			0x8319);
 define_label('syscall_8339',			0x8339);
-define_label('syscall_8392',			0x8392);
-define_label('syscall_839F',			0x839F);
+define_label('sys_sleep',				0x8346);
+define_label('sys_solCmd',				0x8385);
+define_label('sys_pulseFlasher',		0x8392);
+define_label('sys_solCmd_wait',			0x839F);
 define_label('syscall_83DB',			0x83DB);
 define_label('syscall_83E8',			0x83E8);
 define_label('syscall_841C',			0x841C);
@@ -99,15 +99,15 @@ define_label('syscall_8480',			0x8480);
 define_label('syscall_848F',			0x848F);
 define_label('syscall_84AD',			0x84AD);
 define_label('syscall_851F',			0x851F);
-define_label('syscall_8546',			0x8546);
 define_label('syscall_8539',			0x8539);
+define_label('sys_playSound?',			0x8546);
 define_label('syscall_8553',			0x8553);
 define_label('syscall_85E1',			0x85E1);
 define_label('syscall_85F1',			0x85F1);
-define_label('syscall_85B2',			0x85B2);
+define_label('sys_setFlag',				0x85B2);
 define_label('syscall_865B',			0x865B);
 define_label('syscall_86AC',			0x86AC);
-define_label('syscall_8679',			0x8679);
+define_label('sys_longSleep',			0x8679);
 define_label('syscall_8690',			0x8690);
 define_label('syscall_869E',			0x869E);
 define_label('syscall_86D0',			0x86D0);
@@ -141,7 +141,8 @@ define_label('syscall_FDC6',			0xFDC6);
 define_label('syscall_FDD8',			0xFDD8);
 define_label('syscall_FDFC',			0xFDFC);
 
-define_label('sys_switchHandler_done',	0x99A2);
-define_label('sys_printString?',		0xB97B);
+define_label('sys_exitThread?',			0x99A2);
+define_label('sys_printString',			0xB97B);
+define_label('sys_setFlagA',			0xCC3A);
 
 1;

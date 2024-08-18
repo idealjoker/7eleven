@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sat Aug 17 17:32:05 2024
+#                    dlm: Sat Aug 17 23:31:31 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 519 0 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 540 69 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -21,6 +21,10 @@
 #	Aug 12-15: 	  - debugging
 #	Aug 16, 2024: - cosmetics
 # HISTORY END
+
+# NOTES:
+#	- op_EXT and op_IMM2 are essentially identical
+#	- in this disassembler, op_EXT is used for code and op_IMM2 for data addresses
 
 sub op_INH($$$$)													# operation with inherent (implied) addressing
 {
@@ -453,11 +457,11 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if op_IDX(0x6C,$addr,$ind,'INC'); 		next if op_IDX(0x6D,$addr,$ind,'TST'); 
 		return if op_IDX(0x6E,$addr,$ind,'JMP');	next if op_IDX(0x6F,$addr,$ind,'CLR');
 
-		next if op_EXT(0x70,$addr,$ind,'NEG'); 		next if op_EXT(0x73,$addr,$ind,'COM');
-		next if op_EXT(0x74,$addr,$ind,'LSR'); 		next if op_EXT(0x76,$addr,$ind,'ROR');
-		next if op_EXT(0x77,$addr,$ind,'ASR'); 		next if op_EXT(0x78,$addr,$ind,'ASL');
-		next if op_EXT(0x79,$addr,$ind,'ROL'); 		next if op_EXT(0x7A,$addr,$ind,'DEC');
-		next if op_EXT(0x7C,$addr,$ind,'INC'); 		next if op_EXT(0x7D,$addr,$ind,'TST'); 
+		next if op_IMM2(0x70,$addr,$ind,'NEG'); 		next if op_IMM2(0x73,$addr,$ind,'COM');
+		next if op_IMM2(0x74,$addr,$ind,'LSR'); 		next if op_IMM2(0x76,$addr,$ind,'ROR');
+		next if op_IMM2(0x77,$addr,$ind,'ASR'); 		next if op_IMM2(0x78,$addr,$ind,'ASL');
+		next if op_IMM2(0x79,$addr,$ind,'ROL'); 		next if op_IMM2(0x7A,$addr,$ind,'DEC');
+		next if op_IMM2(0x7C,$addr,$ind,'INC'); 		next if op_IMM2(0x7D,$addr,$ind,'TST'); 
 		if ($rv = op_EXT(0x7E,$addr,$ind,'JMP')) {
 			if ($follow_code) {
 				disassemble_asm($ind,$rv,$lbl_root,undef,$follow_code);
@@ -466,7 +470,7 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		    }
 			return;
         }
-		next if op_EXT(0x7F,$addr,$ind,'CLR');
+		next if op_IMM2(0x7F,$addr,$ind,'CLR');
 
 		next if op_IMM(0x80,$ind,'SUBA'); 			next if op_IMM(0x81,$ind,'CMPA');
 		next if op_IMM(0x82,$ind,'SBCA'); 			next if op_IMM2(0x83,$addr,$ind,'SUBD');
@@ -495,13 +499,13 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if op_IDX(0xAC,$addr,$ind,'CMPX');		next if op_IDX(0xAD,$addr,$ind,'JSR');
 		next if op_IDX(0xAE,$addr,$ind,'LDX'); 		next if op_IDX(0xAF,$addr,$ind,'STX'); 	
 
-		next if op_EXT(0xB0,$addr,$ind,'SUBA'); 	next if op_EXT(0xB1,$addr,$ind,'CMPA');
-		next if op_EXT(0xB2,$addr,$ind,'SBCA'); 	next if op_EXT(0xB3,$addr,$ind,'SUBD');
-		next if op_EXT(0xB4,$addr,$ind,'ANDA'); 	next if op_EXT(0xB5,$addr,$ind,'BITA');
-		next if op_EXT(0xB6,$addr,$ind,'LDA'); 		next if op_EXT(0xB7,$addr,$ind,'STA'); 	
-		next if op_EXT(0xB8,$addr,$ind,'EORA');		next if op_EXT(0xB9,$addr,$ind,'ADCA'); 	
-		next if op_EXT(0xBA,$addr,$ind,'ORA');		next if op_EXT(0xBB,$addr,$ind,'ADDA'); 	
-		next if op_EXT(0xBC,$addr,$ind,'CMPX');
+		next if op_IMM2(0xB0,$addr,$ind,'SUBA'); 	next if op_IMM2(0xB1,$addr,$ind,'CMPA');
+		next if op_IMM2(0xB2,$addr,$ind,'SBCA'); 	next if op_IMM2(0xB3,$addr,$ind,'SUBD');
+		next if op_IMM2(0xB4,$addr,$ind,'ANDA'); 	next if op_IMM2(0xB5,$addr,$ind,'BITA');
+		next if op_IMM2(0xB6,$addr,$ind,'LDA'); 		next if op_IMM2(0xB7,$addr,$ind,'STA'); 	
+		next if op_IMM2(0xB8,$addr,$ind,'EORA');		next if op_IMM2(0xB9,$addr,$ind,'ADCA'); 	
+		next if op_IMM2(0xBA,$addr,$ind,'ORA');		next if op_IMM2(0xBB,$addr,$ind,'ADDA'); 	
+		next if op_IMM2(0xBC,$addr,$ind,'CMPX');
 		if ($rv = op_EXT(0xBD,$addr,$ind,'JSR')) {											# JSR to fixed address => handle inline args
 			foreach my $sbr (@INLINE_ARG_SBR) {
 				my($slbl,$sapgm,$sargl) = split('-',$sbr);									# e.g. sys_runtime_error-.DB-B
@@ -513,8 +517,7 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 					$rpg = hex($rpg); $saddr = hex($saddr);
 					next unless ($saddr == $rv && $rpg == $_cur_RPG);
 				}
-				my($oaddr) = $addr;															# address of OP
-				$OP[$oaddr] = $sapgm; $IND[$oaddr] = $ind; $REM[$oaddr] = 'inline args';
+				my($oaddr) = $addr-3;														# address of OP
 				for (my($i)=0; $i<length($sargl); $i++) {		
 					if (substr($sargl,$i,1) eq 'W') {										# W: word (not addr!)
 						push(@{$OPA[$oaddr]},sprintf('$%04X!',WORD($addr)));
@@ -526,6 +529,16 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 						die(sprintf("Invalid lamp argument Lamp#%02X",BYTE($addr)))
 							unless (BYTE($addr)>=0 && BYTE($addr)<=65);
 						push(@{$OPA[$oaddr]},sprintf('Lamp#%02X',BYTE($addr)));
+						$decoded[$addr++] = 1;
+					} elsif (substr($sargl,$i,1) eq 'F') {									# F: Flag
+						die(sprintf("Invalid flag argument Flag#%02X",BYTE($addr)))
+							unless (BYTE($addr)>=0 && BYTE($addr)<=99);
+						push(@{$OPA[$oaddr]},sprintf('Flag#%02X',BYTE($addr)));
+						$decoded[$addr++] = 1;
+					} elsif (substr($sargl,$i,1) eq 'A') {									# A: Adjustment
+						die(sprintf("Invalid adjustment argument Adj#%02X",BYTE($addr)))
+							unless (BYTE($addr)>=0 && BYTE($addr)<=255);
+						push(@{$OPA[$oaddr]},sprintf('Adj#%02X',BYTE($addr)));
 						$decoded[$addr++] = 1;
 					} elsif (substr($sargl,$i,1) eq 'C') {									# C: code ptr (W)
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
@@ -569,7 +582,7 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		    }
 		    next;
 		}
-		next if op_EXT(0xBE,$addr,$ind,'LDX'); 		next if op_EXT(0xBF,$addr,$ind,'STX'); 	
+		next if op_IMM2(0xBE,$addr,$ind,'LDX'); 		next if op_IMM2(0xBF,$addr,$ind,'STX'); 	
 
 		next if op_IMM(0xC0,$ind,'SUBB'); 			next if op_IMM(0xC1,$ind,'CMPB');
 		next if op_IMM(0xC2,$ind,'SBCB'); 			next if op_IMM2(0xC3,$addr,$ind,'ADDD');
@@ -597,14 +610,14 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if op_IDX(0xEC,$addr,$ind,'LDD');		next if op_IDX(0xED,$addr,$ind,'STD');
 		next if op_IDX(0xEE,$addr,$ind,'LDU'); 		next if op_IDX(0xEF,$addr,$ind,'STU'); 	
 
-		next if op_EXT(0xF0,$addr,$ind,'SUBB'); 	next if op_EXT(0xF1,$addr,$ind,'CMPB');
-		next if op_EXT(0xF2,$addr,$ind,'SBCB'); 	next if op_EXT(0xF3,$addr,$ind,'ADDD');
-		next if op_EXT(0xF4,$addr,$ind,'ANDB'); 	next if op_EXT(0xF5,$addr,$ind,'BITB');
-		next if op_EXT(0xF6,$addr,$ind,'LDB'); 		next if op_EXT(0xF7,$addr,$ind,'STB'); 	
-		next if op_EXT(0xF8,$addr,$ind,'EORB');		next if op_EXT(0xF9,$addr,$ind,'ADCB'); 	
-		next if op_EXT(0xFA,$addr,$ind,'ORB');		next if op_EXT(0xFB,$addr,$ind,'ADDB'); 	
-		next if op_EXT(0xFC,$addr,$ind,'LDD');		next if op_EXT(0xFD,$addr,$ind,'STD');
-		next if op_EXT(0xFE,$addr,$ind,'LDU'); 		next if op_EXT(0xFF,$addr,$ind,'STU'); 	
+		next if op_IMM2(0xF0,$addr,$ind,'SUBB'); 	next if op_IMM2(0xF1,$addr,$ind,'CMPB');
+		next if op_IMM2(0xF2,$addr,$ind,'SBCB'); 	next if op_IMM2(0xF3,$addr,$ind,'ADDD');
+		next if op_IMM2(0xF4,$addr,$ind,'ANDB'); 	next if op_IMM2(0xF5,$addr,$ind,'BITB');
+		next if op_IMM2(0xF6,$addr,$ind,'LDB'); 		next if op_IMM2(0xF7,$addr,$ind,'STB'); 	
+		next if op_IMM2(0xF8,$addr,$ind,'EORB');		next if op_IMM2(0xF9,$addr,$ind,'ADCB'); 	
+		next if op_IMM2(0xFA,$addr,$ind,'ORB');		next if op_IMM2(0xFB,$addr,$ind,'ADDB'); 	
+		next if op_IMM2(0xFC,$addr,$ind,'LDD');		next if op_IMM2(0xFD,$addr,$ind,'STD');
+		next if op_IMM2(0xFE,$addr,$ind,'LDU'); 		next if op_IMM2(0xFF,$addr,$ind,'STU'); 	
 
 		if (BYTE($addr) == 0x10) {																	# page 2 opcodes
 			$decoded[$addr++] = 1;
@@ -633,13 +646,13 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 			next if op_DIR(0x9E,$addr-1,$ind,'LDY'); 	next if op_DIR(0x9F,$addr-1,$ind,'STY');
 			next if op_IDX(0xA3,$addr-1,$ind,'CMPD');	next if op_IDX(0xAC,$addr-1,$ind,'CMPY');
 			next if op_IDX(0xAE,$addr-1,$ind,'LDY'); 	next if op_IDX(0xAF,$addr-1,$ind,'STY');
-			next if op_EXT(0xB3,$addr-1,$ind,'CMPD');	next if op_EXT(0xBC,$addr-1,$ind,'CMPY');
-			next if op_EXT(0xBE,$addr-1,$ind,'LDY'); 	next if op_EXT(0xBF,$addr-1,$ind,'STY');
+			next if op_IMM2(0xB3,$addr-1,$ind,'CMPD');	next if op_IMM2(0xBC,$addr-1,$ind,'CMPY');
+			next if op_IMM2(0xBE,$addr-1,$ind,'LDY'); 	next if op_IMM2(0xBF,$addr-1,$ind,'STY');
 	
 			next if op_IMM2(0xCE,$addr-1,$ind,'LDS');
 			next if op_DIR(0xDE,$addr-1,$ind,'LDS'); 	next if op_DIR(0xDF,$addr-1,$ind,'STS');
 			next if op_IDX(0xEE,$addr-1,$ind,'LDS'); 	next if op_IDX(0xEF,$addr-1,$ind,'STS');
-	        next if op_EXT(0xFE,$addr-1,$ind,'LDS');	next if op_EXT(0xFF,$addr-1,$ind,'STS');
+	        next if op_IMM2(0xFE,$addr-1,$ind,'LDS');	next if op_IMM2(0xFF,$addr-1,$ind,'STS');
 
 			printf("ABORT: Unknown M6809 opcode \$%04X at addr \$%04X\n",WORD($addr),$addr)
 				if ($verbose > 0);
@@ -660,7 +673,7 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 			next if op_IMM2(0x83,$addr-1,$ind,'CMPU');	next if op_IMM2(0x8C,$addr-1,$ind,'CMPS');
 			next if op_DIR(0x93,$addr-1,$ind,'CMPU');	next if op_DIR(0x9C,$addr-1,$ind,'CMPS');
 			next if op_IDX(0xA3,$addr-1,$ind,'CMPU');	next if op_IDX(0xAC,$addr-1,$ind,'CMPS');
-	        next if op_EXT(0xB3,$addr-1,$ind,'CMPU');	next if op_EXT(0xBC,$addr-1,$ind,'CMPS');
+	        next if op_IMM2(0xB3,$addr-1,$ind,'CMPU');	next if op_IMM2(0xBC,$addr-1,$ind,'CMPS');
 
 			printf("ABORT: Unknown M6809 opcode \$%04X at addr \$%04X\n",WORD($addr),$addr)
 				if ($verbose > 0);
