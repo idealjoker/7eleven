@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Aug 17 23:30:55 2024
+#                    dlm: Mon Aug 19 13:59:48 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 148 67 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 165 55 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -18,12 +18,8 @@
 #	Aug	14, 2024: - imported WPC specific code from [D711.pm]
 #	Aug 15, 2024: - BUG: def_WPC_codePtr() did not define target labels
 #	Aug 16, 2024: - many improvements; now switch table disassembles w/o errors
-
-#----------------------------------------------------------------------
-# WPC API
-#----------------------------------------------------------------------
-
-require "$PATH/WPC_DMD.API";
+#	Aug 17, 2024: - many improvements
+#	Aug 18, 2024: - BUG: API loaded before ROM
 
 #----------------------------------------------------------------------
 # Game Disassembly Routine
@@ -31,6 +27,8 @@ require "$PATH/WPC_DMD.API";
 
 sub disassemble_WPC_DMD()
 {
+	require "$PATH/WPC_DMD.API";												# define API after ROM has been loaded
+
 	my($dasm_CPU_vectors) 		= 1;
 	my($dasm_system_pointers) 	= 1;
 	my($dasm_switchTable)		= 1;
@@ -105,6 +103,9 @@ sub apply_magic_WPC_DMD($$)
 		if ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_JSRPG') {
 			$OP[$addr] = '!JSR';
 			splice(@{$OPA[$addr]},0,1);
+		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_JSRPG_ind') {
+			$OP[$addr] = '!JSR_ind';
+			splice(@{$OPA[$addr]},0,1);
 #		} elsif ($OP[$addr] eq 'JSR' && $OPA[$addr][0] eq 'sys_runtime_error') {
 #			$OP[$addr] = '!Error';
 #			splice(@{$OPA[$addr]},0,1);
@@ -146,9 +147,11 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','Y=adjustment','.DB','A'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','A=adjustment','.DB','A'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','B=adjustment','.DB','A'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8319','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CS=switchClosed','.DB','S'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8339','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_sleep','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_memClearY','.DB','B'));			
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_memSetBY','.DB','B'));			
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_solCmd','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_pulseFlasher','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_solCmd_wait','.DB','B'));
@@ -159,7 +162,7 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CS=lampLit','.DB','L'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8480','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_848F','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_84AD','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=bitSet?','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_851F','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8539','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_playSound?','.DB','B'));
@@ -167,6 +170,7 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85F1','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8553','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_setFlag','.DB','F'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_JSRPG_ind','.DW','P'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_865B','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_longSleep','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8690','.DW','W'));
@@ -183,19 +187,19 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_JSRPG','.DWB','R'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_892F','.DWB','R'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8948','.DWB','R'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_89BE','.DWB','WB'));			# not R
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_memCopyX','.DWB','WB'));			
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_89DD','.DWB','WB'));			# not R
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8A9A','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8AAA','.DW','WW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ABA','.DW','WW'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8ACA','.DW','WW'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_memSet','.DWBB','WBB'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_0','.DBW','BWW'));		# neither W is R!
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_1','.DWR','WR'));	
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_2','.DWR','WR'));	
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_3','.DWR','WR'));	
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_4','.DWR','WR'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_spawnThread_5','.DWR','WR'));	
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8C2B','.DWWB','WWB'));			
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_memCopy','.DWWB','WWB'));			
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_D799','.DWBW','WBW'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDA2','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDB4','.DW','W'));

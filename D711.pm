@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Aug 17 17:05:27 2024
+#					 dlm: Sun Aug 18 18:47:28 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 371 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 379 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -215,9 +215,11 @@
 #				  - made setLabel return true label name
 #	Aug 15, 2024: - development
 # 	Aug 16, 2024: - cosmetics
+#	Aug 18, 2024: - added pg as optional argument to setLabel 
 # END OF HISTORY
 
 # TO-DO:
+#	- remove all system specific code from this file
 #	- make all def_ routines return values
 #	- add more consistency checks like for predefined OP as in def_byteblock_hex()
 
@@ -350,9 +352,9 @@ sub load_ROM($$@)
 #		- set %Lbl_refs{label} = # of references
 #----------------------------------------------------------------------
 
-sub setLabel($$)
+sub setLabel($$@)
 {
-	my($lbl,$addr) = @_;
+	my($lbl,$addr,$pg) = @_;
 
 #	print(STDERR "setLabel($lbl,$addr)\n");
 
@@ -367,6 +369,7 @@ sub setLabel($$)
 	if (defined($_cur_RPG) && $addr>=0x4000 && $addr<0x8000) {
 		die(sprintf("setLabel($lbl,%04X) [%02X]",$addr,$_cur_RPG))
 			 unless ($_cur_RPG >= 0 && $_cur_RPG <= 0x3F || $_cur_RPG == 0xFF);
+		select_WPC_RPG($pg) if defined($pg);			 
 		unless ($_cur_RPG == 0xFF) {
 			$faddr = sprintf("%02X:%04X",$_cur_RPG,$addr);
 			$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$});				# remove previous RPG if there is one
@@ -3125,7 +3128,7 @@ sub indent($$)
 	return $ind;
 }
 
-sub output_aliases($@)
+sub output_aliases($$@)
 {
 	my($title,$fmt,@aliases) = @_;
 	return unless (@aliases);

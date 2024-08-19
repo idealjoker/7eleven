@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ D M D 
 #					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Sat Aug 17 17:08:45 2024
+#					 dlm: Sun Aug 18 14:14:41 2024
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 130 10 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 148 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -122,6 +122,15 @@ sub defLamp($$$)
 	$D711::Lamp[8*($col-1)+$row] = $name;
 }
 
+sub defFlag($$)
+{
+	my($no,$name) = @_;
+
+	die("defFlag: invalid flag number $no\n")
+		unless ($no>=0 && $no<65);
+	$D711::Flag[$no] = $name;
+}
+
 sub defLabel($$$)
 {
 	my($pg,$addr,$lbl) = @_;
@@ -129,3 +138,13 @@ sub defLabel($$$)
 	D711::select_WPC_RPG($pg);
 	D711::define_label($lbl,$addr);
 }
+
+sub defAdjustment($$)
+{
+	my($no,$name) = @_;
+
+	die("defFlag: invalid adjustment number $no\n")
+		unless ($no>=0 && $no<65);
+	$D711::Adj[$no] = $name;
+}
+

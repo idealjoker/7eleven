@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Aug 17 23:16:09 2024
+#                    dlm: Mon Aug 19 13:59:20 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 145 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 109 16 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -11,10 +11,17 @@
 #	Jul 19, 2024: - added info from FreeWPC
 #	Jul 20, 2024: - added first own labels
 #	Aug 16, 2024: - switch table disassembles error free
+#	Aug 17, 2024: - additions
+#	Aug 18, 2024: - additions
 
 #----------------------------------------------------------------------
 # https://bcd.github.io/freewpc/The-WPC-Hardware.html
 #----------------------------------------------------------------------
+
+define_label('_ROM_BANK_SHADOW',		0x11);		# SC
+define_label('_BALLTILTED?',			0x86);		# self
+define_label('_GAMEOVER?',				0x87);		# self
+define_label('=STATUS_AREA_POINTER',	0x380);		# SC
 
 define_label('_RAM_BASE',				0x0000);	# System RAM (2K)
 define_label('_DMD_RAM_BASE',			0x3800);	# Display RAM (1K). Which 1K portion of the 16K SRAM appears here is controlled by writing to two display paging registers, WPC_DMD_HIGH_PAGE and WPC_DMD_LOW_PAGE. On WPC-95 only, up to 3K can be mapped, starting at 0x3000.
@@ -63,9 +70,9 @@ define_label('_EXTBOARD3',				0x3FED); 	# DMD; On DMD games, this is a general I
 #define_label('_FLIPPER_SWITCH_INPUT',	0x3FEF); 	# WPC-95
 define_label('_LEDS',					0x3FF2);	# 7: R/W : The state of the diagnostic LED. >0=Off >1=On
 #define_label('_RAM_BANK',				0x3FF3); 	# WPC-95; 3-0: W: The page of RAM currently mapped into the banked region.
-define_label('_SHIFTADDR',				0x3FF4);	# 15-0: R/W: The base address for the bit shifter. Writing to this address initializes the shifter. Reading from this address after a shift command returns the shifted address.
-define_label('_SHIFTBIT',				0x3FF6);	# 7-0: W: Sets the bit position for a shift command. 7-0: R: Returns the output of the last shift command as a bitmask.
-define_label('_SHIFTBIT2',				0x3FF7);	# 7-0: R/W:
+define_label('__BITSHIFTER_ADDR',		0x3FF4);	# 15-0: R/W: The base address for the bit shifter. Writing to this address initializes the shifter. Reading from this address after a shift command returns the shifted address.
+define_label('_BITSHIFTER_BIT',			0x3FF6);	# 7-0: W: Sets the bit position for a shift command. 7-0: R: Returns the output of the last shift command as a bitmask.
+define_label('_BITSHIFTER_BIT2',		0x3FF7);	# 7-0: R/W:
 define_label('_PERIPH_TMR_FIRQ_CLEAR',	0x3FF8);	# 
 define_label('_ROM_LOCK',				0x3FF9);	# Not used
 define_label('_CLK_HOURS_DAYS',			0x3FFA);	# 7-0: R/W : The time-of-day hour counter.
@@ -84,9 +91,11 @@ define_label('sys_runtime_error_alt',	0x82B6);
 define_label('Y=adjustment',			0x82F2);
 define_label('A=adjustment',			0x82FF);
 define_label('B=adjustment',			0x830C);
-define_label('syscall_8319',			0x8319);
+define_label('CS=switchClosed',			0x8319);
 define_label('syscall_8339',			0x8339);
 define_label('sys_sleep',				0x8346);
+define_label('sys_memClearY',			0x836B);
+define_label('sys_memSetBY',			0x8378);
 define_label('sys_solCmd',				0x8385);
 define_label('sys_pulseFlasher',		0x8392);
 define_label('sys_solCmd_wait',			0x839F);
@@ -97,7 +106,7 @@ define_label('syscall_842B',			0x842B);
 define_label('CS=lampLit',				0x8449);
 define_label('syscall_8480',			0x8480);
 define_label('syscall_848F',			0x848F);
-define_label('syscall_84AD',			0x84AD);
+define_label('CC=bitSet?',				0x84AD);
 define_label('syscall_851F',			0x851F);
 define_label('syscall_8539',			0x8539);
 define_label('sys_playSound?',			0x8546);
@@ -105,6 +114,7 @@ define_label('syscall_8553',			0x8553);
 define_label('syscall_85E1',			0x85E1);
 define_label('syscall_85F1',			0x85F1);
 define_label('sys_setFlag',				0x85B2);
+define_label('sys_JSRPG_ind',			0x8621);
 define_label('syscall_865B',			0x865B);
 define_label('syscall_86AC',			0x86AC);
 define_label('sys_longSleep',			0x8679);
@@ -121,11 +131,11 @@ define_label('syscall_88D5',			0x88D5);
 define_label('sys_JSRPG',				0x88F5);
 define_label('syscall_892F',			0x892F);
 define_label('syscall_8948',			0x8948);
-define_label('syscall_89BE',			0x89BE);
+define_label('sys_memCopyX',			0x89BE);
 define_label('syscall_89DD',			0x89DD);
 define_label('syscall_8A9A',			0x8A9A);
 define_label('syscall_8AAA',			0x8AAA);
-define_label('syscall_8ACA',			0x8ACA);
+define_label('sys_memSet',				0x8ACA);
 define_label('syscall_8ABA',			0x8ABA);
 define_label('sys_spawnThread_0',		0x8B3D);
 define_label('sys_spawnThread_1',		0x8B5A);
@@ -133,7 +143,7 @@ define_label('sys_spawnThread_2',		0x8B77);
 define_label('sys_spawnThread_3',		0x8B9D);
 define_label('sys_spawnThread_4',		0x8BC3);
 define_label('sys_spawnThread_5',		0x8BF7);
-define_label('syscall_8C2B',			0x8C2B);
+define_label('sys_memCopy',				0x8C2B);
 define_label('syscall_D799',			0xD799);
 define_label('syscall_FDB4',			0xFDB4);
 define_label('syscall_FDA2',			0xFDA2);
@@ -141,8 +151,34 @@ define_label('syscall_FDC6',			0xFDC6);
 define_label('syscall_FDD8',			0xFDD8);
 define_label('syscall_FDFC',			0xFDFC);
 
-define_label('sys_exitThread?',			0x99A2);
-define_label('sys_printString',			0xB97B);
-define_label('sys_setFlagA',			0xCC3A);
+# non-global
+
+define_label('sys_tilt?',				0x5921, 0x39);
+
+# global, own analysis
+
+define_label('NE=gameDisabled',			0xF759);
+define_label('sys_setBank=3B',			0x90B4);
+define_label('sys_setBank_B',			0x90BC);
+define_label('BX=loadRef_X',			0x90C5);
+define_label('sys_lock_RAM_B',			0x9207);
+define_label('sys_unlock_RAM',			0x9223);
+define_label('sys_lock_RAM',			0x922C);
+define_label('CS=badChecksum_XY',		0x928A);
+define_label('Y=adjustmentA?==1',		0x92D4);
+define_label('A=adjustmentA?==1',		0x92DE);
+define_label('D=adjustmentA?==1',		0x92EC);
+define_label('Y=adjustmentA?',			0x92F8);
+define_label('sys_exitThread',			0x99A2);
+define_label('sys_zeroCrossIRQ_clear',	0x9D00);
+define_label('CC=bitSet?_AB',			0x9EDD);
+define_label('sys_memCopy_AXY',			0xA6B9);
+define_label('sys_memClear_AY',			0xA6C4);
+define_label('sys_solCmd_wait_A',		0xA84D);
+define_label('sys_solCmd_A',			0xA895);
+define_label('sys_memSet_ABY',			0xA6E3);
+define_label('sys_pulseFlasher_A',		0xA9EC);
+define_label('sys_printString_BXY',		0xB97B);
+define_label('sys_setFlag_A',			0xCC3A);
 
 1;
