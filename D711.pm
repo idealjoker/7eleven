@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Aug 18 18:47:28 2024
+#					 dlm: Mon Aug 19 22:05:20 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 379 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 219 53 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -215,7 +215,8 @@
 #				  - made setLabel return true label name
 #	Aug 15, 2024: - development
 # 	Aug 16, 2024: - cosmetics
-#	Aug 18, 2024: - added pg as optional argument to setLabel 
+#	Aug 18, 2024: - added pg as optional argument to setLabel
+#	Aug 19, 2024: - added special handling for ! WPC shortcut 
 # END OF HISTORY
 
 # TO-DO:
@@ -457,7 +458,8 @@ sub substitute_label($$)										# replace addresses in a single arg with label
 	return $opa unless defined($addr);							# not an address => nothing to substitute
 	return $pf.$addr if ($mark eq '!');							# address marked with trailing '!' (.DB, .DW) => do not substitute with labels
 	$addr = hex($addr);											# translate from hex
-	my($imm) = (substr($opa,0,1) eq '#') ? '#' : '';			# immediate addressing marker
+	my($imm) = (substr($opa,0,1) eq '#') 						# immediate addressing marker
+			 ? substr($opa,0,1) : '';							
 	return $opa													# don't substitute 8-bit immediate values
 		if ($addr == 0 || ($imm && $addr<0x100 && $OP[$opaddr] ne 'LDX'));
 
@@ -3323,7 +3325,8 @@ sub produce_output(@)														# with a filename arg, writes structure-hints
 			}
 			 
 			$line .= indent($line,$hard_tab*$IND[$addr]) . $OP[$addr];				# then, the operator
-			$line .= indent($line,$hard_tab*($IND[$addr]+$op_width[$TYPE[$addr]]));	# and any operands
+			$line .= indent($line,$hard_tab*($IND[$addr]+$op_width[$TYPE[$addr]]))	# and any operands
+				unless ($OP[$addr] eq '!');
 			foreach my $opa (@{$OPA[$addr]}) {	
 				$line .= $opa . ' ';
 			}

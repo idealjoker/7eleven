@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Aug 19 13:59:20 2024
+#                    dlm: Mon Aug 19 22:17:55 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 109 16 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 16 29 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -13,15 +13,24 @@
 #	Aug 16, 2024: - switch table disassembles error free
 #	Aug 17, 2024: - additions
 #	Aug 18, 2024: - additions
+#	Aug 19, 2024: - additions
+
+#----------------------------------------------------------------------
+# RAM Memory Map
+#----------------------------------------------------------------------
+
+define_label('_ROM_BANK_SHADOW',		0x11);		# SC
+define_label('_BALLTILTED?',			0x86);	
+define_label('_GAMEOVER?',				0x87);	
+
+define_label('=LAMPS',					0x2E0);		
+define_label('=FLAGS',					0x328);		# 8 bytes
+define_label('=ALT_FLAGS',				0x330);		# 8 bytes
+define_label('=STATUS_AREA_POINTER',	0x380);		# SC
 
 #----------------------------------------------------------------------
 # https://bcd.github.io/freewpc/The-WPC-Hardware.html
 #----------------------------------------------------------------------
-
-define_label('_ROM_BANK_SHADOW',		0x11);		# SC
-define_label('_BALLTILTED?',			0x86);		# self
-define_label('_GAMEOVER?',				0x87);		# self
-define_label('=STATUS_AREA_POINTER',	0x380);		# SC
 
 define_label('_RAM_BASE',				0x0000);	# System RAM (2K)
 define_label('_DMD_RAM_BASE',			0x3800);	# Display RAM (1K). Which 1K portion of the 16K SRAM appears here is controlled by writing to two display paging registers, WPC_DMD_HIGH_PAGE and WPC_DMD_LOW_PAGE. On WPC-95 only, up to 3K can be mapped, starting at 0x3000.
@@ -86,26 +95,26 @@ define_label('_ZEROCROSS_IRQ_CLEAR', 	0x3FFF);	# 7: R: Set to 1 when AC is curre
 # Own Analysis
 #----------------------------------------------------------------------
 
-define_label('sys_runtime_error',		0x8298);	# keep in sync with [D711.WPC_DMD]
-define_label('sys_runtime_error_alt',	0x82B6);
+define_label('RuntimeError',			0x8298);	# keep in sync with [D711.WPC_DMD]
+define_label('RuntimeError_nonFatal',	0x82B6);
 define_label('Y=adjustment',			0x82F2);
 define_label('A=adjustment',			0x82FF);
 define_label('B=adjustment',			0x830C);
-define_label('CS=switchClosed',			0x8319);
+define_label('CC=switchClosed',			0x8319);
 define_label('syscall_8339',			0x8339);
-define_label('sys_sleep',				0x8346);
-define_label('sys_memClearY',			0x836B);
-define_label('sys_memSetBY',			0x8378);
+define_label('Sleep',					0x8346);
+define_label('MemClearY',				0x836B);
+define_label('MemSetBY',				0x8378);
 define_label('sys_solCmd',				0x8385);
 define_label('sys_pulseFlasher',		0x8392);
 define_label('sys_solCmd_wait',			0x839F);
 define_label('syscall_83DB',			0x83DB);
 define_label('syscall_83E8',			0x83E8);
-define_label('syscall_841C',			0x841C);
-define_label('syscall_842B',			0x842B);
-define_label('CS=lampLit',				0x8449);
+define_label('LampOn',					0x841C);
+define_label('LampOff',					0x842B);
+define_label('CC=lampLit',				0x8449);
 define_label('syscall_8480',			0x8480);
-define_label('syscall_848F',			0x848F);
+define_label('sys_clearBit',			0x848F);
 define_label('CC=bitSet?',				0x84AD);
 define_label('syscall_851F',			0x851F);
 define_label('syscall_8539',			0x8539);
@@ -125,25 +134,25 @@ define_label('syscall_8715',			0x8715);
 define_label('syscall_8722',			0x8722);
 define_label('syscall_873C',			0x873C);
 define_label('syscall_87BE',			0x87BE);
-define_label('syscall_87CB',			0x87CB);
-define_label('syscall_87D8',			0x87D8);
+define_label('CC=bitgroup_allOn',		0x87CB);
+define_label('CC=bitgroup_allOff',		0x87D8);
 define_label('syscall_88D5',			0x88D5);
 define_label('sys_JSRPG',				0x88F5);
 define_label('syscall_892F',			0x892F);
 define_label('syscall_8948',			0x8948);
-define_label('sys_memCopyX',			0x89BE);
+define_label('MemCopyX',				0x89BE);
 define_label('syscall_89DD',			0x89DD);
 define_label('syscall_8A9A',			0x8A9A);
 define_label('syscall_8AAA',			0x8AAA);
-define_label('sys_memSet',				0x8ACA);
-define_label('syscall_8ABA',			0x8ABA);
-define_label('sys_spawnThread_0',		0x8B3D);
-define_label('sys_spawnThread_1',		0x8B5A);
-define_label('sys_spawnThread_2',		0x8B77);
-define_label('sys_spawnThread_3',		0x8B9D);
-define_label('sys_spawnThread_4',		0x8BC3);
-define_label('sys_spawnThread_5',		0x8BF7);
-define_label('sys_memCopy',				0x8C2B);
+define_label('MemSet',					0x8ACA);
+define_label('MemClear',				0x8ABA);
+define_label('SpawnThread_0',			0x8B3D);
+define_label('SpawnThread_1',			0x8B5A);
+define_label('SpawnThread_2',			0x8B77);
+define_label('SpawnThread_3',			0x8B9D);
+define_label('SpawnThread_4',			0x8BC3);
+define_label('SpawnThread_5',			0x8BF7);
+define_label('MemCopy',					0x8C2B);
 define_label('syscall_D799',			0xD799);
 define_label('syscall_FDB4',			0xFDB4);
 define_label('syscall_FDA2',			0xFDA2);
@@ -158,6 +167,7 @@ define_label('sys_tilt?',				0x5921, 0x39);
 # global, own analysis
 
 define_label('NE=gameDisabled',			0xF759);
+define_label('=BitShifter_ext',			0x81B6);
 define_label('sys_setBank=3B',			0x90B4);
 define_label('sys_setBank_B',			0x90BC);
 define_label('BX=loadRef_X',			0x90C5);
@@ -171,9 +181,19 @@ define_label('D=adjustmentA?==1',		0x92EC);
 define_label('Y=adjustmentA?',			0x92F8);
 define_label('sys_exitThread',			0x99A2);
 define_label('sys_zeroCrossIRQ_clear',	0x9D00);
-define_label('CC=bitSet?_AB',			0x9EDD);
+define_label('sys_clearBit_AB',			0x9E92);
+define_label('sys_prep_BitShifter_AX',	0x9EA5);
+define_label('sys_setBit_AB',			0x9E7F);
+define_label('CC=bitSet?_ABX',			0x9EDD);
+define_label('sys_setBit_ABX',			0x9EF1);
+define_label('BitShifter_setBit_ABX',	0x9F47);
+define_label('BitShifter_clearBit_ABX',	0x9F73);
+define_label('BitShifter_testBit_ABX',	0x9FA0);
+define_label('sys_suspendThread',		0x98BB);
+define_label('CC=lampOn?_A',			0xA0B9);
 define_label('sys_memCopy_AXY',			0xA6B9);
 define_label('sys_memClear_AY',			0xA6C4);
+define_label('sys_memClear_XY',			0xA6D1);
 define_label('sys_solCmd_wait_A',		0xA84D);
 define_label('sys_solCmd_A',			0xA895);
 define_label('sys_memSet_ABY',			0xA6E3);

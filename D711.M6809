@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Mon Aug 19 09:39:40 2024
+#                    dlm: Mon Aug 19 22:02:29 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 424 48 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 543 33 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -540,12 +540,12 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 					next unless ($saddr == $rv && $rpg == $_cur_RPG);
 				}
 				my($oaddr) = $addr-3;														# address of OP
+				$OP[$oaddr] = '!';
 				for (my($i)=0; $i<length($sargl); $i++) {		
 					if (substr($sargl,$i,1) eq 'W') {										# W: word (not addr!)
 						push(@{$OPA[$oaddr]},sprintf('$%04X!',WORD($addr)));
 						$decoded[$addr++] = $decoded[$addr++] = 1;
 					} elsif (substr($sargl,$i,1) eq 'P') {									# P: pointer (address)
-#						push(@{$OPA[$oaddr]},sprintf('$%04X',WORD($addr)));
 						push(@{$OPA[$oaddr]},label_address(WORD($addr),$lbl_root));
 						$decoded[$addr++] = $decoded[$addr++] = 1;
 					} elsif (substr($sargl,$i,1) eq 'B') {									# B: byte
