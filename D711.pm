@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Aug 21 22:12:48 2024
+#					 dlm: Thu Aug 22 10:31:37 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 3008 97 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 2882 41 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -2877,8 +2877,9 @@ sub exit_in_block($$$)
 			printf(STDERR "%04X: $OP[$a] $OPA[$a][0] (%04X,%04X) -- trg = %04X\n",$a,$la,$ha,$trg)
 				if $trace && ($trg<$la || $trg>$ha);
 			return 1 if ($trg<$la || $trg>$ha);
-		} elsif (($OP[$a] =~ m{^B..$}  && $OP[$a] ne 'BSR' ) ||
+		} elsif (($OP[$a] =~ m{^B..$}  && $OP[$a] ne 'BSR') ||
 				 ($OP[$a] =~ m{^LB..$} && $OP[$a] ne 'LBSR')) {
+			return 1 if $OP[$a] eq 'BRA';
 			next if ($a >= $ha-2&& $OP[$a] eq 'BRA');
 
 			my($trg) = $OPA[$a][0];
@@ -3083,37 +3084,20 @@ sub process_code_structure($$)
 	my($saddr,$eaddr) = @_;
 	local(@BEGIN_BLOCK,@END_BLOCK);
 
-	push(@BEGIN_BLOCK,$saddr);
-	push(@END_BLOCK,$eaddr);
+	#------------------------------------------------------------
+	# STEP 1: Loops
+	#	- done first to ensure that _ExitLoop and _Loopstart branches
+	#	  are defined for if-then-else processing
+	#------------------------------------------------------------
 
+	push(@BEGIN_BLOCK,$saddr);															
+	push(@END_BLOCK,$eaddr);
 	for (my($addr)=$saddr; $addr<=$eaddr; $addr++) {
 		if ($addr >= @END_BLOCK[$#END_BLOCK]) {												# end current block
 			pop(@BEGIN_BLOCK); pop(@END_BLOCK);
 		}
 		next unless defined($OP[$addr]);
 		next if defined($unstructured[$addr]);
-
-		next if cs_if_else($addr,$eaddr,'BNE','BRA','_IF_EQ','_ELSE','_ENDIF');				# M6800 if-statements
-		next if cs_if_else($addr,$eaddr,'BEQ','BRA','_IF_NE','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BLT','BRA','_IF_GE','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BGT','BRA','_IF_LE','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BLE','BRA','_IF_GT','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BGE','BRA','_IF_LT','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BHI','BRA','_IF_LS','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BLS','BRA','_IF_HI','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BCC','BRA','_IF_CS','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BCS','BRA','_IF_CC','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BVC','BRA','_IF_VS','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BVS','BRA','_IF_VC','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BPL','BRA','_IF_MI','_ELSE','_ENDIF');
-		next if cs_if_else($addr,$eaddr,'BMI','BRA','_IF_PL','_ELSE','_ENDIF');
-
-		unless (defined($_cur_RPG)) {
-			next if cs_if_else($addr,$eaddr,'branchUnless','branch','_If','_Else','_EndIf');	# WVM if-statements
-			next if cs_if_else($addr,$eaddr,'branchIf','branch','_Unless','_Else','_EndUnless');
-			next if cs_while_loop($addr,$eaddr,'branchIf','branch','_Until','_EndLoop');		# WVM loops
-			next if cs_while_loop($addr,$eaddr,'branchUnless','branch','_While','_EndLoop');
-		}
 
 		next if cs_while_loop($addr,$eaddr,'BNE','BRA','_UNTIL_NE','_ENDLOOP'); 			# Assembler loops
 		next if cs_while_loop($addr,$eaddr,'BEQ','BRA','_UNTIL_EQ','_ENDLOOP');
@@ -3151,6 +3135,46 @@ sub process_code_structure($$)
 		next if cs_loop_while($addr,$saddr,'BVS','_LOOP','_WHILE_VS');
 		next if cs_loop_while($addr,$saddr,'BMI','_LOOP','_WHILE_MI');
 		next if cs_loop_while($addr,$saddr,'BPL','_LOOP','_WHILE_PL');
+
+	}
+	die if (@BEGIN_BLOCK);
+
+	#------------------------------------------------------------
+	# STEP 2: If-Then-Else
+	#	- requires _ExitLoop and _Loopstart branches from loop
+	#	  processing
+	#------------------------------------------------------------
+
+	push(@BEGIN_BLOCK,$saddr);
+	push(@END_BLOCK,$eaddr);
+	for (my($addr)=$saddr; $addr<=$eaddr; $addr++) {
+		if ($addr >= @END_BLOCK[$#END_BLOCK]) {												# end current block
+			pop(@BEGIN_BLOCK); pop(@END_BLOCK);
+		}
+		next unless defined($OP[$addr]);
+		next if defined($unstructured[$addr]);
+
+		next if cs_if_else($addr,$eaddr,'BNE','BRA','_IF_EQ','_ELSE','_ENDIF');				# M6800 if-statements
+		next if cs_if_else($addr,$eaddr,'BEQ','BRA','_IF_NE','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BLT','BRA','_IF_GE','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BGT','BRA','_IF_LE','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BLE','BRA','_IF_GT','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BGE','BRA','_IF_LT','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BHI','BRA','_IF_LS','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BLS','BRA','_IF_HI','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BCC','BRA','_IF_CS','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BCS','BRA','_IF_CC','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BVC','BRA','_IF_VS','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BVS','BRA','_IF_VC','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BPL','BRA','_IF_MI','_ELSE','_ENDIF');
+		next if cs_if_else($addr,$eaddr,'BMI','BRA','_IF_PL','_ELSE','_ENDIF');
+
+		unless (defined($_cur_RPG)) {
+			next if cs_if_else($addr,$eaddr,'branchUnless','branch','_If','_Else','_EndIf');	# WVM if-statements
+			next if cs_if_else($addr,$eaddr,'branchIf','branch','_Unless','_Else','_EndUnless');
+			next if cs_while_loop($addr,$eaddr,'branchIf','branch','_Until','_EndLoop');		# WVM loops
+			next if cs_while_loop($addr,$eaddr,'branchUnless','branch','_While','_EndLoop');
+		}
 
 	}
 	die if (@BEGIN_BLOCK);
