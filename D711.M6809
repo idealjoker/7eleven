@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Mon Aug 19 22:02:29 2024
+#                    dlm: Wed Aug 21 21:24:12 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 543 33 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 386 0 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -25,6 +25,7 @@
 #	Aug 18, 2024: - added P type
 #				  - changed most _EXT to _IMM2
 #	Aug 19, 2024: - BUG: _IMM2 were wrong
+#	Aug 20, 2024: - added space after exitThread
 # HISTORY END
 
 # NOTES:
@@ -91,11 +92,9 @@ sub op_REL($$$$$)												# operation with 1-byte relative addressing (page 1
 	$OP[$addr] = $op; $IND[$addr] = $ind;
 	$OPA[$addr][0] = label_address($trg_addr,$lbl_root);
 	$decoded[$addr++] = $decoded[$addr++] = 1;
-##	if ($follow_code) {
+	if ($follow_code) {
 		disassemble_asm($ind,$trg_addr,$lbl_root,undef,$follow_code);
-##	} else {				   									# don't follow code in byte-limited sections
-##		push(@unfollowed_lbl,$trg_addr);
-##	}
+	}
 	return 1;
 }
 
@@ -107,11 +106,9 @@ sub op_LREL($$$$$$)												# operation with 2-byte relative addressing
 	$OP[$opa] = $op; $IND[$opa] = $ind;
 	$OPA[$opa][0] = label_address($trg_addr,$lbl_root);
 	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-##	if ($follow_code) {
+	if ($follow_code) {
 		disassemble_asm($ind,$trg_addr,$lbl_root,undef,$follow_code);
-##	} else {				   									# don't follow code in byte-limited sections
-##		push(@unfollowed_lbl,$trg_addr);
-##	}
+	}
 	return $trg_addr ? $trg_addr : '0 but true';
 }
 
@@ -376,25 +373,16 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 #			$addr,$max_bytes-$addr+$start_addr) if ($max_bytes < 1000);
 		$TYPE[$addr] = $CodeType_asm;
 
-		next if op_DIR(0x00,$addr,$ind,'NEG'); 	next if op_DIR(0x03,$addr,$ind,'COM');		# page 1 opcodes
-		next if op_DIR(0x04,$addr,$ind,'LSR'); 	next if op_DIR(0x06,$addr,$ind,'ROR');
-		next if op_DIR(0x07,$addr,$ind,'ASR'); 	next if op_DIR(0x08,$addr,$ind,'ASL');
-		next if op_DIR(0x09,$addr,$ind,'ROL'); 	next if op_DIR(0x0A,$addr,$ind,'DEC');
-		next if op_DIR(0x0C,$addr,$ind,'INC'); 	next if op_DIR(0x0D,$addr,$ind,'TST');
+		next if op_DIR(0x00,$addr,$ind,'NEG'); 		next if op_DIR(0x03,$addr,$ind,'COM');		# page 1 opcodes
+		next if op_DIR(0x04,$addr,$ind,'LSR'); 		next if op_DIR(0x06,$addr,$ind,'ROR');
+		next if op_DIR(0x07,$addr,$ind,'ASR'); 		next if op_DIR(0x08,$addr,$ind,'ASL');
+		next if op_DIR(0x09,$addr,$ind,'ROL'); 		next if op_DIR(0x0A,$addr,$ind,'DEC');
+		next if op_DIR(0x0C,$addr,$ind,'INC'); 		next if op_DIR(0x0D,$addr,$ind,'TST');
 		return if op_DIR(0x0E,$addr,$ind,'JMP');	next if op_DIR(0x0F,$addr,$ind,'CLR');
 
 		next if op_INH(0x12,$addr,$ind,'NOP'); 	next if op_INH(0x13,$addr,$ind,'SYNC');
 		return if op_LREL(0x16,$addr,$ind,'LBRA',$lbl_root,$follow_code); 
-
-		if ($rv = op_LREL(0x17,$addr,$ind,'LBSR',$lbl_root,$follow_code)) {
-#			if ($rv == 0x21A1) {
-#				$OP[$addr] = '.DB'; $IND[$addr] = $ind;
-#				$OPA[$addr][0] = sprintf('$%02X',BYTE($addr+2));
-#				$REM[$addr] = 'subroutine argument';
-#               $decoded[$addr++] = 1;
-#			}
-		    next;
-		}
+		next if op_LREL(0x17,$addr,$ind,'LBSR',$lbl_root,$follow_code);
 
 		next if op_INH(0x19,$addr,$ind,'DAA'); 
 		next if op_IMM(0x1A,$ind,'ORCC'); 		next if op_IMM(0x1C,$ind,'ANDCC');
@@ -424,9 +412,10 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if defined(op_PP(0x34,$ind,'PSHS'));
 		if (defined($rv = op_PP(0x35,$ind,'PULS'))) {
 			if ($rv == 0) {										# PC pulled
-				push(@{$EXTRA[$addr]},'');
-				push(@{$EXTRA_IND[$addr]},0);
-				$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+				push(@{$EXTRA[$addr-2]},'');
+				push(@{$EXTRA_IND[$addr-2]},$ind);
+				$EXTRA_BEFORE_LABEL[$addr-2][$#{$EXTRA[$addr-2]}] = 0;
+				$EXTRA_AFTER_OP[$addr-2][$#{$EXTRA[$addr-2]}] = 1;
 				return;
 			}
 			next;
@@ -434,24 +423,27 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if defined(op_PP(0x36,$ind,'PSHU'));
 		if (defined($rv = op_PP(0x37,$ind,'PULU'))) {
 			if ($rv == 0) {										# PC pulled
-				push(@{$EXTRA[$addr]},'');
-				push(@{$EXTRA_IND[$addr]},0);
-				$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+				push(@{$EXTRA[$addr-2]},'');
+				push(@{$EXTRA_IND[$addr-2]},$ind);
+				$EXTRA_BEFORE_LABEL[$addr-2][$#{$EXTRA[$addr-2]}] = 0;
+				$EXTRA_AFTER_OP[$addr-2][$#{$EXTRA[$addr-2]}] = 1;
 				return;
 			}
 			next;
 		}
 		if (op_INH(0x39,$addr,$ind,'RTS')) {					# add empty line after RTS
-			push(@{$EXTRA[$addr]},'');
-			push(@{$EXTRA_IND[$addr]},0);
-			$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+			push(@{$EXTRA[$addr-1]},'');
+			push(@{$EXTRA_IND[$addr-1]},$ind);
+			$EXTRA_BEFORE_LABEL[$addr-1][$#{$EXTRA[$addr-1]}] = 0;
+			$EXTRA_AFTER_OP[$addr-1][$#{$EXTRA[$addr-1]}] = 1;
 			return;
 		}
 		next if op_INH(0x3A,$addr,$ind,'ABX'); 					# add empty line after RTI
 		if (op_INH(0x3B,$addr,$ind,'RTI')) {
-			push(@{$EXTRA[$addr]},'');
-			push(@{$EXTRA_IND[$addr]},0);
-			$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+			push(@{$EXTRA[$addr-1]},'');
+			push(@{$EXTRA_IND[$addr-1]},$ind);
+			$EXTRA_BEFORE_LABEL[$addr-1][$#{$EXTRA[$addr-1]}] = 0;
+			$EXTRA_AFTER_OP[$addr-1][$#{$EXTRA[$addr-1]}] = 1;
 			return;
 		}
 
@@ -485,10 +477,13 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if op_EXT(0x79,$addr,$ind,'ROL'); 		next if op_EXT(0x7A,$addr,$ind,'DEC');
 		next if op_EXT(0x7C,$addr,$ind,'INC'); 		next if op_EXT(0x7D,$addr,$ind,'TST'); 
 		if ($rv = op_EXT(0x7E,$addr,$ind,'JMP')) {
-			if ($follow_code) {
+			if ($rv == $Lbl{'sys_exitThread'}) {	# add extra space
+				push(@{$EXTRA[$addr-3]},'');
+				push(@{$EXTRA_IND[$addr-3]},$ind);
+				push(@{$EXTRA_BEFORE_LABEL[$addr-3]},0);
+				push(@{$EXTRA_AFTER_OP[$addr-3]},1);
+			} elsif ($follow_code) {
 				disassemble_asm($ind,$rv,$lbl_root,undef,$follow_code);
-##			} else {													
-##				push(@unfollowed_lbl,$rv);
 		    }
 			return;
         }
@@ -580,8 +575,6 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 						setLabel($tlbl,$taddr);
 						if ($follow_code) {
 							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
-##						} else {													
-##							push(@unfollowed_lbl,$taddr);
 						}
 					} elsif (substr($sargl,$i,1) eq 'R') {									# R: code reference (WB)
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
@@ -594,8 +587,6 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 						
 						if ($follow_code) {
 							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
-##						} else {													
-##							push(@unfollowed_lbl,$taddr);
 						}
 						select_WPC_RPG($orpg);
 						push(@{$OPA[$oaddr]},$tlbl);
@@ -608,8 +599,6 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 			
 			if ($follow_code) {
 				disassemble_asm($ind,$rv,$lbl_root,undef,$follow_code);
-##			} else {													
-##				push(@unfollowed_lbl,$rv);
 		    }
 		    next;
 		}

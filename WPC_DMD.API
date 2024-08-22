@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Aug 19 22:17:55 2024
+#                    dlm: Tue Aug 20 15:49:52 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 16 29 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 203 70 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -105,28 +105,28 @@ define_label('syscall_8339',			0x8339);
 define_label('Sleep',					0x8346);
 define_label('MemClearY',				0x836B);
 define_label('MemSetBY',				0x8378);
-define_label('sys_solCmd',				0x8385);
-define_label('sys_pulseFlasher',		0x8392);
-define_label('sys_solCmd_wait',			0x839F);
+define_label('SolCmd',					0x8385);
+define_label('PulseFlasher',			0x8392);
+define_label('SolCmd_wait',				0x839F);
 define_label('syscall_83DB',			0x83DB);
 define_label('syscall_83E8',			0x83E8);
 define_label('LampOn',					0x841C);
 define_label('LampOff',					0x842B);
 define_label('CC=lampLit',				0x8449);
-define_label('syscall_8480',			0x8480);
-define_label('sys_clearBit',			0x848F);
+define_label('SetBit',					0x8480);
+define_label('ClearBit',				0x848F);
 define_label('CC=bitSet?',				0x84AD);
-define_label('syscall_851F',			0x851F);
+define_label('AddScore?',				0x851F);
 define_label('syscall_8539',			0x8539);
-define_label('sys_playSound?',			0x8546);
+define_label('PlaySound?',				0x8546);
 define_label('syscall_8553',			0x8553);
 define_label('syscall_85E1',			0x85E1);
 define_label('syscall_85F1',			0x85F1);
-define_label('sys_setFlag',				0x85B2);
-define_label('sys_JSRPG_ind',			0x8621);
+define_label('SetFlag',					0x85B2);
+define_label('OtherPG_ind',				0x8621);
 define_label('syscall_865B',			0x865B);
 define_label('syscall_86AC',			0x86AC);
-define_label('sys_longSleep',			0x8679);
+define_label('LongSleep',				0x8679);
 define_label('syscall_8690',			0x8690);
 define_label('syscall_869E',			0x869E);
 define_label('syscall_86D0',			0x86D0);
@@ -137,7 +137,7 @@ define_label('syscall_87BE',			0x87BE);
 define_label('CC=bitgroup_allOn',		0x87CB);
 define_label('CC=bitgroup_allOff',		0x87D8);
 define_label('syscall_88D5',			0x88D5);
-define_label('sys_JSRPG',				0x88F5);
+define_label('OtherPG',					0x88F5);
 define_label('syscall_892F',			0x892F);
 define_label('syscall_8948',			0x8948);
 define_label('MemCopyX',				0x89BE);
@@ -200,5 +200,11 @@ define_label('sys_memSet_ABY',			0xA6E3);
 define_label('sys_pulseFlasher_A',		0xA9EC);
 define_label('sys_printString_BXY',		0xB97B);
 define_label('sys_setFlag_A',			0xCC3A);
+define_label('syscall_E166',			0xE166);	# prevent bad LOOP
+define_label('sys_addBonus_1130',		0xFAA8);
+define_label('sys_addBonus_3330',		0xFAAE);
+define_label('sys_addBonus_5530',		0xFAB4);
+define_label('sys_addBonus_9930',		0xFABA);
+define_label('sys_addBonus_A',			0xFABE);
 
 1;

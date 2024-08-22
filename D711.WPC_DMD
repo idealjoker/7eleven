@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Aug 19 22:17:17 2024
+#                    dlm: Wed Aug 21 10:36:19 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 24 54 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 26 41 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -22,6 +22,8 @@
 #	Aug 18, 2024: - BUG: API loaded before ROM
 #	Aug 19, 2024: - added _skip
 #				  - started adapting to ! WPC shortcut
+#	Aug 21, 2024: - BUG: EXTRA_IND, EXTRA_BEFORE_LABEL and EXTRA_AFTER_OP where not
+#						 paged in and out
 
 #----------------------------------------------------------------------
 # Game Disassembly Routine
@@ -127,27 +129,27 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','Sleep','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','MemClearY','.DB','B'));			
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','MemSetBY','.DB','B'));			
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_solCmd','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_pulseFlasher','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_solCmd_wait','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SolCmd','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','PulseFlasher','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SolCmd_wait','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_83DB','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_83E8','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','LampOn','.DB','L'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','LampOff','.DB','L'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=lampLit','.DB','L'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8480','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_clearBit','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SetBit','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','ClearBit','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=bitSet?','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_851F','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','AddScore?','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8539','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_playSound?','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','PlaySound?','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85E1','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85F1','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8553','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_setFlag','.DB','F'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_JSRPG_ind','.DW','P'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SetFlag','.DB','F'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','OtherPG_ind','.DW','P'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_865B','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_longSleep','.DW','W'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','LongSleep','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8690','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_869E','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_86AC','.DW','W'));
@@ -159,7 +161,7 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=bitgroup_allOn','.DB','BB'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=bitgroup_allOff','.DB','BB'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_88D5','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_JSRPG','.DWB','R'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','OtherPG','.DWB','R'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_892F','.DWB','R'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8948','.DWB','R'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','MemCopyX','.DWB','PB'));			
@@ -214,6 +216,9 @@ sub select_WPC_RPG($)
 	@{$OPAPG[$_cur_RPG]}	 	= @OPA[0x4000..0x7FFF]; 		    
 	@{$REMPG[$_cur_RPG]}	 	= @REM[0x4000..0x7FFF]; 		    
 	@{$EXTRAPG[$_cur_RPG]}	 	= @EXTRA[0x4000..0x7FFF]; 		    
+	@{$EXTRA_INDPG[$_cur_RPG]}	= @EXTRA_IND[0x4000..0x7FFF]; 		    
+	@{$EXTRA_BEFORE_LABELPG[$_cur_RPG]}	= @EXTRA_BEFORE_LABEL[0x4000..0x7FFF]; 		    
+	@{$EXTRA_AFTER_OPPG[$_cur_RPG]}		= @EXTRA_AFTER_OP[0x4000..0x7FFF]; 		    
 	@{$LBLPG[$_cur_RPG]}	 	= @LBL[0x4000..0x7FFF]; 		    
 	@{$AUTO_LBLPG[$_cur_RPG]} 	= @AUTO_LBL[0x4000..0x7FFF]; 		    
 	@{$decodedPG[$_cur_RPG]} 	= @decoded[0x4000..0x7FFF];
@@ -226,6 +231,9 @@ sub select_WPC_RPG($)
 	@OPA[0x4000..0x7FFF] 		= @{$OPAPG[$RPG]};
 	@REM[0x4000..0x7FFF] 		= @{$REMPG[$RPG]};
 	@EXTRA[0x4000..0x7FFF] 		= @{$EXTRAPG[$RPG]};
+	@EXTRA_IND[0x4000..0x7FFF]	= @{$EXTRA_INDPG[$RPG]};
+	@EXTRA_BEFORE_LABEL[0x4000..0x7FFF] = @{$EXTRA_BEFORE_LABELPG[$RPG]};
+	@EXTRA_AFTER_OP[0x4000..0x7FFF] 	= @{$EXTRA_AFTER_OPPG[$RPG]};
 	@LBL[0x4000..0x7FFF] 		= @{$LBLPG[$RPG]};
 	@AUTO_LBL[0x4000..0x7FFF] 	= @{$AUTO_LBLPG[$RPG]};
 	@decoded[0x4000..0x7FFF] 	= @{$decodedPG[$RPG]};
