@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu Aug 22 10:31:37 2024
+#					 dlm: Thu Aug 22 19:52:14 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 2882 41 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 2802 51 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -2799,7 +2799,7 @@ sub same_block($$@)
 {
 	my($la,$ha,$if_block) = @_;														# low and high addresses
 
-##	local($trace) = ($la == 0x5B59 && $ha == 0x5B5B) ? 1 : 0;						# SET TO TRACE IF AND LOOP BLOCK LOGIC
+	local($trace) = ($la == 0x64D8 && $ha == 0x64EC) ? 1 : 0;						# SET TO TRACE IF AND LOOP BLOCK LOGIC
 	
 #	my($block_ind) = (defined($EXTRA_IND[$la][0]) && !$EXTRA_BEFORE_LABEL[$la][0]) ? $EXTRA_IND[$la][0] : $IND[$la];
 	my($block_ind) = $IND[$la];
@@ -2821,18 +2821,32 @@ sub same_block($$@)
 
 	if ($if_block == 2) {										# _ELSE block
 		return 0 if branch_into_block($la,$ha-2,1);				# 1 required for IF to ELSE
+##		return 0 if longBranch_into_block($la,$ha-2,1);				# 1 required for IF to ELSE
 	} elsif ($if_block == 1) {									# _IF block
-		return 0 if branch_into_block($la,$ha);					
+#		return 0 if branch_into_block($la,$ha);					# BUG: does not see _IF at 31:5D3E
+		return 0 if branch_into_block($la,$ha-2);					
+##		return 0 if longBranch_into_block($la,$ha-2);					
     } else {													# _LOOP block
 		return 0 if branch_into_block($la,$ha,0);				# allowing entry into loop is not good
+##		return 0 if longBranch_into_block($la,$ha,0);				# allowing entry into loop is not good
 	}
 	print(STDERR "Z\n") if $trace;
 	
 	for (my($a)=$la; $a<$ha; $a++) {
 		printf(STDERR "addr = %04X\n",$a) if $trace;
-		return 0 if defined($LBL[$a]);
-		print(STDERR "2\n") if $trace;
+
 		next unless defined($OP[$a]);
+		print(STDERR "OP defined\n") if $trace;
+
+		return 0 if defined($LBL[$a]);
+		print(STDERR "no LBL\n") if $trace;
+
+		if (defined($AUTO_LBL[$a])) {
+			return 0 if $if_block==1 && $a>$la && substr($AUTO_LBL[$a],0,1) ne '.'; 	# IF block can have non-local auto label at _IF location
+			return 0 if $if_block!=1 && $a>$la && substr($AUTO_LBL[$a],0,1) ne '.';		# ELSE and LOOP blocks have auto label at $la
+		}
+		print(STDERR "no AUTO_LBL\n") if $trace;
+
 		printf(STDERR "%04X A: $IND[$a]($OP[$a]),$block_ind,$EXTRA[$a][0]|$EXTRA_IND[$a][0],$EXTRA_IND[$a][1]\n",$a) if $trace;
 		return 0 unless ($IND[$a] == $block_ind); ## ||
 ##						($if_block && (($block_ind == $EXTRA_IND[$a][0]+1 && $EXTRA[$a][0] eq '_ENDIF') ||
@@ -2879,7 +2893,7 @@ sub exit_in_block($$$)
 			return 1 if ($trg<$la || $trg>$ha);
 		} elsif (($OP[$a] =~ m{^B..$}  && $OP[$a] ne 'BSR') ||
 				 ($OP[$a] =~ m{^LB..$} && $OP[$a] ne 'LBSR')) {
-			return 1 if $OP[$a] eq 'BRA';
+			return 1 if !$if_block && $OP[$a] eq 'BRA';
 			next if ($a >= $ha-2&& $OP[$a] eq 'BRA');
 
 			my($trg) = $OPA[$a][0];
@@ -2905,8 +2919,9 @@ sub branch_into_block($$@)
 
 	my($addr) = $la;
 	while ($la-(--$addr) <= 128) {
-		next unless defined($OP[$addr]) &&
-					($OP[$addr] =~ m{^B..$} && $OP[$addr] ne 'BSR' );
+		last if $addr < 0;
+		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^B..$};
+##					($OP[$addr] =~ m{^B..$} && $OP[$addr] ne 'BSR' );
 		my($trg) = $OPA[$addr][0];
 		next if isMember($trg,'_LoopStart','_ExitLoop');
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
@@ -2922,8 +2937,49 @@ sub branch_into_block($$@)
 
 	$addr = $ha;
 	while ((++$addr)-$ha <= 128) {
-		next unless defined($OP[$addr]) &&
-					($OP[$addr] =~ m{^B..$} && $OP[$addr] ne 'BSR' );
+		last if $addr > 0xFF;
+		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^B..$};
+##					($OP[$addr] =~ m{^B..$} && $OP[$addr] ne 'BSR' );
+		my($trg) = $OPA[$addr][0];
+		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
+		next if isMember($trg,'_LoopStart','_ExitLoop');
+		if ($trg >= $la && $trg <= $ha) {
+			printf(STDERR "<%04X> %04X:%04X:%04X $allowed_branch\n",$addr,$la,$trg,$ha)
+				if $trace;
+			return 1;
+		}
+	}
+
+	return undef;	
+}
+
+sub longBranch_into_block($$@)
+{
+	my($la,$ha,$allowed_branch) = @_;
+
+	my($addr) = $la;
+	while ($la-(--$addr) <= 32768) {
+		last if $addr < 0;
+		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^LB..$};
+##					($OP[$addr] =~ m{^LB..$} && $OP[$addr] ne 'LBSR' );
+		my($trg) = $OPA[$addr][0];
+		next if isMember($trg,'_LoopStart','_ExitLoop');
+		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
+		die("$OP[$addr] $OPA[$addr][0]") unless numberp($trg);
+		printf(STDERR "$OP[$addr] $OPA[$addr][0]\n") if $trace;
+		if ($trg >= $la && $trg <= $ha) {
+			printf(STDERR "<%04X> %04X:%04X:%04X $allowed_branch\n",$addr,$la,$trg,$ha)
+				if $trace;
+			next if $allowed_branch--;
+			return 1;
+		}
+	}
+
+	$addr = $ha;
+	while ((++$addr)-$ha <= 32768) {
+		last if $addr > 0xFF;
+		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^LB..$};
+##					($OP[$addr] =~ m{^LB..$} && $OP[$addr] ne 'LBSR' );
 		my($trg) = $OPA[$addr][0];
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
 		next if isMember($trg,'_LoopStart','_ExitLoop');

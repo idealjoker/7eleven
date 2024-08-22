@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Wed Aug 21 21:24:12 2024
+#                    dlm: Thu Aug 22 19:37:39 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 386 0 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 29 63 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -26,6 +26,7 @@
 #				  - changed most _EXT to _IMM2
 #	Aug 19, 2024: - BUG: _IMM2 were wrong
 #	Aug 20, 2024: - added space after exitThread
+#	Aug 22, 2024: - mark branch auto addresses with preceding .
 # HISTORY END
 
 # NOTES:
@@ -90,7 +91,7 @@ sub op_REL($$$$$)												# operation with 1-byte relative addressing (page 1
 	return undef unless (BYTE($addr) == $opc);
 	my($trg_addr) = $addr + 2 + ((BYTE($addr+1) < 128) ? BYTE($addr+1) : BYTE($addr+1)-256);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
-	$OPA[$addr][0] = label_address($trg_addr,$lbl_root);
+	$OPA[$addr][0] = label_address($trg_addr,".$lbl_root");						# NB: added dot to label to mark as branch lable (for code analysis)
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	if ($follow_code) {
 		disassemble_asm($ind,$trg_addr,$lbl_root,undef,$follow_code);
