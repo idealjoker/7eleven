@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Fri Aug 23 17:36:08 2024
+#                    dlm: Fri Aug 23 18:12:13 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 27 44 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 156 61 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -153,7 +153,7 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','OtherPG_ind','.DW','P'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_865B','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','LongSleep','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8690','.DW','W'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=threadRunning','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_869E','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_86AC','.DW','W'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_86D0','.DW','W'));
