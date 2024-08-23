@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Aug 21 10:36:19 2024
+#                    dlm: Fri Aug 23 17:36:08 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 26 41 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 27 44 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -24,6 +24,7 @@
 #				  - started adapting to ! WPC shortcut
 #	Aug 21, 2024: - BUG: EXTRA_IND, EXTRA_BEFORE_LABEL and EXTRA_AFTER_OP where not
 #						 paged in and out
+#	Aug 23, 2024: - decimalized !*Sleep args
 
 #----------------------------------------------------------------------
 # Game Disassembly Routine
@@ -106,9 +107,11 @@ sub apply_magic_WPC_DMD($$)
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
 		if ($OP[$addr] eq 'JMP' && $OPA[$addr][0] eq $LBL[$addr+3]) {
 			$OP[$addr] = '_skip';
-			undef($LBL[$addr+3])
+			undef($LBL[$addr+3])								# should also undef Lbl!
 				if ($Lbl_refs{$OPA[$addr][0]} == 1);
 			splice(@{$OPA[$addr]},0,1);
+		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{Sleep$}) {
+			$OPA[$addr][1] = hex(substr($OPA[$addr][1],1,5));
 		}
 	}
 }
