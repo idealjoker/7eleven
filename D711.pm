@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri Aug 23 20:09:19 2024
+#					 dlm: Sat Aug 24 18:56:46 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 2858 0 NIL 0 0 72 10 2 4 NIL ofnI
+#					 uE-Info: 2819 4 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -2801,18 +2801,22 @@ sub same_block($$@)
 {
 	my($la,$ha,$if_block) = @_;														# low and high addresses
 
-##local($trace) = ($la == 0x44E3 && $ha == 0x44FA) ? 1 : 0;						# SET TO TRACE IF AND LOOP BLOCK LOGIC
-##local($trace) = ($la == 0x44C5 && $ha == 0x44D6) ? 1 : 0;
-##local($trace) = ($la == 0x44D6 && $ha == 0x44FA) ? 1 : 0;
-##local($trace) = ($la == 0x44DB && $ha == 0x44FA) ? 1 : 0;
+	##local($trace) = ($la == 0x44E3 && $ha == 0x44FA) ? 1 : 0;						# SET TO TRACE IF AND LOOP BLOCK LOGIC
+	##local($trace) = ($la == 0x44C5 && $ha == 0x44D6) ? 1 : 0;
+	##local($trace) = ($la == 0x44D6 && $ha == 0x44FA) ? 1 : 0;
+	##local($trace) = ($la == 0x44DB && $ha == 0x44FA) ? 1 : 0;
 
-##local($trace) = ($la == 0x455A && $ha == 0x458B) ? 1 : 0;
-##local($trace) = ($la == 0x4566 && $ha == 0x4589) ? 1 : 0;
+	##local($trace) = ($la == 0x455A && $ha == 0x458B) ? 1 : 0;
+	##local($trace) = ($la == 0x4566 && $ha == 0x4589) ? 1 : 0;
 
-##local($trace) = ($la == 0x5AD7 && $ha == 0x5AEB) ? 1 : 0;
-##local($trace) = ($la == 0x5B1F && $ha == 0x5B38) ? 1 : 0;
+	##local($trace) = ($la == 0x5AD7 && $ha == 0x5AEB) ? 1 : 0;
+	##local($trace) = ($la == 0x5B1F && $ha == 0x5B38) ? 1 : 0;
 
-local($trace) = ($la == 0x6563 && $ha == 0x6575) ? 1 : 0;
+	##local($trace) = ($la == 0x6563 && $ha == 0x6575) ? 1 : 0;
+	##	local($trace) = ($la == 0x64BE && $ha == 0x64D3) ? 1 : 0;
+	##local($trace) = ($la == 0x6377 && $ha == 0x637C) ? 1 : 0;
+	##	local($trace) = ($la == 0x647C && $ha == 0x648A) ? 1 : 0;
+	##	local($trace) = ($la == 0x64A9 && $ha == 0x64AB) ? 1 : 0;
 	
 	my($block_ind) = $IND[$la];
 #	print(STDERR "block_ind = $block_ind\n") if $trace;	
@@ -2840,7 +2844,7 @@ local($trace) = ($la == 0x6563 && $ha == 0x6575) ? 1 : 0;
 
 	print(STDERR "no\nchecking labels...\n") if $trace;
 	for (my($a)=$la; $a<$ha; $a++) {
-		if ($if_block != 1 || $a > $la) {						# BRA at start of _IF block can have label
+		if ($if_block == 2 || $a > $la) {						# BRA at start of _IF and _LOOP blocks can have labels
 			printf(STDERR "addr = %04X; LBL defined?\n",$a) if $trace;
 			return 0 if defined($LBL[$a]);
 			print(STDERR "no. non-local AUTO_LBL (= $AUTO_LBL[$a]) defined?\n") if $trace;
@@ -2854,29 +2858,20 @@ local($trace) = ($la == 0x6563 && $ha == 0x6575) ? 1 : 0;
 	my($lopa) = $ha;
 	while (!defined($OP[$lopa])) { $lopa--; }
 	return 0 unless ($IND[$lopa] == $block_ind);
-	print(STDERR "yes.") if $trace;
-	
-		if ($a == $ha-2) {
-			printf(STDERR "%04X A: $IND[$a]($OP[$a]) == $block_ind?\n",$a) if $trace;
-			return 0 unless ($IND[$a] == $block_ind);
-		}
-		printf(STDERR "yes. testing for _ENDIF/_ELSE indentation\n") if $trace;
-		return 0 if ( defined($EXTRA[$a][0]) && !$EXTRA_BEFORE_LABEL[$a][0] && $EXTRA_IND[$a][0] != $block_ind && $EXTRA[$a][0] ne '_ENDIF') ||
-				    (!defined($EXTRA[$a][0]) && $IND[$a] != $block_ind && $OP[$a] ne '_ELSE');
-		print(STDERR "OK\n") if $trace;				    
-	}
+
 	printf(STDERR "indentation okay. LBL at ha?\n") if $trace;
 	return 0 if defined($LBL[$ha]);
 	print(STDERR "no. OP[ha] defined?\n") if $trace;
 	next unless defined($OP[$ha]);
-	print(STDERR "yes. checking indentation\n") if $trace;
+
+	print(STDERR "yes. checking indentation at end of block\n") if $trace;
 	return 0 unless ($IND[$ha] == $block_ind) ||
 					($if_block && (($block_ind == $EXTRA_IND[$ha][0]+1 && $EXTRA[$ha][0] eq '_ENDIF') ||
 				    			   ($block_ind == $IND[$ha]+1 && $OP[$ha] eq '_ELSE')));
-	return 0 if ( defined($EXTRA[$ha][0]) && !$EXTRA_BEFORE_LABEL[$ha][0] && $EXTRA_IND[$ha][0] != $block_ind && $EXTRA[$ha][0] ne '_ENDIF') ||
-			    (!defined($EXTRA[$ha][0]) && $IND[$ha] != $block_ind && $OP[$ha] ne '_ELSE');
+	return 0 if ( $EXTRA[$ha][0] && !$EXTRA_BEFORE_LABEL[$ha][0] && $EXTRA_IND[$ha][0] != $block_ind && $EXTRA[$ha][0] ne '_ENDIF') ||
+			    (!$EXTRA[$ha][0] && $IND[$ha] != $block_ind && $OP[$ha] ne '_ELSE');
 	
-	print(STDERR "return 1\n") if $trace;
+	print(STDERR "all good. returning 1\n") if $trace;
 	return 1;
 }
 
@@ -2929,7 +2924,10 @@ sub exit_from_block($$$)
 
 			next unless (($OP[$a] =~ m{^B..$}  && $OP[$a] ne 'BSR') ||		# disallow BRA and LBRA
 						 ($OP[$a] =~ m{^LB..$} && $OP[$a] ne 'LBSR'));
-			return 1 if $OP[$a] eq 'BRA';									# NB: LOOPS have already been decoded
+#			if ($OP[$a] eq 'BRA') {						 
+#				return 1 if $a < $ha-2;
+#				return 1 if hex(substr($OPA[$a][0],1,5)) != $la;			# infinite loop 
+#			}
 			push(@LOOPSTART,$a),next if ($trg == $la);						# _LoopStart
 			push(@EXITLOOP,$a),next if ($trg == $ha+2);						# _ExitLoop
 			if ($trg<$la || $trg>$ha) {
