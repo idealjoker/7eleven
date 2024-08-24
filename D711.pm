@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri Aug 23 17:29:49 2024
+#					 dlm: Fri Aug 23 20:09:19 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 221 62 NIL 0 0 72 10 2 4 NIL ofnI
+#					 uE-Info: 2858 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -2811,8 +2811,9 @@ sub same_block($$@)
 
 ##local($trace) = ($la == 0x5AD7 && $ha == 0x5AEB) ? 1 : 0;
 ##local($trace) = ($la == 0x5B1F && $ha == 0x5B38) ? 1 : 0;
+
+local($trace) = ($la == 0x6563 && $ha == 0x6575) ? 1 : 0;
 	
-#	my($block_ind) = (defined($EXTRA_IND[$la][0]) && !$EXTRA_BEFORE_LABEL[$la][0]) ? $EXTRA_IND[$la][0] : $IND[$la];
 	my($block_ind) = $IND[$la];
 #	print(STDERR "block_ind = $block_ind\n") if $trace;	
 
@@ -2837,8 +2838,7 @@ sub same_block($$@)
 		return 0 if branch_into_block($la,$ha,0);				# allowing entry into loop is not good
 	}
 
-	print(STDERR "no\nchecking indentation...\n") if $trace;
-	
+	print(STDERR "no\nchecking labels...\n") if $trace;
 	for (my($a)=$la; $a<$ha; $a++) {
 		if ($if_block != 1 || $a > $la) {						# BRA at start of _IF block can have label
 			printf(STDERR "addr = %04X; LBL defined?\n",$a) if $trace;
@@ -2848,10 +2848,18 @@ sub same_block($$@)
 			return 0 if defined($AUTO_LBL[$a]) && substr($AUTO_LBL[$a],0,1) ne '.'			# non local label exists
 							&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,5)) == $a);			# ... and it's not part of a _skip
 		}
-		print(STDERR "no. OP[$a] defined?\n") if $trace;
-		next unless defined($OP[$a]);
-		printf(STDERR "yes: %04X A: $IND[$a]($OP[$a]) == $block_ind?\n",$a) if $trace;
-		return 0 unless ($IND[$a] == $block_ind); ## ||
+    }
+
+	print(STDERR "no\nindentation okay?\n") if $trace;
+	my($lopa) = $ha;
+	while (!defined($OP[$lopa])) { $lopa--; }
+	return 0 unless ($IND[$lopa] == $block_ind);
+	print(STDERR "yes.") if $trace;
+	
+		if ($a == $ha-2) {
+			printf(STDERR "%04X A: $IND[$a]($OP[$a]) == $block_ind?\n",$a) if $trace;
+			return 0 unless ($IND[$a] == $block_ind);
+		}
 		printf(STDERR "yes. testing for _ENDIF/_ELSE indentation\n") if $trace;
 		return 0 if ( defined($EXTRA[$a][0]) && !$EXTRA_BEFORE_LABEL[$a][0] && $EXTRA_IND[$a][0] != $block_ind && $EXTRA[$a][0] ne '_ENDIF') ||
 				    (!defined($EXTRA[$a][0]) && $IND[$a] != $block_ind && $OP[$a] ne '_ELSE');

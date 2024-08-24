@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 0 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Wed Aug 21 10:32:59 2024
+#                    dlm: Fri Aug 23 19:45:21 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 20 53 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 86 51 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # BUGS:
@@ -18,6 +18,7 @@
 # 	Jul 16, 2024: - exported from [D711.pm]
 #	Jul 18, 2024: - adapted to M6809 support
 #	Aug 21, 2024: - adapted to updated EXTRA support 
+#	Aug 23: 2024: - debugged
 # HISTORY END
 
 sub op_IMP(@)													# operation with implied addressing
@@ -82,7 +83,7 @@ sub op_REL($$$$$)												# operation with relative addressing
 	return undef unless (BYTE($addr) == $opc);
 	my($trg_addr) = $addr + 2 + ((BYTE($addr+1) < 128) ? BYTE($addr+1) : BYTE($addr+1)-256);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
-	$OPA[$addr][0] = label_address($trg_addr,$lbl_root);
+	$OPA[$addr][0] = label_address($trg_addr,'.' . $lbl_root);
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	if ($follow_code) {
 		disassemble_asm($ind,$trg_addr,$lbl_root);
@@ -162,8 +163,8 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 		if (op_REL(0x20,$ind,'BRA',$lbl_root,$follow_code)) {
 		    push(@{$EXTRA[$addr-2]},'');
 	        push(@{$EXTRA_IND[$addr-2]},0);
-			$EXTRA_BEFORE_LABEL[$addr-2][$#{$EXTRA[$addr]}] = 0;
-			$EXTRA_AFTER_OP[$addr-2][$#{$EXTRA[$addr]}] = 1;
+			$EXTRA_BEFORE_LABEL[$addr-2][$#{$EXTRA[$addr-2]}] = 0;
+			$EXTRA_AFTER_OP[$addr-2][$#{$EXTRA[$addr-2]}] = 1;
 			return;
 		}
 
@@ -182,23 +183,23 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 		if (op_IMP(0x39,$ind,'RTS')) {
 		    push(@{$EXTRA[$addr-1]},'');
 	        push(@{$EXTRA_IND[$addr-1]},0);
-			$EXTRA_BEFORE_LABEL[$addr-1][$#{$EXTRA[$addr]}] = 0;
-			$EXTRA_AFTER_OP[$addr-1][$#{$EXTRA[$addr]}] = 1;
+			$EXTRA_BEFORE_LABEL[$addr-1][$#{$EXTRA[$addr-1]}] = 0;
+			$EXTRA_AFTER_OP[$addr-1][$#{$EXTRA[$addr-1]}] = 1;
 			return;
 		}
 		if (op_IMP(0x3B,$ind,'RTI')) {
 		    push(@{$EXTRA[$addr-1]},'');
 	        push(@{$EXTRA_IND[$addr-1]},0);
-			$EXTRA_BEFORE_LABEL[$addr-1][$#{$EXTRA[$addr]}] = 0;
-			$EXTRA_AFTER_OP[$addr-1][$#{$EXTRA[$addr]}] = 1;
+			$EXTRA_BEFORE_LABEL[$addr-1][$#{$EXTRA[$addr-1]}] = 0;
+			$EXTRA_AFTER_OP[$addr-1][$#{$EXTRA[$addr-1]}] = 1;
 			return;
 		}
 		next if op_IMP(0x3E,$ind,'WAI');
 		if (op_IMP(0x3F,$ind,'SWI')) {
 		    push(@{$EXTRA[$addr-1]},'');
 	        push(@{$EXTRA_IND[$addr-1]},0);
-			$EXTRA_BEFORE_LABEL[$addr-1][$#{$EXTRA[$addr]}] = 0;
-			$EXTRA_AFTER_OP[$addr-1][$#{$EXTRA[$addr]}] = 1;
+			$EXTRA_BEFORE_LABEL[$addr-1][$#{$EXTRA[$addr-1]}] = 0;
+			$EXTRA_AFTER_OP[$addr-1][$#{$EXTRA[$addr-1]}] = 1;
 			return;
 		}
 	    
@@ -230,8 +231,8 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 		if (op_IND(0x6E,$ind,'JMP')) {															  # NB: cannot follow an indexed jump
 		    push(@{$EXTRA[$addr-2]},'');
 	        push(@{$EXTRA_IND[$addr-2]},0);
-			$EXTRA_BEFORE_LABEL[$addr-2][$#{$EXTRA[$addr]}] = 0;
-			$EXTRA_AFTER_OP[$addr-2][$#{$EXTRA[$addr]}] = 1;
+			$EXTRA_BEFORE_LABEL[$addr-2][$#{$EXTRA[$addr-2]}] = 0;
+			$EXTRA_AFTER_OP[$addr-2][$#{$EXTRA[$addr-2]}] = 1;
 			return;
 		}
 
