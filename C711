@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Aug 24 22:32:13 2024
+#                    dlm: Sun Aug 25 13:09:51 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 303 74 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 304 51 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -301,6 +301,7 @@
 #	May 31, 2024: - disallow Flag#3, Lamp#2, etc.
 #				  - added {BitMask} and {ByteOffset}
 #	Aug 24, 2024: - added support for <_LOOP and >_EXITLOOP pseusdo labels
+#	Aug 25, 2024: - added support for <RTS and >RTS
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2779,17 +2780,24 @@ sub asm_6800_op($$@)
 		}
 		if ($am eq 'R') {																# relative mode (1-byte relative address)
 			$ROM[$ADDR++] = $opc[$i];
-			$OP_ARG[$OP_ARG[$#OP_ARG]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]				# _EXITLOOP pseudo label
-		        if ($OP_ARG[$#OP_ARG] eq '_EXITLOOP' ||
-					$OP_ARG[$#OP_ARG] eq '>_EXITLOOP');
-			$OP_ARG[$#OP_ARG] = $LOOP_LBL[$#LOOP_LBL]      								# _NEXTLOOP pseudo label
-			        if ($OP_ARG[$#OP_ARG] eq '_NEXTLOOP' ||
-					    $OP_ARG[$#OP_ARG] eq '<_LOOP');
+			$OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]				# _EXITLOOP pseudo label
+		        if ($OP_ARG[0] eq '_EXITLOOP' ||
+					$OP_ARG[0] eq '>_EXITLOOP');
+			$OP_ARG[0] = $LOOP_LBL[$#LOOP_LBL]      								# _NEXTLOOP pseudo label
+			        if ($OP_ARG[0] eq '_NEXTLOOP' ||
+					    $OP_ARG[0] eq '<_LOOP');
 
-			unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {								# set type of branch target
-				push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
-				set_label_type(1);
-            }			        
+			if ($OP_ARG[0] eq '<RTS') {											# lexical labels
+				$OP_ARG[0] = $last_RTS_addr;
+            } elsif ($OP_ARG[0] eq '>RTS') {
+            	push(@forward_lexical_RTS_branch,$ADDR);
+            	$OP_ARG[0] = 'XXXX';
+            } else {
+				unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {							# set type of branch target
+					push(@newly_defined_label,($OP_ARG[0]));
+					set_label_type(1);
+            	}
+            }
 						        
 			$ROM[$ADDR++] = $EIGHT_BIT_LABEL_PREFIX . $OP_ARG[0];
 			return 1;
@@ -2876,7 +2884,14 @@ sub assemble_6800()
 	$MODE=1,return 1 if asm_6800_op('DES','',0x34);
 	$MODE=1,return 1 if asm_6800_op('TXS','',0x35);
 	$MODE=1,return 1 if asm_6800_op('PSHA','',0x36) || asm_6800_op('PSHB','',0x37);
-	$MODE=0,return 1 if asm_6800_op('RTS','',0x39);
+	if (asm_6800_op('RTS','',0x39)) {
+		$last_RTS_addr = $ADDR - 1;
+		while (@forward_lexical_RTS_branch) {
+			$ROM[pop(@forward_lexical_RTS_branch)] = $EIGHT_BIT_LABEL_PREFIX . ($ADDR - 1);
+		}
+		$MODE = 0;
+		return 1;
+	}
 	$MODE=1,return 1 if asm_6800_op('RTI','',0x3B);
 	$MODE=1,return 1 if asm_6800_op('WAI','',0x3E);
 	$MODE=0,return 1 if asm_6800_op('SWI','',0x3F);

@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Sat Aug 10 11:01:48 2024
+#					 dlm: Sun Aug 25 10:57:56 2024
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 20 48 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 72 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -69,7 +69,7 @@ printf(STDERR "[Address range = %04X-%04X]\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM
 #----------------------------------------------------------------------
 
 &D711::disassemble_unfollowed_labels();										# left overs
-&D711::process_code_structure($D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR) 		# if, while, ...
+&D711::process_code_structure($D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR) 		# _IF, _LOOP
 	unless ($opt_s);
 &D711::substitute_labels(); 												# resolve labels
 &D711::substitute_identifiers();											# rename game-specific ids

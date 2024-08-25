@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Sat Aug 24 22:34:09 2024
+#                    dlm: Sun Aug 25 12:07:11 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 26 18 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 27 58 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -24,6 +24,8 @@
 #					is used commonly to avoid long jumps
 #	Jul 20, 2024: - moved isMember() to [D711.pm]
 #	Aug 23, 2024: - added support for <_LOOP and >_EXITLOOP pseusdo labels
+#	Aug 25, 2024: - generalized support for lexical labels
+# HISTORY END
 
 #----------------------------------------------------------------------
 # System6 API
@@ -479,7 +481,7 @@ sub direct_code_path($$)
 
 	return 0 unless isMember($OP[$addr],@branch_ops,@jump_ops,@sbr_ops);
 	return 1 if ($OPA[$addr][0] =~ m{$target_re});
-	return 0 if isMember($OPA[$addr][0],'<_LOOP','>_EXITLOOP');
+	return 0 if ($OPA[$addr][0] =~ m{^[\<\>]});
 
 	die($OPA[$addr][0]) unless defined($Lbl{$OPA[$addr][0]});
 	return direct_code_path($Lbl{$OPA[$addr][0]},$target_re);
