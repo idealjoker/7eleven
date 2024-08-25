@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Aug 24 18:56:46 2024
+#					 dlm: Sat Aug 24 22:33:27 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 2819 4 NIL 0 0 72 10 2 4 NIL ofnI
+#					 uE-Info: 223 17 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -219,6 +219,8 @@
 #	Aug 19, 2024: - added special handling for ! WPC shortcut
 #	Aug 20, 2024: - added support for nesteed IFs
 #	Aug 21-23: 	  - heavy debugging of code-structure analysis
+#	Aug 24, 2024: - more deebugging (make AP work again)
+#				  - added support for <_LOOP and >_EXITLOOP pseusdo labels
 # END OF HISTORY
 
 # TO-DO:
@@ -2855,8 +2857,9 @@ sub same_block($$@)
     }
 
 	print(STDERR "no\nindentation okay?\n") if $trace;
-	my($lopa) = $ha;
+	my($lopa) = $if_block ? $ha-1 : $ha;						# _IF _ENDIF has ha at the first OP afer the if
 	while (!defined($OP[$lopa])) { $lopa--; }
+	printf(STDERR "[%04X: $OP[$lopa] @{$OPA[$lopa]} ind=$IND[$lopa] vs block_ind=$block_ind\n",$lopa) if $trace;
 	return 0 unless ($IND[$lopa] == $block_ind);
 
 	printf(STDERR "indentation okay. LBL at ha?\n") if $trace;
@@ -2888,7 +2891,7 @@ sub exit_from_block($$$)
 
 		my($trg) = $OPA[$a][0];
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
-		next unless numberp($trg);											# LOOPS already decoded => BRA to _ExitLoop and _LoopStart are okay
+		next unless numberp($trg);											# LOOPS already decoded => BRA to _ExitLoop and _NextLoop are okay
 
 		if ($if_block) {													# _IF/_ELSE/_ENDIF
 			next unless (($OP[$a] =~ m{^B..$}  && $OP[$a] ne 'BSR') ||		# disallow BRA and LBRA (also conditional)
@@ -2928,8 +2931,8 @@ sub exit_from_block($$$)
 #				return 1 if $a < $ha-2;
 #				return 1 if hex(substr($OPA[$a][0],1,5)) != $la;			# infinite loop 
 #			}
-			push(@LOOPSTART,$a),next if ($trg == $la);						# _LoopStart
-			push(@EXITLOOP,$a),next if ($trg == $ha+2);						# _ExitLoop
+			push(@LOOPSTART,$a),next if ($trg == $la);						# <_LOOP
+			push(@EXITLOOP,$a),next if ($trg == $ha+2);						# >_EXITLOOP
 			if ($trg<$la || $trg>$ha) {
 				printf(STDERR "%04X: $OP[$a] $OPA[$a][0] (%04X,%04X) -- trg = %04X\n",$a,$la,$ha,$trg)
 					if $trace;
@@ -2949,7 +2952,7 @@ sub branch_into_block($$@)
 		next unless defined($OP[$addr]) &&
 					($OP[$addr] =~ m{^B..$} && $OP[$addr] ne 'BSR' );
 		my($trg) = $OPA[$addr][0];
-		next if isMember($trg,'_LoopStart','_ExitLoop');
+		next if isMember($trg,'<_LOOP','>_EXITLOOP');
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
 		die("$OP[$addr] $OPA[$addr][0]") unless numberp($trg);
 		printf(STDERR "$OP[$addr] $OPA[$addr][0]\n") if $trace;
@@ -2967,7 +2970,7 @@ sub branch_into_block($$@)
 					($OP[$addr] =~ m{^B..$} && $OP[$addr] ne 'BSR' );
 		my($trg) = $OPA[$addr][0];
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
-		next if isMember($trg,'_LoopStart','_ExitLoop');
+		next if isMember($trg,'<_LOOP','>_EXITLOOP');
 		if ($trg >= $la && $trg <= $ha) {
 			printf(STDERR "<%04X> %04X:%04X:%04X $allowed_branch\n",$addr,$la,$trg,$ha)
 				if $trace;
@@ -3006,8 +3009,8 @@ sub cs_loop_while($$$$$)
 			}
 			push(@BEGIN_BLOCK,$trg);
 			push(@END_BLOCK,$addr);
-			foreach my $a (@LOOPSTART) { $OPA[$a][0] = '_LoopStart' if defined($OPA[$a][0]); }
-			foreach my $a (@EXITLOOP) { $OPA[$a][0] = '_ExitLoop' if defined($OPA[$a][0]); }
+			foreach my $a (@LOOPSTART) { $OPA[$a][0] = '<_LOOP' if defined($OPA[$a][0]); }
+			foreach my $a (@EXITLOOP) { $OPA[$a][0] = '>_EXITLOOP' if defined($OPA[$a][0]); }
 			return 1;
 		}
 	}
@@ -3046,8 +3049,8 @@ sub cs_while_loop($$$$$$)
 					} # indent loop
 					push(@BEGIN_BLOCK,$addr);
 					push(@END_BLOCK,$endloop_trg);
-					foreach my $a (@LOOPSTART) { $OPA[$a][0] = '_LoopStart' if defined($OPA[$a][0]); }
-					foreach my $a (@EXITLOOP) { $OPA[$a][0] = '_ExitLoop' if defined($OPA[$a][0]); }
+					foreach my $a (@LOOPSTART) { $OPA[$a][0] = '<_LOOP' if defined($OPA[$a][0]); }
+					foreach my $a (@EXITLOOP) { $OPA[$a][0] = '>_EXITLOOP' if defined($OPA[$a][0]); }
 					return 1;
 				 } # found a loop
 			} # found a BRA statement at end of loop body

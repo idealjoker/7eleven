@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 #======================================================================
-#                    . . / . . / B I N / C 7 1 1 
+#                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon Jun 24 17:44:49 2024
+#                    dlm: Sat Aug 24 22:32:13 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1123 106 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 303 74 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -300,6 +300,7 @@
 #	May 27, 2024: - modularized System APIs
 #	May 31, 2024: - disallow Flag#3, Lamp#2, etc.
 #				  - added {BitMask} and {ByteOffset}
+#	Aug 24, 2024: - added support for <_LOOP and >_EXITLOOP pseusdo labels
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2779,9 +2780,11 @@ sub asm_6800_op($$@)
 		if ($am eq 'R') {																# relative mode (1-byte relative address)
 			$ROM[$ADDR++] = $opc[$i];
 			$OP_ARG[$OP_ARG[$#OP_ARG]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]				# _EXITLOOP pseudo label
-		        if ($OP_ARG[$#OP_ARG] eq '_EXITLOOP');
+		        if ($OP_ARG[$#OP_ARG] eq '_EXITLOOP' ||
+					$OP_ARG[$#OP_ARG] eq '>_EXITLOOP');
 			$OP_ARG[$#OP_ARG] = $LOOP_LBL[$#LOOP_LBL]      								# _NEXTLOOP pseudo label
-			        if ($OP_ARG[$#OP_ARG] eq '_NEXTLOOP');
+			        if ($OP_ARG[$#OP_ARG] eq '_NEXTLOOP' ||
+					    $OP_ARG[$#OP_ARG] eq '<_LOOP');
 
 			unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {								# set type of branch target
 				push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
