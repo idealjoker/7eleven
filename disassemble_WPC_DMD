@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ D M D 
 #					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Sun Aug 18 14:14:41 2024
+#					 dlm: Mon Aug 26 16:41:56 2024
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 148 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 77 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -68,7 +68,7 @@ if (defined($opt_i)) {														# include files with perl code AFTER ROM is 
 &D711::apply_magic_WPC_DMD(0x8000,0xFFFF);  	                            # e.g. ScoreByte
 
 for (my($rpg)=0x20; $rpg<0x3E; $rpg++) {
-#	print(STDERR "select_WPC_RPG($rpg)\n");
+#	printf(STDERR "select_WPC_RPG(%02X)\n",$rpg);
 	&D711::select_WPC_RPG($rpg);
 	&D711::process_code_structure(0x4000,0x7FFF)							# if, while, ...
 		unless ($opt_s);

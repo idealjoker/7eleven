@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Aug 25 22:06:19 2024
+#                    dlm: Mon Aug 26 17:10:33 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 29 53 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 128 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -125,70 +125,6 @@ sub apply_magic_WPC_DMD($$)
 
 sub init_WPC_DMD()
 {
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','RuntimeError','.DB','B'));	# keep in sync with [WPC_DMD.API]
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','RuntimeError_nonFatal','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','Y=adjustment','.DB','A'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','A=adjustment','.DB','A'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','B=adjustment','.DB','A'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=switchClosed','.DB','S'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8339','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','Sleep','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','MemClearY','.DB','B'));			
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','MemSetBY','.DB','B'));			
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SolCmd','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','PulseFlasher','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SolCmd_wait','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_83DB','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_83E8','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','LampOn','.DB','L'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','LampOff','.DB','L'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=lampLit','.DB','L'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SetBit','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','ClearBit','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=bitSet?','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_unknown_bitOp?','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8539','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','PlaySound?','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85E1','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85F1','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8553','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SetFlag','.DB','F'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','OtherPG_ind','.DW','P'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_865B','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','LongSleep','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=threadRunning','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_869E','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_86AC','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_86D0','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8715','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8722','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_873C','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_87BE','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=bitgroup_allOn','.DB','BB'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=bitgroup_allOff','.DB','BB'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_88D5','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','OtherPG','.DWB','R'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_892F','.DWB','R'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8948','.DWB','R'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','MemCopyX','.DWB','PB'));			
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_89DD','.DWB','WB'));			# not R
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8A9A','.DW','WW'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8AAA','.DW','WW'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','MemClear','.DW','PW'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','MemSet','.DWBB','PBB'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SpawnThread_0','.DBW','BWW'));		# neither W is R!
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SpawnThread_1','.DWR','WR'));	
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SpawnThread_2','.DWR','WR'));	
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SpawnThread_3','.DWR','WR'));	
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SpawnThread_4','.DWR','WR'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SpawnThread_5','.DWR','WR'));	
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','MemCopy','.DWWB','WWB'));			
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_D799','.DWBW','WBW'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDA2','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDB4','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDC6','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDD8','.DW','W'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_FDFC','.DB','B'));
 }
 
 #======================================================================
@@ -474,6 +410,22 @@ sub def_WPC_codeRef($@)																	# ROUTINE DOES NOT MAINTAIN RPG
 }
 
 #----------------------------------------------------------------------
+#	Define System Calls
+#
+# 	$note ARGUMENTS:
+#		1: routine does not return
+#----------------------------------------------------------------------
+
+sub define_syscall($$$@)
+{
+	my($lbl,$addr,$args,$note) = @_;
+
+	define_label($lbl,$addr);
+	push(@SYSCALL,$lbl);
+	$SC_ADDR[$#SYSCALL] = $addr;
+	$SC_ARGS[$#SYSCALL] = $args;
+	$SC_NOTE[$#SYSCALL] = $note;
+}
 
 1; 																# return true
 

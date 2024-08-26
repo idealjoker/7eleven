@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sun Aug 25 22:09:56 2024
+#                    dlm: Mon Aug 26 17:07:37 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 587 52 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 597 0 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -336,6 +336,16 @@ sub disassemble_asm(@) 																# disassemble 6809 CPU code (always follo
 	return disassemble_asm_nbytes($ind,$addr,$lbl_root,9e99,$follow_code,$divider_label);		# follow_code = 1
 }
 
+sub insert_empty_line($)
+{
+	my($addr) = @_;
+	
+	push(@{$EXTRA[$addr]},'');
+	push(@{$EXTRA_IND[$addr]},$ind);
+	$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 0;
+	$EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 1;
+}
+
 sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byte limit
 {
 	local($ind,$addr,$lbl_root,$max_bytes,$follow_code,$divider_label) = @_;
@@ -415,10 +425,7 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if defined(op_PP(0x34,$ind,'PSHS'));
 		if (defined($rv = op_PP(0x35,$ind,'PULS'))) {
 			if ($rv == 0) {										# PC pulled
-				push(@{$EXTRA[$addr-2]},'');
-				push(@{$EXTRA_IND[$addr-2]},$ind);
-				$EXTRA_BEFORE_LABEL[$addr-2][$#{$EXTRA[$addr-2]}] = 0;
-				$EXTRA_AFTER_OP[$addr-2][$#{$EXTRA[$addr-2]}] = 1;
+				insert_empty_line($addr-2);
 				return;
 			}
 			next;
@@ -426,27 +433,18 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if defined(op_PP(0x36,$ind,'PSHU'));
 		if (defined($rv = op_PP(0x37,$ind,'PULU'))) {
 			if ($rv == 0) {										# PC pulled
-				push(@{$EXTRA[$addr-2]},'');
-				push(@{$EXTRA_IND[$addr-2]},$ind);
-				$EXTRA_BEFORE_LABEL[$addr-2][$#{$EXTRA[$addr-2]}] = 0;
-				$EXTRA_AFTER_OP[$addr-2][$#{$EXTRA[$addr-2]}] = 1;
+				insert_empty_line($addr-2);
 				return;
 			}
 			next;
 		}
 		if (op_INH(0x39,$addr,$ind,'RTS')) {					# add empty line after RTS
-			push(@{$EXTRA[$addr-1]},'');
-			push(@{$EXTRA_IND[$addr-1]},$ind);
-			$EXTRA_BEFORE_LABEL[$addr-1][$#{$EXTRA[$addr-1]}] = 0;
-			$EXTRA_AFTER_OP[$addr-1][$#{$EXTRA[$addr-1]}] = 1;
+			insert_empty_line($addr-1);
 			return;
 		}
 		next if op_INH(0x3A,$addr,$ind,'ABX'); 					# add empty line after RTI
 		if (op_INH(0x3B,$addr,$ind,'RTI')) {
-			push(@{$EXTRA[$addr-1]},'');
-			push(@{$EXTRA_IND[$addr-1]},$ind);
-			$EXTRA_BEFORE_LABEL[$addr-1][$#{$EXTRA[$addr-1]}] = 0;
-			$EXTRA_AFTER_OP[$addr-1][$#{$EXTRA[$addr-1]}] = 1;
+			insert_empty_line($addr-1);
 			return;
 		}
 
@@ -527,49 +525,48 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 		next if op_EXT(0xBA,$addr,$ind,'ORA');		next if op_EXT(0xBB,$addr,$ind,'ADDA'); 	
 		next if op_EXT(0xBC,$addr,$ind,'CMPX');
 		if ($rv = op_EXT(0xBD,$addr,$ind,'JSR')) {											# JSR to fixed address => handle inline args
-			foreach my $sbr (@INLINE_ARG_SBR) {
-				my($slbl,$sapgm,$sargl) = split('-',$sbr);									# e.g. sys_runtime_error-.DB-B
-				die($slbl) unless defined($Lbl{$slbl});
-				if (numberp($Lbl{$slbl})) {													# numeric label => address above 8000
-					next unless ($Lbl{$slbl} == $rv);
+			for (my($j)=0; $j<@SYSCALL; $j++) {
+				die($SYSCALL[$j]) unless defined($Lbl{$SYSCALL[$j]});
+				if (numberp($Lbl{$SYSCALL[$j]})) {											# numeric label => address above 8000
+					next unless ($Lbl{$SYSCALL[$j]} == $rv);
 				} else {
-					my($rpg,$saddr) = split(':',$Lbl{$slbl});								# compond label => rom page & address between 40000 and 80000
+					my($rpg,$saddr) = split(':',$Lbl{$SYSCALL[$j]});						# compond label => rom page & address between 40000 and 80000
 					$rpg = hex($rpg); $saddr = hex($saddr);
 					next unless ($saddr == $rv && $rpg == $_cur_RPG);
 				}
 				my($oaddr) = $addr-3;														# address of OP
 				$OP[$oaddr] = '!';
-				for (my($i)=0; $i<length($sargl); $i++) {		
-					if (substr($sargl,$i,1) eq 'W') {										# W: word (not addr!)
+				for (my($i)=0; $i<length($SC_ARGS[$j]); $i++) {		
+					if (substr($SC_ARGS[$j],$i,1) eq 'W') {										# W: word (not addr!)
 						push(@{$OPA[$oaddr]},sprintf('$%04X!',WORD($addr)));
 						$decoded[$addr++] = $decoded[$addr++] = 1;
-					} elsif (substr($sargl,$i,1) eq 'P') {									# P: pointer (address)
+					} elsif (substr($SC_ARGS[$j],$i,1) eq 'P') {									# P: pointer (address)
 						push(@{$OPA[$oaddr]},label_address(WORD($addr),$lbl_root));
 						$decoded[$addr++] = $decoded[$addr++] = 1;
-					} elsif (substr($sargl,$i,1) eq 'B') {									# B: byte
+					} elsif (substr($SC_ARGS[$j],$i,1) eq 'B') {									# B: byte
 						push(@{$OPA[$oaddr]},sprintf('$%02X',BYTE($addr)));
 						$decoded[$addr++] = 1;
-					} elsif (substr($sargl,$i,1) eq 'S') {									# S: switch
+					} elsif (substr($SC_ARGS[$j],$i,1) eq 'S') {									# S: switch
 						die(sprintf("Invalid switch argument Switch#%02X",BYTE($addr)))
 							unless (BYTE($addr)>=0 && BYTE($addr)<=65);
 						push(@{$OPA[$oaddr]},sprintf('Switch#%02X',BYTE($addr)));
 						$decoded[$addr++] = 1;
-					} elsif (substr($sargl,$i,1) eq 'L') {									# L: Lamp
+					} elsif (substr($SC_ARGS[$j],$i,1) eq 'L') {									# L: Lamp
 						die(sprintf("Invalid lamp argument Lamp#%02X",BYTE($addr)))
 							unless (BYTE($addr)>=0 && BYTE($addr)<=65);
 						push(@{$OPA[$oaddr]},sprintf('Lamp#%02X',BYTE($addr)));
 						$decoded[$addr++] = 1;
-					} elsif (substr($sargl,$i,1) eq 'F') {									# F: Flag
+					} elsif (substr($SC_ARGS[$j],$i,1) eq 'F') {									# F: Flag
 						die(sprintf("Invalid flag argument Flag#%02X",BYTE($addr)))
 							unless (BYTE($addr)>=0 && BYTE($addr)<=99);
 						push(@{$OPA[$oaddr]},sprintf('Flag#%02X',BYTE($addr)));
 						$decoded[$addr++] = 1;
-					} elsif (substr($sargl,$i,1) eq 'A') {									# A: Adjustment
+					} elsif (substr($SC_ARGS[$j],$i,1) eq 'A') {									# A: Adjustment
 						die(sprintf("Invalid adjustment argument Adj#%02X",BYTE($addr)))
 							unless (BYTE($addr)>=0 && BYTE($addr)<=255);
 						push(@{$OPA[$oaddr]},sprintf('Adj#%02X',BYTE($addr)));
 						$decoded[$addr++] = 1;
-					} elsif (substr($sargl,$i,1) eq 'C') {									# C: code ptr (W)
+					} elsif (substr($SC_ARGS[$j],$i,1) eq 'C') {									# C: code ptr (W)
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
 						push(@{$OPA[$oaddr]},sprintf('$%04X',$taddr));
 
@@ -579,7 +576,7 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 						if ($follow_code) {
 							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
 						}
-					} elsif (substr($sargl,$i,1) eq 'R') {									# R: code reference (WB)
+					} elsif (substr($SC_ARGS[$j],$i,1) eq 'R') {									# R: code reference (WB)
 						my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
 						my($trpg)  = BYTE($addr); $decoded[$addr++] = 1;
 
@@ -592,13 +589,16 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 						$tlbl = setLabel($tlbl,$taddr);
 						
 						if ($follow_code) {
-##							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
 							disassemble_asm($ind,$taddr,$tlbl,undef,$follow_code);
 						}
 						select_WPC_RPG($orpg);
 						push(@{$OPA[$oaddr]},$tlbl);
+						if ($SC_NOTE[$j] == 1) {								# don't continue after NOTE 1 sycalls
+							insert_empty_line($oaddr);
+							return;
+						}
 					} else {
-						die("invalid inline argument spec <$sargl>");
+						die("invalid inline argument spec <$SC_ARGS[$j]>");
 					}
 				}
 				last;
