@@ -1,14 +1,15 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Sun Aug 25 12:22:50 2024
+#                    dlm: Sun Aug 25 22:01:47 2024
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 11 62 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 12 16 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Aug 25, 2024: - exported from [D711.pm]
 #				  - added support for [<>]RTS (LEXICAL LABELS)
+# END OF HISTORY
 
 #----------------------------------------------------------------------
 # Code-Structure Processing
@@ -38,16 +39,19 @@ sub same_block($$@)
 	##local($trace) = ($la == 0x5AD7 && $ha == 0x5AEB) ? 1 : 0;
 	##local($trace) = ($la == 0x5B1F && $ha == 0x5B38) ? 1 : 0;
 
-	##local($trace) = ($la == 0x6563 && $ha == 0x6575) ? 1 : 0;
+	##	local($trace) = ($la == 0x6D3F && $ha == 0x6D48) ? 1 : 0;
+
+	##local($trace) = ($la == 0x6563 && $ha == 0x6575) ? 1 : 0;		# AP
 	##	local($trace) = ($la == 0x64BE && $ha == 0x64D3) ? 1 : 0;
 	##local($trace) = ($la == 0x6377 && $ha == 0x637C) ? 1 : 0;
 	##	local($trace) = ($la == 0x647C && $ha == 0x648A) ? 1 : 0;
 	##	local($trace) = ($la == 0x64A9 && $ha == 0x64AB) ? 1 : 0;
+
 	
 	my($block_ind) = $IND[$la];
 #	print(STDERR "block_ind = $block_ind\n") if $trace;	
 
-	printf(STDERR "\nsame_block(%04X,%04X,$if_block)\ninside block limits?\n",$la,$ha,) if $trace;
+	printf(STDERR "\nsame_block(%04X,%04X,if_block = $if_block)\ninside block limits?\n",$la,$ha,) if $trace;
 	my(@bb) = split(':',$BEGIN_BLOCK[$#BEGIN_BLOCK]);
 	my(@eb) = split(':',$END_BLOCK[$#END_BLOCK]);
 	my($good);
@@ -76,7 +80,7 @@ sub same_block($$@)
 			print(STDERR "no. non-local AUTO_LBL (= $AUTO_LBL[$a]) defined?\n") if $trace;
 			printf(STDERR "[$OP[$a-3] $OPA[$a-3][0]]\n") if $trace;
 			return 0 if defined($AUTO_LBL[$a]) && substr($AUTO_LBL[$a],0,1) ne '.'			# non local label exists
-							&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,5)) == $a);			# ... and it's not part of a _skip
+							&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,4)) == $a);			# ... and it's not part of a _skip
 		}
     }
 
@@ -108,7 +112,7 @@ sub exit_from_block($$$)
 {
 	my($la,$ha,$if_block) = @_;
 	
-	for (my($a)=$la; $a<=$ha; $a++) {
+	ADDRESS: for (my($a)=$la; $a<=$ha; $a++) {
 		next unless defined($OP[$a]);
 		printf(STDERR "%04X: $OP[$a] $OPA[$a][0] (%04X,%04X)\n",$a,$la,$ha)
 			if $trace;
@@ -149,7 +153,7 @@ sub exit_from_block($$$)
         	return 1 if isMember($OP[$a],'RTS','RTI');								# RTS, RTI are exits
         	return 1 if $OP[$a] =~ m{^PUL} && $OPA[$a][0] =~ m{PC$};				# PUL? PC is an exit
 
-			next unless ($OP[$a] =~ m{^L?B..$}  && !($OP[$a] =~ m{^L?BSR$}));		# disallow branches
+			next unless ($OP[$a] =~ m{^L?B..$}  && !($OP[$a] =~ m{^L?BSR$}));		# branches may be exits (NB: >RTS and <RTS are not!!!)
 
 			push(@LOOPSTART,$a),next if ($trg == $la);								# <_LOOP
 			push(@EXITLOOP,$a),next if ($trg == $ha+2);								# >_EXITLOOP

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Fri Aug 23 18:12:13 2024
+#                    dlm: Sun Aug 25 22:06:19 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 156 61 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 29 53 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -25,6 +25,9 @@
 #	Aug 21, 2024: - BUG: EXTRA_IND, EXTRA_BEFORE_LABEL and EXTRA_AFTER_OP where not
 #						 paged in and out
 #	Aug 23, 2024: - decimalized !*Sleep args
+#	Aug 25, 2024: - renamed addScore because it was wrnog
+#				  - BUG: substr used wrong length arg
+# END OF HISTORY 
 
 #----------------------------------------------------------------------
 # Game Disassembly Routine
@@ -111,7 +114,7 @@ sub apply_magic_WPC_DMD($$)
 				if ($Lbl_refs{$OPA[$addr][0]} == 1);
 			splice(@{$OPA[$addr]},0,1);
 		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{Sleep$}) {
-			$OPA[$addr][1] = hex(substr($OPA[$addr][1],1,5));
+			$OPA[$addr][1] = hex(substr($OPA[$addr][1],1,4));
 		}
 	}
 }
@@ -143,7 +146,7 @@ sub init_WPC_DMD()
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','SetBit','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','ClearBit','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','CC=bitSet?','.DB','B'));
-	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','AddScore?','.DB','B'));
+	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','sys_unknown_bitOp?','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_8539','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','PlaySound?','.DB','B'));
 	push(@INLINE_ARG_SBR,sprintf('%s-%s-%s','syscall_85E1','.DB','B'));

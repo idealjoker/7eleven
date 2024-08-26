@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Aug 23 18:12:29 2024
+#                    dlm: Sun Aug 25 21:27:46 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 130 32 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 18 16 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -14,6 +14,8 @@
 #	Aug 17, 2024: - additions
 #	Aug 18, 2024: - additions
 #	Aug 19, 2024: - additions
+#	Aug 25, 2024: - renamed addScore because it was wrnog
+# END OF HISTORY
 
 #----------------------------------------------------------------------
 # RAM Memory Map
@@ -116,7 +118,7 @@ define_label('CC=lampLit',				0x8449);
 define_label('SetBit',					0x8480);
 define_label('ClearBit',				0x848F);
 define_label('CC=bitSet?',				0x84AD);
-define_label('AddScore?',				0x851F);
+define_label('sys_unknown_bitOp?',		0x851F);
 define_label('syscall_8539',			0x8539);
 define_label('PlaySound?',				0x8546);
 define_label('syscall_8553',			0x8553);

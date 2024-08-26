@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sat Aug 24 22:02:21 2024
+#                    dlm: Sun Aug 25 22:09:56 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 96 50 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 587 52 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -27,6 +27,8 @@
 #	Aug 19, 2024: - BUG: _IMM2 were wrong
 #	Aug 20, 2024: - added space after exitThread
 #	Aug 22, 2024: - mark branch auto addresses with preceding .
+#	Aug 25, 2024: - op_LREL did not work
+#				  - improved labels of SpawnThread syscalls
 # HISTORY END
 
 # NOTES:
@@ -91,9 +93,7 @@ sub op_REL($$$$$)																	# operation with 1-byte relative addressing (p
 	return undef unless (BYTE($addr) == $opc);
 	my($trg_addr) = $addr + 2 + ((BYTE($addr+1) < 128) ? BYTE($addr+1) : BYTE($addr+1)-256);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
-	$OPA[$addr][0] = ($op =~ m{SR$})
-				   ? label_address($trg_addr,'.BSR') 
-				   : label_address($trg_addr,'.BXX');		
+	$OPA[$addr][0] = label_address($trg_addr,'.' . $op); 							# mark with . for code analysis
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	if ($follow_code) {
 		disassemble_asm($ind,$trg_addr,$lbl_root,undef,$follow_code);
@@ -107,9 +107,7 @@ sub op_LREL($$$$$$)																	# operation with 2-byte relative addressing
 	return undef unless (BYTE($addr) == $opc);
 	my($trg_addr) = $addr + 3 + ((WORD($addr+1) < 32768) ? WORD($addr+1) : WORD($addr+1)-65536);
 	$OP[$opa] = $op; $IND[$opa] = $ind;
-	$OPA[$addr][0] = ($op =~ m{SR$})
-				   ? label_address($trg_addr,'.LBSR') 
-				   : label_address($trg_addr,'.LBXX');		
+	$OPA[$opa][0] = label_address($trg_addr,$op);									# do not mark with a . since those are not used for IF and LOOP
 	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 	if ($follow_code) {
 		disassemble_asm($ind,$trg_addr,$lbl_root,undef,$follow_code);
@@ -586,12 +584,16 @@ sub disassemble_asm_nbytes(@)															# disassemble 6809 CPU code with byt
 						my($trpg)  = BYTE($addr); $decoded[$addr++] = 1;
 
 						my($orpg) = select_WPC_RPG($trpg);
-						my($tlbl) = sprintf("library_%04X",$taddr);
+						my($tlbl) = sprintf('library_%04X',$taddr);
+						if ($LBL[hex(substr($OPA[$oaddr][0],1,4))] =~ m{pawnThread}) {
+							$tlbl = sprintf('Thread#%s_handler',substr($OPA[$oaddr][1],1,4));
+						}
 						$tlbl = $LBL[$taddr] if defined($LBL[$taddr]);
 						$tlbl = setLabel($tlbl,$taddr);
 						
 						if ($follow_code) {
-							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
+##							disassemble_asm($ind,$taddr,$lbl_root,undef,$follow_code);
+							disassemble_asm($ind,$taddr,$tlbl,undef,$follow_code);
 						}
 						select_WPC_RPG($orpg);
 						push(@{$OPA[$oaddr]},$tlbl);
