@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Aug 27 09:50:12 2024
+#                    dlm: Tue Aug 27 13:42:49 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 32 46 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 33 42 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -30,6 +30,7 @@
 #	Aug 25, 2024: - op_LREL did not work
 #				  - improved labels of SpawnThread syscalls
 #	Aug 27, 2024: - generalized syscalls for !exitThread
+#				  - line spacing was wrong
 # HISTORY END
 
 # NOTES:
@@ -564,7 +565,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			disassemble_asm($ind,$rv,$lbl_root,undef,$follow_code)								# disassemble JMP target (syscall or not)
 				if $follow_code;
 			insert_empty_line($addr-3)
-				if $IND[$addr-3] == $code_base_indent;
+				unless $IND[$addr-3] > $code_base_indent || $rv == $addr;						# extra line at top level and not _skip
 			return;
         }
 		next if op_EXT(0x7F,$addr,$ind,'CLR');
@@ -604,6 +605,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next if op_EXT(0xBA,$addr,$ind,'ORA');		next if op_EXT(0xBB,$addr,$ind,'ADDA'); 	
 		next if op_EXT(0xBC,$addr,$ind,'CMPX');
 		if ($rv = op_EXT(0xBD,$addr,$ind,'JSR')) {												# JSR to fixed address => handle syscalls
+			my($oaddr) = $addr - 3;
 			my($sc);
 			for ($sc=0; $sc<@SYSCALL; $sc++) {
 				die($SYSCALL[$sc]) unless defined($Lbl{$SYSCALL[$sc]});
@@ -613,7 +615,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			disassemble_asm($ind,$rv,$lbl_root,undef,$follow_code)								# disassemble subroutine code (syscall or not)
 				if ($follow_code);
 			if ($SC_NOTE[$sc] == 1) {															# NOTE 1: no-return syscall
-				insert_empty_line($addr-3);
+				insert_empty_line($oaddr);
 				return;
 			}
 		    next;																				# continue disassembly after JSR
