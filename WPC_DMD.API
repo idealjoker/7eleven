@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Aug 26 16:49:05 2024
+#                    dlm: Mon Aug 26 20:43:19 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 100 81 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 27 23 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -15,6 +15,8 @@
 #	Aug 18, 2024: - additions
 #	Aug 19, 2024: - additions
 #	Aug 25, 2024: - renamed addScore because it was wrnog
+#	Aug 26, 2024: - added sycalls
+#				  - changed capitalization to be consistent with IVM
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -22,12 +24,18 @@
 #----------------------------------------------------------------------
 
 define_label('_ROM_BANK_SHADOW',		0x11);		# SC
+define_label('__RUNNING_THREAD_ID',		0x53);
+define_label('__FINDTHREAD_ID',			0x5D);
+define_label('_FINDTHREAD_ID+1',		0x5E);
+define_label('__FINDTHREAD_MASK',		0x5F);
 define_label('_BALLTILTED?',			0x86);	
 define_label('_GAMEOVER?',				0x87);	
 
 define_label('=LAMPS',					0x2E0);		
 define_label('=FLAGS',					0x328);		# 8 bytes
 define_label('=ALT_FLAGS',				0x330);		# 8 bytes
+define_label('=THREAD_LIST_1',			0x366);
+define_label('=THREAD_LIST_2',			0x371);
 define_label('=STATUS_AREA_POINTER',	0x380);		# SC
 
 #----------------------------------------------------------------------
@@ -97,37 +105,37 @@ define_label('_ZEROCROSS_IRQ_CLEAR', 	0x3FFF);	# 7: R: Set to 1 when AC is curre
 # System Calls
 #----------------------------------------------------------------------
 
-define_syscall('RuntimeError',			0x8298,'B',1);	# NOTE 1: does not return
-define_syscall('RuntimeError_nonFatal',	0x82B6,'B');
+define_syscall('runtimeError',			0x8298,'B',1);	# NOTE 1: does not return
+define_syscall('runtimeError_nonFatal',	0x82B6,'B');
 define_syscall('Y=adjustment',			0x82F2,'A');
 define_syscall('A=adjustment',			0x82FF,'A');
 define_syscall('B=adjustment',			0x830C,'A');
 define_syscall('CC=switchClosed',		0x8319,'S');
 define_syscall('syscall_8339',			0x8339,'B');
-define_syscall('Sleep',					0x8346,'B');
-define_syscall('MemClearY',				0x836B,'B');
-define_syscall('MemSetBY',				0x8378,'B');
-define_syscall('SolCmd',				0x8385,'B');
-define_syscall('PulseFlasher',			0x8392,'B');
-define_syscall('SolCmd_wait',			0x839F,'B');
+define_syscall('sleep',					0x8346,'B');
+define_syscall('memClearY',				0x836B,'B');
+define_syscall('memSetBY',				0x8378,'B');
+define_syscall('solCmd',				0x8385,'B');
+define_syscall('pulseFlasher',			0x8392,'B');
+define_syscall('solCmd_wait',			0x839F,'B');
 define_syscall('syscall_83DB',			0x83DB,'B');
 define_syscall('syscall_83E8',			0x83E8,'B');
-define_syscall('LampOn',				0x841C,'L');
-define_syscall('LampOff',				0x842B,'L');
+define_syscall('lampOn',				0x841C,'L');
+define_syscall('lampOff',				0x842B,'L');
 define_syscall('CC=lampOn',				0x8449,'L');
-define_syscall('SetBit',				0x8480,'B');
-define_syscall('ClearBit',				0x848F,'B');
+define_syscall('setBit',				0x8480,'B');
+define_syscall('clearBit',				0x848F,'B');
 define_syscall('CC=bitSet?',			0x84AD,'B');
 define_syscall('sys_unknown_bitOp?',	0x851F,'B');
 define_syscall('syscall_8539',			0x8539,'B');
-define_syscall('PlaySound?',			0x8546,'B');
+define_syscall('playSound?',			0x8546,'B');
 define_syscall('syscall_8553',			0x8553,'B');
 define_syscall('syscall_85E1',			0x85E1,'B');
 define_syscall('syscall_85F1',			0x85F1,'B');
-define_syscall('SetFlag',				0x85B2,'F');
-define_syscall('LongJSR_indirect',		0x8621,'P');
+define_syscall('setFlag',				0x85B2,'F');
+define_syscall('longJSR_indirect',		0x8621,'P');
 define_syscall('syscall_865B',			0x865B,'W');
-define_syscall('LongSleep',				0x8679,'W');
+define_syscall('longSleep',				0x8679,'W');
 define_syscall('CC=threadRunning',		0x8690,'W');
 define_syscall('syscall_869E',			0x869E,'W');
 define_syscall('syscall_86AC',			0x86AC,'W');
@@ -139,22 +147,22 @@ define_syscall('syscall_87BE',			0x87BE,'W');
 define_syscall('CC=bitgroup_allOn',		0x87CB,'W');
 define_syscall('CC=bitgroup_allOff',	0x87D8,'W');
 define_syscall('syscall_88D5',			0x88D5,'W');
-define_syscall('LongJSR',				0x88F5,'R');
-define_syscall('LongJMP',				0x892F,'R',1);
+define_syscall('longJSR',				0x88F5,'R');
+define_syscall('longJMP',				0x892F,'R',1);
 define_syscall('syscall_8948',			0x8948,'R');
-define_syscall('MemCopyX',				0x89BE,'PB');
+define_syscall('memCopyX',				0x89BE,'PB');
 define_syscall('syscall_89DD',			0x89DD,'WB');
 define_syscall('syscall_8A9A',			0x8A9A,'WW');
-define_syscall('syscall_8AAA',			0x8AAA,'WW');
-define_syscall('MemClear',				0x8ABA,'PW');
-define_syscall('MemSet',				0x8ACA,'PBB');
-define_syscall('SpawnThread_0',			0x8B3D,'BWW');
-define_syscall('SpawnThread_1',			0x8B5A,'WR');
-define_syscall('SpawnThread_2',			0x8B77,'WR');
-define_syscall('SpawnThread_3',			0x8B9D,'WR');
-define_syscall('SpawnThread_4',			0x8BC3,'WR');
-define_syscall('SpawnThread_5',			0x8BF7,'WR');
-define_syscall('MemCopy',				0x8C2B,'WWB');
+define_syscall('CC=findThread',			0x8AAA,'WW');
+define_syscall('memClear',				0x8ABA,'PW');
+define_syscall('memSet',				0x8ACA,'PBB');
+define_syscall('spawnThread_0',			0x8B3D,'BWW');
+define_syscall('spawnThread_1',			0x8B5A,'WR');
+define_syscall('spawnThread_2',			0x8B77,'WR');
+define_syscall('spawnThread_3',			0x8B9D,'WR');
+define_syscall('spawnThread_4',			0x8BC3,'WR');
+define_syscall('spawnThread_5',			0x8BF7,'WR');
+define_syscall('memCopy',				0x8C2B,'WWB');
 define_syscall('syscall_D799',			0xD799,'WBW');
 define_syscall('syscall_FDB4',			0xFDB4,'W');
 define_syscall('syscall_FDA2',			0xFDA2,'W');
@@ -182,6 +190,9 @@ define_label('A=adjustmentA?==1',		0x92DE);
 define_label('D=adjustmentA?==1',		0x92EC);
 define_label('Y=adjustmentA?',			0x92F8);
 define_label('sys_exitThread',			0x99A2);
+define_label('sys_findThreadY',			0x9B34);
+define_label('sys_findThreadDY',		0x9B3D);
+define_label('find_thread_in_list',		0x9B55);
 define_label('sys_zeroCrossIRQ_clear',	0x9D00);
 define_label('sys_clearBit_AB',			0x9E92);
 define_label('sys_prep_BitShifter_AX',	0x9EA5);
