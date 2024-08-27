@@ -1,14 +1,15 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Sun Aug 25 22:01:47 2024
+#                    dlm: Tue Aug 27 09:54:59 2024
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 12 16 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 287 17 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Aug 25, 2024: - exported from [D711.pm]
 #				  - added support for [<>]RTS (LEXICAL LABELS)
+#	Aug 27, 2024: - cs_while_loop disabled
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -242,6 +243,7 @@ sub cs_loop_while($$$$$)
 }
 
 # more complex loop with test at beginning, and BRA back to test at end of block
+if (0) {
 sub cs_while_loop($$$$$$)
 {
 	my($addr,$eaddr,$test_op,$branch_op,$loop_op,$endloop_op) = @_;
@@ -282,6 +284,7 @@ sub cs_while_loop($$$$$$)
 	}
 	return 0;
 }
+} # code disabled
 					    
 # if-else
 sub cs_if_else($$$$$$$)
@@ -428,20 +431,24 @@ sub process_code_structure($$)
 		next unless defined($OP[$addr]);
 		next if defined($unstructured[$addr]);
 
-		next if cs_while_loop($addr,$eaddr,'BNE','BRA','_UNTIL_NE','_ENDLOOP'); 			# Assembler loops
-		next if cs_while_loop($addr,$eaddr,'BEQ','BRA','_UNTIL_EQ','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BLE','BRA','_UNTIL_LE','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BGE','BRA','_UNTIL_GE','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BLT','BRA','_UNTIL_LT','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BGT','BRA','_UNTIL_GT','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BHI','BRA','_UNTIL_HI','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BLS','BRA','_UNTIL_LS','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BCC','BRA','_UNTIL_CC','_ENDLOOP'); 	    
-		next if cs_while_loop($addr,$eaddr,'BCS','BRA','_UNTIL_CS','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BVC','BRA','_UNTIL_VC','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BVS','BRA','_UNTIL_VS','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BMI','BRA','_UNTIL_MI','_ENDLOOP');
-		next if cs_while_loop($addr,$eaddr,'BPL','BRA','_UNTIL_PL','_ENDLOOP');
+##
+##		WHILE LOOPS DISABLED Aug 27, 2024 BECAUSE THEY ARE EITHER USED VERY RARELY OR THIS
+##		CODE IS NOT WORKING.
+##
+##		next if cs_while_loop($addr,$eaddr,'BNE','BRA','_UNTIL_NE','_ENDLOOP'); 			# Assembler loops
+##		next if cs_while_loop($addr,$eaddr,'BEQ','BRA','_UNTIL_EQ','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BLE','BRA','_UNTIL_LE','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BGE','BRA','_UNTIL_GE','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BLT','BRA','_UNTIL_LT','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BGT','BRA','_UNTIL_GT','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BHI','BRA','_UNTIL_HI','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BLS','BRA','_UNTIL_LS','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BCC','BRA','_UNTIL_CC','_ENDLOOP'); 	    
+##		next if cs_while_loop($addr,$eaddr,'BCS','BRA','_UNTIL_CS','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BVC','BRA','_UNTIL_VC','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BVS','BRA','_UNTIL_VS','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BMI','BRA','_UNTIL_MI','_ENDLOOP');
+##		next if cs_while_loop($addr,$eaddr,'BPL','BRA','_UNTIL_PL','_ENDLOOP');
 
 		unless (defined($_cur_RPG)) {
 			next if cs_loop_while($addr,$saddr,'branch','_Loop','_EndLoop');					# WVM loops 
