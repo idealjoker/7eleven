@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Aug 26 17:10:33 2024
+#                    dlm: Tue Aug 27 14:45:47 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 128 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 30 29 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -27,6 +27,7 @@
 #	Aug 23, 2024: - decimalized !*Sleep args
 #	Aug 25, 2024: - renamed addScore because it was wrnog
 #				  - BUG: substr used wrong length arg
+#	Aug 27, 2024: - additions
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -74,6 +75,74 @@ sub disassemble_WPC_DMD()
 		def_WPC_stringRef('sysstr_gameName','System String');
 		def_WPC_stringRef('sysstr_gameNumber','System String');
 		def_WPC_stringRef('sysstr_buildDate','System String');
+
+		$Address = 0x813C;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_1');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_WORD_1');
+
+		$Address = 0x813F;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_1');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_WORD_1');
+
+		$Address = 0x8142;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_1');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_WORD_1');
+
+		$Address = 0x8145;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_1');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_1');
+
+		$Address = 0x814E;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_1');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_1');
+
+		$Address = 0x8151;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_1');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_1');
+
+		$Address = 0x8157;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_2');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_2');
+
+		$Address = 0x815A;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_3');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_3');
+
+		$Address = 0x8166;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_1');
+			$Address = WORD($Address-2); def_word_hex('_UNKNOWN_SYSTEM_WORD_1');
+
+		$Address = 0x8184;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_2');
+			$Address = WORD($Address-2); def_word_hex('_UNKNOWN_SYSTEM_WORD_2');
+
+		$Address = 0x8187;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_2');
+			$Address = WORD($Address-2); def_word_hex('_UNKNOWN_SYSTEM_WORD_2');
+
+		$Address = 0x818A;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_3');
+			$Address = WORD($Address-2); def_word_hex('_UNKNOWN_SYSTEM_WORD_3');
+
+		$Address = 0x8190;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_4');
+			$Address = WORD($Address-2); def_word_hex('_UNKNOWN_SYSTEM_WORD_4');
+
+		$Address = 0x8193;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_4');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_4');
+
+		$Address = 0x8199;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_5');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_5');
+
+		$Address = 0x819C;
+		def_ptr_hex('^=UNKNOWN_SYSTEM_TABLE_1');
+			$Address = WORD($Address-2); def_wordblock_hex(8,'=UNKNOWN_SYSTEM_TABLE_1','System Table');
+
+		$Address = 0x819F;
+		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_5');
+			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_5');
 
 		$Address = 0x8296;
 		def_ptr_hex('^=STATUS_AREA');

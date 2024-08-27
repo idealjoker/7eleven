@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Aug 27 13:42:49 2024
+#                    dlm: Tue Aug 27 14:46:55 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 33 42 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 33 37 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -30,7 +30,7 @@
 #	Aug 25, 2024: - op_LREL did not work
 #				  - improved labels of SpawnThread syscalls
 #	Aug 27, 2024: - generalized syscalls for !exitThread
-#				  - line spacing was wrong
+#				  - line spacing bugs
 # HISTORY END
 
 # NOTES:
@@ -134,140 +134,140 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 	if ($PB == 0b10000100) {														# no offset, direct
 		push(@{$OPA[$opa]},sprintf(',%s',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10010100) {														# no offset, indirect
 		push(@{$OPA[$opa]},sprintf('[,%s]',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if (($PB & 0b10000000) == 0) {													# 5-bit signed offset, direct
 		my($ofs) = $PB & 0b00011111;
 		$ofs = $ofs - 32 if ($ofs >= 16);						
 		push(@{$OPA[$opa]},sprintf('%d,%s',$ofs,$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10001000) {														# 8-bit signed offset, direct
 		my($ofs) = BYTE($addr+2);
 		$ofs = $ofs - 256 if ($ofs >= 128);						
 		push(@{$OPA[$opa]},sprintf('%d,%s',$ofs,$IR));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr - 3;
     }
 	if ($PB == 0b10011000) {														# 8-bit signed offset, indirect
 		my($ofs) = BYTE($addr+2);
 		$ofs = $ofs - 256 if ($ofs >= 128);						
 		push(@{$OPA[$opa]},sprintf('[%d,%s]',$ofs,$IR));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-3;
     }
 	if ($PB == 0b10001001) {														# 16-bit signed offset, direct
 		my($ofs) = WORD($addr+2);
 		$ofs = $ofs - 65536 if ($ofs >= 32768);						
 		push(@{$OPA[$opa]},sprintf('%d,%s',$ofs,$IR));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-4;
     }
 	if ($PB == 0b10011001) {														# 16-bit signed offset, indirect
 		my($ofs) = WORD($addr+2);
 		$ofs = $ofs - 65536 if ($ofs >= 32768);						
 		push(@{$OPA[$opa]},sprintf('[%d,%s]',$ofs,$IR));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-4;
     }
 	if ($PB == 0b10000110) {														# A-register offset, direct
 		push(@{$OPA[$opa]},sprintf('A,%s',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10010110) {														# A-register offset, indirect
 		push(@{$OPA[$opa]},sprintf('[A,%s]',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10000101) {														# B-register offset, direct
 		push(@{$OPA[$opa]},sprintf('B,%s',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10010101) {														# B-register offset, indirect
 		push(@{$OPA[$opa]},sprintf('[B,%s]',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10001011) {														# D-register offset, direct
 		push(@{$OPA[$opa]},sprintf('D,%s',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10010011) {														# D-register offset, indirect
 		push(@{$OPA[$opa]},sprintf('[D,%s]',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10000000) {														# post-increment by 1, direct
 		push(@{$OPA[$opa]},sprintf(',%s+',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10000001) {														# post-increment by 2, direct
 		push(@{$OPA[$opa]},sprintf(',%s++',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10010001) {														# post-increment by 2, indirect
 		push(@{$OPA[$opa]},sprintf('[,%s++]',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10000010) {														# post-decrement by 1, direct
 		push(@{$OPA[$opa]},sprintf(',%s-',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10000011) {														# post-decrement by 2, direct
 		push(@{$OPA[$opa]},sprintf(',%s--',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10010011) {														# post-decrement by 2, indirect
 		push(@{$OPA[$opa]},sprintf('[,%s--]',$IR));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-2;
     }
 	if ($PB == 0b10001100) {														# PC-relative 8-bit signed offset, direct
 		my($ofs) = BYTE($addr+2);
 		$ofs = $ofs - 256 if ($ofs >= 128);						
 		push(@{$OPA[$opa]},sprintf('%d,PCR',$ofs));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-3;
     }
 	if ($PB == 0b10011100) {														# PC-relative 8-bit signed offset, indirect
 		my($ofs) = BYTE($addr+2);
 		$ofs = $ofs - 256 if ($ofs >= 128);						
 		push(@{$OPA[$opa]},sprintf('[%d,PCR]',$ofs));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-3;
     }
 	if ($PB == 0b10001101) {														# PC-relative 16-bit signed offset, direct
 		my($ofs) = WORD($addr+2);
 		$ofs = $ofs - 65536 if ($ofs >= 32768);						
 		push(@{$OPA[$opa]},sprintf('%d,PCR',$ofs));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-4;
     }
 	if ($PB == 0b10011101) {														# PC-relative 16-bit signed offset, indirect
 		my($ofs) = WORD($addr+2);
 		$ofs = $ofs - 65536 if ($ofs >= 32768);						
 		push(@{$OPA[$opa]},sprintf('[%d,PCR]',$ofs));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-4;
     }
 	if ($PB == 0b10011111) {														# extended indirect
 		push(@{$OPA[$opa]},sprintf('[$%04X]',WORD($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-		return 1;
+		return $addr-4;
     }
 		
 	printf(STDERR "; WARNING: invalid postbyte %02X for $op indexed mode at address %04X\n",BYTE($addr+1),$addr)
@@ -470,7 +470,11 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next if op_DIR(0x07,$addr,$ind,'ASR'); 		next if op_DIR(0x08,$addr,$ind,'ASL');
 		next if op_DIR(0x09,$addr,$ind,'ROL'); 		next if op_DIR(0x0A,$addr,$ind,'DEC');
 		next if op_DIR(0x0C,$addr,$ind,'INC'); 		next if op_DIR(0x0D,$addr,$ind,'TST');
-		return if op_DIR(0x0E,$addr,$ind,'JMP');	next if op_DIR(0x0F,$addr,$ind,'CLR');
+		if (op_DIR(0x0E,$addr,$ind,'JMP')) {
+			insert_line($addr-3);
+			return;
+		}
+		next if op_DIR(0x0F,$addr,$ind,'CLR');
 
 		next if op_INH(0x12,$addr,$ind,'NOP'); 	next if op_INH(0x13,$addr,$ind,'SYNC');
 		return if op_LREL(0x16,$addr,$ind,'LBRA',$lbl_root,$follow_code); 
@@ -549,7 +553,11 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next if op_IDX(0x67,$addr,$ind,'ASR'); 		next if op_IDX(0x68,$addr,$ind,'ASL');
 		next if op_IDX(0x69,$addr,$ind,'ROL'); 		next if op_IDX(0x6A,$addr,$ind,'DEC');
 		next if op_IDX(0x6C,$addr,$ind,'INC'); 		next if op_IDX(0x6D,$addr,$ind,'TST'); 
-		return if op_IDX(0x6E,$addr,$ind,'JMP');	next if op_IDX(0x6F,$addr,$ind,'CLR');
+		if ($rv = op_IDX(0x6E,$addr,$ind,'JMP')) {
+			insert_empty_line($rv);
+			return;
+		}
+		next if op_IDX(0x6F,$addr,$ind,'CLR');
 
 		next if op_EXT(0x70,$addr,$ind,'NEG'); 		next if op_EXT(0x73,$addr,$ind,'COM');
 		next if op_EXT(0x74,$addr,$ind,'LSR'); 		next if op_EXT(0x76,$addr,$ind,'ROR');

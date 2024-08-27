@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Aug 27 09:50:39 2024
+#                    dlm: Tue Aug 27 14:44:38 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 20 37 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 21 35 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -18,17 +18,23 @@
 #	Aug 26, 2024: - added sycalls
 #				  - changed capitalization to be consistent with IVM
 #	Aug 27, 2024: - added !exitThread
+#				  - other additions
 # END OF HISTORY
 
 #----------------------------------------------------------------------
 # RAM Memory Map
 #----------------------------------------------------------------------
 
-define_label('_ROM_BANK_SHADOW',		0x11);		# SC
+define_label('__FIRQ_SPRINGBOARD_1',	0x08);
+define_label('__FIRQ_SPRINGBOARD_2',	0x0A);
+define_label('_ROM_BANK_SHADOW',		0x11);		# Scott
+define_label('__SPRINGBOARD',			0x12);
+
 define_label('__RUNNING_THREAD_ID',		0x53);
 define_label('__FINDTHREAD_ID',			0x5D);
 define_label('_FINDTHREAD_ID+1',		0x5E);
 define_label('__FINDTHREAD_MASK',		0x5F);
+
 define_label('_BALLTILTED?',			0x86);	
 define_label('_GAMEOVER?',				0x87);	
 
@@ -37,7 +43,7 @@ define_label('=FLAGS',					0x328);		# 8 bytes
 define_label('=ALT_FLAGS',				0x330);		# 8 bytes
 define_label('=THREAD_LIST_1',			0x366);
 define_label('=THREAD_LIST_2',			0x371);
-define_label('=STATUS_AREA_POINTER',	0x380);		# SC
+define_label('=STATUS_AREA_POINTER',	0x380);		# Scott
 
 #----------------------------------------------------------------------
 # https://bcd.github.io/freewpc/The-WPC-Hardware.html
