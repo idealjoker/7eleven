@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Aug 27 09:50:39 2024
+#                    dlm: Tue Aug 27 17:17:51 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 20 37 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 153 89 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -18,6 +18,7 @@
 #	Aug 26, 2024: - added sycalls
 #				  - changed capitalization to be consistent with IVM
 #	Aug 27, 2024: - added !exitThread
+#				  - added 'T' argument type
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -106,8 +107,8 @@ define_label('_ZEROCROSS_IRQ_CLEAR', 	0x3FFF);	# 7: R: Set to 1 when AC is curre
 # System Calls
 #----------------------------------------------------------------------
 
-define_syscall('runtimeError',			0x8298,'B',1);	# NOTE 1: does not return
-define_syscall('runtimeError_nonFatal',	0x82B6,'B');
+define_syscall('fatalError',			0x8298,'B',1);	# NOTE 1: does not return
+define_syscall('Error',					0x82B6,'B');
 define_syscall('Y=adjustment',			0x82F2,'A');
 define_syscall('A=adjustment',			0x82FF,'A');
 define_syscall('B=adjustment',			0x830C,'A');
@@ -149,7 +150,7 @@ define_syscall('CC=bitgroup_allOn',		0x87CB,'W');
 define_syscall('CC=bitgroup_allOff',	0x87D8,'W');
 define_syscall('syscall_88D5',			0x88D5,'W');
 define_syscall('longJSR',				0x88F5,'R');
-define_syscall('longJMP',				0x892F,'R',1);
+define_syscall('longJMP',				0x892F,'R',1);			# NOTE 1: does not return
 define_syscall('syscall_8948',			0x8948,'R');
 define_syscall('memCopyX',				0x89BE,'PB');
 define_syscall('syscall_89DD',			0x89DD,'WB');
@@ -158,11 +159,11 @@ define_syscall('CC=findThread',			0x8AAA,'WW');
 define_syscall('memClear',				0x8ABA,'PW');
 define_syscall('memSet',				0x8ACA,'PBB');
 define_syscall('spawnThread_0',			0x8B3D,'BWW');
-define_syscall('spawnThread_1',			0x8B5A,'WR');
-define_syscall('spawnThread_2',			0x8B77,'WR');
-define_syscall('spawnThread_3',			0x8B9D,'WR');
-define_syscall('spawnThread_4',			0x8BC3,'WR');
-define_syscall('spawnThread_5',			0x8BF7,'WR');
+define_syscall('spawnThread_1',			0x8B5A,'TR');
+define_syscall('spawnThread_2',			0x8B77,'TR');
+define_syscall('spawnThread_3',			0x8B9D,'TR');
+define_syscall('spawnThread_4',			0x8BC3,'TR');
+define_syscall('spawnThread_5',			0x8BF7,'TR');
 define_syscall('memCopy',				0x8C2B,'WWB');
 define_syscall('exitThread',			0x99A2,'',2);			# NOTE 2: sycall is JMP target
 define_syscall('syscall_D799',			0xD799,'WBW');

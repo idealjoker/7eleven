@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Aug 27 13:42:49 2024
+#                    dlm: Tue Aug 27 17:08:08 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 33 42 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 414 58 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -378,6 +378,9 @@ sub disassemble_syscall($$)
 				unless (BYTE($addr)>=0 && BYTE($addr)<=99);
 			push(@{$OPA[$oaddr]},sprintf('Flag#%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'T') {											# T: Thread
+			push(@{$OPA[$oaddr]},sprintf('Thread#%04X',WORD($addr)));
+			$decoded[$addr++] = $decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'A') {											# A: Adjustment
 			die(sprintf("Invalid adjustment argument Adj#%02X",BYTE($addr)))
 				unless (BYTE($addr)>=0 && BYTE($addr)<=255);
@@ -399,14 +402,16 @@ sub disassemble_syscall($$)
 
 			my($orpg) = select_WPC_RPG($trpg);
 			my($tlbl) = sprintf('library_%04X',$taddr);
+			my($divider);
 			if ($LBL[hex(substr($OPA[$oaddr][0],1,4))] =~ m{pawnThread}) {
-				$tlbl = sprintf('Thread#%s_handler',substr($OPA[$oaddr][1],1,4));
+				$tlbl = sprintf('Thread#%s_handler',substr($OPA[$oaddr][1],-4));
+				$divider = 'Thread Handler';
 			}
 			$tlbl = $LBL[$taddr] if defined($LBL[$taddr]);
 			$tlbl = setLabel($tlbl,$taddr);
 		    
 			if ($follow_code) {
-				disassemble_asm($ind,$taddr,$tlbl,undef,$follow_code);
+				disassemble_asm($ind,$taddr,$tlbl,$divider,$follow_code);
 			}
 			select_WPC_RPG($orpg);
 			push(@{$OPA[$oaddr]},$tlbl);

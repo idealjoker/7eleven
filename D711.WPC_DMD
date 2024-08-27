@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Aug 26 17:10:33 2024
+#                    dlm: Tue Aug 27 17:11:46 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 128 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 30 60 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -27,6 +27,7 @@
 #	Aug 23, 2024: - decimalized !*Sleep args
 #	Aug 25, 2024: - renamed addScore because it was wrnog
 #				  - BUG: substr used wrong length arg
+#	AUg 27, 2024: - BUG: @DIVIDER was not swapped in and out
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -164,6 +165,7 @@ sub select_WPC_RPG($)
 	@{$LBLPG[$_cur_RPG]}	 	= @LBL[0x4000..0x7FFF]; 		    
 	@{$AUTO_LBLPG[$_cur_RPG]} 	= @AUTO_LBL[0x4000..0x7FFF]; 		    
 	@{$decodedPG[$_cur_RPG]} 	= @decoded[0x4000..0x7FFF];
+	@{$DIVIDERPG[$_cur_RPG]} 	= @DIVIDER[0x4000..0x7FFF];
 	@{$ROMPG[$_cur_RPG]}	 	= @ROM[0x4000..0x7FFF]
 		unless(@{$ROMPG[$_cur_RPG]});
     
@@ -179,6 +181,7 @@ sub select_WPC_RPG($)
 	@LBL[0x4000..0x7FFF] 		= @{$LBLPG[$RPG]};
 	@AUTO_LBL[0x4000..0x7FFF] 	= @{$AUTO_LBLPG[$RPG]};
 	@decoded[0x4000..0x7FFF] 	= @{$decodedPG[$RPG]};
+	@DIVIDER[0x4000..0x7FFF] 	= @{$DIVIDERPG[$RPG]};
 	if (@{$ROMPG[$RPG]}) {
 		@ROM[0x4000..0x7FFF]	= @{$ROMPG[$RPG]};										# copy from page buffer
 	} else {

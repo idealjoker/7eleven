@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Aug 26 16:42:11 2024
+#					 dlm: Tue Aug 27 17:12:20 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 533 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 226 64 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -223,6 +223,7 @@
 #                 - added support for <_LOOP and >_EXITLOOP pseusdo labels
 #   Aug 25, 2024: - exported [D711.CodeStructureAnalysis]
 #			      - BUG: nested ENDIFs used wrong indentation
+#	Aug 27, 2024: - suppressed multiple dividers at same address
 # END OF HISTORY
 
 # TO-DO:
@@ -444,10 +445,17 @@ sub label_address($$@)                                          # save auto lbl 
     my($addr,$auto_lbl,$nosuffix) = @_;
     if (($AUTO_LBL[$addr] =~ m{_[0-9A-F]{4}$} ||
          $AUTO_LBL[$addr] =~ m{_[0-9A-F]{4}\[[0-9A-F]{2}\]$})) {
-        $auto_lbl = ($auto_lbl =~ m{^\.}) ? '.' : '';
-        $auto_lbl .= (defined($_cur_RPG) && $addr >= 0x8000)
-                   ? 'syscall' : 'library';
-    }
+		## when the following if is disabled, local labels will be named after the
+		## branch op that calls it first (or last?)         	
+        if ($auto_lbl =~ m{^\.}) {
+			$auto_lbl = ($auto_lbl =~ m{BSR}) ? '.subroutine' : '.label';
+        } else {
+        	$auto_lbl = (defined($_cur_RPG) && $addr >= 0x8000)
+                   	  ? 'syscall' : 'library';
+        }
+    } elsif ($auto_lbl =~ m{^\.}) {
+		$auto_lbl = ($auto_lbl =~ m{BSR}) ? '.subroutine' : '.label';
+	}
     my($ssuffix) = defined($_cur_RPG) ? sprintf('[%02X]',$_cur_RPG) : ''
         if ($addr < 0x8000);
     $auto_lbl = $` if ($auto_lbl =~ m{\[[0-9A-F]{2}\]$});       
@@ -569,6 +577,7 @@ sub insert_divider($$)                                          # Subroutine, Ju
     my($addr,$label) = @_;
 #   return if ($DIVIDER[$addr] || !defined($label));
     return unless defined($label);
+	return if $DIVIDER[$addr];
 
     $DIVIDER[$addr] = 1;
     push(@{$EXTRA[$addr]},'');
