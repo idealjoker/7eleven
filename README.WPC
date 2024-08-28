@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Wed Aug 28 15:27:04 2024
+                    dlm: Wed Aug 28 18:50:49 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 15 12 NIL 0 0 72 3 2 4 NIL ofnI
+                    uE-Info: 25 45 NIL 0 0 72 3 2 4 NIL ofnI
 ======================================================================
 
 =Bit Shifter=
@@ -22,8 +22,8 @@ Aux Functions:
 	sys_prep_BitShifter_AB		set up A & B for bitshifter op
 
 Buffers:
-	$1F		=LAMPS?
+	$1F		=???			not at all common
 	$27		=SWITCHES
-	$2E0	=FLAGS?
-	$2E8	=FLAGS_ALT?
+	$2E0	=LAMPS?
+	$2E8	=LAMPS_ALT?
 	

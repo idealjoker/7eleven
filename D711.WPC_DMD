@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Aug 28 09:27:44 2024
+#                    dlm: Wed Aug 28 18:42:45 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 146 12 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 172 47 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -44,6 +44,7 @@ sub disassemble_WPC_DMD()
 	my($dasm_CPU_vectors) 		= 1;
 	my($dasm_system_pointers) 	= 1;
 	my($dasm_switchTable)		= 1;
+	my($dasm_sys_gaps)			= 1;
 	my($dasm_fontTable)			= 0;
 	my($dasm_DMDtable)			= 0;
 
@@ -162,6 +163,26 @@ sub disassemble_WPC_DMD()
 		$Address = 0x81C5;
 		$Address = def_WPC_ref('=SWITCHTABLE');
 			def_WPC_switchTable(undef,'Switch Table');					# label already defined
+	}
+
+	if ($dasm_sys_gaps) {												# code disassembled to help understand big picture
+		$Address = 0x82CB; def_code('unknown_82CB');
+		$Address = 0x82E2; def_code('unknown_82E2');
+		$Address = 0x8329; def_code('unknown_8329');
+		$Address = 0x835E; def_code('memCopy_XY');
+		$Address = 0x8378; def_code('unknown_8378');
+		$Address = 0x83B0; def_code('unknown_83B0');
+		$Address = 0x83C1; def_code('unknown_83C1');
+		$Address = 0x83CE; def_code('unknown_83CE');
+		$Address = 0x83F5; def_code('unknown_83F5');
+		$Address = 0x8402; def_code('unknown_8402');
+		$Address = 0x840F; def_code('unknown_840F');
+		$Address = 0x843A; def_code('unknown_lampOp');
+		$Address = 0x8458; def_code('unknown_lamp_or_bitOp_1');
+		$Address = 0x846C; def_code('unknown_lamp_or_bitOp_2');
+		$Address = 0x849E; def_code('unknown_bitOp');
+		$Address = 0x8512; def_code('unknown_8512');
+		$Address = 0x852C; def_code('unknown_852C');
 	}
 
 	if ($dasm_fontTable) {
