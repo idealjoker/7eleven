@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Aug 27 14:45:47 2024
+#                    dlm: Wed Aug 28 09:27:44 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 30 29 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 146 12 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -27,7 +27,10 @@
 #	Aug 23, 2024: - decimalized !*Sleep args
 #	Aug 25, 2024: - renamed addScore because it was wrnog
 #				  - BUG: substr used wrong length arg
-#	Aug 27, 2024: - additions
+#	Aug 27, 2024: - BUG: @DIVIDER was not swapped in and out
+#				  - additions
+#	Aug 28, 2024: - BUG: switchTable allowed labels for bytes
+#				  - BUG: wrong page labels in set_WPC_ref
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -76,73 +79,79 @@ sub disassemble_WPC_DMD()
 		def_WPC_stringRef('sysstr_gameNumber','System String');
 		def_WPC_stringRef('sysstr_buildDate','System String');
 
+		my($ubyte,$uword);
+
 		$Address = 0x813C;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_1');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_WORD_1');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
 
 		$Address = 0x813F;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_1');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_WORD_1');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
 
 		$Address = 0x8142;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_1');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_WORD_1');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
 
 		$Address = 0x8145;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_1');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_1');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
 
 		$Address = 0x814E;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_1');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_1');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
 
 		$Address = 0x8151;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_1');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_1');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
 
 		$Address = 0x8157;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_2');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_2');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
 
 		$Address = 0x815A;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_3');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_3');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
 
 		$Address = 0x8166;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_1');
-			$Address = WORD($Address-2); def_word_hex('_UNKNOWN_SYSTEM_WORD_1');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
+			def_word_hex();
 
 		$Address = 0x8184;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_2');
-			$Address = WORD($Address-2); def_word_hex('_UNKNOWN_SYSTEM_WORD_2');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
+			def_word_hex();
 
 		$Address = 0x8187;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_2');
-			$Address = WORD($Address-2); def_word_hex('_UNKNOWN_SYSTEM_WORD_2');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
+			def_word_hex();
 
 		$Address = 0x818A;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_3');
-			$Address = WORD($Address-2); def_word_hex('_UNKNOWN_SYSTEM_WORD_3');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
+			def_word_hex();
 
 		$Address = 0x8190;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_WORD_4');
-			$Address = WORD($Address-2); def_word_hex('_UNKNOWN_SYSTEM_WORD_4');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
+			def_word_hex();
 
 		$Address = 0x8193;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_4');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_4');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
 
 		$Address = 0x8199;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_5');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_5');
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
 
 		$Address = 0x819C;
-		def_ptr_hex('^=UNKNOWN_SYSTEM_TABLE_1');
-			$Address = WORD($Address-2); def_wordblock_hex(8,'=UNKNOWN_SYSTEM_TABLE_1','System Table');
+		$Address = def_WPC_ref('=UNKNOWN_SYSTEM_TABLE_1');
+			def_wordblock_hex(8,'=UNKNOWN_SYSTEM_TABLE_1','System Table');
 
-		$Address = 0x819F;
-		def_ptr_hex('^_UNKNOWN_SYSTEM_BYTE_5');
-			$Address = WORD($Address-2); def_byte_hex('_UNKNOWN_SYSTEM_BYTE_5');
+        $Address = 0x819F;
+		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+			def_byte_hex();
+
+		$Address = 0x81B6;
+		$Address = def_WPC_ref('=BITSHIFTER_LOOKUPTABLE');
+			def_byteblock_hex(8);
 
 		$Address = 0x8296;
 		def_ptr_hex('^=STATUS_AREA');
@@ -152,7 +161,7 @@ sub disassemble_WPC_DMD()
 	if ($dasm_switchTable) {
 		$Address = 0x81C5;
 		$Address = def_WPC_ref('=SWITCHTABLE');
-		def_WPC_switchTable(undef,'Switch Table');					# label already defined
+			def_WPC_switchTable(undef,'Switch Table');					# label already defined
 	}
 
 	if ($dasm_fontTable) {
@@ -233,6 +242,7 @@ sub select_WPC_RPG($)
 	@{$LBLPG[$_cur_RPG]}	 	= @LBL[0x4000..0x7FFF]; 		    
 	@{$AUTO_LBLPG[$_cur_RPG]} 	= @AUTO_LBL[0x4000..0x7FFF]; 		    
 	@{$decodedPG[$_cur_RPG]} 	= @decoded[0x4000..0x7FFF];
+	@{$DIVIDERPG[$_cur_RPG]} 	= @DIVIDER[0x4000..0x7FFF];
 	@{$ROMPG[$_cur_RPG]}	 	= @ROM[0x4000..0x7FFF]
 		unless(@{$ROMPG[$_cur_RPG]});
     
@@ -248,6 +258,7 @@ sub select_WPC_RPG($)
 	@LBL[0x4000..0x7FFF] 		= @{$LBLPG[$RPG]};
 	@AUTO_LBL[0x4000..0x7FFF] 	= @{$AUTO_LBLPG[$RPG]};
 	@decoded[0x4000..0x7FFF] 	= @{$decodedPG[$RPG]};
+	@DIVIDER[0x4000..0x7FFF] 	= @{$DIVIDERPG[$RPG]};
 	if (@{$ROMPG[$RPG]}) {
 		@ROM[0x4000..0x7FFF]	= @{$ROMPG[$RPG]};										# copy from page buffer
 	} else {
@@ -301,8 +312,8 @@ sub def_WPC_switchTable(@)
 		$IND[$opaddr] = $data_indent; $TYPE[$opaddr] =  $CodeType_data;
 		$OP[$opaddr] = '.DBBRB';
 		$REM[$opaddr] = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('Switch#%02X',$sw);
-		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
-		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
+		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
+		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 
 		my($ta,$tp) = (WORD($Address),BYTE($Address+2));
 		my($swn) = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('Switch#%02X',$sw);
@@ -311,12 +322,12 @@ sub def_WPC_switchTable(@)
 		WPC_codeRef($swn.'_handler','Switch Handler');
 		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
-		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
+		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('Lamp#%02X',BYTE($Address))); $decoded[$Address++] = 1;
-		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
-		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
-		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
-		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address))); $decoded[$Address++] = 1;
+		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
+		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
+		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
+		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 	}
 }   
 		    
@@ -340,7 +351,7 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 
 	$pointee_lbl = $` if ($pointee_lbl =~ m{\[[0-9A-F]{2}\]$});            					# remove previous RPG if there is one
 	$pointee_lbl .= sprintf('[%02X]',$_cur_RPG)
-		unless ($_cur_RPG == 0xFF);
+		unless ($RPG == 0xFF);
 	setLabel("^$pointee_lbl",$Address);
 	
 	my($usr_lbl) = $LBL[$pointee_addr];

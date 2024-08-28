@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Aug 27 14:46:55 2024
+#                    dlm: Wed Aug 28 08:06:27 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 33 37 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 34 74 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -31,6 +31,7 @@
 #				  - improved labels of SpawnThread syscalls
 #	Aug 27, 2024: - generalized syscalls for !exitThread
 #				  - line spacing bugs
+#	Aug 28, 2024: - BUG: syscall byte arguments allowed label substitution
 # HISTORY END
 
 # NOTES:
@@ -361,7 +362,7 @@ sub disassemble_syscall($$)
 			push(@{$OPA[$oaddr]},label_address(WORD($addr),$lbl_root));
 			$decoded[$addr++] = $decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'B') {											# B: byte
-			push(@{$OPA[$oaddr]},sprintf('$%02X',BYTE($addr)));
+			push(@{$OPA[$oaddr]},sprintf('$%02X!',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'S') {											# S: switch
 			die(sprintf("Invalid switch argument Switch#%02X",BYTE($addr)))
@@ -378,6 +379,9 @@ sub disassemble_syscall($$)
 				unless (BYTE($addr)>=0 && BYTE($addr)<=99);
 			push(@{$OPA[$oaddr]},sprintf('Flag#%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'T') {											# T: Thread
+			push(@{$OPA[$oaddr]},sprintf('Thread#%04X',WORD($addr)));
+			$decoded[$addr++] = $decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'A') {											# A: Adjustment
 			die(sprintf("Invalid adjustment argument Adj#%02X",BYTE($addr)))
 				unless (BYTE($addr)>=0 && BYTE($addr)<=255);
@@ -399,14 +403,16 @@ sub disassemble_syscall($$)
 
 			my($orpg) = select_WPC_RPG($trpg);
 			my($tlbl) = sprintf('library_%04X',$taddr);
+			my($divider);
 			if ($LBL[hex(substr($OPA[$oaddr][0],1,4))] =~ m{pawnThread}) {
-				$tlbl = sprintf('Thread#%s_handler',substr($OPA[$oaddr][1],1,4));
+				$tlbl = sprintf('Thread#%s_handler',substr($OPA[$oaddr][1],-4));
+				$divider = 'Thread Handler';
 			}
 			$tlbl = $LBL[$taddr] if defined($LBL[$taddr]);
 			$tlbl = setLabel($tlbl,$taddr);
 		    
 			if ($follow_code) {
-				disassemble_asm($ind,$taddr,$tlbl,undef,$follow_code);
+				disassemble_asm($ind,$taddr,$tlbl,$divider,$follow_code);
 			}
 			select_WPC_RPG($orpg);
 			push(@{$OPA[$oaddr]},$tlbl);

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Tue Aug 27 09:54:59 2024
+#                    dlm: Wed Aug 28 08:21:36 2024
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 287 17 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 44 109 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -41,6 +41,7 @@ sub same_block($$@)
 	##local($trace) = ($la == 0x5B1F && $ha == 0x5B38) ? 1 : 0;
 
 	##	local($trace) = ($la == 0x6D3F && $ha == 0x6D48) ? 1 : 0;
+	## local($trace) = ($la == 0x6D3F && $ha == 0x6D48) ? 1 : 0;		# nested loop with exit from interior
 
 	##local($trace) = ($la == 0x6563 && $ha == 0x6575) ? 1 : 0;		# AP
 	##	local($trace) = ($la == 0x64BE && $ha == 0x64D3) ? 1 : 0;
