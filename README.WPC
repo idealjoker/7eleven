@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Wed Aug 28 18:50:49 2024
+                    dlm: Wed Aug 28 19:08:42 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 25 45 NIL 0 0 72 3 2 4 NIL ofnI
+                    uE-Info: 25 63 NIL 0 0 72 3 2 4 NIL ofnI
 ======================================================================
 
 =Bit Shifter=
@@ -22,8 +22,10 @@ Aux Functions:
 	sys_prep_BitShifter_AB		set up A & B for bitshifter op
 
 Buffers:
-	$1F		=???			not at all common
-	$27		=SWITCHES
-	$2E0	=LAMPS?
-	$2E8	=LAMPS_ALT?
+	$1F		=???			not at all common, tracing syscalls
+	$27		=SWITCHES		tracing CC=switchClosed
+	$2E0	=LAMPS			tracing lampOn
+	$2E8	=LAMPS_ALT?		routine at 9EF1
+	$320	=BLINK_FLAG?	2E0+40
+	$328	=FLAGS			2E0+48
 	
