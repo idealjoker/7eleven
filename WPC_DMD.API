@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Aug 31 10:35:05 2024
+#                    dlm: Sat Aug 31 13:57:21 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 130 30 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 24 51 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -21,6 +21,7 @@
 #				  - added 'T' argument type
 #				  - other additions
 #	Aug 30, 2024: - added errors
+#	Aug 31, 2024: - lamp matrices & other additions
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -43,12 +44,22 @@ define_label('__FINDTHREAD_MASK',		0x5F);
 define_label('_BALLTILTED?',			0x86);	
 define_label('_GAMEOVER?',				0x87);	
 
-define_label('=LAMPS',					0x2E0);		
-define_label('=LAMPS_ALTBUF?',			0x2E8);		# 8 bytes
-													# 48-byte gap (other lamp buffers?)
-define_label('=BLINK_FLAG?',			0x320);		# 8 bytes
-define_label('=FLAGS',					0x328);		# 8 bytes
-define_label('=FLAGS_HIGH',				0x330);		# 8 bytes
+define_label('_ISR_MATRIXBYTE',			0x9C);
+define_label('_ISR_MATRIXBYTE_TMP',		0x9D);
+define_label('_ISR_TMP_A',				0x9E);
+define_label('__ISR_TMP_X',				0x9F);
+
+define_label('=LAMP_MATRIX_00_LOGICAL',	0x2E0);		# Lamp and Bit Buffers
+define_label('=LAMP_MATRIX_08_PRIMARY',	0x2E8);		
+define_label('=LAMP_MATRIX_10_MASK',	0x2F0);		
+define_label('=LAMP_MATRIX_18_DATA',	0x2F8);		
+define_label('=LAMP_MATRIX_20_MASK',	0x300);		
+define_label('=LAMP_MATRIX_28_DATA',	0x308);		
+define_label('=LAMP_MATRIX_30_MASK',	0x310);		
+define_label('=LAMP_MATRIX_38_DATA',	0x318);		
+define_label('=BLINK_MATRIX',			0x320);
+define_label('=FLAGS',					0x328);
+define_label('=FLAGS_HIGH',				0x330);
 
 define_label('=THREAD_LIST_1',			0x366);
 define_label('=THREAD_LIST_2',			0x371);
@@ -141,7 +152,7 @@ define_syscall('lampOff',				0x842B,'L');
 define_syscall('lampOn?',				0x8449,'L');
 define_syscall('setFlag',				0x8480,'F');
 define_syscall('clearFlag',				0x848F,'F');
-define_syscall('flagSet?',				0x84AD,'B');
+define_syscall('flagSet?',				0x84AD,'F');
 define_syscall('sys_unknown_bitOp?',	0x851F,'B');
 define_syscall('syscall_8539',			0x8539,'B');
 define_syscall('playSound??',			0x8546,'B');
@@ -150,9 +161,9 @@ define_syscall('syscall_85E1',			0x85E1,'B');
 define_syscall('syscall_85F1',			0x85F1,'B');
 define_syscall('unknown_Flag??Op',		0x85B2,'B');
 define_syscall('longJSR_indirect',		0x8621,'P');
-define_syscall('sys_unknown_adOp',		0x865B,'AB');
+define_syscall('AD_value=?',			0x865B,'AB');
 define_syscall('longSleep',				0x8679,'W');
-define_syscall('threadRunning?',		0x8690,'W');
+define_syscall('threadRunning?',		0x8690,'T');
 define_syscall('syscall_869E',			0x869E,'W');
 define_syscall('syscall_86AC',			0x86AC,'W');
 define_syscall('syscall_86D0',			0x86D0,'W');

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Aug 31 09:48:14 2024
+#                    dlm: Sat Aug 31 13:57:51 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 361 39 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 36 87 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -33,6 +33,7 @@
 #				  - BUG: wrong page labels in set_WPC_ref
 #	Aug 29, 2024: - moved extra lines after RTS, JMP, etc in here from [D711.M6809]
 #	Aug 31, 2024: - moved API loading into disassemble_WPC_DMD
+#				  - BUG: decimalization of sleep args did not work for lower case sleep
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -221,7 +222,7 @@ sub apply_magic_WPC_DMD($$)
 			undef($LBL[$addr+3])								# should also undef Lbl!
 				if ($Lbl_refs{$OPA[$addr][0]} == 1);
 			splice(@{$OPA[$addr]},0,1);
-		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{Sleep$}) {
+		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{leep$}) {
 			$OPA[$addr][1] = hex(substr($OPA[$addr][1],1,4));
 		} elsif ($IND[$addr] == $code_base_indent &&
 					(isMember($OP[$addr],'RTS','BRA','LBRA','JMP') || $REM[$addr] eq 'RTS')) {
@@ -559,7 +560,7 @@ sub defFlag($$)
 	my($no,$name) = @_;
 
 	die("defFlag: invalid flag number $no\n")
-		unless ($no>=0 && $no<65);
+		unless ($no>0 && $no<=0x80);
 	$Flag[$no] = $name;
 }
 

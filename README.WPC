@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Fri Aug 30 14:35:50 2024
+                    dlm: Sat Aug 31 13:36:22 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 42 37 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 41 32 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -15,18 +15,36 @@
 
 =Lamps and Flags (Bits)=
 
-Byte Value		7eleven			Buffer	Offset
---------------------------------------------------
-$00-$3F			Lamp#01-40		$02E8	$00
-$40-$7F			Flag#01-40		$0328	$48
-$80-$BF			illegal
-$C0-$FF			Flag#41-7F		$0330	$50
+	Byte Value		7eleven     
+	----------------------------
+	$00-$3F 		Lamp#01-40  
+	$40-$7F 		Flag#01-40  
+	$80-$BF 		illegal
+	$C0-$FF         Flag#41-80  
+
 
 -Blinking-
 
 - use setBit, bitSet? syscalls with blink buffer offset ($40)
 	!setBit L_Lock_left $40
 	!bitSet? L_EscapeRoute_10M $40
+
+
+-Bit Buffers / Lamp Matrices-
+
+	offset	meaning
+	------------------------------------------------------------
+	$00 	logical matrix
+	$08 	primary lamp matrix (used for blinking?)
+	$10 	masked from primary ($08)
+	$18 	override data
+	$20 	masked from previous ($08,$18)
+	$28 	override data
+	$30 	masked from previous ($08,$18,$28)
+	$38 	override data
+	$40 	blink matrix
+	$48 	Flag#01-40
+	$50     Flag#41-80
 
 ----------------------------------------------------------------------
 
