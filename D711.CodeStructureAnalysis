@@ -1,15 +1,17 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Wed Aug 28 08:21:36 2024
+#                    dlm: Thu Aug 29 09:11:53 2024
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 44 109 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 49 4 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Aug 25, 2024: - exported from [D711.pm]
 #				  - added support for [<>]RTS (LEXICAL LABELS)
 #	Aug 27, 2024: - cs_while_loop disabled
+#	Aug 28, 2024: - BUG: exit_from did not handle RTS and RTI correctly
+#				  - BUG: branch_into did allow BSR
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -42,6 +44,9 @@ sub same_block($$@)
 
 	##	local($trace) = ($la == 0x6D3F && $ha == 0x6D48) ? 1 : 0;
 	## local($trace) = ($la == 0x6D3F && $ha == 0x6D48) ? 1 : 0;		# nested loop with exit from interior
+
+	##local($trace) = ($la == 0x9EF1 && $ha == 0x9F16) ? 1 : 0;		
+	##local($trace) = ($la == 0x9EF6 && $ha == 0x9F01) ? 1 : 0;		
 
 	##local($trace) = ($la == 0x6563 && $ha == 0x6575) ? 1 : 0;		# AP
 	##	local($trace) = ($la == 0x64BE && $ha == 0x64D3) ? 1 : 0;
@@ -116,12 +121,15 @@ sub exit_from_block($$$)
 	
 	ADDRESS: for (my($a)=$la; $a<=$ha; $a++) {
 		next unless defined($OP[$a]);
-		printf(STDERR "%04X: $OP[$a] $OPA[$a][0] (%04X,%04X)\n",$a,$la,$ha)
+		printf(STDERR "\t%04X: $OP[$a] $OPA[$a][0] (%04X,%04X)\n",$a,$la,$ha)
 			if $trace;
 
-		my($trg) = $OPA[$a][0];
-		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
-		next unless numberp($trg);													# LOOPS already decoded => BRA to _ExitLoop and _NextLoop are okay
+		my($trg);
+		if (defined($OPA[$a][0])) {
+			$trg = $OPA[$a][0];
+			$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
+			next unless numberp($trg);													# LOOPS already decoded => BRA to _ExitLoop and _NextLoop are okay
+		}
 
 		if ($if_block) {															# _IF/_ELSE/_ENDIF
 			next unless ($OP[$a] =~ m{^L?B..$}  && !($OP[$a] =~ m{^L?BSR$}));		# not an exit unless it's a branch
@@ -130,7 +138,7 @@ sub exit_from_block($$$)
 				next if $a == $la;													# _IF always starts with conditional branch
 				if ($a < $ha-2) {											
 					if ($trg<$la || $trg>$ha) {	
-						printf(STDERR "%04X: $OP[$a] $OPA[$a][0] (%04X,%04X) -- trg = %04X\n",$a,$la,$ha,$trg)
+						printf(STDERR "\t%04X: $OP[$a] $OPA[$a][0] (%04X,%04X) -- trg = %04X\n",$a,$la,$ha,$trg)
 							if $trace;
 						return 1;
 	            	}
@@ -152,6 +160,7 @@ sub exit_from_block($$$)
 	            }
 			}
         } else {																	# _LOOP
+        	print(STDERR "testing for RTS, RTI...\n") if $trace;
         	return 1 if isMember($OP[$a],'RTS','RTI');								# RTS, RTI are exits
         	return 1 if $OP[$a] =~ m{^PUL} && $OPA[$a][0] =~ m{PC$};				# PUL? PC is an exit
 
@@ -175,15 +184,14 @@ sub branch_into_block($$@)
 
 	my($addr) = $la;
 	while ($la-(--$addr) <= 128) {
-		next unless defined($OP[$addr]) &&
-					($OP[$addr] =~ m{^B..$} && $OP[$addr] ne 'BSR' );
+		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^B..$};
 		my($trg) = $OPA[$addr][0];
 		next if isMember($trg,'<_LOOP','>_EXITLOOP');
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
 		die("$OP[$addr] $OPA[$addr][0]") unless numberp($trg);
-		printf(STDERR "$OP[$addr] $OPA[$addr][0]\n") if $trace;
+		printf(STDERR "\t%04X: $OP[$addr] $OPA[$addr][0]\n",$addr) if $trace;
 		if ($trg >= $la && $trg <= $ha) {
-			printf(STDERR "<%04X> %04X:%04X:%04X $allowed_branch\n",$addr,$la,$trg,$ha)
+			printf(STDERR "\t<%04X> %04X:%04X:%04X $allowed_branch\n",$addr,$la,$trg,$ha)
 				if $trace;
 			next if $allowed_branch--;
 			return 1;
@@ -192,13 +200,12 @@ sub branch_into_block($$@)
 
 	$addr = $ha;
 	while ((++$addr)-$ha <= 128) {
-		next unless defined($OP[$addr]) &&
-					($OP[$addr] =~ m{^B..$} && $OP[$addr] ne 'BSR' );
+		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^B..$};
 		my($trg) = $OPA[$addr][0];
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
 		next if isMember($trg,'<_LOOP','>_EXITLOOP');
 		if ($trg >= $la && $trg <= $ha) {
-			printf(STDERR "<%04X> %04X:%04X:%04X $allowed_branch\n",$addr,$la,$trg,$ha)
+			printf(STDERR "\t<%04X> %04X:%04X:%04X $allowed_branch\n",$addr,$la,$trg,$ha)
 				if $trace;
 			return 1;
 		}

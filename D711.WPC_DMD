@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Aug 28 18:42:45 2024
+#                    dlm: Sat Aug 31 09:48:14 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 172 47 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 361 39 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -31,6 +31,8 @@
 #				  - additions
 #	Aug 28, 2024: - BUG: switchTable allowed labels for bytes
 #				  - BUG: wrong page labels in set_WPC_ref
+#	Aug 29, 2024: - moved extra lines after RTS, JMP, etc in here from [D711.M6809]
+#	Aug 31, 2024: - moved API loading into disassemble_WPC_DMD
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -39,11 +41,10 @@
 
 sub disassemble_WPC_DMD()
 {
-	require "$PATH/WPC_DMD.API";												# define API after ROM has been loaded
-
 	my($dasm_CPU_vectors) 		= 1;
 	my($dasm_system_pointers) 	= 1;
 	my($dasm_switchTable)		= 1;
+	my($dasm_randomFindings)	= 1;
 	my($dasm_sys_gaps)			= 1;
 	my($dasm_fontTable)			= 0;
 	my($dasm_DMDtable)			= 0;
@@ -165,6 +166,14 @@ sub disassemble_WPC_DMD()
 			def_WPC_switchTable(undef,'Switch Table');					# label already defined
 	}
 
+	if ($dasm_randomFindings) {
+		$Address = 0xAE39; def_code('sys_bitIsSet_4BG');
+		$Address = 0xAE46; def_code('sys_bitIsClear_4BG');
+		select_WPC_RPG(0x3B);
+		$Address = 0x6717; def_code('unkown_bitgroupOp_hook?_6717');
+		$Address = 0x6781; def_code('unkown_bitgroupOp_hook?_6781');
+	}
+
 	if ($dasm_sys_gaps) {												# code disassembled to help understand big picture
 		$Address = 0x82CB; def_code('unknown_82CB');
 		$Address = 0x82E2; def_code('unknown_82E2');
@@ -214,6 +223,9 @@ sub apply_magic_WPC_DMD($$)
 			splice(@{$OPA[$addr]},0,1);
 		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{Sleep$}) {
 			$OPA[$addr][1] = hex(substr($OPA[$addr][1],1,4));
+		} elsif ($IND[$addr] == $code_base_indent &&
+					(isMember($OP[$addr],'RTS','BRA','LBRA','JMP') || $REM[$addr] eq 'RTS')) {
+			insert_empty_line($addr);
 		}
 	}
 }
@@ -222,8 +234,14 @@ sub apply_magic_WPC_DMD($$)
 # Init Disassembly System
 #----------------------------------------------------------------------
 
-sub init_WPC_DMD()
+sub init_WPC_DMD(@)
 {
+	my(@linc) = @_;
+	
+	require 'WPC_DMD.API';														# define API after ROM has been loaded but before -i are processed
+	while (@linc) {
+		require './' . shift(@linc);
+	}
 }
 
 #======================================================================
@@ -340,7 +358,7 @@ sub def_WPC_switchTable(@)
 		my($swn) = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('Switch#%02X',$sw);
 		push(@{$OPA[$opaddr]},label_address($ta,$swn.'_handler',1));		# suppress address suffix in label
 		push(@{$OPA[$opaddr]},sprintf('$%02X',$tp));
-		WPC_codeRef($swn.'_handler','Switch Handler');
+		WPC_codeRef($swn.'_handler',"Switch Handler ($swn)");
 		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
@@ -508,6 +526,64 @@ sub def_WPC_codeRef($@)																	# ROUTINE DOES NOT MAINTAIN RPG
 
 	WPC_codeRef($code_lbl,'System Call');    
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+}
+
+#======================================================================
+# Utilities
+#	- used in .defs files to define game-specific ids
+#	- .def file is loaded during init_WPC_DMD()
+#======================================================================
+
+sub defSwitch($$)
+{
+	my($no,$name) = @_;
+
+	die("defSwitch: invalid switch number $no\n")
+		unless ($no>=0 && $no<65);
+	$Switch[$no] = $name;
+}
+
+sub defLamp($$$)
+{
+	my($row,$col,$name) = @_;
+
+	die("defLamp: invalid lamp row number $row\n")
+		unless ($row>=1 && $row<=8);
+	die("defLamp: invalid lamp column number $row\n")
+		unless ($col>=1 && $col<=8);
+	$Lamp[8*($col-1)+$row] = $name;
+}
+
+sub defFlag($$)
+{
+	my($no,$name) = @_;
+
+	die("defFlag: invalid flag number $no\n")
+		unless ($no>=0 && $no<65);
+	$Flag[$no] = $name;
+}
+
+sub defGroup($$)
+{
+	my($no,$name) = @_;
+	$BitGroup[$no] = $name;
+}
+
+sub defLabel($$$)
+{
+	my($pg,$addr,$lbl) = @_;
+
+	select_WPC_RPG($pg);
+	define_label($lbl,$addr);
+}
+
+sub defAdjustment($$)
+{
+	my($no,$name) = @_;
+
+	die("defFlag: invalid adjustment number $no\n")
+		unless ($no>=0 && $no<65);
+	$Adj[$no] = $name;
 }
 
 #----------------------------------------------------------------------

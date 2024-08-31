@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Tue Aug 27 17:12:20 2024
+#					 dlm: Sat Aug 31 10:46:01 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 226 64 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 403 1 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -224,6 +224,7 @@
 #   Aug 25, 2024: - exported [D711.CodeStructureAnalysis]
 #			      - BUG: nested ENDIFs used wrong indentation
 #	Aug 27, 2024: - suppressed multiple dividers at same address
+#	Aug 30, 2024: - adapted overwriteLabel to WCP update
 # END OF HISTORY
 
 # TO-DO:
@@ -395,27 +396,40 @@ sub setLabel($$@)
 
 *define_label = \&setLabel;                                     # for compatibility with [C711]
 
-sub overwriteLabel($$)
+sub overwriteLabel($$@)
 {
-    my($lbl,$addr) = @_;
+    my($lbl,$addr,$pg) = @_;
 
-#   print(STDERR "overwriteLabel($lbl) [$LBL[$addr]]\n");
-    undef($Lbl{$LBL[$addr]});           
-    $LBL[$addr] = $lbl;                 
-    $Lbl{$lbl} = $addr;
-    return 1;
+#   print(STDERR "overwriteLabel(@_)\n");
+
+    my($faddr) = $addr;
+    if (defined($_cur_RPG) && $addr>=0x4000 && $addr<0x8000) {
+        die(sprintf("overwriteLabel($lbl,%04X) [%02X]",$addr,$_cur_RPG))
+             unless ($_cur_RPG >= 0 && $_cur_RPG <= 0x3F || $_cur_RPG == 0xFF);
+        select_WPC_RPG($pg) if defined($pg);             
+        unless ($_cur_RPG == 0xFF) {
+            $faddr = sprintf("%02X:%04X",$_cur_RPG,$addr);
+            $lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$});             # remove previous RPG if there is one
+            $lbl .= sprintf('[%02X]',$_cur_RPG);
+        }
+    }
+#	printf(STDERR "addr=%04X, LBL=$LBL[$addr], Lbl=$Lbl{$LBL[$addr]}\n",$addr);
+    undef($Lbl{$LBL[$addr]});
+    $LBL[$addr] = $lbl;                                         # define label
+    $Lbl{$lbl} = $faddr;
+    return $lbl;
 }
 
-sub underwriteLabel($$)
-{
-    my($lbl,$addr) = @_;
-
-#   print(STDERR "underwriteLabel($lbl) [$LBL[$addr]]\n");
-    return 0 if defined($LBL[$addr]);
-    $LBL[$addr] = $lbl;                 
-    $Lbl{$lbl} = $addr;
-    return 1;
-}
+##sub underwriteLabel($$)
+##{
+##    my($lbl,$addr) = @_;
+##
+###   print(STDERR "underwriteLabel($lbl) [$LBL[$addr]]\n");
+##    return 0 if defined($LBL[$addr]);
+##    $LBL[$addr] = $lbl;                 
+##    $Lbl{$lbl} = $addr;
+##    return 1;
+##}
 
 sub label_with_addr($$)                                         # add hex address to end of label for ROM addresses
 {                                                               # mark RAM and PIA addresses
@@ -2825,8 +2839,10 @@ sub substitute_identifiers(@)                                                   
                 $OPA[$addr][$i] = $Sound[hex($1)].$' if defined($Sound[hex($1)]);
             } elsif ($OPA[$addr][$i] =~ m{^Switch#}) {                                      # switches
                 $OPA[$addr][$i] = $Switch[hex($')] if defined($Switch[hex($')]);
-            } elsif ($OPA[$addr][$i] =~ m{^Thread#}) {                                      # threads
-                $OPA[$addr][$i] = $Thread[hex($')] if defined($Thread[hex($')]);
+            } elsif ($OPA[$addr][$i] =~ m{^Thread#([0-9A-F]+)$}) {							# threads
+                $OPA[$addr][$i] = $Thread[hex($1)] if defined($Thread[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{^Error#}) {                                      	# errors (WPC)
+                $OPA[$addr][$i] = $Error[hex($')] if defined($Error[hex($')]);
             } 
         }
     }
@@ -2959,7 +2975,7 @@ sub produce_output(@)                                                       # wi
     my($decoded) = my($ROMbytes) = 0;
 
     if ($hdr) {
-        output_aliases('Game Adjustment Aliases','Adj#%02X',@Adj);              # game-specific identifiers
+        output_aliases('Game Adjustment Aliases','Adj#%02X',@Adj);          # game-specific identifiers
         output_aliases('Solenoid Aliases','Sol#%02X',@Sol);
         output_aliases('Lamp Aliases','Lamp#%02X',@Lamp);
         output_aliases('Flag Aliases','Flag#%02X',@Flag);
@@ -2967,8 +2983,9 @@ sub produce_output(@)                                                       # wi
         output_aliases('Switch Aliases','Switch#%02X',@Switch);
         output_aliases('Sound Aliases','Sound#%02X',@Sound);
         output_aliases('Thread Aliases','Thread#%02X',@Thread);
-        output_keyValue_aliases('System Constants',%systemConstants);           # symbolic identifiers, e.g. for sys6 switch scripts
-        output_labels("System$WMS_System API (external labels)");               # manually defined labels outside ROM
+##      output_aliases('Error Aliases','Error#%02X',@Error);				# clutter
+        output_keyValue_aliases('System Constants',%systemConstants);       # symbolic identifiers, e.g. for sys6 switch scripts
+        output_labels("System$WMS_System API (external labels)");           # manually defined labels outside ROM
     }
 
     my($gapLen,$codeStarted);
@@ -3135,7 +3152,7 @@ sub produce_output(@)                                                       # wi
 }
 
 #----------------------------------------------------------------------
-# Debug Routines
+# Output Routine
 #----------------------------------------------------------------------
 
 sub dump_labels($)
@@ -3145,7 +3162,15 @@ sub dump_labels($)
 	if ($fmt == 1) {														# label code
 		foreach my $lbl (sort { $Lbl{$a} <=> $Lbl{$b} } keys(%Lbl)) {
 			next unless defined($Lbl{$lbl});
-			printf("D711::overwriteLabel('$lbl',0x%04X);\n",$Lbl{$lbl});
+			my($laddr) = $Lbl{$lbl};
+			if (numberp($laddr)) {
+				printf("D711::overwriteLabel('$lbl',0x%04X);\n",$Lbl{$lbl});
+			} else {
+				my($pg);
+				($pg,$laddr) = split(':',$laddr);
+				$pg = hex($pg); $laddr = hex($laddr);
+				printf("D711::overwriteLabel('$lbl',0x%04X,0x%02X);\n",$laddr,$pg);
+			}
 		}	
 	} else {
 		print("Labels:\n");

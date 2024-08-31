@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Wed Aug 28 08:06:27 2024
+#                    dlm: Fri Aug 30 09:27:00 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 34 74 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 383 50 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -32,6 +32,8 @@
 #	Aug 27, 2024: - generalized syscalls for !exitThread
 #				  - line spacing bugs
 #	Aug 28, 2024: - BUG: syscall byte arguments allowed label substitution
+#	Aug 29, 2024: - moved extra space after RTS, JMP, etc to [D711.WPC_DMD]
+#					because during magic processing the indentation is known
 # HISTORY END
 
 # NOTES:
@@ -374,10 +376,18 @@ sub disassemble_syscall($$)
 				unless (BYTE($addr)>=0 && BYTE($addr)<=65);
 			push(@{$OPA[$oaddr]},sprintf('Lamp#%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'E') {											# E: Error
+			push(@{$OPA[$oaddr]},sprintf('Error#%02X',BYTE($addr)));
+			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'G') {											# G: Bitgroup
+			push(@{$OPA[$oaddr]},sprintf('Bitgroup#%02X',BYTE($addr)));
+			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'F') {											# F: Flag
-			die(sprintf("Invalid flag argument Flag#%02X",BYTE($addr)))
-				unless (BYTE($addr)>=0 && BYTE($addr)<=99);
-			push(@{$OPA[$oaddr]},sprintf('Flag#%02X',BYTE($addr)));
+			my($fno) = BYTE($addr) - 0x40;														# Flag#01-40
+			$fno -= 0x40 if $fno > 0x40; 														# Flag#41-80
+			die(sprintf("Invalid flag argument Flag#%02X",$fno))
+				unless ($fno>=0x00 && $fno<=0x80);
+			push(@{$OPA[$oaddr]},sprintf('Flag#%02X',$fno));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'T') {											# T: Thread
 			push(@{$OPA[$oaddr]},sprintf('Thread#%04X',WORD($addr)));
@@ -514,7 +524,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next if defined(op_PP(0x34,$ind,'PSHS'));
 		if (defined($rv = op_PP(0x35,$ind,'PULS'))) {
 			if ($rv == 0) {										# PC pulled
-				insert_empty_line($addr-2);
+				$REM[$addr-2] = 'RTS';
 				return;
 			}
 			next;
@@ -522,22 +532,13 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next if defined(op_PP(0x36,$ind,'PSHU'));
 		if (defined($rv = op_PP(0x37,$ind,'PULU'))) {
 			if ($rv == 0) {										# PC pulled
-				insert_empty_line($addr-2);
+				$REM[$addr-2] = 'RTS';
 				return;
 			}
 			next;
 		}
-		if (op_INH(0x39,$addr,$ind,'RTS')) {					# add empty line after RTS
-			insert_empty_line($addr-1);
-			return;
-		}
-		next if op_INH(0x3A,$addr,$ind,'ABX'); 					# add empty line after RTI
-		if (op_INH(0x3B,$addr,$ind,'RTI')) {
-			insert_empty_line($addr-1);
-			return;
-		}
-
-		next if op_INH(0x3C,$addr,$ind,'CWAI'); 
+		return if op_INH(0x39,$addr,$ind,'RTS');	next if op_INH(0x3A,$addr,$ind,'ABX');
+		return if op_INH(0x3B,$addr,$ind,'RTI');	next if op_INH(0x3C,$addr,$ind,'CWAI'); 
 		next if op_INH(0x3D,$addr,$ind,'MUL'); 		return if op_INH(0x3F,$addr,$ind,'SWI'); 
 
 		next if op_INH(0x40,$addr,$ind,'NEGA'); 	next if op_INH(0x43,$addr,$ind,'COMA');

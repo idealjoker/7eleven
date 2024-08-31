@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ D M D 
 #					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Mon Aug 26 16:41:56 2024
+#					 dlm: Sat Aug 31 09:18:49 2024
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 77 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 96 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -13,6 +13,8 @@
 #	Jul 18, 2024: - created in Zermatt
 #	Aug  9, 2024: - continued
 #	Aug 10, 2024: - continued
+#	Aug 30, 2024: - re-made -l use fmt 1
+#	Aug 31, 2024: - moved API loading here from [D711.WPC_DMD]
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 ('WPC_DMD');		
@@ -43,18 +45,11 @@ $D711::_cur_RPG = 0x20;
 &D711::load_ROM($ARGV[0],0x4000,$D711::_cur_RPG,16);						# Load ROM: first game page (512KB ROM)
 &D711::load_ROM($ARGV[0],0x8000,0x3E,32);									# Load ROM: System pages
 
-if (defined($opt_i)) {														# include files with perl code AFTER ROM is loaded
-	my(@linc) = split(',',$opt_i);
-	while (@linc) {
-		require './' . shift(@linc);
-	}	
-}
-
 #----------------------------------------------------------------------
 # Disassemble ROM
 #----------------------------------------------------------------------
 
-&D711::init_WPC_DMD();
+&D711::init_WPC_DMD(split(',',$opt_i));										# load API & -i args
 &D711::disassemble_WPC_DMD();												# Code Disassembly
 
 #----------------------------------------------------------------------
@@ -82,7 +77,7 @@ for (my($rpg)=0x20; $rpg<0x3E; $rpg++) {
 #----------------------------------------------------------------------
 
 if ($opt_l) {																# dump label information
-	&D711::dump_labels();													# fmt == 1 generates code that can be used with -u
+	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 
@@ -97,54 +92,4 @@ $decoded += &D711::produce_output(0x8000,0xFFFF,0);							# WPC System
 printf("; %.1f KB decoded\n",$decoded/1024);
 
 exit(0);
-
-#======================================================================
-# Utilities
-#======================================================================
-
-sub defSwitch($$)
-{
-	my($no,$name) = @_;
-
-	die("defSwitch: invalid switch number $no\n")
-		unless ($no>=0 && $no<65);
-	$D711::Switch[$no] = $name;
-}
-
-sub defLamp($$$)
-{
-	my($row,$col,$name) = @_;
-
-	die("defLamp: invalid lamp row number $row\n")
-		unless ($row>=1 && $row<=8);
-	die("defLamp: invalid lamp column number $row\n")
-		unless ($col>=1 && $col<=8);
-	$D711::Lamp[8*($col-1)+$row] = $name;
-}
-
-sub defFlag($$)
-{
-	my($no,$name) = @_;
-
-	die("defFlag: invalid flag number $no\n")
-		unless ($no>=0 && $no<65);
-	$D711::Flag[$no] = $name;
-}
-
-sub defLabel($$$)
-{
-	my($pg,$addr,$lbl) = @_;
-
-	D711::select_WPC_RPG($pg);
-	D711::define_label($lbl,$addr);
-}
-
-sub defAdjustment($$)
-{
-	my($no,$name) = @_;
-
-	die("defFlag: invalid adjustment number $no\n")
-		unless ($no>=0 && $no<65);
-	$D711::Adj[$no] = $name;
-}
 
