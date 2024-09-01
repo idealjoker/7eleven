@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Sep  1 12:17:22 2024
+#                    dlm: Sun Sep  1 15:12:16 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 156 55 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 234 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -217,16 +217,24 @@ sub apply_magic_WPC_DMD($$)
 	my($fa,$la) = @_;
 
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
-		if ($OP[$addr] eq 'JMP' && $OPA[$addr][0] eq $LBL[$addr+3]) {
-			$OP[$addr] = '_skip';
-			undef($LBL[$addr+3])								# should also undef Lbl!
+		if ($OP[$addr] eq 'JMP' && $OPA[$addr][0] eq $LBL[$addr+3]) {			# 1) JMP *+3 
+#			$OP[$addr] = '_skip';												# 		generate macro tag
+			undef($OP[$addr]);													# 		generate postfix tag
+			push(@{$OPA[$addr-3]},'&skip');
+			undef($LBL[$addr+3])												# 		should probably also undef Lbl!
 				if ($Lbl_refs{$OPA[$addr][0]} == 1);
 			splice(@{$OPA[$addr]},0,1);
-		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{leep$}) {
+		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{leep$}) {				# 2) decimalize sleep arguments
 			$OPA[$addr][1] = hex(substr($OPA[$addr][1],1,4));
-		} elsif ($IND[$addr] == $code_base_indent &&
-					(isMember($OP[$addr],'RTS','BRA','LBRA','JMP') || $REM[$addr] eq 'RTS')) {
+		} elsif ($IND[$addr] == $code_base_indent &&							# 3) add extra space after top-level "exit" instructions
+				 (isMember($OP[$addr],'RTS','BRA','LBRA','JMP') ||
+				  $REM[$addr] eq 'RTS')) {
 			insert_empty_line($addr);
+		} elsif ($OPA[$addr][0] =~ m{[^\?]?\?$}) {				# 4) last arg ends with a ? but not with ??
+			my($noa) = $addr + 1;
+			while (!$OP[$noa++]) { die if $noa > 0xFFFF; }
+			if    ($OP[$noa] eq '_IF_CC') { $OP[$noa] = '_IF_true'; }			#		_IF_true
+			elsif ($OP[$noa] eq '_IF_CS') { $OP[$noa] = '_IF_false'; }			#		_IF_false
 		}
 	}
 }
