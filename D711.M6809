@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Fri Aug 30 09:27:00 2024
+#                    dlm: Sun Sep  1 13:49:32 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 383 50 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 37 57 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -34,6 +34,7 @@
 #	Aug 28, 2024: - BUG: syscall byte arguments allowed label substitution
 #	Aug 29, 2024: - moved extra space after RTS, JMP, etc to [D711.WPC_DMD]
 #					because during magic processing the indentation is known
+#	Sep  1, 2024: - BUG: legal flag numbers are different
 # HISTORY END
 
 # NOTES:
@@ -383,10 +384,10 @@ sub disassemble_syscall($$)
 			push(@{$OPA[$oaddr]},sprintf('Bitgroup#%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'F') {											# F: Flag
-			my($fno) = BYTE($addr) - 0x40;														# Flag#01-40
-			$fno -= 0x40 if $fno > 0x40; 														# Flag#41-80
+			my($fno) = BYTE($addr) - 0x40;														# Flag#00-3F
+			$fno -= 0x40 if $fno > 0x40; 														# Flag#40-7F
 			die(sprintf("Invalid flag argument Flag#%02X",$fno))
-				unless ($fno>=0x00 && $fno<=0x80);
+				unless ($fno>=0x00 && $fno<0x80);
 			push(@{$OPA[$oaddr]},sprintf('Flag#%02X',$fno));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'T') {											# T: Thread

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Aug 31 13:57:51 2024
+#                    dlm: Sun Sep  1 12:17:22 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 36 87 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 156 55 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -153,8 +153,8 @@ sub disassemble_WPC_DMD()
 			def_byte_hex();
 
 		$Address = 0x81B6;
-		$Address = def_WPC_ref('=BITSHIFTER_LOOKUPTABLE');
-			def_byteblock_hex(8);
+		$Address = def_WPC_ref('=BITSHIFTER_LAMPMATRIX_LOOKUPTABLE');
+			def_byteblock_hex(65);
 
 		$Address = 0x8296;
 		def_ptr_hex('^=STATUS_AREA');

@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Aug 31 13:57:21 2024
+#                    dlm: Sun Sep  1 13:28:39 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 24 51 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 215 30 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -149,9 +149,11 @@ define_syscall('syscall_83DB',			0x83DB,'B');
 define_syscall('syscall_83E8',			0x83E8,'B');
 define_syscall('lampOn',				0x841C,'L');
 define_syscall('lampOff',				0x842B,'L');
+define_syscall('lampToggle',			0x843A,'L');
 define_syscall('lampOn?',				0x8449,'L');
 define_syscall('setFlag',				0x8480,'F');
 define_syscall('clearFlag',				0x848F,'F');
+define_syscall('toggleFlag',			0x849E,'F');
 define_syscall('flagSet?',				0x84AD,'F');
 define_syscall('sys_unknown_bitOp?',	0x851F,'B');
 define_syscall('syscall_8539',			0x8539,'B');
@@ -209,8 +211,8 @@ define_label('sys_fill??_AB',					0x6706, 0x3B);
 
 define_label('NE=gameDisabled',					0xF759);
 define_label('=bitShifter_lookUpTable',			0x81B6);
-define_label('lampOn_setMainBuf?',				0x8458);
-define_label('lampOff_setMainBuf?',				0x846C);
+define_label('lampOn_blinkOff',					0x8458);
+define_label('lampOff_blinkOff',				0x846C);
 define_label('sys_longJSR_indirect_X',			0x862B);
 define_label('sys_longJSR_indirect_AX',			0x8631);
 define_label('sys_setBank=3B',					0x90B4);
@@ -231,11 +233,11 @@ define_label('sys_findThreadY',					0x9B34);
 define_label('sys_findThreadDY',				0x9B3D);
 define_label('find_thread_in_list',				0x9B55);
 define_label('sys_zeroCrossIRQ_clear',			0x9D00);
-define_label('sys_clearFlag_AB',				0x9E92);
-define_label('sys_check_BitShifter_input',		0x9EA5);
-define_label('sys_setFlag_AB',					0x9E7F);
-define_label('flagSet?_AB',						0x9EDD);
-define_label('sys_setBit_AB',					0x9EF1);
+define_label('sys_clearBit_AB',					0x9E92);
+define_label('sys_twiddle_BitShifter_input',	0x9EA5);
+define_label('sys_setBit_AB',					0x9E7F);
+define_label('bitSet?_AB',						0x9EDD);
+define_label('sys_setBit_withLamps_AB',			0x9EF1);
 define_label('BitShifter_setBit_AB',			0x9F47);
 define_label('BitShifter_clearBit_AB',			0x9F73);
 define_label('BitShifter_testBit_AB',			0x9FA0);
