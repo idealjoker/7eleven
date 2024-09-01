@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ D M D 
 #					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Sat Aug 31 09:18:49 2024
+#					 dlm: Sun Sep  1 17:40:51 2024
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 96 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 19 9 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -15,9 +15,8 @@
 #	Aug 10, 2024: - continued
 #	Aug 30, 2024: - re-made -l use fmt 1
 #	Aug 31, 2024: - moved API loading here from [D711.WPC_DMD]
-
-use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
-use D711 ('WPC_DMD');		
+#	Sep  1, 2024: - added undocumented -Q option for beautification of Makefiles
+# END OF HISTORY
 
 #----------------------------------------------------------------------
 # Usage
@@ -31,7 +30,10 @@ die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
 			"[suppress -g)ap data]\n\t\t" . 
 			"[suppress code-s)tructure analysis]\n\t\t" .
 			"<ROM image>\n")
-	unless &getopts('acgi:ls') && @ARGV==1;
+	unless &getopts('acgi:lQs') && @ARGV==1;
+
+use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
+use D711 ('WPC_DMD','$opt_Q = 1;');											# suppress D711 splash message
 
 $D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output

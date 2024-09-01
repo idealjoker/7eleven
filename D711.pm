@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Aug 31 13:58:16 2024
+#					 dlm: Sun Sep  1 17:39:34 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 228 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 228 50 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -225,6 +225,7 @@
 #			      - BUG: nested ENDIFs used wrong indentation
 #	Aug 27, 2024: - suppressed multiple dividers at same address
 #	Aug 30, 2024: - adapted overwriteLabel to WCP update
+#	Sep  1, 2024: - added support for -Q in import
 # END OF HISTORY
 
 # TO-DO:
@@ -277,16 +278,21 @@ my($unrealistic_score_limit) = 1e6;
 # Interface
 #   use D711 (sys[,opts])
 #       sys     = 6, 7, 11, WPC_DMD (to-do: WPC_Alpha, WPC_Fliptronics, WPC_DCS, WPC_Security, WPC_95)
+#		opts 	expression to eval, e.g. '$opt_Q = 1'
 #----------------------------------------------------------------------
 
 sub import($@)
 {
     my($pkg,$sys,$opts) = @_;
     
+	eval($opts) if defined($opts);
+
     $WMS_System = $sys;
 
-    print(STDERR "\nDisassembler for WVM System $WMS_System\n");
-    print(STDERR "(c) 2019 idealjoker\@mailbox.org\n");
+	unless ($opt_Q) {
+	    print(STDERR "\nDisassembler for WVM System $WMS_System\n");
+    	print(STDERR "(c) 2019 idealjoker\@mailbox.org\n");
+    }
 
     require "$PATH/D711.CodeStructureAnalysis";
     if ($WMS_System == 6 || $WMS_System == 7 || $WMS_System == 11) {
@@ -298,7 +304,7 @@ sub import($@)
     } else {
         die("$0: unknown WMS system type $WMS_System\n")
     }
-    print(STDERR "\n");
+    print(STDERR "\n") unless $opt_Q;
 } # import
 
 #----------------------------------------------------------------------

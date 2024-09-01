@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Sep  1 15:12:16 2024
+#                    dlm: Sun Sep  1 16:51:24 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 234 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 37 69 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -34,6 +34,7 @@
 #	Aug 29, 2024: - moved extra lines after RTS, JMP, etc in here from [D711.M6809]
 #	Aug 31, 2024: - moved API loading into disassemble_WPC_DMD
 #				  - BUG: decimalization of sleep args did not work for lower case sleep
+#	Sep  1, 2024: - added support for _IF_true and _IF_false "macros"
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -230,9 +231,9 @@ sub apply_magic_WPC_DMD($$)
 				 (isMember($OP[$addr],'RTS','BRA','LBRA','JMP') ||
 				  $REM[$addr] eq 'RTS')) {
 			insert_empty_line($addr);
-		} elsif ($OPA[$addr][0] =~ m{[^\?]?\?$}) {				# 4) last arg ends with a ? but not with ??
-			my($noa) = $addr + 1;
-			while (!$OP[$noa++]) { die if $noa > 0xFFFF; }
+		} elsif ($OPA[$addr][0] =~ m{[^\?]\?$}) {								# 4) _IF_true / _IF_false
+			my($noa) = $addr + 1;												#	 	execute when last arg ends with a ? but not with ??
+			while (!defined($OP[$noa])) { $noa++; die if $noa > 0xFFFF; }
 			if    ($OP[$noa] eq '_IF_CC') { $OP[$noa] = '_IF_true'; }			#		_IF_true
 			elsif ($OP[$noa] eq '_IF_CS') { $OP[$noa] = '_IF_false'; }			#		_IF_false
 		}

@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sun Sep  1 12:13:01 2024
+                    dlm: Sun Sep  1 16:49:25 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 18 41 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 80 39 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -71,6 +71,13 @@ sys_bitgroupOp_ABXY
 	B	0C(rotLeft) 0E(fill), 04(???)
 	X	bitgroup + buffer offset
 	Y	address of hook routine
+
+----------------------------------------------------------------------
+
+=Switches=
+
+- Switch table has column with Lamp numbers (flags possible too?)
+	- passed to switch handlers as A_in
 
 
 ======================================================================
