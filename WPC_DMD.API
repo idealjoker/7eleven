@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Sep  2 11:01:07 2024
+#                    dlm: Mon Sep  2 15:15:57 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 146 49 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 167 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -65,6 +65,9 @@ define_label('=FLAGS_HIGH',				0x330);
 define_label('=THREAD_LIST_1',			0x366);
 define_label('=THREAD_LIST_2',			0x371);
 define_label('=STATUS_AREA_POINTER',	0x380);		# Scott
+
+define_label('_BALL_IN_PLAY',			0x410);
+define_label('_EXTRABALLS_PENDING?',	0x410);
 
 #----------------------------------------------------------------------
 # https://bcd.github.io/freewpc/The-WPC-Hardware.html
@@ -156,13 +159,17 @@ define_syscall('setFlag',				0x8480,'F');
 define_syscall('clearFlag',				0x848F,'F');
 define_syscall('toggleFlag',			0x849E,'F');
 define_syscall('flagSet?',				0x84AD,'F');
-define_syscall('sys_unknown_bitOp?',	0x851F,'B');
+define_syscall('syscall_8505',			0x8505,'B');
+define_syscall('addScore',				0x851F,'B');
 define_syscall('syscall_8539',			0x8539,'B');
 define_syscall('playSound??',			0x8546,'B');
-define_syscall('lampFX??',				0x8553,'B');
+define_syscall('DMDanimation',			0x8553,'B');
+define_syscall('playSound',				0x85B2,'B');
+define_syscall('syscall_85A2',			0x85A2,'B');
 define_syscall('syscall_85E1',			0x85E1,'B');
 define_syscall('syscall_85F1',			0x85F1,'B');
-define_syscall('gameFeatureAudit',		0x85B2,'B');
+define_syscall('syscall_8601',			0x8601,'B');
+define_syscall('syscall_8611',			0x8611,'B');
 define_syscall('longJSR_indirect',		0x8621,'P');
 define_syscall('AD_value=?',			0x865B,'AB');
 define_syscall('longSleep',				0x8679,'W');
@@ -177,17 +184,22 @@ define_syscall('bitSet?',				0x873C,'LB');			# <bit number> <buffer offset>; onl
 define_syscall('clearAll',				0x87BE,'GB');
 define_syscall('allSet?',				0x87CB,'GB');
 define_syscall('allClear?',				0x87D8,'GB');
+define_syscall('syscall_880C',			0x880C,'W');
+define_syscall('syscall_8885',			0x8885,'W');
+define_syscall('syscall_8895',			0x8895,'W');
+define_syscall('syscall_88B5',			0x88B5,'W');
 define_syscall('syscall_88D5',			0x88D5,'W');
 define_syscall('longJSR',				0x88F5,'R');
 define_syscall('longJMP',				0x892F,'R',1);			# NOTE 1: does not return
 define_syscall('syscall_8948',			0x8948,'R');
+define_syscall('syscall_89F8',			0x89F8,'WB');
 define_syscall('memCopyX',				0x89BE,'PB');
 define_syscall('syscall_89DD',			0x89DD,'WB');
 define_syscall('killThreads_withMask',	0x8A9A,'TW');
 define_syscall('findThread?',			0x8AAA,'TW');
 define_syscall('memClear',				0x8ABA,'PW');
 define_syscall('memSet',				0x8ACA,'PBB');
-define_syscall('spawnThread_0',			0x8B3D,'BWW');
+define_syscall('spawnThread_0',			0x8B3D,'TR');
 define_syscall('spawnThread_1',			0x8B5A,'TR');
 define_syscall('spawnThread_2',			0x8B77,'TR');
 define_syscall('spawnThread_3',			0x8B9D,'TR');
