@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Sep  1 17:39:34 2024
+#					 dlm: Mon Sep  2 11:11:43 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 228 50 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2854 73 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -226,6 +226,7 @@
 #	Aug 27, 2024: - suppressed multiple dividers at same address
 #	Aug 30, 2024: - adapted overwriteLabel to WCP update
 #	Sep  1, 2024: - added support for -Q in import
+#	Sep  2, 2024: - BUG: define_label() redefined labels without warning/error
 # END OF HISTORY
 
 # TO-DO:
@@ -395,6 +396,19 @@ sub setLabel($$@)
     undef($Lbl{$LBL[$addr]})                                    # overwrite existing auto label with non-auto label
         if (($LBL[$addr] =~ m{_[0-9A-F]{4}$}) &&                #   otherwise, make duplicate
             !($lbl =~ m{_[0-9A-F]{4}$}));
+	if (defined($Lbl{$lbl}) && $Lbl{$lbl}!=$addr && $Lbl{$lbl} ne $faddr) {		# trying to re-define label with different address
+			my($tl,$pg);
+			if ($lbl =~ m{(\[[0-9A-F]{2}\])$}) {
+				$tl = $`;
+				$pg = $1;
+			} else {
+				$tl = $lbl;
+				$pg = '';
+            }
+			my($i) = 0;
+			while (defined($Lbl{$tl.$i.$pg})) { $i++; }
+			$lbl = $tl.$i.$pg;
+    }
     $LBL[$addr] = $lbl;                                         # define label
     $Lbl{$lbl} = $faddr;
     return $lbl;
@@ -2836,7 +2850,12 @@ sub substitute_identifiers(@)                                                   
                 my($num,$len) = ($' =~ m{([0-9A-Fa-f]+)(.*)});
                 $OPA[$addr][$i] = $Sol[hex($num)] . $len if defined($Sol[hex($num)]);
             } elsif ($OPA[$addr][$i] =~ m{^Lamp#([0-9A-Fa-f]+)}) {                          # lamps
-                $OPA[$addr][$i] = $Lamp[hex($1)].$' if defined($Lamp[hex($1)]);
+            	if (defined($_cur_RPG)) {
+            		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless numberp($1);
+	                $OPA[$addr][$i] = $Lamp[$1].$' if defined($Lamp[$1]);
+            	} else {
+	                $OPA[$addr][$i] = $Lamp[hex($1)].$' if defined($Lamp[hex($1)]);
+	            }
             } elsif ($OPA[$addr][$i] =~ m{^Flag#}) {                                        # flags
                 $OPA[$addr][$i] = $Flag[hex($')] if defined($Flag[hex($')]);
             } elsif ($OPA[$addr][$i] =~ m{^Bitgroup#([0-9A-Fa-f]+)}) {                      # bitgroups

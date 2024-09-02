@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sun Sep  1 13:49:32 2024
+#                    dlm: Mon Sep  2 11:07:19 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 37 57 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 383 48 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -372,10 +372,15 @@ sub disassemble_syscall($$)
 				unless (BYTE($addr)>=0 && BYTE($addr)<=65);
 			push(@{$OPA[$oaddr]},sprintf('Switch#%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'O') {											# O: sOlenoid
+			die(sprintf("Invalid solenoid Sol#%d",BYTE($addr)))
+				unless (BYTE($addr)>=1 && BYTE($addr)<=65);
+			push(@{$OPA[$oaddr]},sprintf('Sol#%d',BYTE($addr)));
+			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'L') {											# L: Lamp
-			die(sprintf("Invalid lamp argument Lamp#%02X",BYTE($addr)))
-				unless (BYTE($addr)>=0 && BYTE($addr)<=65);
-			push(@{$OPA[$oaddr]},sprintf('Lamp#%02X',BYTE($addr)));
+			die(sprintf("Invalid lamp argument Lamp#%d",BYTE($addr)))
+				unless (BYTE($addr)>=1 && BYTE($addr)<=65);
+			push(@{$OPA[$oaddr]},sprintf('Lamp#%d',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'E') {											# E: Error
 			push(@{$OPA[$oaddr]},sprintf('Error#%02X',BYTE($addr)));

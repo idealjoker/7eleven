@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Sep  1 17:17:51 2024
+#                    dlm: Mon Sep  2 11:01:07 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 164 32 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 146 49 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -37,6 +37,7 @@ define_label('=UNKNOWN_BIT_BUFFER',		0x1F);
 define_label('=SWITCHES',				0x27);
 
 define_label('__RUNNING_THREAD_ID',		0x53);
+define_label('__SLEEP_TIME',			0x5B);
 define_label('__FINDTHREAD_ID',			0x5D);
 define_label('_FINDTHREAD_ID+1',		0x5E);
 define_label('__FINDTHREAD_MASK',		0x5F);
@@ -142,7 +143,7 @@ define_syscall('switchBroken??',		0x8339,'S');
 define_syscall('sleep',					0x8346,'B');
 define_syscall('memClearY',				0x836B,'B');
 define_syscall('memSetBY',				0x8378,'B');
-define_syscall('solCmd',				0x8385,'B');
+define_syscall('solCmd',				0x8385,'O');
 define_syscall('pulseFlasher',			0x8392,'B');
 define_syscall('solCmd_wait',			0x839F,'B');
 define_syscall('syscall_83DB',			0x83DB,'B');
@@ -166,9 +167,10 @@ define_syscall('longJSR_indirect',		0x8621,'P');
 define_syscall('AD_value=?',			0x865B,'AB');
 define_syscall('longSleep',				0x8679,'W');
 define_syscall('threadRunning?',		0x8690,'T');
-define_syscall('syscall_869E',			0x869E,'W');
-define_syscall('syscall_86AC',			0x86AC,'W');
-define_syscall('syscall_86D0',			0x86D0,'W');
+define_syscall('killThreads',			0x869E,'T');
+define_syscall('setThreadId',			0x86AC,'T');
+define_syscall('becomeThread_ifNotRunning',	0x86BA,'T');
+define_syscall('becomeOnlyThread',		0x86D0,'T');
 define_syscall('setBit',				0x8715,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
 define_syscall('clearBit',				0x8722,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
 define_syscall('bitSet?',				0x873C,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
@@ -181,8 +183,8 @@ define_syscall('longJMP',				0x892F,'R',1);			# NOTE 1: does not return
 define_syscall('syscall_8948',			0x8948,'R');
 define_syscall('memCopyX',				0x89BE,'PB');
 define_syscall('syscall_89DD',			0x89DD,'WB');
-define_syscall('syscall_8A9A',			0x8A9A,'WW');
-define_syscall('findThread?',			0x8AAA,'WW');
+define_syscall('killThreads_withMask',	0x8A9A,'TW');
+define_syscall('findThread?',			0x8AAA,'TW');
 define_syscall('memClear',				0x8ABA,'PW');
 define_syscall('memSet',				0x8ACA,'PBB');
 define_syscall('spawnThread_0',			0x8B3D,'BWW');
@@ -228,7 +230,7 @@ define_label('Y=adjustmentA??==1',				0x92D4);
 define_label('A=adjustmentA??==1',				0x92DE);
 define_label('D=adjustmentA??==1',				0x92EC);
 define_label('Y=adjustmentA??',					0x92F8);
-define_label('sys_kill_thread??',				0x9B24);
+define_label('sys_kill_thread',					0x9B24);
 define_label('sys_findThreadY',					0x9B34);
 define_label('sys_findThreadDY',				0x9B3D);
 define_label('find_thread_in_list',				0x9B55);
@@ -340,7 +342,7 @@ $Error[0x46] = 'ERR_Request_for_player_area_byte,_out_of_range';
 $Error[0x47] = 'ERR_Multiball_device_number_invalid';
 $Error[0x48] = 'ERR_Too_many_multiball_devices_specified';
 $Error[0x49] = 'ERR_Irq_Tail_hook_not_in_prime_real_estate';
-$Error[0x4A] = 'ERR_No_threades_available_for_ball_serve';
+$Error[0x4A] = 'ERR_No_thread_available_for_ball_serve';
 $Error[0x4B] = 'ERR_invalid_Multiball_device_0';
 $Error[0x4C] = 'ERR_Unmonitored_locked_hole_had_a_switch_closure';
 $Error[0x4D] = 'ERR_Lock_count_on_eject_hole_was_higher_than_1';
