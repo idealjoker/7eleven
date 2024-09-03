@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Sep  2 21:52:13 2024
+#                    dlm: Tue Sep  3 15:25:11 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 191 49 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 272 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -269,7 +269,7 @@ define_label('sys_bitgroup_allSet?_D',			0xAE19);
 define_label('sys_bitgroup_allOff?_D',			0xAE29);
 define_label('sys_bitgroupOp_ABXY',				0xAE53);
 define_label('sys_printString_BXY',				0xB97B);
-define_label('sys_gameFeatureAudit_A',			0xCC3A);
+define_label('sys_playSound_A',					0xCC3A);
 define_label('sys_IRQ_timer_handler??',			0xECCA);
 define_label('sys_addBonus_1130',				0xFAA8);
 define_label('sys_addBonus_3330',				0xFAAE);

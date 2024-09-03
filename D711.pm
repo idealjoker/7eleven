@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Sep  2 21:26:19 2024
+#					 dlm: Tue Sep  3 15:17:47 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 2871 100 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 230 64 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -227,6 +227,7 @@
 #	Aug 30, 2024: - adapted overwriteLabel to WCP update
 #	Sep  1, 2024: - added support for -Q in import
 #	Sep  2, 2024: - BUG: define_label() redefined labels without warning/error
+#	Sep  3, 2024: - BUG: Thread# output on WPC was only 2 digits
 # END OF HISTORY
 
 # TO-DO:
@@ -3009,7 +3010,11 @@ sub produce_output(@)                                                       # wi
         output_aliases('Bitgroup Aliases','Bitgroup#%02X',@BitGroup);
         output_aliases('Switch Aliases','Switch#%02X',@Switch);
         output_aliases('Sound Aliases','Sound#%02X',@Sound);
-        output_aliases('Thread Aliases','Thread#%02X',@Thread);
+        if (defined($_cur_RPG)) {
+	        output_aliases('Thread Aliases','Thread#%04X',@Thread);
+        } else {
+	        output_aliases('Thread Aliases','Thread#%02X',@Thread);
+	    }
 ##      output_aliases('Error Aliases','Error#%02X',@Error);				# clutter
         output_keyValue_aliases('System Constants',%systemConstants);       # symbolic identifiers, e.g. for sys6 switch scripts
         output_labels("System$WMS_System API (external labels)");           # manually defined labels outside ROM

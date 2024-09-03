@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Tue Sep  3 13:01:37 2024
+#                    dlm: Tue Sep  3 15:06:33 2024
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 17 60 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 18 35 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -15,6 +15,7 @@
 #	Sep  3, 2024: - BUG: _IF not correctly detected because of label test
 #				  - BUG: branch_into_block needed separate block and search limits
 #				  - BUG: nested loops did not work correctly
+#				  - more bugs fixed
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -45,8 +46,12 @@ sub same_block($$@)
 	##local($trace) = ($la == 0x5AD7 && $ha == 0x5AEB) ? 1 : 0;
 	##local($trace) = ($la == 0x5B1F && $ha == 0x5B38) ? 1 : 0;
 
+	##local($trace) = ($la == 0x647C && $ha == 0x6481) ? 1 : 0;
 	##	local($trace) = ($la == 0x6D3F && $ha == 0x6D48) ? 1 : 0;
 	## local($trace) = ($la == 0x6D3F && $ha == 0x6D48) ? 1 : 0;		# nested loop with exit from interior
+	##local($trace) = ($la == 0x6D63 && $ha == 0x6D79) ? 1 : 0;		# deeply nested loop 
+
+	##local($trace) = ($la == 0x7240 && $ha == 0x7249) ? 1 : 0;		# loop before if
 
 	##local($trace) = ($la == 0x9EF1 && $ha == 0x9F16) ? 1 : 0;		
 	##local($trace) = ($la == 0x9EF6 && $ha == 0x9F01) ? 1 : 0;		
@@ -60,8 +65,12 @@ sub same_block($$@)
 	##	local($trace) = ($la == 0x6443 && $ha == 0x6449) ? 1 : 0;
 	## local($trace) = ($la == 0x635A && $ha == 0x636C) ? 1 : 0;
 
-	my($block_ind) = defined($EXTRA[$la][$#{$EXTRA[$la]}]) ? $EXTRA_IND[$la][$#{$EXTRA[$la]}] : $IND[$la];
-	print(STDERR "block_ind = $block_ind ($OP[$la]/$EXTRA[$la][0])\n") if $trace;	
+	my($block_ind) = $IND[$la];
+	for (my($i)=0; $i<@{$EXTRA[$la]}; $i++) {
+		next unless $EXTRA_IND[$la][$i] > 0;						# ignore dividers
+		$block_ind = $EXTRA_IND[$la][$i] if ($EXTRA_IND[$la][$i] < $block_ind);
+	}
+	print(STDERR "block_ind = $block_ind ($OP[$la]/$EXTRA[$la][$#{$EXTRA[$la]}])\n") if $trace;	
 
 	printf(STDERR "\nsame_block(%04X,%04X,if_block = $if_block)\ninside block limits?\n",$la,$ha,) if $trace;
 	my(@bb) = split(':',$BEGIN_BLOCK[$#BEGIN_BLOCK]);
@@ -77,9 +86,9 @@ sub same_block($$@)
 
 	print(STDERR "no\nbranch into block?\n") if $trace;
 	if ($if_block == 2) {										# _ELSE block
-		return 0 if branch_into_block($la,$ha-2,$la,$ha);				# 1 required for IF to ELSE
+		return 0 if branch_into_block($la,$ha-2,$la,$ha,1);		# 1 required for IF to ELSE
 	} elsif ($if_block == 1) {									# _IF block
-		return 0 if branch_into_block($la,$ha-2,$la,$ha);					
+		return 0 if branch_into_block($la,$ha-2,$la,$ha,0);					
     } else {													# _LOOP block
 		return 0 if branch_into_block($la+2,$ha,$la,$ha,0);		# allowing entry into loop is not good
 	}
@@ -109,8 +118,9 @@ sub same_block($$@)
 	print(STDERR "no. OP[ha] defined?\n") if $trace;
 	next unless defined($OP[$ha]);
 
-	print(STDERR "yes. checking indentation at end of block\n") if $trace;
+	print(STDERR "yes. checking indentation at end of block ($if_block/$IND[$ha]/$block_ind//$EXTRA[$ha][0]/$EXTRA_IND[$ha][0]\n") if $trace;
 	return 0 unless ($IND[$ha] == $block_ind) ||
+					(defined($EXTRA_IND[$ha][0]) && $block_ind == $EXTRA_IND[$ha][0]) ||				# needed e.g. for loop abutting if (T2 31:6481)
 					($if_block && (($block_ind == $EXTRA_IND[$ha][0]+1 && $EXTRA[$ha][0] eq '_ENDIF') ||
 				    			   ($block_ind == $IND[$ha]+1 && $OP[$ha] eq '_ELSE')));
 	return 0 if ( $EXTRA[$ha][0] && !$EXTRA_BEFORE_LABEL[$ha][0] && $EXTRA_IND[$ha][0] != $block_ind && $EXTRA[$ha][0] ne '_ENDIF') ||
