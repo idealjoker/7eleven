@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ D M D 
 #					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Sun Sep  1 17:40:51 2024
+#					 dlm: Tue Sep  3 10:51:42 2024
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 19 9 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 19 28 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -16,6 +16,7 @@
 #	Aug 30, 2024: - re-made -l use fmt 1
 #	Aug 31, 2024: - moved API loading here from [D711.WPC_DMD]
 #	Sep  1, 2024: - added undocumented -Q option for beautification of Makefiles
+#	Sep  3, 2024: - added -L
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -25,12 +26,13 @@
 use Getopt::Std;
 
 die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
+			"[-L)ist labels]\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[list -a)ddressse in output] [list -c)ode bytes]\n\t\t" . 
 			"[suppress -g)ap data]\n\t\t" . 
 			"[suppress code-s)tructure analysis]\n\t\t" .
 			"<ROM image>\n")
-	unless &getopts('acgi:lQs') && @ARGV==1;
+	unless &getopts('acgi:lLQs') && @ARGV==1;
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 ('WPC_DMD','$opt_Q = 1;');											# suppress D711 splash message
@@ -77,6 +79,11 @@ for (my($rpg)=0x20; $rpg<0x3E; $rpg++) {
 #----------------------------------------------------------------------
 # Produce Output
 #----------------------------------------------------------------------
+
+if ($opt_L) {																# dump label information
+	&D711::dump_labels(0);													# fmt == 1 generates code that can be used with -u
+	exit(0);																# to make a disassembled file with all labels defined up-front
+}
 
 if ($opt_l) {																# dump label information
 	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Thu Aug 29 09:11:53 2024
+#                    dlm: Tue Sep  3 12:35:18 2024
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 49 4 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 59 4 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -12,6 +12,7 @@
 #	Aug 27, 2024: - cs_while_loop disabled
 #	Aug 28, 2024: - BUG: exit_from did not handle RTS and RTI correctly
 #				  - BUG: branch_into did allow BSR
+#	Sep  3, 2024: - BUG: if missing because of label test
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -47,16 +48,18 @@ sub same_block($$@)
 
 	##local($trace) = ($la == 0x9EF1 && $ha == 0x9F16) ? 1 : 0;		
 	##local($trace) = ($la == 0x9EF6 && $ha == 0x9F01) ? 1 : 0;		
+	##local($trace) = ($la == 0x508D && $ha == 0x509E) ? 1 : 0;		
 
 	##local($trace) = ($la == 0x6563 && $ha == 0x6575) ? 1 : 0;		# AP
 	##	local($trace) = ($la == 0x64BE && $ha == 0x64D3) ? 1 : 0;
 	##local($trace) = ($la == 0x6377 && $ha == 0x637C) ? 1 : 0;
 	##	local($trace) = ($la == 0x647C && $ha == 0x648A) ? 1 : 0;
 	##	local($trace) = ($la == 0x64A9 && $ha == 0x64AB) ? 1 : 0;
+	##	local($trace) = ($la == 0x6443 && $ha == 0x6449) ? 1 : 0;
+	## local($trace) = ($la == 0x635A && $ha == 0x636C) ? 1 : 0;
 
-	
-	my($block_ind) = $IND[$la];
-#	print(STDERR "block_ind = $block_ind\n") if $trace;	
+	my($block_ind) = defined($EXTRA[$la][0]) ? $EXTRA_IND[$la][0] : $IND[$la];
+	print(STDERR "block_ind = $block_ind ($OP[$la]/$EXTRA[$la][0])\n") if $trace;	
 
 	printf(STDERR "\nsame_block(%04X,%04X,if_block = $if_block)\ninside block limits?\n",$la,$ha,) if $trace;
 	my(@bb) = split(':',$BEGIN_BLOCK[$#BEGIN_BLOCK]);
@@ -72,22 +75,23 @@ sub same_block($$@)
 
 	print(STDERR "no\nbranch into block?\n") if $trace;
 	if ($if_block == 2) {										# _ELSE block
-		return 0 if branch_into_block($la,$ha-2,1);				# 1 required for IF to ELSE
+		return 0 if branch_into_block($la,$ha-2,$la,$ha);				# 1 required for IF to ELSE
 	} elsif ($if_block == 1) {									# _IF block
-		return 0 if branch_into_block($la,$ha-2);					
+		return 0 if branch_into_block($la,$ha-2,$la,$ha);					
     } else {													# _LOOP block
-		return 0 if branch_into_block($la,$ha,0);				# allowing entry into loop is not good
+		return 0 if branch_into_block($la+2,$ha,$la,$ha,0);		# allowing entry into loop is not good
 	}
 
 	print(STDERR "no\nchecking labels...\n") if $trace;
 	for (my($a)=$la; $a<$ha; $a++) {
 		if ($if_block == 2 || $a > $la) {						# BRA at start of _IF and _LOOP blocks can have labels
-			printf(STDERR "addr = %04X; LBL defined?\n",$a) if $trace;
-			return 0 if defined($LBL[$a]);
+			printf(STDERR "addr = %04X; LBL defined? [$LBL[$a]]\n",$a) if $trace;
+			return 0 if defined($LBL[$a])
+							&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,4)) == $a);			# necessary for trace((508D,509E)
 			print(STDERR "no. non-local AUTO_LBL (= $AUTO_LBL[$a]) defined?\n") if $trace;
 			printf(STDERR "[$OP[$a-3] $OPA[$a-3][0]]\n") if $trace;
 			return 0 if defined($AUTO_LBL[$a]) && substr($AUTO_LBL[$a],0,1) ne '.'			# non local label exists
-							&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,4)) == $a);			# ... and it's not part of a _skip
+							&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,4)) == $a);			# ... and it's not part of a &skip
 		}
     }
 
@@ -98,7 +102,8 @@ sub same_block($$@)
 	return 0 unless ($IND[$lopa] == $block_ind);
 
 	printf(STDERR "indentation okay. LBL at ha?\n") if $trace;
-	return 0 if defined($LBL[$ha]);
+##	return 0 if defined($LBL[$ha]);
+	print(STDERR "ignored\n") if $trace && defined($LBL[$ha]);	# necessary for trace((508D,509E)
 	print(STDERR "no. OP[ha] defined?\n") if $trace;
 	next unless defined($OP[$ha]);
 
@@ -180,9 +185,9 @@ sub exit_from_block($$$)
 
 sub branch_into_block($$@)
 {
-	my($la,$ha,$allowed_branch) = @_;
+	my($la,$ha,$sla,$sha,$allowed_branch) = @_;
 
-	my($addr) = $la;
+	my($addr) = $sla;
 	while ($la-(--$addr) <= 128) {
 		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^B..$};
 		my($trg) = $OPA[$addr][0];
@@ -198,7 +203,7 @@ sub branch_into_block($$@)
 		}
 	}
 
-	$addr = $ha;
+	$addr = $sha;
 	while ((++$addr)-$ha <= 128) {
 		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^B..$};
 		my($trg) = $OPA[$addr][0];
@@ -228,10 +233,10 @@ sub cs_loop_while($$$$$)
 				&& same_block($trg,$addr,0)									 		# ... and at the same indentation
 				&& !($OP[$trg] =~ m{^_})											# ... and not a macro (there can be confusion)
 				&& !defined($NoLoop{$trg})) {										# ... and has not been excempted from loops
-			unshift(@{$EXTRA[$trg]},$loop_op);
-			unshift(@{$EXTRA_IND[$trg]},$IND[$trg]);
-			unshift(@{$EXTRA_BEFORE_LABEL[$trg]},0);
-			unshift(@{$EXTRA_AFTER_OP[$trg]},0);
+			push(@{$EXTRA[$trg]},$loop_op);											# needs to be push, not unshift for AP:635A
+			push(@{$EXTRA_IND[$trg]},$IND[$trg]);
+			push(@{$EXTRA_BEFORE_LABEL[$trg]},0);
+			push(@{$EXTRA_AFTER_OP[$trg]},0);
 			$OP[$addr] = $endloop_op; pop(@{$OPA[$addr]});
 			$IND[$trg]++;
 			for (my($a)=$trg+1; $a<$addr; $a++) {
@@ -372,7 +377,7 @@ sub process_code_structure($$)
 	#	- local variable @LEX_LABEL required
 	#------------------------------------------------------------
 
-	my($nLex,$RTSa);
+	my($nLex,$RTSa,$ETa);
 	local(@LEX_LABEL);
 	for (my($addr)=$eaddr; $addr>=$saddr; $addr--) {
 		next unless defined($OP[$addr]);									# skip addresses w/o operations
@@ -394,6 +399,28 @@ sub process_code_structure($$)
 		}
 			     
 		$LEX_LABEL[$trg] = '>RTS';											# otherwise, we have a valid lexical label
+		$nLex++;
+	}
+	for (my($addr)=$eaddr; $addr>=$saddr; $addr--) {
+		next unless defined($OP[$addr]);									# skip addresses w/o operations
+
+		$ETa=$addr,next if ($OP[$addr] eq '!') && hex(substr($OPA[$addr][0],1,4)) == $Lbl{exitThread};
+		next unless defined($ETa);											# do not continue unless there is an address
+		next if ($OP[$addr] =~ m{L?BSR}) || !($OP[$addr] =~ m{L?B..$});		# skip non-branch operations
+
+		my($trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});	# skip branch ops that do not target an !exitThread
+		$trg = hex($trg);
+		die unless numberp($trg);
+		next unless ($trg > $addr);
+		next unless ($OP[$trg] eq '!') && (hex(substr($OPA[$trg][0],1,4)) == $Lbl{exitThread});
+
+		if (substr($OP[$addr],0,1) eq 'L') {								# skip branch ops that are too far away
+			next if ($trg > $addr+32768);
+		} else {
+			next if ($trg > $addr+128);
+		}
+			     
+		$LEX_LABEL[$trg] = '>!exitThread';									# otherwise, we have a valid lexical label
 		$nLex++;
 	}
 	undef($RTSa);
