@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Sep  2 11:33:12 2024
+#                    dlm: Mon Sep  2 21:51:37 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 573 33 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 609 36 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -605,9 +605,18 @@ sub defAdjustment($$)
 {
 	my($no,$name) = @_;
 
-	die("defFlag: invalid adjustment number $no\n")
-		unless ($no>=0 && $no<65);
+	die("defAdjustment: invalid adjustment number $no\n")
+		unless ($no>0 && $no<=0xFFFF);
 	$Adj[$no] = $name;
+}
+
+sub defAudit($$)
+{
+	my($no,$name) = @_;
+
+	die("defAudit: invalid audit number $no\n")
+		unless ($no>=0 && $no<65);
+	$Audit[$no] = $name;
 }
 
 #----------------------------------------------------------------------

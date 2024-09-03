@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Sep  2 11:11:43 2024
+#					 dlm: Mon Sep  2 21:26:19 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 2854 73 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2871 100 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -2868,6 +2868,8 @@ sub substitute_identifiers(@)                                                   
                 $OPA[$addr][$i] = $Thread[hex($1)] if defined($Thread[hex($1)]);
             } elsif ($OPA[$addr][$i] =~ m{^Error#}) {                                      	# errors (WPC)
                 $OPA[$addr][$i] = $Error[hex($')] if defined($Error[hex($')]);
+            } elsif ($OPA[$addr][$i] =~ m{^Audit#}) {                                      	# audits (WPC)
+                $OPA[$addr][$i] = $Audit[hex($')] if defined($Audit[hex($')]);
             } 
         }
     }

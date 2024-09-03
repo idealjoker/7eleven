@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Sep  2 15:15:57 2024
+#                    dlm: Mon Sep  2 21:52:13 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 167 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 191 49 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -188,7 +188,7 @@ define_syscall('syscall_880C',			0x880C,'W');
 define_syscall('syscall_8885',			0x8885,'W');
 define_syscall('syscall_8895',			0x8895,'W');
 define_syscall('syscall_88B5',			0x88B5,'W');
-define_syscall('syscall_88D5',			0x88D5,'W');
+define_syscall('updateAudit',			0x88D5,'U');
 define_syscall('longJSR',				0x88F5,'R');
 define_syscall('longJMP',				0x892F,'R',1);			# NOTE 1: does not return
 define_syscall('syscall_8948',			0x8948,'R');
