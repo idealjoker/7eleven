@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Tue Sep  3 12:35:18 2024
+#                    dlm: Tue Sep  3 13:01:37 2024
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 59 4 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 17 60 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -12,7 +12,9 @@
 #	Aug 27, 2024: - cs_while_loop disabled
 #	Aug 28, 2024: - BUG: exit_from did not handle RTS and RTI correctly
 #				  - BUG: branch_into did allow BSR
-#	Sep  3, 2024: - BUG: if missing because of label test
+#	Sep  3, 2024: - BUG: _IF not correctly detected because of label test
+#				  - BUG: branch_into_block needed separate block and search limits
+#				  - BUG: nested loops did not work correctly
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -58,7 +60,7 @@ sub same_block($$@)
 	##	local($trace) = ($la == 0x6443 && $ha == 0x6449) ? 1 : 0;
 	## local($trace) = ($la == 0x635A && $ha == 0x636C) ? 1 : 0;
 
-	my($block_ind) = defined($EXTRA[$la][0]) ? $EXTRA_IND[$la][0] : $IND[$la];
+	my($block_ind) = defined($EXTRA[$la][$#{$EXTRA[$la]}]) ? $EXTRA_IND[$la][$#{$EXTRA[$la]}] : $IND[$la];
 	print(STDERR "block_ind = $block_ind ($OP[$la]/$EXTRA[$la][0])\n") if $trace;	
 
 	printf(STDERR "\nsame_block(%04X,%04X,if_block = $if_block)\ninside block limits?\n",$la,$ha,) if $trace;
