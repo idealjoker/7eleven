@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Mon Sep  2 21:53:45 2024
+#                    dlm: Wed Sep  4 20:27:29 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 410 47 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 38 47 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -35,6 +35,7 @@
 #	Aug 29, 2024: - moved extra space after RTS, JMP, etc to [D711.WPC_DMD]
 #					because during magic processing the indentation is known
 #	Sep  1, 2024: - BUG: legal flag numbers are different
+#	Sep  4, 2024: - added support for DMD# type
 # HISTORY END
 
 # NOTES:
@@ -404,10 +405,11 @@ sub disassemble_syscall($$)
 			push(@{$OPA[$oaddr]},sprintf('Adj#%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'U') {											# U: aUdit
-			die(sprintf("Invalid audit Audit#%02X",BYTE($addr)))
-				unless (BYTE($addr)>=0 && BYTE($addr)<=255);
 			push(@{$OPA[$oaddr]},sprintf('Audit#%04X',WORD($addr)));
 			$decoded[$addr++] = $decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'D') {											# D: DMD animation
+			push(@{$OPA[$oaddr]},sprintf('DMD#%02X',BYTE($addr)));
+			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'C') {											# C: code ptr (W)
 			my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
 			push(@{$OPA[$oaddr]},sprintf('$%04X',$taddr));
