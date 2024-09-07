@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Sep  6 11:43:32 2024
+#                    dlm: Sat Sep  7 10:10:17 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 208 104 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 173 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -67,8 +67,12 @@ define_label('=THREAD_LIST_1',			0x366);
 define_label('=THREAD_LIST_2',			0x371);
 define_label('=STATUS_AREA_POINTER',	0x380);		# Scott
 
+define_label('_PLAYER_UP',				0x40F);
 define_label('_BALL_IN_PLAY',			0x410);
-define_label('_EXTRABALLS_PENDING?',	0x411);
+define_label('_EXTRABALLS_PENDING??',	0x411);
+define_label('=PLAYER_MEM_DATA??',		0x4AC);
+define_label('_SIZE_PLAYER_MEM_DATA??',	0x4AE);
+define_label('_TILTWARNINGS_LEFT',		0x4D4);
 
 define_label('^MBD_LOCK_DATA',			0xCCC);
 define_label('_MBD_NUM_LOCKS',			0xCCE);
@@ -166,9 +170,9 @@ define_syscall('flagSet?',				0x84AD,'F');
 define_syscall('syscall_8505',			0x8505,'B');
 define_syscall('addScore',				0x851F,'B');
 define_syscall('syscall_8539',			0x8539,'B');
-define_syscall('playSound??',			0x8546,'B');
+define_syscall('playSound',				0x8546,'B');
 define_syscall('DMDanimation',			0x8553,'D');
-define_syscall('playSound',				0x85B2,'B');
+define_syscall('lampFX',				0x85B2,'B');
 define_syscall('syscall_85A2',			0x85A2,'B');
 define_syscall('syscall_85E1',			0x85E1,'B');
 define_syscall('syscall_85F1',			0x85F1,'B');
@@ -220,7 +224,7 @@ define_syscall('syscall_FDFC',			0xFDFC,'B');
 
 # non-global
 
-define_label('sys_tilt??',						0x5921, 0x39);
+define_label('sys_tilt',						0x5921, 0x39);
 
 define_label('sys_rotLeft_AB',					0x66F5, 0x3B);
 define_label('sys_fill_AB',						0x6706, 0x3B);
@@ -273,13 +277,19 @@ define_label('sys_bitgroup_allSet?_D',			0xAE19);
 define_label('sys_bitgroup_allOff?_D',			0xAE29);
 define_label('sys_bitgroupOp_ABXY',				0xAE53);
 define_label('sys_printString_BXY',				0xB97B);
-define_label('sys_playSound_A',					0xCC3A);
+define_label('sys_lampFX_A',					0xCC3A);
 define_label('sys_IRQ_timer_handler??',			0xECCA);
 define_label('sys_addBonus_1130',				0xFAA8);
 define_label('sys_addBonus_3330',				0xFAAE);
 define_label('sys_addBonus_5530',				0xFAB4);
 define_label('sys_addBonus_9930',				0xFABA);
 define_label('sys_addBonus_A',					0xFABE);
+
+#----------------------------------------------------------------------
+# Threads
+#----------------------------------------------------------------------
+
+$Threa[0x3813] = 'THD_bobTilt_swingDelay';
 
 #----------------------------------------------------------------------
 # Scott Charles (from Dr. WHO)

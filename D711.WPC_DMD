@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Sep  4 20:26:06 2024
+#                    dlm: Fri Sep  6 17:29:40 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 39 67 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 94 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -79,13 +79,17 @@ sub disassemble_WPC_DMD()
 			def_WPC_codeRef("syscall_$taddr",'System Call');
 		}
 
-		$Address = 0x8133;
+		my($ubyte,$uword);
+
+		$Address = 0x812D;
 		insert_divider($Address,'System Data Pointers');
+		$Address = def_WPC_ref('_RAM_04AF_INIT_VALUE');
+			def_byte_hex();
+
+		$Address = 0x813C;
 		def_WPC_stringRef('sysstr_gameName','System String');
 		def_WPC_stringRef('sysstr_gameNumber','System String');
 		def_WPC_stringRef('sysstr_buildDate','System String');
-
-		my($ubyte,$uword);
 
 		$Address = 0x813C;
 		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
@@ -161,8 +165,7 @@ sub disassemble_WPC_DMD()
 
 		$Address = 0x8296;
 		def_ptr_hex('^=STATUS_AREA');
-		insert_divider($Address,'System Code');
-	}
+		insert_divider($Address,'System Code');}
 
 	if ($dasm_switchTable) {
 		$Address = 0x81C5;
@@ -170,9 +173,10 @@ sub disassemble_WPC_DMD()
 			def_WPC_switchTable(undef,'Switch Table');					# label already defined
 	}
 
-	if ($dasm_randomFindings) {
+	if ($dasm_randomFindings) {											# manual findings
 		$Address = 0xAE39; def_code('sys_bitIsSet_4BG');
 		$Address = 0xAE46; def_code('sys_bitIsClear_4BG');
+		
 		select_WPC_RPG(0x3B);
 		$Address = 0x6717; def_code('unkown_bitgroupOp_hook?_6717');
 		$Address = 0x6781; def_code('unkown_bitgroupOp_hook?_6781');

@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sun Sep  1 16:49:25 2024
+                    dlm: Sat Sep  7 09:00:21 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 80 39 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 68 43 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -65,6 +65,7 @@
 - 1 byte buffer offset
 	$00		lamps
 	$40		blink buffer
+- Bitgroup#01 includes all controlled lamps
 
 sys_bitgroupOp_ABXY
 	A	ROM page of hook routine
@@ -80,34 +81,21 @@ sys_bitgroupOp_ABXY
 	- passed to switch handlers as A_in
 
 
-======================================================================
+----------------------------------------------------------------------
+
+=Threads=
+
+- default thread mask is $01FF (512 thread ids)
+- thread mask flags:
+	$1000		???
+	$2000		protected from tilt
+	$0800		protected from game start
+- system thread ids:
+	$12-$14		tilt related
+
+----------------------------------------------------------------------
 
 =Bit Shifter=
-
-<9EA5>  sys_check_BitShifter_input:
-<9EA5>          CMPA    #$40								; Flag or lamp number 01-40?
-<9EA7>          BHI     .label_9EAF
-<9EA9>          CMPB    #$48								; yes: =FLAGS buffer?
-<9EAB>          BNE     .return_okay						; 	no:  Lamp#01 - Lamp#40 okay
-<9EAD>          BRA     .return_error						; 	yes: flag byte <= $41 not okay
-<9EAF>  .label_9EAF:										; A_in >= $41
-<9EAF>          CMPB    #$48								; =FLAGS buffer?
-<9EB1>          BNE     .return_error						; 	no: LAMP#41 - Lamp#FF not okay
-<9EB3>          BITA    #$40								; Flag#40-7F or Flag#C0-CF?
-<9EB5>          BEQ     .return_error						;	no: illegal flag number
-<9EB7>          ANDA    #$BF								; A_in >= $80? (Flag#C0-CF)
-<9EB9>          _IF_MI
-<9EBB>              ANDA    #$7F							; A := Flag#00-40
-<9EBD>              LDB     #$50							; use =FLAGS_HIGH
-<9EBF>          _ENDIF
-<9EBF>  .return_okay:
-<9EBF>          ANDCC   #$FE								; CLC
-<9EC1>          BRA     >RTS
-<9EC3>  .return_error:
-<9EC3>          !Error $16
-<9EC7>          ORCC    #$01								; SEC
-<9EC9>          RTS
-
 
 Buffers:
 	$1F		=???			not at all common, tracing syscalls
