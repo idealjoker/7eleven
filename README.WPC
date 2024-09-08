@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sat Sep  7 09:00:21 2024
+                    dlm: Sat Sep  7 19:06:57 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 68 43 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 78 34 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -75,11 +75,60 @@ sys_bitgroupOp_ABXY
 
 ----------------------------------------------------------------------
 
+=Multiball Devices (MBDs) / Locks=
+
+- lock data table
+	- ^MBD_LOCK_DATA in RAM
+	- _MBD_NUM_LOCKS rows
+	- 5 bytes per entry:
+		0
+		1	
+		2	Locked Balls (lock_count error message)
+		3	Flags (MSW_lock_handler)
+		4
+
+- handler routines
+	- handler routines called when switch state changes
+	- MBD_callHandler_A <cmd>
+		- A_in == $01 (trough)
+			cmd == $01 (ballserve)
+			cmd == $02 (endball)
+			cmd == $03 (???)
+			cmd == $16 (???, after error)
+			cmd == $23 (???)
+		- A_in == <switch table parameter byte> (in MSW_lock_handler)
+			cmd == $04-$09
+	- handler codes
+		$04		switch not active (just opened), no ball locked logically
+		$07		switch active (switch just closed)
+			
+
+----------------------------------------------------------------------
+
 =Switches=
 
-- Switch table has column with Lamp numbers (flags possible too?)
-	- passed to switch handlers as A_in
+- SWITCH TABLE
+	0		unknown
+	1		unknown
+	2-4		HANDLER (3-byte ref)
+	5		unknown
+	6		unknown
+	7		PAYLOAD (most often a lamp, but for locks it is the MBD lock number)
+	8		FLAGS F1
+	9		FLAGS F2
+	10		unknown
+	11		unknown
 
+- switch FLAGS F1
+	$10		if set, !switchActive? returns true when the switch is open
+
+- switch FLAGS F2
+	$40		always set except for coin switches
+	$80		dual-action switch
+
+- switch HANDLER
+	A_in = PAYLOAD
+	B_in = switch number
 
 ----------------------------------------------------------------------
 

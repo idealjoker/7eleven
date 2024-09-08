@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Fri Sep  6 17:29:40 2024
+#                    dlm: Sat Sep  7 17:51:36 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 94 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 433 50 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -170,7 +170,11 @@ sub disassemble_WPC_DMD()
 	if ($dasm_switchTable) {
 		$Address = 0x81C5;
 		$Address = def_WPC_ref('=SWITCHTABLE');
-			def_WPC_switchTable(undef,'Switch Table');					# label already defined
+			def_WPC_switchTable(undef,'Switch Table',1);				# label already defined, follow code
+		$Address = 0x821C;
+		$Address = def_WPC_ref('=AUX_SWITCHTABLE');
+			def_WPC_switchTable(undef,'Switch Table',1)
+				if defined($Address);
 	}
 
 	if ($dasm_randomFindings) {											# manual findings
@@ -343,7 +347,8 @@ sub select_WPC_RPG($)
 
 sub def_WPC_switchTable(@)
 {
-	my($lbl,$divider_label) = @_;
+	my($lbl,$divider_label,$follow_code) = @_;
+#	print(STDERR "def_WPC_switchTable(@_)\n");
 
 	die unless defined($Address);
 	return if ($decoded[$Address]);												
@@ -367,6 +372,7 @@ sub def_WPC_switchTable(@)
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 	for (my($sw)=0; $sw<$rows; $sw++) {
+#		print(STDERR "sw = $sw\n");
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $data_indent; $TYPE[$opaddr] =  $CodeType_data;
 		$OP[$opaddr] = '.DBBRB';
@@ -378,7 +384,7 @@ sub def_WPC_switchTable(@)
 		my($swn) = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('Switch#%02X',$sw);
 		push(@{$OPA[$opaddr]},label_address($ta,$swn.'_handler',1));		# suppress address suffix in label
 		push(@{$OPA[$opaddr]},sprintf('$%02X',$tp));
-		WPC_codeRef($swn.'_handler',"Switch Handler ($swn)");
+		WPC_codeRef($swn.'_handler',"Switch Handler ($swn)",$follow_code);
 		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
@@ -406,19 +412,26 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 
 	my($pointee_addr) = WORD($Address);
 	my($RPG) = BYTE($Address+2);
-	select_WPC_RPG($RPG);
+#	printf(STDERR "def_WPC_ref: %02X:%04X\n",$RPG,$pointee_addr);
+	select_WPC_RPG($RPG)
+		unless ($RPG == 0x00);																# NULL ref
 
 	$pointee_lbl = $` if ($pointee_lbl =~ m{\[[0-9A-F]{2}\]$});            					# remove previous RPG if there is one
 	$pointee_lbl .= sprintf('[%02X]',$_cur_RPG)
-		unless ($RPG == 0xFF);
+		unless ($RPG == 0xFF && $RPG == 0x00);
 	setLabel("^$pointee_lbl",$Address);
 	
-	my($usr_lbl) = $LBL[$pointee_addr];
-	$pointee_lbl = $usr_lbl if defined($usr_lbl);
-	setLabel($pointee_lbl,$pointee_addr);
-
 	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $codeType_data;
-	$OPA[$Address][0] = $pointee_lbl; 
+	if ($pointee_addr == 0x0000) {
+		$OPA[$Address][0] = '$0000';
+		$OPA[$Address][1] = '$00';
+	} else {
+		my($usr_lbl) = $LBL[$pointee_addr];
+		$pointee_lbl = $usr_lbl if defined($usr_lbl);
+		setLabel($pointee_lbl,$pointee_addr);
+		$OPA[$Address][0] = $pointee_lbl; 
+		$OPA[$Address][1] = sprintf('$%02X',$RPG);
+	}
 	$REM[$Address] = $rem unless defined($REM[$Address]); 
 	$decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
 
@@ -508,7 +521,7 @@ sub def_WPC_stringRef($@)														# DOES NOT MAINTAIN RPG
 
 sub WPC_codeRef($@)
 {
-	my($code_lbl,$divider_label) = @_;
+	my($code_lbl,$divider_label,$follow_code) = @_;
 	my($code_addr) = WORD($Address);
 
 	my($RPG) = BYTE($Address+2);
@@ -523,7 +536,7 @@ sub WPC_codeRef($@)
 	$code_lbl = $usr_lbl if defined($usr_lbl);
 	setLabel($code_lbl,$code_addr);
 
-	disassemble_asm($code_base_indent,$code_addr,$code_lbl,$divider_label);
+	disassemble_asm($code_base_indent,$code_addr,$code_lbl,$divider_label,$follow_code);
 #	die if $unclean;
 
 	select_WPC_RPG($orpg);
