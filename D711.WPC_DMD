@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Sep  8 10:29:16 2024
+#                    dlm: Sun Sep  8 15:19:33 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 409 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 40 50 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -37,6 +37,7 @@
 #	Sep  1, 2024: - added support for _IF_true and _IF_false "macros"
 #	Sep  2, 2024: - made lamps decimal
 #	Sep  4, 2024: - BUG: _IF_true did not work correctly with &skip
+#	Sep  8, 2024: - added empty lines after tables
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -414,6 +415,7 @@ sub def_WPC_lockTable(@)
 
 	    $Address = $sa;
     }
+    insert_empty_line($Address-2);
 }
 
 #----------------------------------------------------------------------
@@ -469,6 +471,7 @@ sub def_WPC_switchTable(@)
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 	}
+    insert_empty_line($Address-11);
 }   
 		    
 #----------------------------------------------------------------------

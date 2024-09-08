@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Sep  8 10:19:44 2024
+#                    dlm: Sun Sep  8 13:56:54 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 205 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 79 39 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -76,6 +76,9 @@ define_label('=PLAYER_MEM_DATA??',		0x4AC);
 define_label('_SIZE_PLAYER_MEM_DATA??',	0x4AE);
 define_label('_TILTWARNINGS_LEFT',		0x4D4);
 
+define_label('_MBD_NUM_BALL_IN_TROUGH??',	0xCC9);
+define_label('_MBD_NUM_BALLS_IN_PLAY??',	0xCCA);
+define_label('_MBD_NUM_BALLS_LOCKED',	0xCCB);
 define_label('^MBD_LOCK_DATA',			0xCCC);
 define_label('_MBD_NUM_LOCKS',			0xCCE);
 
@@ -254,8 +257,8 @@ define_label('A=adjustmentA??==1',				0x92DE);
 define_label('D=adjustmentA??==1',				0x92EC);
 define_label('Y=adjustmentA??',					0x92F8);
 define_label('sys_kill_thread',					0x9B24);
-define_label('sys_findThreadY',					0x9B34);
-define_label('sys_findThreadDY',				0x9B3D);
+define_label('sys_findThread_Y?',				0x9B34);
+define_label('sys_findThread_DY?',				0x9B3D);
 define_label('find_thread_in_list',				0x9B55);
 define_label('sys_zeroCrossIRQ_clear',			0x9D00);
 define_label('sys_clearBit_AB',					0x9E92);

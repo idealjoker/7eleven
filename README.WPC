@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sat Sep  7 19:06:57 2024
+                    dlm: Sun Sep  8 14:45:52 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 78 34 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 84 62 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -81,11 +81,19 @@ sys_bitgroupOp_ABXY
 	- ^MBD_LOCK_DATA in RAM
 	- _MBD_NUM_LOCKS rows
 	- 5 bytes per entry:
-		0
-		1	
-		2	Locked Balls (lock_count error message)
+		0	set to $80 on switch closure of lock when byte 1 == 0
+		1	when 0, ignore switch closures, except to mark them in byte 0
+		2	Locked Balls 
 		3	Flags (MSW_lock_handler)
 		4
+
+- T2 Locks
+		0
+		1
+		2	Left
+		3	Upper
+		4	Skull
+		5	Cannon
 
 - handler routines
 	- handler routines called when switch state changes
@@ -97,10 +105,15 @@ sys_bitgroupOp_ABXY
 			cmd == $16 (???, after error)
 			cmd == $23 (???)
 		- A_in == <switch table parameter byte> (in MSW_lock_handler)
-			cmd == $04-$09
-	- handler codes
-		$04		switch not active (just opened), no ball locked logically
+			cmd == $04-90
+	- known handler codes
+		$04		switch not active (just opened), no ball locked logically (error condition)
+		$05		ball ejected sucessfully
+		$06		ball eject failed (switch closed less than 1s after it opened; error condition)
 		$07		switch active (switch just closed)
+		$08		ball locked successfully (switch remains closed after delay)
+		$09		lock lost (switch opened after closing)
+		$0A
 			
 
 ----------------------------------------------------------------------
@@ -141,6 +154,7 @@ sys_bitgroupOp_ABXY
 	$0800		protected from game start
 - system thread ids:
 	$12-$14		tilt related
+	$40-$4F		lock threads
 
 ----------------------------------------------------------------------
 
