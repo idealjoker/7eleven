@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Sep  7 18:19:10 2024
+#                    dlm: Sun Sep  8 10:19:44 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 37 40 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 205 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -202,9 +202,10 @@ define_syscall('updateAudit',			0x88D5,'U');
 define_syscall('longJSR',				0x88F5,'R');
 define_syscall('longJMP',				0x892F,'R',1);			# NOTE 1: does not return
 define_syscall('syscall_8948',			0x8948,'R');
-define_syscall('syscall_89F8',			0x89F8,'WB');
-define_syscall('memCopyX',				0x89BE,'PB');
+define_syscall('memCopy_to_X',			0x89BE,'PB');
+define_syscall('memCopy_from_Y',		0x89CE,'PB');
 define_syscall('syscall_89DD',			0x89DD,'WB');
+define_syscall('syscall_89F8',			0x89F8,'WB');
 define_syscall('killThreads_withMask',	0x8A9A,'TW');
 define_syscall('findThread?',			0x8AAA,'TW');
 define_syscall('memClear',				0x8ABA,'PW');
@@ -242,7 +243,7 @@ define_label('sys_longJSR_indirect_AX',			0x8631);
 define_label('sys_setBank=3B',					0x90B4);
 define_label('sys_setBank_B',					0x90BC);
 define_label('A=indexed_XB_INX',				0x90E7);
-define_label('A=indexed_XB',					0x90EC);
+define_label('A=indexed_XB==1?',				0x90EC);
 define_label('BX=loadRef_X',					0x90C5);
 define_label('sys_lock_RAM_B',					0x9207);
 define_label('sys_unlock_RAM',					0x9223);

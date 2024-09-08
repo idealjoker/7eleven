@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Sep  7 17:51:36 2024
+#                    dlm: Sun Sep  8 10:29:16 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 433 50 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 409 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -47,7 +47,8 @@ sub disassemble_WPC_DMD()
 {
 	my($dasm_CPU_vectors) 		= 1;
 	my($dasm_system_pointers) 	= 1;
-	my($dasm_switchTable)		= 1;
+	my($dasm_switchTables)		= 1;
+	my($dasm_lockTable)			= 1;
 	my($dasm_randomFindings)	= 1;
 	my($dasm_sys_gaps)			= 1;
 	my($dasm_fontTable)			= 0;
@@ -167,7 +168,7 @@ sub disassemble_WPC_DMD()
 		def_ptr_hex('^=STATUS_AREA');
 		insert_divider($Address,'System Code');}
 
-	if ($dasm_switchTable) {
+	if ($dasm_switchTables) {
 		$Address = 0x81C5;
 		$Address = def_WPC_ref('=SWITCHTABLE');
 			def_WPC_switchTable(undef,'Switch Table',1);				# label already defined, follow code
@@ -175,6 +176,12 @@ sub disassemble_WPC_DMD()
 		$Address = def_WPC_ref('=AUX_SWITCHTABLE');
 			def_WPC_switchTable(undef,'Switch Table',1)
 				if defined($Address);
+	}
+
+	if  ($dasm_lockTable) {
+		select_WPC_RPG(0x30);											# BYU=lockDataAndHandlerPointer_A
+		$Address = 0x7F13;	
+		def_WPC_lockTable('=LOCKTABLE','Lock Table / Multiball Device Table',1)
 	}
 
 	if ($dasm_randomFindings) {											# manual findings
@@ -339,6 +346,74 @@ sub select_WPC_RPG($)
 	}
 	
     return $oRPG;
+}
+
+#----------------------------------------------------------------------
+# Lock Table / Multiball Device Table
+#----------------------------------------------------------------------
+
+sub def_WPC_lockTable(@)
+{
+	my($lbl,$divider_label,$follow_code) = @_;
+#	print(STDERR "def_WPC_lockTable(@_)\n");
+
+	die unless defined($Address);
+	return if ($decoded[$Address]);												
+	return if defined($OP[$Address]);
+
+	if (defined($lbl)) {
+		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
+		$lbl .= sprintf('[%02X]',$_cur_RPG)
+			unless ($_cur_RPG == 0xFF);
+	    setLabel($lbl,$Address);
+	}
+    
+	insert_divider($Address,$divider_label);
+
+	$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	$OP[$Address] = '.DWB';
+	my($rows,$cols) = (WORD($Address),BYTE($Address+2));
+	push(@{$OPA[$Address]},$rows);
+	push(@{$OPA[$Address]},$cols);
+	$REM[$Address] = 'number of locks, bytes per lock' unless defined($REM[$Address]);
+	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+
+	for (my($lck)=0; $lck<$rows; $lck++) {
+#		print(STDERR "lck = $lck\n");
+		my($ptr) = WORD($Address);
+		$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		$OP[$Address] = '.DW';
+		my($taddr) = WORD($Address);
+			my($tlbl) = $LBL[$taddr];
+			$tlbl = sprintf('Lock#%02X_data',$lck) unless defined($tlbl);
+		    setLabel($tlbl,$taddr);
+		push(@{$OPA[$Address]},sprintf('$%04X',$taddr));
+		$REM[$Address] = 'pointer to 4-byte lock data' if !defined($REM[$Address]) && $lck==0;
+	    $decoded[$Address++] = $decoded[$Address++] = 1;
+
+		my($trpg);
+	    my($sa) = $Address;
+	    $Address = $taddr;
+		$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		$OP[$Address] = '.DBWB';
+		push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address)));
+		push(@{$OPA[$Address]},sprintf('$%04X',$taddr=WORD($Address+1)));
+		push(@{$OPA[$Address]},sprintf('$%02X',$trpg=BYTE($Address+3)));
+		$REM[$Address] = sprintf('Lock#%02X',$lck) if !defined($REM[$Address]);
+	    $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+
+	    if ($follow_code) {
+	    	my($srpg) = select_WPC_RPG($trpg);
+	    	insert_divider($taddr,'Lock Handler');
+			my($tlbl) = $LBL[$taddr];
+			$tlbl = sprintf('Lock#%02X_handler',$lck) unless defined($tlbl);
+		    setLabel($tlbl,$taddr);
+			disassemble_asm($code_base_indent,$taddr,$tlbl,undef,$follow_code);
+			select_WPC_RPG($srpg);
+	    }
+
+	    $Address = $sa;
+    }
 }
 
 #----------------------------------------------------------------------

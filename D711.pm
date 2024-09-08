@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Sep  4 20:26:34 2024
+#					 dlm: Sun Sep  8 09:19:46 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 231 47 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 232 42 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -229,6 +229,7 @@
 #	Sep  2, 2024: - BUG: define_label() redefined labels without warning/error
 #	Sep  3, 2024: - BUG: Thread# output on WPC was only 2 digits
 #	Sep  4, 2024: - added support for DMD# type
+#	Sep  8, 2024: - moved gap comment left
 # END OF HISTORY
 
 # TO-DO:
@@ -3055,7 +3056,8 @@ sub produce_output(@)                                                       # wi
                 } else {
                     $line .= sprintf('$%04X',$org);
                 }
-                $line .= indent($line,$hard_tab*$rem_indent)  . sprintf("; %d-byte gap",$gapLen)
+#                $line .= indent($line,$hard_tab*$rem_indent)  . sprintf("; %d-byte gap",$gapLen)
+                $line .= sprintf("\t\t; %d-byte gap",$gapLen)
                     if ($gapLen > 0);
                 $line .= "\n";                  
                 print($line); $line = '';
