@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Sep  8 13:56:54 2024
+#                    dlm: Mon Sep  9 08:43:18 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 79 39 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 298 44 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -295,7 +295,19 @@ define_label('sys_addBonus_A',					0xFABE);
 # Threads
 #----------------------------------------------------------------------
 
-$Threa[0x3813] = 'THD_bobTilt_swingDelay';
+$Thread[0x05] = 'SYSTHD_Diagnostics';		
+$Thread[0x0D] = 'SYSTHD_Outhole_unknown';					# flags $78
+$Thread[0x0F] = 'SYSTHD_Balltrough_unknown';
+
+$Thread[0x12] = 'SYSTHD_tilt_unknown';
+$Thread[0x13] = 'SYSTHD_bobTilt_swingDelay';				# flags $38
+$Thread[0x14] = 'SYSTHD_bobTilt_switchDebounce';			# flags $18
+
+for (my($i)=0; $i<=0x0F; $i++) {
+	$Thread[0x40+$i] = sprintf('SYSTHD_Lock#%02X_handler',$i);
+}
+
+$Thread[0x7F] = 'SYSTHD_Startbutton';						# flags $78
 
 #----------------------------------------------------------------------
 # Scott Charles (from Dr. WHO)
