@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Mon Sep  9 22:23:53 2024
+                    dlm: Tue Sep 10 15:23:55 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 91 17 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 193 4 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -185,3 +185,25 @@ Buffers:
 	$328	=FLAGS			2E0+48		Flag#01-40
 	$330	=FLAGS_HIGH		2E0+50		Flag#C0-100
 	
+======================================================================
+
+=Ball Drain Sequence=
+
+SW_Outhole_handler:
+	spawn ball_drained_thread
+	sys_Outhole_handler
+
+	ball_drained_thread
+		sleep 3s
+		set background tune
+		!longJSR library_6636[3B]
+			adjust background tune
+		exit
+
+	sys_Outhole_handler
+		RAM_041A := 1
+		kick ball into trough (MSW_Balltrough_handler)
+
+
+MSW_Balltrough_handler:
+			
