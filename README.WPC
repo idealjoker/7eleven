@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Mon Sep  9 08:06:22 2024
+                    dlm: Mon Sep  9 22:23:53 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 95 24 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 91 17 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -77,6 +77,27 @@ sys_bitgroupOp_ABXY
 
 =Multiball Devices (MBDs) / Locks=
 
+- Notes:
+	- abstraction: query library for number of balls in play, lock status, etc
+	- monitoring only -- no solenoids are fired
+	- event driven: each lock has an event handler that is called with an event
+	  code
+	- dispatchers: different subsystems use !MBD_callHandler_A <CMD> to call
+	  the event handler routine 
+	- MSW_lock_handler:
+		- switch handler used for all locks with the lock number (1-based)
+		  encoded in the switch table
+		- dispatcher defining events $04 - $09, triggered by switch state
+		  changes
+
+- T2 Lock list
+		0	Invalid Lock 
+		1	Balltrough
+		2	Left Scoop
+		3	Upper Scoop
+		4	Skull Popper
+		5	Cannon
+
 - lock data table
 	- ^MBD_LOCK_DATA in RAM
 	- _MBD_NUM_LOCKS rows
@@ -87,33 +108,28 @@ sys_bitgroupOp_ABXY
 		3	Flags (MSW_lock_handler)
 		4
 
-- T2 Locks
-		0	Invalid Lock 
-		1	Balltrough
-		2	Left Scoop
-		3	Upper Scoop
-		4	Skull Popper
-		5	Cannon
-
-- handler routines
-	- handler routines called when switch state changes
-	- MBD_callHandler_A <cmd>
-		- A_in == $01 (trough)
-			cmd == $01 (ballserve)
-			cmd == $02 (endball)
-			cmd == $03 (???)
-			cmd == $16 (???, after error)
-			cmd == $23 (???)
-		- A_in == <switch table parameter byte> (in MSW_lock_handler)
-			cmd == $04-90
-	- known handler codes
-		$04		switch not active (just opened), no ball locked logically (error condition)
-		$05		ball ejected sucessfully
-		$06		ball eject failed (switch closed less than 1s after it opened; error condition)
-		$07		switch active (switch just closed)
-		$08		ball locked successfully (switch remains closed after delay)
-		$09		lock lost (switch opened after closing)
+- lock handler routines
+	- usage: !MBD_callHandler_A <CMD>
+	- Dispatchers
+		- MSW_lock_handler
+			- handler routines called when switch state changes
+			- cmds $04 .. $09
+	- Handler Codes
+ 	    ------------------------------------------------------------------------------------------
+		code	dispatcher			function
+ 	    ------------------------------------------------------------------------------------------
+		$01							trough_ballServe
+		$02							endBall
+		$03		
+		$04		MSW_lock_handler 	switch not active (just opened), no ball locked logically (error condition)
+		$05		MSW_lock_handler	ball ejected sucessfully
+		$06		MSW_lock_handler	ball eject failed (switch closed less than 1s after it opened; error condition)
+		$07		MSW_lock_handler	switch active (switch just closed)
+		$08		MSW_lock_handler	ball locked successfully (switch remains closed after delay)
+		$09		MSW_lock_handler	lock lost (switch opened after closing)
 		$0A
+		$0B
+		$16							used after error
 			
 
 ----------------------------------------------------------------------

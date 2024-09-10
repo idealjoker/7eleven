@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Sep  9 08:43:18 2024
+#                    dlm: Mon Sep  9 21:22:38 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 298 44 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 234 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -29,204 +29,205 @@
 # RAM Memory Map
 #----------------------------------------------------------------------
 
-define_label('__FIRQ_SPRINGBOARD_1',	0x08);
-define_label('__FIRQ_SPRINGBOARD_2',	0x0A);
-define_label('_ROM_BANK_SHADOW',		0x11);		# Scott
-define_label('__SPRINGBOARD',			0x12);
+define_label('__FIRQ_SPRINGBOARD_1',			0x08);
+define_label('__FIRQ_SPRINGBOARD_2',			0x0A);
+define_label('_ROM_BANK_SHADOW',				0x11);		# Scott
+define_label('__SPRINGBOARD',					0x12);
 
-define_label('=UNKNOWN_SWITCH_BUFFER',	0x1F);
-define_label('=SWITCHES',				0x27);
+define_label('=UNKNOWN_SWITCH_BUFFER',			0x1F);
+define_label('=SWITCHES',						0x27);
 
-define_label('__RUNNING_THREAD_ID',		0x53);
-define_label('__SLEEP_TIME',			0x5B);
-define_label('__FINDTHREAD_ID',			0x5D);
-define_label('_FINDTHREAD_ID+1',		0x5E);
-define_label('__FINDTHREAD_MASK',		0x5F);
+define_label('__RUNNING_THREAD_ID',				0x53);
+define_label('__SLEEP_TIME',					0x5B);
+define_label('__FINDTHREAD_ID',					0x5D);
+define_label('_FINDTHREAD_ID+1',				0x5E);
+define_label('__FINDTHREAD_MASK',				0x5F);
 
-define_label('_BALLTILTED??',			0x86);	
-define_label('_GAMEOVER??',				0x87);	
+define_label('_BALLTILTED??',					0x86);	
+define_label('_GAMEOVER??',						0x87);	
 
-define_label('_ISR_MATRIXBYTE',			0x9C);
-define_label('_ISR_MATRIXBYTE_TMP',		0x9D);
-define_label('_ISR_TMP_A',				0x9E);
-define_label('__ISR_TMP_X',				0x9F);
+define_label('_ISR_MATRIXBYTE',					0x9C);
+define_label('_ISR_MATRIXBYTE_TMP',				0x9D);
+define_label('_ISR_TMP_A',						0x9E);
+define_label('__ISR_TMP_X',						0x9F);
 
-define_label('_MB_BALLS_IN_PLAY?',		0xBF);
+define_label('_MB_BALLS_IN_PLAY?',				0xBF);
 
-define_label('=LAMP_MATRIX_00_LOGICAL',	0x2E0);		# Lamp and Bit Buffers
-define_label('=LAMP_MATRIX_08_PRIMARY',	0x2E8);		
-define_label('=LAMP_MATRIX_10_MASK',	0x2F0);		
-define_label('=LAMP_MATRIX_18_DATA',	0x2F8);		
-define_label('=LAMP_MATRIX_20_MASK',	0x300);		
-define_label('=LAMP_MATRIX_28_DATA',	0x308);		
-define_label('=LAMP_MATRIX_30_MASK',	0x310);		
-define_label('=LAMP_MATRIX_38_DATA',	0x318);		
-define_label('=BLINK_MATRIX',			0x320);
-define_label('=FLAGS',					0x328);
-define_label('=FLAGS_HIGH',				0x330);
+define_label('=LAMP_MATRIX_00_LOGICAL',			0x2E0);		# Lamp and Bit Buffers
+define_label('=LAMP_MATRIX_08_PRIMARY',			0x2E8);		
+define_label('=LAMP_MATRIX_10_MASK',			0x2F0);		
+define_label('=LAMP_MATRIX_18_DATA',			0x2F8);		
+define_label('=LAMP_MATRIX_20_MASK',			0x300);		
+define_label('=LAMP_MATRIX_28_DATA',			0x308);		
+define_label('=LAMP_MATRIX_30_MASK',			0x310);		
+define_label('=LAMP_MATRIX_38_DATA',			0x318);		
+define_label('=BLINK_MATRIX',					0x320);
+define_label('=FLAGS',							0x328);
+define_label('=FLAGS_HIGH',						0x330);
 
-define_label('=THREAD_LIST_1',			0x366);
-define_label('=THREAD_LIST_2',			0x371);
-define_label('=STATUS_AREA_POINTER',	0x380);		# Scott
+define_label('=THREAD_LIST_1',					0x366);
+define_label('=THREAD_LIST_2',					0x371);
+define_label('=STATUS_AREA_POINTER',			0x380);		# Scott
 
-define_label('_PLAYER_UP',				0x40F);
-define_label('_BALL_IN_PLAY',			0x410);
-define_label('_EXTRABALLS_PENDING??',	0x411);
-define_label('=PLAYER_MEM_DATA??',		0x4AC);
-define_label('_SIZE_PLAYER_MEM_DATA??',	0x4AE);
-define_label('_TILTWARNINGS_LEFT',		0x4D4);
+define_label('_PLAYER_UP',						0x40F);
+define_label('_BALL_IN_PLAY',					0x410);
+define_label('_EXTRABALLS_PENDING??',			0x411);
+define_label('_BACKGROUND_MUSIC_PLAYING',		0x446);
+define_label('=PLAYER_MEM_DATA??',				0x4AC);
+define_label('_SIZE_PLAYER_MEM_DATA??',			0x4AE);
+define_label('_TILTWARNINGS_LEFT',				0x4D4);
 
-define_label('_MBD_NUM_BALL_IN_TROUGH??',	0xCC9);
-define_label('_MBD_NUM_BALLS_IN_PLAY??',	0xCCA);
-define_label('_MBD_NUM_BALLS_LOCKED',	0xCCB);
-define_label('^MBD_LOCK_DATA',			0xCCC);
-define_label('_MBD_NUM_LOCKS',			0xCCE);
+define_label('_MBD_NUM_BALL_IN_TROUGH??',		0xCC9);
+define_label('_MBD_NUM_BALLS_IN_PLAY??',		0xCCA);
+define_label('_MBD_NUM_BALLS_LOCKED',			0xCCB);
+define_label('^MBD_LOCK_DATA',					0xCCC);
+define_label('_MBD_NUM_LOCKS',					0xCCE);
 
 #----------------------------------------------------------------------
 # https://bcd.github.io/freewpc/The-WPC-Hardware.html
 #----------------------------------------------------------------------
 
-define_label('_RAM_BASE',				0x0000);	# System RAM (2K)
-define_label('_DMD_RAM_BASE',			0x3800);	# Display RAM (1K). Which 1K portion of the 16K SRAM appears here is controlled by writing to two display paging registers, WPC_DMD_HIGH_PAGE and WPC_DMD_LOW_PAGE. On WPC-95 only, up to 3K can be mapped, starting at 0x3000.
-define_label('_DEBUG_DATA_PORT',		0x3D60);	# 
-define_label('_DEBUG_CONTROL_PORT',		0x3D61);	# 
-define_label('_SERIAL_CONTROL_PORT',	0x3E66);	# 
-define_label('_SERIAL_DATA_PORT',		0x3E67);	# 
-#define_label('_DMD_3200_PAGE',			0x3FB8);	# [WPC-95 only]; 3-0: W: The page of display RAM mapped into the 2nd region, from 0x3200-0x33FF.
-#define_label('_DMD_3000_PAGE',			0x3FB9);	# [WPC-95 only]; 3-0: W: The page of display RAM mapped into the 1st region, from 0x3000-0x31FF.
-#define_label('_DMD_3600_PAGE',			0x3FBA);	# [WPC-95 only];
-define_label('_DMD_3400_PAGE',			0x3FBB);	# [WPC-95 only];
-define_label('_DMD_HIGH_PAGE',			0x3FBC);	# 3-0: W: The page of display RAM mapped into the 2nd (6th on WPC95) region, from 0x3A00-0x3BFF.
-define_label('_DMD_SCANLINE',			0x3FBD);	# 7-0: W: Request an FIRQ after a particular scanline is drawn 5-0: R: The last scanline that was drawn
-define_label('_DMD_LOW_PAGE',			0x3FBE);	# 3-0: W: The page of display RAM mapped into the 1st (5th on WPC95) region, from 0x3800-0x39FF.
-#define_label('_DMD_ACTIVE_PAGE',		0x3FBF);	# 3-0: W: The page of display RAM to be used for refreshing the display. Writes to this register take effect just prior to drawing scanline 0.
-define_label('_PARALLEL_STATUS_PORT',	0x3FC0);	# 
-define_label('_PARALLEL_DATA_PORT',		0x3FC1);	# 
-define_label('_PARALLEL_STROBE_PORT',	0x3FC2);	# 
-define_label('_SERIAL_DATA_OUTPUT',		0x3FC3);	# 
-define_label('_SERIAL_CONTROL_OUTPUT',	0x3FC4);	# 
-define_label('_SERIAL_BAUD_SELECT',		0x3FC5);	# 
-define_label('_TICKET_DISPENSE',		0x3FC6);	# 
-#define_label('_FLIPTRONIC_PORT_A',		0x3FD4);	# 7: W: Enable upper-left flipper hold 6: W: Enable upper-left flipper power 5: W: Enable upper-right flipper hold 4: W: Enable upper-right flipper power 3: W: Enable lower-left flipper hold 2: W: Enable lower-left flipper power 1: W: Enable lower-right flipper hold 0: W: Enable lower-right flipper power 7: R: Upper-left flipper EOS input 6: R: Upper-left flipper cabinet input 5: R: Upper-right flipper EOS input 4: R: Upper-right flipper cabinet input 3: R: Lower-left flipper EOS input 2: R: Lower-left flipper cabinet input 1: R: Lower-right flipper EOS input 0: R: Lower-right flipper cabinet input
-#define_label('_FLIPTRONIC_PORT_B',		0x3FD5);	# Not used.
-define_label('_SOUND_DATA',				0x3FDC);	# 7-0: R/W: Send/receive a byte of data to/from the sound board.
-define_label('_CONTROL_STATUS',			0x3FDD);	# 7: R: WPC sound board read ready 0: R: DCS sound board read ready
-define_label('_SOL_GEN_OUTPUT',	        0x3FE0);	# 7-0: W: Enables for solenoids 25-29
-define_label('_SOL_HIGHPOWER_OUTPUT',	0x3FE1);	# 7-0: W: Enables for solenoids 1-8
-define_label('_SOL_FLASH1_OUTPUT',		0x3FE2);	# 7-0: W: Enables for solenoids 17-24
-define_label('_SOL_LOWPOWER_OUTPUT',	0x3FE3);	# 7-0: W: Enables for solenoids 9-16
-define_label('_LAMP_ROW_OUTPUT',		0x3FE4);	# 7-0: W: Lamp matrix row output
-define_label('_LAMP_COL_STROBE',		0x3FE5);	# 7-0: W: Lamp matrix column strobe At most one bit in this register should be set. If all are clear, then no controlled lamps are enabled.
-define_label('_GI_TRIAC',				0x3FE6);	# 7: W: Flipper enable relay 5: W: Coin door enable relay 4-0: W: General illumination enables
-define_label('_SW_JUMPER_INPUT',		0x3FE7);	# 7-0: R: Jumper/DIP switch inputs
-define_label('_SW_CABINET_INPUT',		0x3FE8);	# 7: R: Fourth coin switch 6: R: Right coin switch 5: R: Center coin switch 4: R: Left coin switch 3: R: Enter (Begin Test) button 2: R: Up button 1: R: Down button 0: R: Escape (Service Credit) button
-define_label('_SW_ROW_INPUT',			0x3FE9); 	# Pre-security;	7-0: R: Readings for the currently selected switch column. Bit 0 corresponds to row 1, bit 1 to row 2, and so on. A '1' indicates active voltage level. For a mechanical switch, this means the switch is closed. For an optical switch, this means the switch is open.
-#define_label('_PIC_READ',				0x3FE9); 	# WPC-S
-define_label('_SW_COL_STROBE',			0x3FEA);	# Pre-security
-#define_label('_PIC_WRITE',				0x3FEA); 	# WPC-S; 7-0: W: Switch column strobe. For pre-Security games, exactly one bit must be set. For Security games, writing to this register sends a command to the PIC chip and does not directly control the strobe line.
-#define_label('_ALPHA_POS',				0x3FEB); 	# Alphanumeric;	# WPC_EXTBOARD1 0x3FEB *DMD On DMD games, this is a general I/O that is used for machine-specific purposes.
-#define_label('_ALPHA_ROW1',			0x3FEC); 	# Alphanumeric;	# 
-define_label('_EXTBOARD2',				0x3FEC); 	# DMD; On DMD games, this is a general I/O that is used for machine-specific purposes.
-define_label('_EXTBOARD3',				0x3FED); 	# DMD; On DMD games, this is a general I/O that is used for machine-specific purposes.
-#define_label('_ALPHA_ROW2',			0x3FEE); 	# Alphanumeric
-#define_label('_FLIPPER_COIL_OUTPUT',	0x3FEE); 	# WPC-95
-#define_label('_FLIPPER_SWITCH_INPUT',	0x3FEF); 	# WPC-95
-define_label('_LEDS',					0x3FF2);	# 7: R/W : The state of the diagnostic LED. >0=Off >1=On
-#define_label('_RAM_BANK',				0x3FF3); 	# WPC-95; 3-0: W: The page of RAM currently mapped into the banked region.
-define_label('__BITSHIFTER_ADDR',		0x3FF4);	# 15-0: R/W: The base address for the bit shifter. Writing to this address initializes the shifter. Reading from this address after a shift command returns the shifted address.
-define_label('_BITSHIFTER_BIT',			0x3FF6);	# 7-0: W: Sets the bit position for a shift command. 7-0: R: Returns the output of the last shift command as a bitmask.
-define_label('_BITSHIFTER_BIT2',		0x3FF7);	# 7-0: R/W:
-define_label('_PERIPH_TMR_FIRQ_CLEAR',	0x3FF8);	# 
-define_label('_ROM_LOCK',				0x3FF9);	# Not used
-define_label('_CLK_HOURS_DAYS',			0x3FFA);	# 7-0: R/W : The time-of-day hour counter.
-define_label('_CLK_MINS',				0x3FFB);	# 7-0: R/W : The time-of-day minute counter.
-define_label('_ROM_BANK',				0x3FFC);	# 5-0: R/W: The page of ROM currently mapped into the banked region (0x4000-0x7FFF). Pages 62 and 63 correspond to the uppermost 32KB, and are not normally mapped because those pages are accessible in the fixed region (0x8000-0xFFFF). Page numbers are consecutive. Page 0 corresponds to the lowest address in a 1MB device. If a smaller ROM is installed, the uppermost bits of this register are effectively ignored.
-define_label('_RAM_LOCK',				0x3FFD);	#
-define_label('_RAM_LOCKSIZE',			0x3FFE);	#
-define_label('_ZEROCROSS_IRQ_CLEAR', 	0x3FFF);	# 7: R: Set to 1 when AC is currently at a zero crossing, or 0 otherwise. 7: W: Writing a 1 here clears the source of the periodic timer interrupt. 4: R/W: Periodic timer interrupt enable >0=Periodic IRQ disabled >1=Periodic IRQ enabled 2: W: Writing a 1 here resets the watchdog. 
+define_label('_RAM_BASE',						0x0000);	# System RAM (2K)
+define_label('_DMD_RAM_BASE',					0x3800);	# Display RAM (1K). Which 1K portion of the 16K SRAM appears here is controlled by writing to two display paging registers, WPC_DMD_HIGH_PAGE and WPC_DMD_LOW_PAGE. On WPC-95 only, up to 3K can be mapped, starting at 	0x3000.
+define_label('_DEBUG_DATA_PORT',				0x3D60);	# 
+define_label('_DEBUG_CONTROL_PORT',				0x3D61);	# 
+define_label('_SERIAL_CONTROL_PORT',			0x3E66);	# 
+define_label('_SERIAL_DATA_PORT',				0x3E67);	# 
+#define_label('_DMD_3200_PAGE',					0x3FB8);	# [WPC-95 only]; 3-0: W: The page of display RAM mapped into the 2nd region, from 	0x3200-	0x33FF.
+#define_label('_DMD_3000_PAGE',					0x3FB9);	# [WPC-95 only]; 3-0: W: The page of display RAM mapped into the 1st region, from 	0x3000-0x31FF.
+#define_label('_DMD_3600_PAGE',					0x3FBA);	# [WPC-95 only];
+define_label('_DMD_3400_PAGE',					0x3FBB);	# [WPC-95 only];
+define_label('_DMD_HIGH_PAGE',					0x3FBC);	# 3-0: W: The page of display RAM mapped into the 2nd (6th on WPC95) region, from 0x3A00-0x3BFF.
+define_label('_DMD_SCANLINE',					0x3FBD);	# 7-0: W: Request an FIRQ after a particular scanline is drawn 5-0: R: The last scanline that was drawn
+define_label('_DMD_LOW_PAGE',					0x3FBE);	# 3-0: W: The page of display RAM mapped into the 1st (5th on WPC95) region, from 0x3800-0x39FF.
+#define_label('_DMD_ACTIVE_PAGE',				0x3FBF);	# 3-0: W: The page of display RAM to be used for refreshing the display. Writes to this register take effect just prior to drawing scanline 0.
+define_label('_PARALLEL_STATUS_PORT',			0x3FC0);	# 
+define_label('_PARALLEL_DATA_PORT',				0x3FC1);	# 
+define_label('_PARALLEL_STROBE_PORT',			0x3FC2);	# 
+define_label('_SERIAL_DATA_OUTPUT',				0x3FC3);	# 
+define_label('_SERIAL_CONTROL_OUTPUT',			0x3FC4);	# 
+define_label('_SERIAL_BAUD_SELECT',				0x3FC5);	# 
+define_label('_TICKET_DISPENSE',				0x3FC6);	# 
+#define_label('_FLIPTRONIC_PORT_A',				0x3FD4);	# 7: W: Enable upper-left flipper hold 6: W: Enable upper-left flipper power 5: W: Enable upper-right flipper hold 4: W: Enable upper-right flipper power 3: W: Enable lower-left flipper hold 2: W: Enable lower-left flipper power 1: W: Enable lower-right flipper hold 0: W: Enable lower-right flipper power 7: R: Upper-left flipper EOS input 6: R: Upper-left flipper cabinet input 5: R: Upper-right flipper EOS input 4: R: Upper-right flipper cabinet input 3: R: Lower-left flipper EOS input 2: R: Lower-left flipper cabinet input 1: R: Lower-right flipper EOS input 0: R: Lower-right flipper cabinet input
+#define_label('_FLIPTRONIC_PORT_B',				0x3FD5);	# Not used.
+define_label('_SOUND_DATA',						0x3FDC);	# 7-0: R/W: Send/receive a byte of data to/from the sound board.
+define_label('_CONTROL_STATUS',					0x3FDD);	# 7: R: WPC sound board read ready 0: R: DCS sound board read ready
+define_label('_SOL_GEN_OUTPUT',	        		0x3FE0);	# 7-0: W: Enables for solenoids 25-29
+define_label('_SOL_HIGHPOWER_OUTPUT',			0x3FE1);	# 7-0: W: Enables for solenoids 1-8
+define_label('_SOL_FLASH1_OUTPUT',				0x3FE2);	# 7-0: W: Enables for solenoids 17-24
+define_label('_SOL_LOWPOWER_OUTPUT',			0x3FE3);	# 7-0: W: Enables for solenoids 9-16
+define_label('_LAMP_ROW_OUTPUT',				0x3FE4);	# 7-0: W: Lamp matrix row output
+define_label('_LAMP_COL_STROBE',				0x3FE5);	# 7-0: W: Lamp matrix column strobe At most one bit in this register should be set. If all are clear, then no controlled lamps are enabled.
+define_label('_GI_TRIAC',						0x3FE6);	# 7: W: Flipper enable relay 5: W: Coin door enable relay 4-0: W: General illumination enables
+define_label('_SW_JUMPER_INPUT',				0x3FE7);	# 7-0: R: Jumper/DIP switch inputs
+define_label('_SW_CABINET_INPUT',				0x3FE8);	# 7: R: Fourth coin switch 6: R: Right coin switch 5: R: Center coin switch 4: R: Left coin switch 3: R: Enter (Begin Test) button 2: R: Up button 1: R: Down button 0: R: Escape (Service Credit) button
+define_label('_SW_ROW_INPUT',					0x3FE9); 	# Pre-security;	7-0: R: Readings for the currently selected switch column. Bit 0 corresponds to row 1, bit 1 to row 2, and so on. A '1' indicates active voltage level. For a mechanical switch, this means the switch is closed. For an optical switch, this means the switch is open.
+#define_label('_PIC_READ',						0x3FE9); 	# WPC-S
+define_label('_SW_COL_STROBE',					0x3FEA);	# Pre-security
+#define_label('_PIC_WRITE',						0x3FEA); 	# WPC-S; 7-0: W: Switch column strobe. For pre-Security games, exactly one bit must be set. For Security games, writing to this register sends a command to the PIC chip and does not directly control the strobe line.
+#define_label('_ALPHA_POS',						0x3FEB); 	# Alphanumeric;	# WPC_EXTBOARD1 	0x3FEB *DMD On DMD games, this is a general I/O that is used for machine-specific purposes.
+#define_label('_ALPHA_ROW1',					0x3FEC); 	# Alphanumeric;	# 
+define_label('_EXTBOARD2',						0x3FEC); 	# DMD; On DMD games, this is a general I/O that is used for machine-specific purposes.
+define_label('_EXTBOARD3',						0x3FED); 	# DMD; On DMD games, this is a general I/O that is used for machine-specific purposes.
+#define_label('_ALPHA_ROW2',					0x3FEE); 	# Alphanumeric
+#define_label('_FLIPPER_COIL_OUTPUT',			0x3FEE); 	# WPC-95
+#define_label('_FLIPPER_SWITCH_INPUT',			0x3FEF); 	# WPC-95
+define_label('_LEDS',							0x3FF2);	# 7: R/W : The state of the diagnostic LED. >0=Off >1=On
+#define_label('_RAM_BANK',						0x3FF3); 	# WPC-95; 3-0: W: The page of RAM currently mapped into the banked region.
+define_label('__BITSHIFTER_ADDR',				0x3FF4);	# 15-0: R/W: The base address for the bit shifter. Writing to this address initializes the shifter. Reading from this address after a shift command returns the shifted address.
+define_label('_BITSHIFTER_BIT',					0x3FF6);	# 7-0: W: Sets the bit position for a shift command. 7-0: R: Returns the output of the last shift command as a bitmask.
+define_label('_BITSHIFTER_BIT2',				0x3FF7);	# 7-0: R/W:
+define_label('_PERIPH_TMR_FIRQ_CLEAR',			0x3FF8);	# 
+define_label('_ROM_LOCK',						0x3FF9);	# Not used
+define_label('_CLK_HOURS_DAYS',					0x3FFA);	# 7-0: R/W : The time-of-day hour counter.
+define_label('_CLK_MINS',						0x3FFB);	# 7-0: R/W : The time-of-day minute counter.
+define_label('_ROM_BANK',						0x3FFC);	# 5-0: R/W: The page of ROM currently mapped into the banked region (	0x4000-0x7FFF). Pages 62 and 63 correspond to the uppermost 32KB, and are not normally mapped because those pages are accessible in the fixed region (0x8000-0xFFFF). Page numbers are consecutive. Page 0 corresponds to the lowest address in a 1MB device. If a smaller ROM is installed, the uppermost bits of this register are effectively ignored.
+define_label('_RAM_LOCK',						0x3FFD);	#
+define_label('_RAM_LOCKSIZE',					0x3FFE);	#
+define_label('_ZEROCROSS_IRQ_CLEAR', 			0x3FFF);	# 7: R: Set to 1 when AC is currently at a zero crossing, or 0 otherwise. 7: W: Writing a 1 here clears the source of the periodic timer interrupt. 4: R/W: Periodic timer interrupt enable >0=Periodic IRQ disabled >1=Periodic IRQ enabled 2: W: Writing a 1 here resets the watchdog. 
 
 #----------------------------------------------------------------------
 # System Calls
 #----------------------------------------------------------------------
 
-define_syscall('Panic',					0x8298,'E',1);	# NOTE 1: does not return
-define_syscall('Error',					0x82B6,'E');
-define_syscall('Y=adjustment',			0x82F2,'A');
-define_syscall('A=adjustment',			0x82FF,'A');
-define_syscall('B=adjustment',			0x830C,'A');
-define_syscall('switchClosed?',			0x8319,'S');
-define_syscall('switchBroken??',		0x8339,'S');
-define_syscall('sleep',					0x8346,'B');
-define_syscall('memClearY',				0x836B,'B');
-define_syscall('memSetBY',				0x8378,'B');
-define_syscall('solCmd',				0x8385,'O');
-define_syscall('pulseFlasher',			0x8392,'B');
-define_syscall('solCmd_wait',			0x839F,'B');
-define_syscall('syscall_83DB',			0x83DB,'B');
-define_syscall('syscall_83E8',			0x83E8,'B');
-define_syscall('lampOn',				0x841C,'L');
-define_syscall('lampOff',				0x842B,'L');
-define_syscall('lampToggle',			0x843A,'L');
-define_syscall('lampOn?',				0x8449,'L');
-define_syscall('setFlag',				0x8480,'F');
-define_syscall('clearFlag',				0x848F,'F');
-define_syscall('toggleFlag',			0x849E,'F');
-define_syscall('flagSet?',				0x84AD,'F');
-define_syscall('syscall_8505',			0x8505,'B');
-define_syscall('addScore',				0x851F,'B');
-define_syscall('syscall_8539',			0x8539,'B');
-define_syscall('playSound',				0x8546,'B');
-define_syscall('DMDanimation_B',		0x8553,'D');
-define_syscall('lampFX',				0x85B2,'B');
-define_syscall('syscall_85A2',			0x85A2,'B');
-define_syscall('syscall_85E1',			0x85E1,'B');
-define_syscall('syscall_85F1',			0x85F1,'B');
-define_syscall('syscall_8601',			0x8601,'B');
-define_syscall('syscall_8611',			0x8611,'B');
-define_syscall('longJSR_indirect',		0x8621,'P');
-define_syscall('AD_value=?',			0x865B,'AB');
-define_syscall('longSleep',				0x8679,'W');
-define_syscall('threadRunning?',		0x8690,'T');
-define_syscall('killThreads',			0x869E,'T');
-define_syscall('setThreadId',			0x86AC,'T');
-define_syscall('becomeThread_ifNotRunning',	0x86BA,'T');
-define_syscall('becomeOnlyThread',		0x86D0,'T');
-define_syscall('setBit',				0x8715,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
-define_syscall('clearBit',				0x8722,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
-define_syscall('bitSet?',				0x873C,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
-define_syscall('clearAll',				0x87BE,'GB');
-define_syscall('allSet?',				0x87CB,'GB');
-define_syscall('allClear?',				0x87D8,'GB');
-define_syscall('syscall_880C',			0x880C,'W');
-define_syscall('syscall_8885',			0x8885,'W');
-define_syscall('syscall_8895',			0x8895,'W');
-define_syscall('syscall_88B5',			0x88B5,'W');
-define_syscall('updateAudit',			0x88D5,'U');
-define_syscall('longJSR',				0x88F5,'R');
-define_syscall('longJMP',				0x892F,'R',1);			# NOTE 1: does not return
-define_syscall('syscall_8948',			0x8948,'R');
-define_syscall('memCopy_to_X',			0x89BE,'PB');
-define_syscall('memCopy_from_Y',		0x89CE,'PB');
-define_syscall('syscall_89DD',			0x89DD,'WB');
-define_syscall('syscall_89F8',			0x89F8,'WB');
-define_syscall('killThreads_withMask',	0x8A9A,'TW');
-define_syscall('findThread?',			0x8AAA,'TW');
-define_syscall('memClear',				0x8ABA,'PW');
-define_syscall('memSet',				0x8ACA,'PBB');
-define_syscall('spawnThread_1',			0x8B3D,'TR');
-define_syscall('spawnThread_2',			0x8B5A,'TR');
-define_syscall('killSpawnThread_1',		0x8B77,'TR');			# kill threads first, then spawn new one
-define_syscall('killSpawnThread_2',		0x8B9D,'TR');
-define_syscall('spawnThreadIfNeeded_1',	0x8BC3,'TR');			# don't spaawn if thread id already in use
-define_syscall('spawnThreadIfNeeded_2',	0x8BF7,'TR');
-define_syscall('memCopy',				0x8C2B,'WWB');
-define_syscall('exitThread',			0x99A2,'',2);			# NOTE 2: sycall is JMP target (rather than JSR)
-define_syscall('syscall_D799',			0xD799,'WBW');
-define_syscall('rotLeft',				0xFDA2,'GB');
-define_syscall('fill',					0xFDB4,'GB');
-define_syscall('unknownBitgroupOp1',	0xFDC6,'GB');
-define_syscall('unknownBitgroupOp2',	0xFDD8,'GB');
-define_syscall('MBD_callHandler_A',		0xFDFC,'B');
+define_syscall('Panic',							0x8298,'E',1);	# NOTE 1: does not return
+define_syscall('Error',							0x82B6,'E');
+define_syscall('Y=adjustment',					0x82F2,'A');
+define_syscall('A=adjustment',					0x82FF,'A');
+define_syscall('B=adjustment',					0x830C,'A');
+define_syscall('switchClosed?',					0x8319,'S');
+define_syscall('switchBroken??',				0x8339,'S');
+define_syscall('sleep',							0x8346,'B');
+define_syscall('memClearY',						0x836B,'B');
+define_syscall('memSetBY',						0x8378,'B');
+define_syscall('solCmd',						0x8385,'O');
+define_syscall('pulseFlasher',					0x8392,'B');
+define_syscall('solCmd_wait',					0x839F,'B');
+define_syscall('syscall_83DB',					0x83DB,'B');
+define_syscall('syscall_83E8',					0x83E8,'B');
+define_syscall('lampOn',						0x841C,'L');
+define_syscall('lampOff',						0x842B,'L');
+define_syscall('lampToggle',					0x843A,'L');
+define_syscall('lampOn?',						0x8449,'L');
+define_syscall('setFlag',						0x8480,'F');
+define_syscall('clearFlag',						0x848F,'F');
+define_syscall('toggleFlag',					0x849E,'F');
+define_syscall('flagSet?',						0x84AD,'F');
+define_syscall('syscall_8505',					0x8505,'B');
+define_syscall('addScore',						0x851F,'B');
+define_syscall('syscall_8539',					0x8539,'B');
+define_syscall('playSound',						0x8546,'B');
+define_syscall('DMDanimation_B',				0x8553,'D');
+define_syscall('lampFX',						0x85B2,'B');
+define_syscall('syscall_85A2',					0x85A2,'B');
+define_syscall('syscall_85E1',					0x85E1,'B');
+define_syscall('syscall_85F1',					0x85F1,'B');
+define_syscall('syscall_8601',					0x8601,'B');
+define_syscall('syscall_8611',					0x8611,'B');
+define_syscall('longJSR_indirect',				0x8621,'P');
+define_syscall('AD_value=?',					0x865B,'AB');
+define_syscall('longSleep',						0x8679,'W');
+define_syscall('threadRunning?',				0x8690,'T');
+define_syscall('killThreads',					0x869E,'T');
+define_syscall('setThreadId',					0x86AC,'T');
+define_syscall('becomeThread_ifNotRunning',		0x86BA,'T');
+define_syscall('becomeOnlyThread',				0x86D0,'T');
+define_syscall('setBit',						0x8715,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
+define_syscall('clearBit',						0x8722,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
+define_syscall('bitSet?',						0x873C,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
+define_syscall('clearAll',						0x87BE,'GB');
+define_syscall('allSet?',						0x87CB,'GB');
+define_syscall('allClear?',						0x87D8,'GB');
+define_syscall('syscall_880C',					0x880C,'W');
+define_syscall('syscall_8885',					0x8885,'W');
+define_syscall('syscall_8895',					0x8895,'W');
+define_syscall('syscall_88B5',					0x88B5,'W');
+define_syscall('updateAudit',					0x88D5,'U');
+define_syscall('longJSR',						0x88F5,'R');
+define_syscall('longJMP',						0x892F,'R',1);			# NOTE 1: does not return
+define_syscall('syscall_8948',					0x8948,'R');
+define_syscall('memCopy_to_X',					0x89BE,'PB');
+define_syscall('memCopy_from_Y',				0x89CE,'PB');
+define_syscall('syscall_89DD',					0x89DD,'WB');
+define_syscall('syscall_89F8',					0x89F8,'WB');
+define_syscall('killThreads_withMask',			0x8A9A,'TW');
+define_syscall('findThread?',					0x8AAA,'TW');
+define_syscall('memClear',						0x8ABA,'PW');
+define_syscall('memSet',						0x8ACA,'PBB');
+define_syscall('spawnThread_1',					0x8B3D,'TR');
+define_syscall('spawnThread_2',					0x8B5A,'TR');
+define_syscall('killSpawnThread_1',				0x8B77,'TR');			# kill threads first, then spawn new one
+define_syscall('killSpawnThread_2',				0x8B9D,'TR');
+define_syscall('spawnThreadIfNeeded_1',			0x8BC3,'TR');			# don't spaawn if thread id already in use
+define_syscall('spawnThreadIfNeeded_2',			0x8BF7,'TR');
+define_syscall('memCopy',						0x8C2B,'WWB');
+define_syscall('exitThread',					0x99A2,'',2);			# NOTE 2: sycall is JMP target (rather than JSR)
+define_syscall('syscall_D799',					0xD799,'WBW');
+define_syscall('rotLeft',						0xFDA2,'GB');
+define_syscall('fill',							0xFDB4,'GB');
+define_syscall('unknownBitgroupOp1',			0xFDC6,'GB');
+define_syscall('unknownBitgroupOp2',			0xFDD8,'GB');
+define_syscall('MBD_callHandler_A',				0xFDFC,'B');
 
 # non-global
 
