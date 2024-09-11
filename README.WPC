@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Tue Sep 10 15:23:55 2024
+                    dlm: Tue Sep 10 18:18:23 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 193 4 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 103 77 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -99,6 +99,14 @@ sys_bitgroupOp_ABXY
 		5	Cannon
 
 - lock data table
+	- =LOCKTABLE is WPC table with ^payloaddata for each lock
+	- 4-12 bytes per entry: (4 for Lock#00, 11 for BallTrough, 10 for scoops)
+		0		all	unknown byte (00 for Lock#00, 01 for trough, 02 for scoops)
+		1-3		all	event hander reference
+		4-5		pointer to data word
+		
+
+- lock data in RAM
 	- ^MBD_LOCK_DATA in RAM
 	- _MBD_NUM_LOCKS rows
 	- 5 bytes per entry:

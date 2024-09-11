@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Sep  8 15:19:33 2024
+#                    dlm: Tue Sep 10 20:11:47 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 40 50 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 406 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -38,6 +38,8 @@
 #	Sep  2, 2024: - made lamps decimal
 #	Sep  4, 2024: - BUG: _IF_true did not work correctly with &skip
 #	Sep  8, 2024: - added empty lines after tables
+#				  - added def_WPC_lockTable()
+#	Sep 10, 2024: - BUG: lock table has different structure
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -372,7 +374,7 @@ sub def_WPC_lockTable(@)
 	insert_divider($Address,$divider_label);
 
 	$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-	$OP[$Address] = '.DWB';
+	$OP[$Address] = '.DWBW';
 	my($rows,$cols) = (WORD($Address),BYTE($Address+2));
 	push(@{$OPA[$Address]},$rows);
 	push(@{$OPA[$Address]},$cols);
@@ -389,19 +391,41 @@ sub def_WPC_lockTable(@)
 			$tlbl = sprintf('Lock#%02X_data',$lck) unless defined($tlbl);
 		    setLabel($tlbl,$taddr);
 		push(@{$OPA[$Address]},sprintf('$%04X',$taddr));
-		$REM[$Address] = 'pointer to 4-byte lock data' if !defined($REM[$Address]) && $lck==0;
+		$REM[$Address] = 'pointer to lock definition data (4-10 bytes)' if !defined($REM[$Address]) && $lck==0;
 	    $decoded[$Address++] = $decoded[$Address++] = 1;
 
 		my($trpg);
 	    my($sa) = $Address;
 	    $Address = $taddr;
 		$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-		$OP[$Address] = '.DBWB';
+		$REM[$Address] = sprintf('Lock#%02X',$lck) if !defined($REM[$Address]);
+		$OP[$Address] = '.DBR';
 		push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address)));
 		push(@{$OPA[$Address]},sprintf('$%04X',$taddr=WORD($Address+1)));
 		push(@{$OPA[$Address]},sprintf('$%02X',$trpg=BYTE($Address+3)));
-		$REM[$Address] = sprintf('Lock#%02X',$lck) if !defined($REM[$Address]);
 	    $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+		if ($lck == 1) {
+			$OP[$Address-4] = '.DBRWB';
+			push(@{$OPA[$Address-4]},sprintf('$%04X',WORD($Address)));
+			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+2)));
+			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+3)));
+			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+4)));
+			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+5)));
+			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+6)));
+			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+			$decoded[$Address++] = 1;
+		} elsif ($lck > 1) {
+			$OP[$Address-4] = '.DBRB';
+			push(@{$OPA[$Address-4]},sprintf('Switch#%02X',BYTE($Address)));
+			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+1)));
+			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+2)));
+			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+3)));
+			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+4)));
+			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+5)));
+			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+		}
 
 	    if ($follow_code) {
 	    	my($srpg) = select_WPC_RPG($trpg);

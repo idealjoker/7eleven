@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Sep  9 21:22:38 2024
+#                    dlm: Tue Sep 10 19:21:02 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 234 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 249 30 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -242,55 +242,55 @@ define_label('NE=gameDisabled',					0xF759);
 define_label('=bitShifter_lookUpTable',			0x81B6);
 define_label('lampOn_blinkOff',					0x8458);
 define_label('lampOff_blinkOff',				0x846C);
-define_label('sys_longJSR_indirect_X',			0x862B);
-define_label('sys_longJSR_indirect_AX',			0x8631);
+define_label('sys_longJSR_indirect[X]',			0x862B);
+define_label('sys_longJSR_indirect[AX]',		0x8631);
 define_label('sys_setBank=3B',					0x90B4);
-define_label('sys_setBank_B',					0x90BC);
-define_label('A=indexed_XB_INX',				0x90E7);
-define_label('A=indexed_XB==1?',				0x90EC);
-define_label('BX=loadRef_X',					0x90C5);
-define_label('sys_lock_RAM_B',					0x9207);
+define_label('sys_setBank[B]',					0x90BC);
+define_label('A=[XB]==1?_INX',					0x90E7);
+define_label('A=[XB]==1?',						0x90EC);
+define_label('BX=loadRef[X]',					0x90C5);
+define_label('sys_lock_RAM[B]',					0x9207);
 define_label('sys_unlock_RAM',					0x9223);
 define_label('sys_lock_RAM',					0x922C);
-define_label('CS=badChecksum_XY',				0x928A);
+define_label('CS=badChecksum[XY]',				0x928A);
 define_label('Y=adjustmentA??==1',				0x92D4);
 define_label('A=adjustmentA??==1',				0x92DE);
 define_label('D=adjustmentA??==1',				0x92EC);
 define_label('Y=adjustmentA??',					0x92F8);
 define_label('sys_kill_thread',					0x9B24);
-define_label('sys_findThread_Y?',				0x9B34);
-define_label('sys_findThread_DY?',				0x9B3D);
+define_label('sys_findThread[Y]?',				0x9B34);
+define_label('sys_findThread[DY]?',				0x9B3D);
 define_label('find_thread_in_list',				0x9B55);
 define_label('sys_zeroCrossIRQ_clear',			0x9D00);
-define_label('sys_clearBit_AB',					0x9E92);
+define_label('sys_clearBit[AB]',				0x9E92);
 define_label('sys_twiddle_BitShifter_input',	0x9EA5);
-define_label('sys_setBit_AB',					0x9E7F);
-define_label('bitSet?_AB',						0x9EDD);
-define_label('sys_setBit_withLamps_AB',			0x9EF1);
-define_label('BitShifter_setBit_AB',			0x9F47);
-define_label('BitShifter_clearBit_AB',			0x9F73);
-define_label('BitShifter_testBit_AB',			0x9FA0);
+define_label('sys_setBit[AB]',					0x9E7F);
+define_label('bit[AB]Set?',						0x9EDD);
+define_label('sys_setBit[AB]_withLamps',		0x9EF1);
+define_label('BitShifter_setBit[AB]',			0x9F47);
+define_label('BitShifter_clearBit[AB]',			0x9F73);
+define_label('BitShifter_testBit[AB]',			0x9FA0);
 define_label('sys_suspendThread',				0x98BB);
-define_label('lampOn?_A',						0xA0B9);
-define_label('sys_memCopy_AXY',					0xA6B9);
-define_label('sys_memClear_AY',					0xA6C4);
-define_label('sys_memClear_XY',					0xA6D1);
-define_label('sys_solCmd_wait_A',				0xA84D);
-define_label('sys_solCmd_A',					0xA895);
-define_label('sys_memSet_ABY',					0xA6E3);
-define_label('sys_pulseFlasher_A',				0xA9EC);
-define_label('sys_bitgroup_clearAll_D',			0xAE09);
-define_label('sys_bitgroup_allSet?_D',			0xAE19);
-define_label('sys_bitgroup_allOff?_D',			0xAE29);
-define_label('sys_bitgroupOp_ABXY',				0xAE53);
-define_label('sys_printString_BXY',				0xB97B);
-define_label('sys_lampFX_A',					0xCC3A);
+define_label('lamp[A]On?',						0xA0B9);
+define_label('sys_memCopy[AXY]',				0xA6B9);
+define_label('sys_memClear[AY]',				0xA6C4);
+define_label('sys_memClear[XY]',				0xA6D1);
+define_label('sys_solCmd[A]_wait',				0xA84D);
+define_label('sys_solCmd[A]',					0xA895);
+define_label('sys_memSet[ABY]',					0xA6E3);
+define_label('sys_pulseFlasher[A]',				0xA9EC);
+define_label('sys_bitgroup[D]_clearAll',		0xAE09);
+define_label('sys_bitgroup[D]_allSet?',			0xAE19);
+define_label('sys_bitgroup[D]_allOff?',			0xAE29);
+define_label('sys_bitgroupOp[ABXY]',			0xAE53);
+define_label('sys_printString[BXY]',			0xB97B);
+define_label('sys_lampFX[A]',					0xCC3A);
 define_label('sys_IRQ_timer_handler??',			0xECCA);
 define_label('sys_addBonus_1130',				0xFAA8);
 define_label('sys_addBonus_3330',				0xFAAE);
 define_label('sys_addBonus_5530',				0xFAB4);
 define_label('sys_addBonus_9930',				0xFABA);
-define_label('sys_addBonus_A',					0xFABE);
+define_label('sys_addBonus[A]',					0xFABE);
 
 #----------------------------------------------------------------------
 # Threads
