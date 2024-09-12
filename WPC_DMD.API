@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Sep 11 17:34:39 2024
+#                    dlm: Wed Sep 11 22:08:12 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 85 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 190 18 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -45,6 +45,7 @@ define_label('__FINDTHREAD_MASK',				0x5F);
 
 define_label('_BALLTILTED??',					0x86);	
 define_label('_GAMEOVER??',						0x87);	
+define_label('_BALLTROUGH_LOCKOUT',				0x88);	
 
 define_label('_ISR_MATRIXBYTE',					0x9C);
 define_label('_ISR_MATRIXBYTE_TMP',				0x9D);
@@ -186,7 +187,7 @@ define_syscall('syscall_85F1',					0x85F1,'B');
 define_syscall('syscall_8601',					0x8601,'B');
 define_syscall('syscall_8611',					0x8611,'B');
 define_syscall('longJSR_indirect',				0x8621,'P');
-define_syscall('AD_value=?',					0x865B,'AB');
+define_syscall('A=AD_value=?',					0x865B,'AB');
 define_syscall('longSleep',						0x8679,'W');
 define_syscall('threadRunning?',				0x8690,'T');
 define_syscall('killThreads',					0x869E,'T');
@@ -297,9 +298,9 @@ define_label('sys_addBonus[A]',					0xFABE);
 # Threads
 #----------------------------------------------------------------------
 
-$Thread[0x05] = 'SYSTHD_Diagnostics';		
-$Thread[0x0D] = 'SYSTHD_Outhole_unknown';					# flags $78
-$Thread[0x0F] = 'SYSTHD_Balltrough_unknown';
+$Thread[0x0005] = 'SYSTHD_Diagnostics';		
+$Thread[0x780D] = 'SYSTHD_OutholeKicker_busy';	
+$Thread[0x780F] = 'SYSTHD_Balltrough_disabled';
 
 $Thread[0x12] = 'SYSTHD_tilt_unknown';
 $Thread[0x13] = 'SYSTHD_bobTilt_swingDelay';				# flags $38
