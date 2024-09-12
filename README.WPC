@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Tue Sep 10 18:18:23 2024
+                    dlm: Thu Sep 12 11:32:49 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 103 77 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 110 23 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -101,10 +101,13 @@ sys_bitgroupOp_ABXY
 - lock data table
 	- =LOCKTABLE is WPC table with ^payloaddata for each lock
 	- 4-12 bytes per entry: (4 for Lock#00, 11 for BallTrough, 10 for scoops)
-		0		all	unknown byte (00 for Lock#00, 01 for trough, 02 for scoops)
-		1-3		all	event hander reference
-		4-5		pointer to data word
-		
+		0			lock type (00 for Lock#00 (invalid), 01 for trough, 02 for scoops)
+		1-3			event handler reference (3 bytes)
+		trough
+			4-5		pointer to list of trough switches
+			6-10	???
+		scoops
+			4-9		???
 
 - lock data in RAM
 	- ^MBD_LOCK_DATA in RAM
@@ -124,21 +127,21 @@ sys_bitgroupOp_ABXY
 			- cmds $04 .. $09
 	- Handler Codes
  	    ------------------------------------------------------------------------------------------
-		code	dispatcher			function
+		code	dispatcher					function
  	    ------------------------------------------------------------------------------------------
-		$01							trough_ballServe
-		$02							endBall
-		$03		
-		$04		MSW_lock_handler 	switch not active (just opened), no ball locked logically (error condition)
-		$05		MSW_lock_handler	ball ejected sucessfully
-		$06		MSW_lock_handler	ball eject failed (switch closed less than 1s after it opened; error condition)
-		$07		MSW_lock_handler	switch active (switch just closed)
-		$08		MSW_lock_handler	ball locked successfully (switch remains closed after delay)
-		$09		MSW_lock_handler	lock lost (switch opened after closing)
+		$01		Balltrough_eventDispatcher	eject ball from trough
+		$02		Balltrough_eventDispatcher	endBall
+		$03		Balltrough_eventDispatcher
+		$04		MSW_lock_handler 			switch not active (just opened), no ball locked logically (error condition)
+		$05		MSW_lock_handler			ball ejected sucessfully
+		$06		MSW_lock_handler			ball eject failed (switch closed less than 1s after it opened; error condition)
+		$07		MSW_lock_handler			switch active (switch just closed)
+		$08		MSW_lock_handler			ball locked successfully (switch remains closed after delay)
+		$09		MSW_lock_handler			lock lost (switch opened after closing)
 		$0A
 		$0B
-		$16							used after error
-			
+		$16									used after error
+		$23		syscall_7169			
 
 ----------------------------------------------------------------------
 

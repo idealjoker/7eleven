@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Sep 10 20:11:47 2024
+#                    dlm: Thu Sep 12 16:06:39 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 406 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 207 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -194,6 +194,18 @@ sub disassemble_WPC_DMD()
 		select_WPC_RPG(0x3B);
 		$Address = 0x6717; def_code('unkown_bitgroupOp_hook?_6717');
 		$Address = 0x6781; def_code('unkown_bitgroupOp_hook?_6781');
+		$Address = 0x6F8C; def_code('syscall_lock_unknown');
+		$Address = 0x75AF;
+			def_code_ptr('MBD_lockType_handler_table','MBD_lockType0_handler');
+								   def_code_ptr(undef,'MBD_lockType1_handler');
+								   def_code_ptr(undef,'MBD_lockType2_handler');
+								   def_code_ptr(undef,'MBD_lockType3_handler');
+								   def_code_ptr(undef,'MBD_lockType4_handler');
+								   def_code_ptr(undef,'MBD_lockType5_handler');
+								   def_code_ptr(undef,'MBD_lockType6_handler');
+								   def_code_ptr(undef,'MBD_lockType7_handler');
+								   def_code_ptr(undef,'MBD_lockType8_handler');
+                                   def_code_ptr(undef,'MBD_lockType9_handler');
 	}
 
 	if ($dasm_sys_gaps) {												# code disassembled to help understand big picture
