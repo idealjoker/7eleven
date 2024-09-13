@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Thu Sep 12 20:07:11 2024
+#                    dlm: Fri Sep 13 09:09:13 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 84 35 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 92 44 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -86,6 +86,10 @@ define_label('_NUM_BALLS_LOCKED',					0xCCB);
 define_label('^MBD_LOCK_DATA',						0xCCC);
 define_label('_MBD_NUM_LOCKS',						0xCCE);
 define_label('_BALLS_IN_TROUGH',					0xCCF);
+define_label('_BALLS_INSTALLED_IN_GAME',			0xCD0);
+
+define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0);
+define_label('_BALLS_ACCOUNTED_FOR_COMPL',			0x1ED1);
 
 #----------------------------------------------------------------------
 # https://bcd.github.io/freewpc/The-WPC-Hardware.html

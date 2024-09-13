@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Thu Sep 12 17:36:03 2024
+#                    dlm: Fri Sep 13 09:32:00 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 199 50 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 197 57 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -194,7 +194,7 @@ sub disassemble_WPC_DMD()
 		select_WPC_RPG(0x3B);
 		$Address = 0x6717; def_code('unkown_bitgroupOp_hook?_6717');
 		$Address = 0x6781; def_code('unkown_bitgroupOp_hook?_6781');
-		$Address = 0x6F8C; def_code('syscall_lock_unknown');
+		$Address = 0x6F8C; def_code('MBD_lockEject_thread');
 		$Address = 0x75AF;
 			def_code_ptr('MBD_lockType_eject_table','MBD_LT00_eject');
 								   def_code_ptr(undef,'MBD_LT01_eject');
