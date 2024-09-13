@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Thu Sep 12 16:06:39 2024
+#                    dlm: Thu Sep 12 17:36:03 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 207 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 199 50 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -196,16 +196,16 @@ sub disassemble_WPC_DMD()
 		$Address = 0x6781; def_code('unkown_bitgroupOp_hook?_6781');
 		$Address = 0x6F8C; def_code('syscall_lock_unknown');
 		$Address = 0x75AF;
-			def_code_ptr('MBD_lockType_handler_table','MBD_lockType0_handler');
-								   def_code_ptr(undef,'MBD_lockType1_handler');
-								   def_code_ptr(undef,'MBD_lockType2_handler');
-								   def_code_ptr(undef,'MBD_lockType3_handler');
-								   def_code_ptr(undef,'MBD_lockType4_handler');
-								   def_code_ptr(undef,'MBD_lockType5_handler');
-								   def_code_ptr(undef,'MBD_lockType6_handler');
-								   def_code_ptr(undef,'MBD_lockType7_handler');
-								   def_code_ptr(undef,'MBD_lockType8_handler');
-                                   def_code_ptr(undef,'MBD_lockType9_handler');
+			def_code_ptr('MBD_lockType_eject_table','MBD_LT00_eject');
+								   def_code_ptr(undef,'MBD_LT01_eject');
+								   def_code_ptr(undef,'MBD_LT02(scoop)_eject');
+								   def_code_ptr(undef,'MBD_LT03_eject');
+								   def_code_ptr(undef,'MBD_LT04_eject');
+								   def_code_ptr(undef,'MBD_LT05_eject');
+								   def_code_ptr(undef,'MBD_LT06_eject');
+								   def_code_ptr(undef,'MBD_LT07_eject');
+								   def_code_ptr(undef,'MBD_LT08(trough)_eject');
+                                   def_code_ptr(undef,'MBD_LT09_eject');
 	}
 
 	if ($dasm_sys_gaps) {												# code disassembled to help understand big picture

@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Thu Sep 12 11:32:49 2024
+                    dlm: Thu Sep 12 20:47:31 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 110 23 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 132 0 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -119,29 +119,42 @@ sys_bitgroupOp_ABXY
 		3	Flags (MSW_lock_handler)
 		4
 
-- lock handler routines
+- Lock Event Handlers
 	- usage: !MBD_callHandler_A <CMD>
-	- Dispatchers
-		- MSW_lock_handler
-			- handler routines called when switch state changes
-			- cmds $04 .. $09
 	- Handler Codes
  	    ------------------------------------------------------------------------------------------
 		code	dispatcher					function
  	    ------------------------------------------------------------------------------------------
 		$01		Balltrough_eventDispatcher	eject ball from trough
-		$02		Balltrough_eventDispatcher	endBall
-		$03		Balltrough_eventDispatcher
+				serve_ball_and_exit
+		$02		Balltrough_eventDispatcher	ball has ended (ends by jumping to sys_endBall_and_exit))
+		$03		Balltrough_eventDispatcher	ball has drained
 		$04		MSW_lock_handler 			switch not active (just opened), no ball locked logically (error condition)
 		$05		MSW_lock_handler			ball ejected sucessfully
+				MBD_LT02(scoop)_eject
 		$06		MSW_lock_handler			ball eject failed (switch closed less than 1s after it opened; error condition)
 		$07		MSW_lock_handler			switch active (switch just closed)
 		$08		MSW_lock_handler			ball locked successfully (switch remains closed after delay)
 		$09		MSW_lock_handler			lock lost (switch opened after closing)
-		$0A
-		$0B
-		$16									used after error
-		$23		syscall_7169			
+		$0A		MBD_LT02(scoop)_eject		ball failed to eject??
+		$0B	   	MBD_LT02(scoop)_eject		retry sucess??
+		$0C		MBD_LT02(scoop)_eject		retry failure??
+		$0D		MBD_LT02(scoop)_eject		eject retry??
+		$0F		MBD_LT03_eject				ball ejected
+				library_7563			
+		$12		MBD_LT03_eject
+		$13		MBD_LT03_eject				all balls ejected??
+		$14		MBD_LT03_eject
+		$15		MBD_LT03_eject
+		$16		syscall_6E00				error condition: no thread available for ball serve
+		$17		MBD_LT03_eject
+		$18		MBD_LT04_eject				ball ejected
+		$1B		MBD_LT04_eject
+		$1C		MBD_LT04_eject
+		$1D		MBD_LT04_eject
+		$1E		MBD_LT04_eject
+		$22		MBD_LT04_eject
+		$23		syscall_7169				multiball served??
 
 ----------------------------------------------------------------------
 
@@ -201,20 +214,28 @@ Buffers:
 =Ball Drain Sequence=
 
 SW_Outhole_handler:
-	spawn ball_drained_thread
-	sys_Outhole_handler
-
-	ball_drained_thread
+	if neither multiball nor autofire are active (otherwise handle autofire)...
+	...spawn ball_drained_thread
 		sleep 3s
 		set background tune
 		!longJSR library_6636[3B]
 			adjust background tune
 		exit
-
 	sys_Outhole_handler
 		RAM_041A := 1
-		kick ball into trough (MSW_Balltrough_handler)
-
+		kick ball into trough (sys_OutholeKicker_and_exit)
 
 MSW_Balltrough_handler:
-			
+	handle _BALLTROUGH_LOCKOUT
+	become Thread#0041
+	let balls settle in trough
+	count balls in trough
+	jump to Balltrough_eventDispatcher
+		<do stuff>
+       	call Balltrough_event_handler with cmd $02 if end-of-ball condition is true
+		otherwise, serve another ball
+
+Balltrough_event_handler/ballTrough_endBall
+	handle Autofire (again????) if active
+	otherwise, jump to sys_endBall_and_exit
+	
