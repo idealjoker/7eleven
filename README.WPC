@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Thu Sep 12 20:47:31 2024
+                    dlm: Fri Sep 13 22:08:45 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 132 0 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 218 17 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -105,7 +105,9 @@ sys_bitgroupOp_ABXY
 		1-3			event handler reference (3 bytes)
 		trough
 			4-5		pointer to list of trough switches
-			6-10	???
+			6		SolCmd
+			7		pointer to table with 2 bytes
+			8-10	???
 		scoops
 			4-9		???
 
@@ -117,7 +119,7 @@ sys_bitgroupOp_ABXY
 		1	LOCK ENABLED when (0, ignore switch closures, except to mark them in byte 0)
 		2	NUMBER OF LOCKED BALLS (0 or 1)
 		3	Flags (MSW_lock_handler)
-		4
+		4	Switch (<3B:72D7>   MBD_LT02(scoop)_unknownLockOp[3B]:)
 
 - Lock Event Handlers
 	- usage: !MBD_callHandler_A <CMD>
@@ -146,7 +148,8 @@ sys_bitgroupOp_ABXY
 		$13		MBD_LT03_eject				all balls ejected??
 		$14		MBD_LT03_eject
 		$15		MBD_LT03_eject
-		$16		syscall_6E00				error condition: no thread available for ball serve
+		$16		syscall_6E00				ball served
+				sys_Balltrough_ejectBall
 		$17		MBD_LT03_eject
 		$18		MBD_LT04_eject				ball ejected
 		$1B		MBD_LT04_eject
@@ -155,6 +158,7 @@ sys_bitgroupOp_ABXY
 		$1E		MBD_LT04_eject
 		$22		MBD_LT04_eject
 		$23		syscall_7169				multiball served??
+				
 
 ----------------------------------------------------------------------
 
@@ -173,7 +177,7 @@ sys_bitgroupOp_ABXY
 	11		unknown
 
 - switch FLAGS F1
-	$10		if set, !switchActive? returns true when the switch is open
+	$10		if set, !switchActive? returns true when the switch is open (i.e. negate switch logic)
 
 - switch FLAGS F2
 	$40		always set except for coin switches
@@ -208,6 +212,14 @@ Buffers:
 	$320	=BLINK_FLAG?	2E0+40
 	$328	=FLAGS			2E0+48		Flag#01-40
 	$330	=FLAGS_HIGH		2E0+50		Flag#C0-100
+
+----------------------------------------------------------------------
+
+=DMD DisplaySets=
+
+$0C		.subroutine_45FF[38]
+$34		syscall_646B[3B]
+$38		display player score
 	
 ======================================================================
 

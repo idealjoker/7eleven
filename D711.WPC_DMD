@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Fri Sep 13 09:32:00 2024
+#                    dlm: Sat Sep 14 08:55:51 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 197 57 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 198 61 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -188,24 +188,34 @@ sub disassemble_WPC_DMD()
 	}
 
 	if ($dasm_randomFindings) {											# manual findings
-		$Address = 0xAE39; def_code('sys_bitIsSet_4BG');
+		$Address = 0xAE39; def_code('sys_bitIsSet_4BG');				# ???
 		$Address = 0xAE46; def_code('sys_bitIsClear_4BG');
 		
+		select_WPC_RPG(0x31);
+		$Address= 0x4D9C; def_byteblock_hex(5,sprintf('Huntership_target_table_%04X',$Address));		# Data Tables
+		$Address= 0x50E4; def_wordblock_hex(10,sprintf('data_table_%04X',$Address));
+		$Address= 0x5FC9; def_byteblock_hex(10,sprintf('score_table_%04X',$Address));
+		$Address= 0x5FEB; def_byteblock_hex(10,sprintf('score_table_%04X',$Address));
+
 		select_WPC_RPG(0x3B);
-		$Address = 0x6717; def_code('unkown_bitgroupOp_hook?_6717');
+		$Address = 0x6717; def_code('unkown_bitgroupOp_hook?_6717');	# finding bitgroup syscalls
 		$Address = 0x6781; def_code('unkown_bitgroupOp_hook?_6781');
-		$Address = 0x6F8C; def_code('MBD_lockEject_thread');
+		$Address = 0x6F8C; def_code('MBD_lockEject_thread');			# tracing MBD system
 		$Address = 0x75AF;
-			def_code_ptr('MBD_lockType_eject_table','MBD_LT00_eject');
-								   def_code_ptr(undef,'MBD_LT01_eject');
-								   def_code_ptr(undef,'MBD_LT02(scoop)_eject');
-								   def_code_ptr(undef,'MBD_LT03_eject');
-								   def_code_ptr(undef,'MBD_LT04_eject');
-								   def_code_ptr(undef,'MBD_LT05_eject');
-								   def_code_ptr(undef,'MBD_LT06_eject');
-								   def_code_ptr(undef,'MBD_LT07_eject');
-								   def_code_ptr(undef,'MBD_LT08(trough)_eject');
-                                   def_code_ptr(undef,'MBD_LT09_eject');
+			def_code_ptr('MBD_eject_handlers','MBD_LT00_eject[A]');
+								   def_code_ptr(undef,'MBD_LT01_eject[A]');
+								   def_code_ptr(undef,'MBD_LT02_eject[A]');
+								   def_code_ptr(undef,'MBD_LT03_eject[A]');
+								   def_code_ptr(undef,'MBD_LT04_eject[A]');
+		$Address = 0x75B9;												# random find; table accessed identically to 0x75AF
+			def_code_ptr('MBD_forceEject_handlers','MBD_LT00_forceEject[A]');
+								   def_code_ptr(undef,'MBD_LT01_forceEject[A]');
+								   def_code_ptr(undef,'MBD_LT02_forceEject[A]');
+								   def_code_ptr(undef,'MBD_LT03_forceEject[A]');
+								   def_code_ptr(undef,'MBD_LT04_forceEject[A]');
+
+		$Address = 0x715E; def_code('MBD_Balltrough_ejectBall_thread'); 		# tracing sys_ballServe
+
 	}
 
 	if ($dasm_sys_gaps) {												# code disassembled to help understand big picture
