@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Fri Sep 13 22:08:45 2024
+                    dlm: Sat Sep 14 11:43:06 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 218 17 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 233 27 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -220,6 +220,28 @@ Buffers:
 $0C		.subroutine_45FF[38]
 $34		syscall_646B[3B]
 $38		display player score
+
+----------------------------------------------------------------------
+
+=Background Tunes=
+
+- background tune is set in <3B:6636>   update_backgroundTune
+- for some, DMD animations are used
+
+Tune	condition					Meaning
+----------------------------------------------------------------------
+$01		Thread#00B4 running			Off
+$02		
+$04		DMD#28						ball drain??
+$05		F_SuperJackpot_lit			enticement
+$07
+$08		F_SuperJackpot_awarded		celebration
+$09		DMD#21						Hurry Up
+$0A		DMD#25						Payback Time
+$0B
+$0E
+$11		
+$13		
 	
 ======================================================================
 

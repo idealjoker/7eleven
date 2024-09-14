@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Sep 13 22:02:23 2024
+#                    dlm: Sat Sep 14 10:47:05 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 307 44 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 79 59 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -76,6 +76,7 @@ define_label('_PLAYER_UP',							0x40F);
 define_label('_BALL_IN_PLAY',						0x410);
 define_label('_EXTRABALLS_PENDING??',				0x411);
 define_label('_BACKGROUND_MUSIC_PLAYING',			0x446);
+define_label('_LAST_DMD_ANIMATION_SHOWN??',			0x487);
 define_label('=PLAYER_MEM_DATA??',					0x4AC);
 define_label('_SIZE_PLAYER_MEM_DATA??',				0x4AE);
 define_label('_TILTWARNINGS_LEFT',					0x4D4);
@@ -185,7 +186,7 @@ define_syscall('syscall_8505',						0x8505,'B');
 define_syscall('addScore',							0x851F,'B');
 define_syscall('syscall_8539',						0x8539,'B');
 define_syscall('playSound',							0x8546,'B');
-define_syscall('DMDanimation_B',					0x8553,'D');
+define_syscall('DMDanimation',						0x8553,'D');
 define_syscall('lampFX',							0x85B2,'B');
 define_syscall('syscall_85A2',						0x85A2,'B');
 define_syscall('syscall_85E1',						0x85E1,'B');
