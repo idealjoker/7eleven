@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Sep 14 10:40:26 2024
+#                    dlm: Sun Sep 15 11:10:29 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 197 45 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 670 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -389,8 +389,10 @@ sub def_WPC_lockTable(@)
 
 	if (defined($lbl)) {
 		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
-		$lbl .= sprintf('[%02X]',$_cur_RPG)
-			unless ($_cur_RPG == 0xFF);
+##		$lbl .= sprintf('[%02X]',$_cur_RPG)
+##			unless ($_cur_RPG == 0xFF);
+###		$lbl = sprintf('%02X:',$_cur_RPG) . $lbl
+###			unless ($_cur_RPG == 0xFF);
 	    setLabel($lbl,$Address);
 	}
     
@@ -480,8 +482,10 @@ sub def_WPC_switchTable(@)
 
 	if (defined($lbl)) {
 		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
-		$lbl .= sprintf('[%02X]',$_cur_RPG)
-			unless ($_cur_RPG == 0xFF);
+##		$lbl .= sprintf('[%02X]',$_cur_RPG)
+##			unless ($_cur_RPG == 0xFF);
+###		$lbl = sprintf('%02X:',$_cur_RPG) . $lbl
+###			unless ($_cur_RPG == 0xFF);
 	    setLabel($lbl,$Address);
 	}
     
@@ -542,8 +546,10 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 		unless ($RPG == 0x00);																# NULL ref
 
 	$pointee_lbl = $` if ($pointee_lbl =~ m{\[[0-9A-F]{2}\]$});            					# remove previous RPG if there is one
-	$pointee_lbl .= sprintf('[%02X]',$_cur_RPG)
-		unless ($RPG == 0xFF && $RPG == 0x00);
+##	$pointee_lbl .= sprintf('[%02X]',$_cur_RPG)
+##		unless ($RPG == 0xFF && $RPG == 0x00);
+###	$pointee_lbl = sprintf('%02X:',$_cur_RPG) . $pointee_lbl
+###		unless ($_cur_RPG == 0xFF);
 	setLabel("^$pointee_lbl",$Address);
 	
 	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $codeType_data;
@@ -586,8 +592,10 @@ sub def_WPC_string(@)
 
 	insert_divider($Address,$divider_label);
 	$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$});             					# remove previous RPG if there is one
-	$lbl .= sprintf('[%02X]',$_cur_RPG)
-		unless ($_cur_RPG == 0xFF);
+##	$lbl .= sprintf('[%02X]',$_cur_RPG)
+##		unless ($_cur_RPG == 0xFF);
+###    $lbl = sprintf('%02X:',$_cur_RPG) . $lbl
+###		unless ($_cur_RPG == 0xFF);
 	setLabel($lbl,$Address);
     $Address+=$len,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
     
@@ -619,8 +627,10 @@ sub def_WPC_stringRef($@)														# DOES NOT MAINTAIN RPG
 	select_WPC_RPG($RPG);
 
 	$str_lbl = $` if ($str_lbl =~ m{\[[0-9A-F]{2}\]$});            					# remove previous RPG if there is one
-	$str_lbl .= sprintf('[%02X]',$_cur_RPG)
-		unless ($_cur_RPG == 0xFF);
+##	$str_lbl .= sprintf('[%02X]',$_cur_RPG)
+##		unless ($_cur_RPG == 0xFF);
+###    $str_lbl = sprintf('%02X:',$_cur_RPG) . $str_lbl
+###		unless ($_cur_RPG == 0xFF);
 	setLabel("^$str_lbl",$Address);
 	
 	my($usr_lbl) = $LBL[$str_addr];
@@ -654,8 +664,10 @@ sub WPC_codeRef($@)
 	my($orpg) = select_WPC_RPG($RPG);
 
 	$code_lbl = $` if ($code_lbl =~ m{\[[0-9A-F]{2}\]$});             					# remove previous RPG if there is one
-	$code_lbl .= sprintf('[%02X]',$RPG)
-		unless ($RPG == 0xFF);
+##	$code_lbl .= sprintf('[%02X]',$RPG)
+##		unless ($RPG == 0xFF);
+###	$code_lbl = sprintf('%02X:',$_cur_RPG) . $code_lbl
+###		unless ($_cur_RPG == 0xFF);
 	
 	my($usr_lbl) = $LBL[$code_addr];
 	$code_lbl = $usr_lbl if defined($usr_lbl);
