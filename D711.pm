@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Sep 15 12:33:33 2024
+#					 dlm: Sun Sep 15 20:56:03 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 578 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 523 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -230,6 +230,8 @@
 #	Sep  3, 2024: - BUG: Thread# output on WPC was only 2 digits
 #	Sep  4, 2024: - added support for DMD# type
 #	Sep  8, 2024: - moved gap comment left
+#	Sep 15, 2024: - changed ROM page notation for labels
+#				  - suppress ROM page notation for labels on current page
 # END OF HISTORY
 
 # TO-DO:
@@ -392,10 +394,8 @@ sub setLabel($$@)
         select_WPC_RPG($pg) if defined($pg);             
         unless ($_cur_RPG == 0xFF) {
             $faddr = sprintf("%02X:%04X",$_cur_RPG,$addr);
-##          $lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$});             # remove previous RPG if there is one
-##          $lbl .= sprintf('[%02X]',$_cur_RPG);
 			$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:}); 
-            $lbl = sprintf("%02X:$lbl",$_cur_RPG) unless $lbl =~ m{^\.};
+            $lbl = sprintf("%02X:$lbl",$_cur_RPG);	# unless $lbl =~ m{^\.};
         }
     }
     undef($Lbl{$LBL[$addr]})                                    # overwrite existing auto label with non-auto label
@@ -434,10 +434,8 @@ sub overwriteLabel($$@)
         select_WPC_RPG($pg) if defined($pg);             
         unless ($_cur_RPG == 0xFF) {
 			$faddr = sprintf("%02X:%04X",$_cur_RPG,$addr);
-##			$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 			# remove previous RPG if there is one
-##			$lbl .= sprintf('[%02X]',$_cur_RPG);
 			$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:}); 
-            $lbl = sprintf("%02X:$lbl",$_cur_RPG) unless $lbl =~ m{^\.};
+            $lbl = sprintf("%02X:$lbl",$_cur_RPG); # unless $lbl =~ m{^\.};
 		}
 	}
 #	printf(STDERR "addr=%04X, LBL=$LBL[$addr], Lbl=$Lbl{$LBL[$addr]}\n",$addr);
@@ -463,12 +461,8 @@ sub label_with_addr($$)                                         # add hex addres
 	my($lbl,$addr) = @_;
 
 	if ($addr >= $MIN_ROM_ADDR) {								# ROM address
-##		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 			# remove previous RPG if there is one
-		$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:}); 
+		$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:}); 				# remove previous RPG if there is one
 		$lbl = $` if ($lbl =~ m{_[0-9A-F]{4}$});				# remove previous address (if there is one)
-##		my($ssuffix) = defined($_cur_RPG) ? sprintf('[%02X]',$_cur_RPG) : ''
-##			if ($addr < 0x8000);
-##		return sprintf('%s_%04X',$lbl,$addr) . $ssuffix;
 		my($prefix) = defined($_cur_RPG) ? sprintf('%02X:',$_cur_RPG) : ''
 			if ($addr < 0x8000) && $lbl =~ !m{^\.};
 		return $prefix . sprintf('%s_%04X',$lbl,$addr);
@@ -503,12 +497,9 @@ sub label_address($$@)                                          # save auto lbl 
 	}
 
 
-##	my($ssuffix) = defined($_cur_RPG) ? sprintf('[%02X]',$_cur_RPG) : ''
-##		if ($addr < 0x8000);
 	my($prefix) = defined($_cur_RPG) ? sprintf('%02X:',$_cur_RPG) : ''
 		if ($addr < 0x8000) && !$lbl =~ m{^\.};
 	$auto_lbl = $` if ($auto_lbl =~ m{\[[0-9A-F]{2}\]$});	    
-##	$AUTO_LBL[$addr] = $nosuffix ? $auto_lbl.$ssuffix : label_with_addr($auto_lbl,$addr);
 	$AUTO_LBL[$addr] = $nosuffix ? $prefix.$auto_lbl : label_with_addr($auto_lbl,$addr);
 	return ($addr > 255) ? sprintf('$%04X',$addr)
 						 : sprintf('$%02X',$addr);
@@ -520,7 +511,17 @@ sub substitute_label($$)                                        # replace addres
     my($opa) = $OPA[$opaddr][$ai];
     return $opa if ($nolabel[$opaddr]);
 
+##  die("$LBL[$addr],$_cur_RPG,$opg,$opa,$ai") if $opaddr == 0x4A1D && $_cur_RPG == 0x31 && $ai == 2;
     my($pf,$addr,$mark) = ($opa =~ m{^(\#?\$)([0-9A-Fa-f]+)(!?)$}); # hex number ($ followed by hex digits) => potential address
+
+    unless (defined($addr)) {									# handle XX:label for labels on same page
+		if ($opa =~ m{(^[0-9A-F]{2}):} &&  hex($1) == $_cur_RPG) {
+			return $';
+		} else {
+			return $opa;
+		}
+    }
+    
     return $opa unless defined($addr);                          # not an address => nothing to substitute
     return $pf.$addr if ($mark eq '!');                         # address marked with trailing '!' (.DB, .DW) => do not substitute with labels
     $addr = hex($addr);                                         # translate from hex
@@ -544,18 +545,18 @@ sub substitute_label($$)                                        # replace addres
 #   die(sprintf("$ai,$opa,$AUTO_LBL[$addr],$opg [%02X]",$_cur_RPG)) if $opaddr == 0x8133;
     my($lbl) = $LBL[$addr];                                     # check if label is defined (in the correct ROM page)
     if (defined($lbl)) {
-#       print(STDERR "select_WPC_RPG($opg)\n"),
         $Lbl_refs{$lbl}++;										# update reference count (this is the  full label, including ROM page prefix)
 
 		if (defined($_cur_RPG) && $cur_RPG == $opg) {			# code and label on the same page
 			$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:});
 		} else {												# different pages
+	#       print(STDERR "select_WPC_RPG($opg)\n"),
 	        select_WPC_RPG($opg) if defined($opg);				# if so, switch back to ROM page of code
 	    }
         return $imm.$lbl;
     }
 
-#   print(STDERR "select_WPC_RPG($opg)\n"),						# not sure this is necessary but it wont hurt
+#   print(STDERR "select_WPC_RPG($opg)\n"),						# make sure we have the code loaded
     select_WPC_RPG($opg) if defined($opg);
 
     my($auto_lbl) = $AUTO_LBL[$addr];                           # use auto label if defined

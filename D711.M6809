@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Wed Sep  4 20:27:29 2024
+#                    dlm: Mon Sep 16 09:17:24 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 38 47 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 39 74 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -36,6 +36,7 @@
 #					because during magic processing the indentation is known
 #	Sep  1, 2024: - BUG: legal flag numbers are different
 #	Sep  4, 2024: - added support for DMD# type
+#	Sep 16, 2024: - BUG: sys_unknown_spawnThread_1 had wrong handler label
 # HISTORY END
 
 # NOTES:
@@ -427,7 +428,8 @@ sub disassemble_syscall($$)
 			my($orpg) = select_WPC_RPG($trpg);
 			my($tlbl) = sprintf('library_%04X',$taddr);
 			my($divider);
-			if ($LBL[hex(substr($OPA[$oaddr][0],1,4))] =~ m{pawnThread}) {
+			if ($LBL[hex(substr($OPA[$oaddr][0],1,4))] =~ m{^[^_]*[sS]pawnThread}) {			# spawnThread system calls
+#				printf(STDERR "tlbl = $tlbl ($LBL[hex(substr($OPA[$oaddr][0],1,4))])\n");
 				$tlbl = sprintf('Thread#%s_handler',substr($OPA[$oaddr][1],-4));
 				$divider = 'Thread Handler';
 			}

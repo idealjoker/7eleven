@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Wed Sep 11 09:34:50 2024
+#                    dlm: Mon Sep 16 09:02:17 2024
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 46 4 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 51 101 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -17,6 +17,7 @@
 #				  - BUG: nested loops did not work correctly
 #				  - more bugs fixed
 #	Sep  4, 2024: - allow exit to single target in loops
+#	Sep 16, 2024: - BUG: local label detection did not work any more
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -43,10 +44,11 @@ sub same_block($$@)
 
 	##local($trace) = ($la == 0x455A && $ha == 0x458B) ? 1 : 0;
 	##local($trace) = ($la == 0x4566 && $ha == 0x4589) ? 1 : 0;
-	##local($trace) = ($la == 0x48FE && $ha == 0x491D) ? 1 : 0;		# complex nested loop
+	##	local($trace) = ($la == 0x48FE && $ha == 0x491D) ? 1 : 0;		# complex nested loop
 
 	##local($trace) = ($la == 0x5AD7 && $ha == 0x5AEB) ? 1 : 0;
 	##local($trace) = ($la == 0x5B1F && $ha == 0x5B38) ? 1 : 0;
+	##local($trace) = ($la == 0x5C3F && $ha == 0x5C47) ? 1 : 0;			# if with >!exitThread target
 
 	##local($trace) = ($la == 0x647C && $ha == 0x6481) ? 1 : 0;
 	##	local($trace) = ($la == 0x6D3F && $ha == 0x6D48) ? 1 : 0;
@@ -100,6 +102,7 @@ sub same_block($$@)
 		if ($if_block == 2 || $a > $la) {						# BRA at start of _IF and _LOOP blocks can have labels
 			printf(STDERR "addr = %04X; non-local LBL defined? [$LBL[$a]]\n",$a) if $trace;
 			return 0 if defined($LBL[$a])
+						&& !$LBL[$a] =~ m{^([0-9A-F]{2}:)?\.} 
 						&& substr($LBL[$a],0,1) ne '.'											# allow local labels inside blocks
 						&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,4)) == $a);		# allow &skip inside blocks
 			print(STDERR "no. non-local AUTO_LBL (= $AUTO_LBL[$a]) defined?\n") if $trace;
@@ -184,8 +187,12 @@ sub exit_from_block($$$)
         	print(STDERR "testing for RTS, RTI...\n") if $trace;
         	return 1 if isMember($OP[$a],'RTS','RTI');								# RTS, RTI are exits
         	return 1 if $OP[$a] =~ m{^PUL} && $OPA[$a][0] =~ m{PC$};				# PUL? PC is another form of RTS
+        	print(STDERR "testing for !exitThread...\n") if $trace;
+        	return 1 if $OP[$a] eq '!' && hex(substr($OPA[$a][0],1,4)) == $Lbl{'exitThread'};		# !exitThread is an exit
+			die("$OP[$a] $OPA[$a][0] (== $Lbl{'exitThread'}") if $a == 0x5C58;						
 
-			next unless ($OP[$a] =~ m{^L?B..$}  && !($OP[$a] =~ m{^L?BSR$}));		# branches may be exits (NB: >RTS and <RTS are not!!!)
+			next unless ($OP[$a] =~ m{^L?B..$} && !($OP[$a] =~ m{^L?BSR$})); 		# branches may be exits (NB: >RTS and <RTS are not!!!)
+
 			unless ($IND[$a] == $IND[$ha]) {										# branches are always exit if they are at a different indentation
 				$allowed = $trg unless defined($allowed);							#	(this prevents branches to EXITLOOP of outer loop)
 				next if $trg == $allowed;
@@ -214,11 +221,13 @@ sub branch_into_block($$@)
 
 	my($addr) = $sla;
 	while ($la-(--$addr) <= 128) {
-		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^B..$};
+		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^B..$};					# only consider regular (short) branches
 		my($trg) = $OPA[$addr][0];
 		next if isMember($trg,'<_LOOP','>_EXITLOOP');
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
 		die("$OP[$addr] $OPA[$addr][0]") unless numberp($trg);
+		next if hex(substr($OPA[$trg][0],1,4)) == $Lbl{exitThread};
+		
 		printf(STDERR "\t%04X: $OP[$addr] $OPA[$addr][0]\n",$addr) if $trace;
 		if ($trg >= $la && $trg <= $ha) {
 			printf(STDERR "\t<%04X> %04X:%04X:%04X $allowed_branch\n",$addr,$la,$trg,$ha)
@@ -234,6 +243,7 @@ sub branch_into_block($$@)
 		my($trg) = $OPA[$addr][0];
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
 		next if isMember($trg,'<_LOOP','>_EXITLOOP');
+		next if $trg =~ m{^[<>]};													# allow lexical branches
 		if ($trg >= $la && $trg <= $ha) {
 			printf(STDERR "\t<%04X> %04X:%04X:%04X $allowed_branch\n",$addr,$la,$trg,$ha)
 				if $trace;
