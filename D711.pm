@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Sep 15 20:56:03 2024
+#					 dlm: Mon Sep 16 15:21:28 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 523 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 523 4 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -520,7 +520,7 @@ sub substitute_label($$)                                        # replace addres
 		} else {
 			return $opa;
 		}
-    }
+	}
     
     return $opa unless defined($addr);                          # not an address => nothing to substitute
     return $pf.$addr if ($mark eq '!');                         # address marked with trailing '!' (.DB, .DW) => do not substitute with labels
