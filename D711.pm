@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Sep 16 15:21:28 2024
+#					 dlm: Wed Sep 18 09:11:51 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 523 4 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 235 50 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -232,6 +232,7 @@
 #	Sep  8, 2024: - moved gap comment left
 #	Sep 15, 2024: - changed ROM page notation for labels
 #				  - suppress ROM page notation for labels on current page
+#	Sep 18, 2024: - added empty lines after tables
 # END OF HISTORY
 
 # TO-DO:
@@ -2412,6 +2413,7 @@ sub def_byteblock_bin(@)
         $OPA[$Address][0] = sprintf('%%%08b',BYTE($Address));
         $decoded[$Address++] = 1;
     }
+    insert_empty_line($Address-1);
 }
 
 
@@ -2435,6 +2437,7 @@ sub def_byteblock_hex(@)
             $decoded[$Address++] = 1;
         }
     } while ($nbytes > 0);
+    insert_empty_line($Address-1);
 }
 
 
@@ -2497,6 +2500,7 @@ sub def_byteblock_hex_cols(@)
     $OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
     for (my($j)=0; $j<$n; $j++) { push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+$j))); }
     $Address += $n;
+    insert_empty_line($Address-1);
 }
 
 
@@ -2520,6 +2524,7 @@ sub def_bytelist_hex(@)                                                         
     $OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
     push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address)));
     $decoded[$Address++] = 1;
+    insert_empty_line($Address-1);
 }
 
 sub def_bytelist_hex_cols(@)                                                    # value-terminated list
@@ -2588,6 +2593,7 @@ sub def_wordblock_hex(@)                                                        
         $OPA[$Address][0] = sprintf('$%04X!',WORD($Address));
         $decoded[$Address++] = $decoded[$Address++] = 1;
     }
+    insert_empty_line($Address-2);
 }
 
 sub def_ptrblock_hex(@)                                                         # block with pointers (not regular data words)
@@ -2607,6 +2613,7 @@ sub def_ptrblock_hex(@)                                                         
         $OPA[$Address][0] = sprintf('$%04X',WORD($Address));
         $decoded[$Address++] = $decoded[$Address++] = 1;
     }
+    insert_empty_line($Address-2);
 }
 
 
@@ -2629,6 +2636,7 @@ sub def_bytebyteblock_hex(@)
         $OPA[$Address][0] = sprintf('$%02X!',BYTE($Address)); $OPA[$Address][1] = sprintf('$%02X!',BYTE($Address+1));
         $decoded[$Address++] = $decoded[$Address++] = 1;
     }
+    insert_empty_line($Address-2);
 }
 
 sub def_wordbyteblock_hex(@)
@@ -2650,6 +2658,7 @@ sub def_wordbyteblock_hex(@)
         $OPA[$Address][0] = sprintf('$%04X',WORD($Address)); $OPA[$Address][1] = sprintf('$%02X!',BYTE($Address+2));
         $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
     }
+    insert_empty_line($Address-3);
 }
 
 sub def_bytebytelist_hex(@)                                                         # value-terminated list (end of list can be specific high- or low-byte value)
@@ -2674,15 +2683,17 @@ sub def_bytebytelist_hex(@)                                                     
         $OPA[$Address][1] = sprintf('$%02X!',BYTE($Address+1));
         $decoded[$Address++] = $decoded[$Address++] = 1;
     }
-    if (BYTE($Address+1)==$EOLob) {
+    if (BYTE($Address+1)==$EOLhb) {
         $OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
         $OPA[$Address][0] = sprintf('$%02X!',BYTE($Address));
         $OPA[$Address][1] = sprintf('$%02X!',BYTE($Address+1));
         $decoded[$Address++] = $decoded[$Address++] = 1;
+	    insert_empty_line($Address-2);
     } else {
         $OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
         $OPA[$Address][0] = sprintf('$%02X!',BYTE($Address));
         $decoded[$Address++] = 1;
+	    insert_empty_line($Address-1);
     }
 }
 
