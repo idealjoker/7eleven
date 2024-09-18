@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Sep 15 21:46:24 2024
+#                    dlm: Wed Sep 18 10:32:22 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 217 43 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 80 44 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -76,7 +76,8 @@ define_label('_PLAYER_UP',							0x40F);
 define_label('_BALL_IN_PLAY',						0x410);
 define_label('_EXTRABALLS_PENDING??',				0x411);
 define_label('_BACKGROUND_MUSIC_PLAYING',			0x446);
-define_label('_LAST_DMD_ANIMATION_SHOWN??',			0x487);
+define_label('_DMD_ANIMATION_PLAYING',				0x483);
+define_label('_LAST_DMD_ANIMATION_PLAYED??',		0x487);
 define_label('=PLAYER_MEM_DATA??',					0x4AC);
 define_label('_SIZE_PLAYER_MEM_DATA??',				0x4AE);
 define_label('_TILTWARNINGS_LEFT',					0x4D4);
