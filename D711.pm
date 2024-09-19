@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Sep 18 09:11:51 2024
+#					 dlm: Wed Sep 18 17:22:44 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 235 50 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2910 49 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -2883,34 +2883,36 @@ sub substitute_identifiers(@)                                                   
     for (my($addr)=$fa; $addr<=$la; $addr++) {
         next unless defined($OP[$addr]);
         for (my($i)=0; $i<@{$OPA[$addr]}; $i++) {
-            if ($OPA[$addr][$i] =~ m{^Adj#}) {                                              # game adjustments
-                $OPA[$addr][$i] = $Adj[hex($')] if defined($Adj[hex($')]);
+            if ($OPA[$addr][$i] =~ m{^Adj#([0-9A-Fa-f]{2,4})}) {                            # adjustments
+                $OPA[$addr][$i] = $Adj[hex($1)] . $' if defined($Adj[hex($1)]);
             } elsif ($OPA[$addr][$i] =~ m{^Sol#}) {                                         # solenoids
                 my($num,$len) = ($' =~ m{([0-9A-Fa-f]+)(.*)});
                 $OPA[$addr][$i] = $Sol[hex($num)] . $len if defined($Sol[hex($num)]);
-            } elsif ($OPA[$addr][$i] =~ m{^Lamp#([0-9A-Fa-f]+)}) {                          # lamps
+            } elsif ($OPA[$addr][$i] =~ m{^Lamp#([0-9A-Fa-f]{1,3})}) {                      # lamps
             	if (defined($_cur_RPG)) {
             		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless numberp($1);
-	                $OPA[$addr][$i] = $Lamp[$1].$' if defined($Lamp[$1]);
+	                $OPA[$addr][$i] = $Lamp[$1] . $' if defined($Lamp[$1]);
             	} else {
-	                $OPA[$addr][$i] = $Lamp[hex($1)].$' if defined($Lamp[hex($1)]);
+            		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr))
+						unless length($1) == 2;
+	                $OPA[$addr][$i] = $Lamp[hex($1)] . $' if defined($Lamp[hex($1)]);
 	            }
-            } elsif ($OPA[$addr][$i] =~ m{^Flag#}) {                                        # flags
-                $OPA[$addr][$i] = $Flag[hex($')] if defined($Flag[hex($')]);
-            } elsif ($OPA[$addr][$i] =~ m{^Bitgroup#([0-9A-Fa-f]+)}) {                      # bitgroups
-                $OPA[$addr][$i] = $BitGroup[hex($1)].$' if defined($BitGroup[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{^Sound#([0-9A-Fa-f]+)}) {                         # sounds
-                $OPA[$addr][$i] = $Sound[hex($1)].$' if defined($Sound[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{^Switch#}) {                                      # switches
-                $OPA[$addr][$i] = $Switch[hex($')] if defined($Switch[hex($')]);
-            } elsif ($OPA[$addr][$i] =~ m{^Thread#([0-9A-F]+)$}) {							# threads
-                $OPA[$addr][$i] = $Thread[hex($1)] if defined($Thread[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{^Error#}) {                                      	# errors (WPC)
-                $OPA[$addr][$i] = $Error[hex($')] if defined($Error[hex($')]);
-            } elsif ($OPA[$addr][$i] =~ m{^Audit#}) {                                      	# audits (WPC)
-                $OPA[$addr][$i] = $Audit[hex($')] if defined($Audit[hex($')]);
-            } elsif ($OPA[$addr][$i] =~ m{^DMD#}) {                                      	# DMD animations (WPC)
-                $OPA[$addr][$i] = $DMD[hex($')] if defined($DMD[hex($')]);
+            } elsif ($OPA[$addr][$i] =~ m{^Flag#([0-9A-F]{2})}) { 							# flags
+                $OPA[$addr][$i] = $Flag[hex($1)] . $' if defined($Flag[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{^Bitgroup#([0-9A-Fa-f]{2,4})}) {                  # bitgroups
+                $OPA[$addr][$i] = $BitGroup[hex($1)] . $' if defined($BitGroup[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{^Sound#([0-9A-Fa-f]{2,4})}) {                     # sounds
+                $OPA[$addr][$i] = $Sound[hex($1)] . $' if defined($Sound[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{^Switch#([0-9A-F]{2})}) { 						# switches
+                $OPA[$addr][$i] = $Switch[hex($1)] . $' if defined($Switch[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{^Thread#([0-9A-F]{2,4})$}) {						# threads
+                $OPA[$addr][$i] = $Thread[hex($1)] . $' if defined($Thread[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{^Error#([0-9A-F]{2})}) {                       	# errors (WPC)
+                $OPA[$addr][$i] = $Error[hex($1)] . $' if defined($Error[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{^Audit#([0-9A-F]{4})}) {                       	# audits (WPC)
+                $OPA[$addr][$i] = $Audit[hex($1)] . $' if defined($Audit[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{^DMD#([0-9A-F]{2})}) {                          	# DMD animations (WPC)
+                $OPA[$addr][$i] = $DMD[hex($1)] . $' if defined($DMD[hex($1)]);
             } 
         }
     }
