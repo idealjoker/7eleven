@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Sep 18 09:21:38 2024
+#                    dlm: Wed Sep 18 21:06:11 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 455 46 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 195 56 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -191,6 +191,8 @@ sub disassemble_WPC_DMD()
 	if ($dasm_randomFindings) {											# manual findings
 		$Address = 0xAE39; def_code('sys_bitIsSet_4BG');				# ???
 		$Address = 0xAE46; def_code('sys_bitIsClear_4BG');
+
+		$Address = 0xFA7D; def_code('sys_growJackpot[A]');				# gap code
 		
 		select_WPC_RPG(0x31);
 		$Address= 0x4D9C; def_byteblock_hex(5,sprintf('Huntership_target_table_%04X',$Address));		# Data Tables

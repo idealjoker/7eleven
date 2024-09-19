@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Sep 18 17:41:35 2024
+#                    dlm: Wed Sep 18 21:35:19 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 56 73 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 85 44 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -82,6 +82,7 @@ define_label('_DMD_ANIMATION_PLAYING',				0x483);
 define_label('_LAST_DMD_ANIMATION_PLAYED??',		0x487);
 define_label('=PLAYER_MEM_DATA??',					0x4AC);
 define_label('_SIZE_PLAYER_MEM_DATA??',				0x4AE);
+define_label('_BALLSEARCH_SUSPEND_TIMER',			0x4C7);
 define_label('_TILTWARNINGS_LEFT',					0x4D4);
 
 define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN',	0xCC9);
@@ -312,6 +313,7 @@ $Thread[0x0004] = 'SYSTHD_Balltrough_handler';
 $Thread[0x0005] = 'SYSTHD_Diagnostics';		
 $Thread[0x780D] = 'SYSTHD_OutholeKicker_busy';	
 $Thread[0x780F] = 'SYSTHD_Balltrough_disabled';
+$Thread[0x2010] = 'SYSTHD_BallSearch';
 $Thread[0x007A] = 'SYSTHD_Playfield_qualified';
 
 $Thread[0x12] = 'SYSTHD_tilt_unknown';
