@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Sep 18 21:35:19 2024
+#                    dlm: Thu Sep 19 22:34:52 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 85 44 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 56 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -37,7 +37,7 @@ define_label('__SPRINGBOARD',						0x12);
 define_label('=UNKNOWN_SWITCH_BUFFER',				0x1F);
 define_label('=SWITCHES',							0x27);
 
-define_label('__^CURRENT_THREAD_DATA',				0x53);
+define_label('^CURRENT_THREAD_DATA',				0x53);
 define_label('_UNKNOWN_THREADLIST_CONDITION',		0x57);
 define_label('__SLEEP_TIME',						0x5B);
 define_label('__FINDTHREAD_ID',						0x5D);
@@ -52,9 +52,6 @@ define_label('_ISR_MATRIXBYTE',						0x9C);
 define_label('_ISR_MATRIXBYTE_TMP',					0x9D);
 define_label('_ISR_TMP_A',							0x9E);
 define_label('__ISR_TMP_X',							0x9F);
-
-define_label('=Jackpot_score',						0xB7);		# 4 bytes
-define_label('_MB_BALLS_IN_PLAY?',					0xBF);
 
 define_label('=LAMP_MATRIX_00_LOGICAL',				0x2E0);		# Lamp and Bit Buffers
 define_label('=LAMP_MATRIX_08_PRIMARY',				0x2E8);		
