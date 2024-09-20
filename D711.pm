@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Sep 18 17:22:44 2024
+#					 dlm: Thu Sep 19 11:12:59 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 2910 49 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3060 69 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -3045,7 +3045,6 @@ sub produce_output(@)                                                       # wi
     my($decoded) = my($ROMbytes) = 0;
 
     if ($hdr) {
-        output_aliases('Game Adjustment Aliases','Adj#%02X',@Adj);          # game-specific identifiers
         output_aliases('Solenoid Aliases','Sol#%02X',@Sol);
         output_aliases('Lamp Aliases','Lamp#%02X',@Lamp);
         output_aliases('Flag Aliases','Flag#%02X',@Flag);
@@ -3057,8 +3056,10 @@ sub produce_output(@)                                                       # wi
         } else {
 	        output_aliases('Thread Aliases','Thread#%02X',@Thread);
 	    }
+        output_keyValue_aliases('System Constants',%systemConstants);
+        output_aliases('Game Adjustment Aliases','Adj#%02X',@Adj);   
+        output_aliases('Audit Aliases','Audit#%04X',@Audit);  		
 ##      output_aliases('Error Aliases','Error#%02X',@Error);				# clutter
-        output_keyValue_aliases('System Constants',%systemConstants);       # symbolic identifiers, e.g. for sys6 switch scripts
         output_labels("System$WMS_System API (external labels)");           # manually defined labels outside ROM
     }
 

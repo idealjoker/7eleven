@@ -303,7 +303,7 @@ define_label('sys_addBonus_9930',					0xFABA);
 define_label('sys_addBonus[A]',						0xFABE);
 
 #----------------------------------------------------------------------
-# Threads
+# System Threads
 #----------------------------------------------------------------------
 
 $Thread[0x0004] = 'SYSTHD_Balltrough_handler';		
@@ -322,6 +322,58 @@ for (my($i)=0; $i<=0x0F; $i++) {
 }
 
 $Thread[0x7F] = 'SYSTHD_Startbutton';						# flags $78
+
+#----------------------------------------------------------------------
+# Game Adjustments
+#----------------------------------------------------------------------
+
+$Adj[0x81]		= 'AD_balls_per_game';						# Standard AD01
+$Adj[0x82]		= 'AD_tilt_warnings';
+$Adj[0x83]		= 'AD_ExtraBalls_max';
+$Adj[0x84]		= 'AD_ExtraBalls_maxPerBallInPlay';
+$Adj[0x85]		= 'AD_Replay_System';						# AD05
+$Adj[0x86]		= 'AD_Replay_pct';
+$Adj[0x87]		= 'AD_Replay_start';
+$Adj[0x88]		= 'AD_Replay_levels';
+$Adj[0x89]		= 'AD_Replay_level1';
+$Adj[0x8A]		= 'AD_Replay_level2';						# AD10
+$Adj[0x8B]		= 'AD_Replay_level3';
+$Adj[0x8C]		= 'AD_Replay_level4';
+$Adj[0x8D]		= 'AD_Replay_boost';
+$Adj[0x8E]		= 'AD_Replay_award';
+$Adj[0x8F]		= 'AD_Special_award';						# AD15
+$Adj[0x90]		= 'AD_Match_award';
+$Adj[0x91]		= 'AD_ExtraBall_ticket';
+$Adj[0x92]		= 'AD_tickets_maxPerPlayer';
+$Adj[0x93]		= 'AD_Match_feature';
+$Adj[0x94]		= 'AD_custom_message';
+$Adj[0x95]		= 'AD_language';
+$Adj[0x96]		= 'AD_clock_style';
+$Adj[0x97]		= 'AD_date_style';
+$Adj[0x98]		= 'AD_show_dateTime';
+$Adj[0x99]		= 'AD_GI_allowDimming';
+$Adj[0x9A]		= 'AD_Tournament_play';
+$Adj[0x9B]		= 'AD_screenFormat_European';
+$Adj[0x9C]		= 'AD_SoundVolume_zero_alllowed';
+$Adj[0x9D]		= 'AD_GI_powersaver';
+$Adj[0x9E]		= 'AD_GI_powersaver_brightness';
+
+#----------------------------------------------------------------------
+# System Audits
+#----------------------------------------------------------------------
+
+#$Audit[0x8013] = 'AU_unknown8013';							# 8013 & 8014 updated together from startbutton
+#$Audit[0x8014] = 'AU_unknown8014';
+#$Audit[0x8016] = 'AU_';
+#$Audit[0x8017] = 'AU_';
+
+$Audit[0x801B] = 'AU_extraBalls';							# Standard Audit #13
+$Audit[0x801D] = 'AU_minutesOn??';							# Standard Audit #22
+$Audit[0x801E] = 'AU_gamesStarted';							# Standard Audit #01
+$Audit[0x801F] = 'AU_tilts';								# Standard Audit #24
+
+$Audit[0x802B] = 'AU_left_drains';							# Standard Audit #17
+$Audit[0x802C] = 'AU_right_drains';							# Standard Audit #18
 
 #----------------------------------------------------------------------
 # Scott Charles (from Dr. WHO)

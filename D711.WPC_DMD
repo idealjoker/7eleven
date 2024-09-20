@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Sep 18 21:06:11 2024
+#                    dlm: Fri Sep 20 16:09:14 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 195 56 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 198 66 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -195,7 +195,7 @@ sub disassemble_WPC_DMD()
 		$Address = 0xFA7D; def_code('sys_growJackpot[A]');				# gap code
 		
 		select_WPC_RPG(0x31);
-		$Address= 0x4D9C; def_byteblock_hex(5,sprintf('Huntership_target_table_%04X',$Address));		# Data Tables
+		$Address= 0x4D9C; def_byteblock_hex(5,sprintf('HuntershipTarget_masks',$Address));		# Data Tables
 		$Address= 0x50E4; def_wordblock_hex(10,sprintf('targetBank_soundTable',$Address));
 		$Address= 0x5CBC; def_wordblock_hex(10,sprintf('data_table_%04X',$Address));
 		$Address= 0x5CC6; def_byteblock_hex(4,sprintf('data_table_%04X',$Address));
@@ -722,12 +722,24 @@ sub defFlag($$)
 	$Flag[$no] = $name;
 }
 
+if (0) {
 sub defSolenoid($$)
 {
 	my($no,$name) = @_;
 
 	die("defSolenoid: invalid solenoid number $no\n")
 		unless ($no>0 && $no<=0x65);
+	my($no,$name) = @_;
+	$Sol[$no] = $name;
+}
+}
+
+sub defSolCmd($$)
+{
+	my($no,$name) = @_;
+
+	die("defSolCmd: invalid solenoid command number $no\n")
+		unless ($no>=0 && $no<=0xFF);
 	my($no,$name) = @_;
 	$Sol[$no] = $name;
 }

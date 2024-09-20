@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sat Sep 14 11:43:06 2024
+                    dlm: Fri Sep 20 09:04:05 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 233 27 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 257 8 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -202,6 +202,19 @@ sys_bitgroupOp_ABXY
 
 ----------------------------------------------------------------------
 
+=Audits=
+
+- Feature audits are numbered as in manual (T2: AU1 - AU38; Audit[0x0001] - Audit[0x0026])
+- Standard audits (system audits) are all over the place (T2 Audit[0x801E-1F] are standard AU01 and AU24, respectively)
+
+----------------------------------------------------------------------
+
+=Adjustments=
+
+- Feature adjustments are numbered as in manual (T2: AD01-AD19; $Adj[0x01-0x13])
+
+----------------------------------------------------------------------
+
 =Bit Shifter=
 
 Buffers:
@@ -240,7 +253,8 @@ $09		DMD#21						Hurry Up
 $0A		DMD#25						Payback Time
 $0B
 $0E
-$11		
+$11
+$12		
 $13		
 	
 ======================================================================
