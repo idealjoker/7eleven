@@ -1,9 +1,9 @@
 ======================================================================
                     R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Fri Sep 20 09:04:05 2024
+                    dlm: Fri Sep 20 21:48:17 2024
                     (c) 2024 A.M. Thurnherr
-                    uE-Info: 257 8 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 263 46 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Truth Values=
@@ -199,6 +199,13 @@ sys_bitgroupOp_ABXY
 - system thread ids:
 	$12-$14		tilt related
 	$40-$4F		lock threads
+- thread buffer with spawn values
+	0-1		pointer to next thread in list
+	5-6		pointer to PC in this thread buffer
+	17-18	Y at spawn
+	19		current ROM page
+	20-21	#$172E
+	34-44	current address (Program Counter)
 
 ----------------------------------------------------------------------
 
@@ -253,6 +260,7 @@ $09		DMD#21						Hurry Up
 $0A		DMD#25						Payback Time
 $0B
 $0E
+$10		SW_Outhole_handler			drain tune
 $11
 $12		
 $13		

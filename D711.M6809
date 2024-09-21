@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Mon Sep 16 09:17:24 2024
+#                    dlm: Sat Sep 21 09:26:36 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 39 74 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 41 56 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -37,6 +37,8 @@
 #	Sep  1, 2024: - BUG: legal flag numbers are different
 #	Sep  4, 2024: - added support for DMD# type
 #	Sep 16, 2024: - BUG: sys_unknown_spawnThread_1 had wrong handler label
+#	Sep 21, 2024: - BUG: line spacing
+#				  - moved insert_empty_line to [D711.pm]
 # HISTORY END
 
 # NOTES:
@@ -336,16 +338,6 @@ sub op_2REGS($$$)																	# EXG/TFR
 # Main Disassembly Routines
 #----------------------------------------------------------------------
 
-sub insert_empty_line($)
-{
-	my($addr) = @_;
-	
-	push(@{$EXTRA[$addr]},'');
-	push(@{$EXTRA_IND[$addr]},$ind);
-	$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 0;
-	$EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 1;
-}
-
 sub disassemble_syscall($$)
 {
 	my($sc,$rv) = @_;
@@ -501,11 +493,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next if op_DIR(0x07,$addr,$ind,'ASR'); 		next if op_DIR(0x08,$addr,$ind,'ASL');
 		next if op_DIR(0x09,$addr,$ind,'ROL'); 		next if op_DIR(0x0A,$addr,$ind,'DEC');
 		next if op_DIR(0x0C,$addr,$ind,'INC'); 		next if op_DIR(0x0D,$addr,$ind,'TST');
-		if (op_DIR(0x0E,$addr,$ind,'JMP')) {
-			insert_line($addr-3);
-			return;
-		}
-		next if op_DIR(0x0F,$addr,$ind,'CLR');
+		return if op_DIR(0x0E,$addr,$ind,'JMP'); 	next if op_DIR(0x0F,$addr,$ind,'CLR');
 
 		next if op_INH(0x12,$addr,$ind,'NOP'); 	next if op_INH(0x13,$addr,$ind,'SYNC');
 		return if op_LREL(0x16,$addr,$ind,'LBRA',$lbl_root,$follow_code); 
@@ -575,10 +563,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next if op_IDX(0x67,$addr,$ind,'ASR'); 		next if op_IDX(0x68,$addr,$ind,'ASL');
 		next if op_IDX(0x69,$addr,$ind,'ROL'); 		next if op_IDX(0x6A,$addr,$ind,'DEC');
 		next if op_IDX(0x6C,$addr,$ind,'INC'); 		next if op_IDX(0x6D,$addr,$ind,'TST'); 
-		if ($rv = op_IDX(0x6E,$addr,$ind,'JMP')) {
-			insert_empty_line($rv);
-			return;
-		}
+		return if $rv = op_IDX(0x6E,$addr,$ind,'JMP');
 		next if op_IDX(0x6F,$addr,$ind,'CLR');
 
 		next if op_EXT(0x70,$addr,$ind,'NEG'); 		next if op_EXT(0x73,$addr,$ind,'COM');
@@ -590,12 +575,10 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			for (my($sc)=0; $sc<@SYSCALL; $sc++) {
 				die($SYSCALL[$sc]) unless defined($Lbl{$SYSCALL[$sc]});
 				next unless $SC_NOTE[$sc] == 2;													# NOTE 2: JMP target syscall
-				last if (disassemble_syscall($sc,$rv));
+				last if disassemble_syscall($sc,$rv);
 			}
 			disassemble_asm($ind,$rv,$lbl_root,undef,$follow_code)								# disassemble JMP target (syscall or not)
 				if $follow_code;
-			insert_empty_line($addr-3)
-				unless $IND[$addr-3] > $code_base_indent || $rv == $addr;						# extra line at top level and not _skip
 			return;
         }
 		next if op_EXT(0x7F,$addr,$ind,'CLR');
@@ -630,8 +613,8 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next if op_EXT(0xB0,$addr,$ind,'SUBA'); 	next if op_EXT(0xB1,$addr,$ind,'CMPA');
 		next if op_EXT(0xB2,$addr,$ind,'SBCA'); 	next if op_EXT(0xB3,$addr,$ind,'SUBD');
 		next if op_EXT(0xB4,$addr,$ind,'ANDA'); 	next if op_EXT(0xB5,$addr,$ind,'BITA');
-		next if op_EXT(0xB6,$addr,$ind,'LDA'); 	next if op_EXT(0xB7,$addr,$ind,'STA'); 	
-		next if op_EXT(0xB8,$addr,$ind,'EORA');	next if op_EXT(0xB9,$addr,$ind,'ADCA'); 	
+		next if op_EXT(0xB6,$addr,$ind,'LDA'); 		next if op_EXT(0xB7,$addr,$ind,'STA'); 	
+		next if op_EXT(0xB8,$addr,$ind,'EORA');		next if op_EXT(0xB9,$addr,$ind,'ADCA'); 	
 		next if op_EXT(0xBA,$addr,$ind,'ORA');		next if op_EXT(0xBB,$addr,$ind,'ADDA'); 	
 		next if op_EXT(0xBC,$addr,$ind,'CMPX');
 		if ($rv = op_EXT(0xBD,$addr,$ind,'JSR')) {												# JSR to fixed address => handle syscalls

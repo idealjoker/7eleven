@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu Sep 19 11:12:59 2024
+#					 dlm: Sat Sep 21 09:26:05 2024
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 3060 69 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 236 48 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -233,6 +233,7 @@
 #	Sep 15, 2024: - changed ROM page notation for labels
 #				  - suppress ROM page notation for labels on current page
 #	Sep 18, 2024: - added empty lines after tables
+#	Sep 21, 2024: - moved insert_empty_line here
 # END OF HISTORY
 
 # TO-DO:
@@ -321,6 +322,15 @@ sub import($@)
 sub numberp(@)
 { return  $_[0] =~ /^\d+$/; }
 
+sub insert_empty_line($)
+{
+	my($addr) = @_;
+	
+	push(@{$EXTRA[$addr]},'');
+	push(@{$EXTRA_IND[$addr]},$ind);
+	$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 0;
+	$EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 1;
+}
 
 #----------------------------------------------------------------------
 # Load ROM Image
@@ -2404,6 +2414,7 @@ sub def_byteblock_bin(@)
     $Address+=$nbytes,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
     insert_divider($Address,$divider_label) if defined($divider_label);
 
+	my($bAddress) = $Address;
     $OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
     $OPA[$Address][0] = sprintf('%%%08b',BYTE($Address)); $REM[$Address] = $rem unless defined($REM[$Address]);
     $decoded[$Address++] = 1;
@@ -2413,7 +2424,7 @@ sub def_byteblock_bin(@)
         $OPA[$Address][0] = sprintf('%%%08b',BYTE($Address));
         $decoded[$Address++] = 1;
     }
-    insert_empty_line($Address-1);
+    insert_empty_line($bAddress);
 }
 
 
@@ -2425,19 +2436,20 @@ sub def_byteblock_hex(@)
     $Address+=$nbytes,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
     insert_divider($Address,$divider_label) if defined($divider_label);
 
+	my($bAddress);
     do {
         printf(STDERR "def_byteblock_hex(@_) operator already defined ($OP[$Address],$decoded[$Address]) at \$%04X\n",$Address)
             if (defined($OP[$Address]));
         $OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
         $REM[$Address]=$rem,undef($rem) unless defined($REM[$Address]);
-        my($bAddress) = $Address;
+        $bAddress = $Address;
 #       die if (@{$OPA[$bAddress]});
         for (my($col)=0; $nbytes>0 && $col<8; $col++,$nbytes--) {
             push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
             $decoded[$Address++] = 1;
         }
     } while ($nbytes > 0);
-    insert_empty_line($Address-1);
+    insert_empty_line($bAddress);
 }
 
 
@@ -2500,7 +2512,7 @@ sub def_byteblock_hex_cols(@)
     $OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
     for (my($j)=0; $j<$n; $j++) { push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+$j))); }
     $Address += $n;
-    insert_empty_line($Address-1);
+    insert_empty_line($Address-$n);
 }
 
 

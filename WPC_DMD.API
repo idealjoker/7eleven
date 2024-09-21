@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Thu Sep 19 22:34:52 2024
+#                    dlm: Fri Sep 20 22:22:47 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 56 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 243 63 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -37,6 +37,9 @@ define_label('__SPRINGBOARD',						0x12);
 define_label('=UNKNOWN_SWITCH_BUFFER',				0x1F);
 define_label('=SWITCHES',							0x27);
 
+define_label('_CURRENT_TIC??',						0x50);
+define_label('_THREAD_EXEC_TIMESTAMP??',			0x51);
+define_label('_PREVIOUS_THREAD_EXEC_TIMESTAMP??',	0x52);
 define_label('^CURRENT_THREAD_DATA',				0x53);
 define_label('_UNKNOWN_THREADLIST_CONDITION',		0x57);
 define_label('__SLEEP_TIME',						0x5B);
@@ -66,8 +69,8 @@ define_label('=FLAGS',								0x328);
 define_label('=FLAGS_HIGH',							0x330);
 
 define_label('=UNKNOWN_THREAD_DATA_1',				0x366);		
-define_label('__UNKNOWN_THREAD_POINTER',			0x36F);		
-define_label('=UNKNOWN_THREAD_DATA_2',				0x371);		
+define_label('^LOW_PRIORITY_THREADS',				0x36F);		
+define_label('=END_OF_THREADLIST??',				0x371);		
 define_label('=STATUS_AREA_POINTER',				0x380);		# Scott
 
 define_label('_PLAYER_UP',							0x40F);
@@ -89,6 +92,10 @@ define_label('^MBD_LOCK_DATA',						0xCCC);
 define_label('_MBD_NUM_LOCKS',						0xCCE);
 define_label('_BALLS_IN_TROUGH',					0xCCF);
 define_label('_BALLS_INSTALLED_IN_GAME',			0xCD0);
+
+define_label('_RND_STATEVAR_1',						0x1790);
+define_label('_RND_STATEVAR_2',						0x1791);
+define_label('_RND_STATEVAR_3',						0x1792);
 
 define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0);
 define_label('_BALLS_ACCOUNTED_FOR_COMPL',			0x1ED1);
@@ -224,15 +231,16 @@ define_syscall('killThreads_withMask',				0x8A9A,'TW');
 define_syscall('findThread?',						0x8AAA,'TW');
 define_syscall('memClear',							0x8ABA,'PW');
 define_syscall('memSet',							0x8ACA,'PBB');
-define_syscall('spawnThread_1',						0x8B3D,'TR');
-define_syscall('spawnThread_2',						0x8B5A,'TR');
-define_syscall('killSpawnThread_1',					0x8B77,'TR');			# kill threads first, then spawn new one
-define_syscall('killSpawnThread_2',					0x8B9D,'TR');
-define_syscall('spawnThreadIfNeeded_1',				0x8BC3,'TR');			# don't spaawn if thread id already in use
-define_syscall('spawnThreadIfNeeded_2',				0x8BF7,'TR');
+define_syscall('spawnLowPriorityThread',			0x8B3D,'TR');
+define_syscall('spawnHighPriorityThread',			0x8B5A,'TR');
+define_syscall('killSpawnLowPriorityThread',		0x8B77,'TR');			# kill threads first, then spawn new one
+define_syscall('killSpawnHighPriorityThread',		0x8B9D,'TR');
+define_syscall('spawnLowPriorityThreadIfNeeded',	0x8BC3,'TR');			# don't spaawn if thread id already in use
+define_syscall('spawnHighPriorityThreadIfNeeded',	0x8BF7,'TR');
 define_syscall('memCopy',							0x8C2B,'WWB');
 define_syscall('exitThread',						0x99A2,'',2);			# NOTE 2: sycall is JMP target (rather than JSR)
 define_syscall('syscall_D799',						0xD799,'WBW');
+define_syscall('lastBall?',							0xF7EF,'');
 define_syscall('rotLeft',							0xFDA2,'GB');
 define_syscall('fill',								0xFDB4,'GB');
 define_syscall('unknownBitgroupOp1',				0xFDC6,'GB');
