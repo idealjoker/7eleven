@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Aug 25 13:09:51 2024
+#                    dlm: Thu Oct 10 21:13:27 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 304 51 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 305 77 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -302,6 +302,7 @@
 #				  - added {BitMask} and {ByteOffset}
 #	Aug 24, 2024: - added support for <_LOOP and >_EXITLOOP pseusdo labels
 #	Aug 25, 2024: - added support for <RTS and >RTS
+#	Oct 10, 2024: - BUG: Flag# with trailing arithmetic was not allowed?!?!?!
 # HISTORY END
 
 # RELEASE NOTES:
@@ -907,7 +908,8 @@ sub labelValue($$)
     $lbl = eval('0b' . $1) if ($lbl =~ m{^%([01]+)$});
     return $lbl if numberp($lbl);
     
-    die("Undefined label <$lbl>\n") unless numberp($LBL{$lbl});
+    die("Undefined label <$lbl> (cid $caller_id)\n")
+		unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
     return $LBL{$lbl};
 }
 
@@ -1059,12 +1061,12 @@ sub resolve_labels($)
             $ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})/ ||
             $ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})/ ||
             $ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})/) {
-                $ROM[$a] = hex($1) . $';                                                # decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
+                $ROM[$a] = hex($1) . $';												# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
                 next if numberp($ROM[$a]);                                              # we are done, if we have a number
         }
-        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})$/) {	                                # flags are lamps with bit 6 set
-            $ROM[$a] = hex($1)+64 . $';
-            next if numberp($ROM[$a]);                                                  # we are done, if we have a number
+        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})/) {	                                # flags are lamps with bit 6 set
+            $ROM[$a] = hex($1) + 64 . $';
+			next if numberp($ROM[$a]);                                                  # we are done, if we have a number
         }
         
         my($ms) = '^\\' . $EIGHT_BIT_LABEL_PREFIX;                                      # 8-bit relative address
@@ -1172,7 +1174,7 @@ sub resolve_labels($)
             next;
         }
 
-        $ROM[$a] = labelValue(12,$ROM[$a]);                                             # this will always trigger an error
+        $ROM[$a] = labelValue(666,$ROM[$a]);                                            # this will always trigger an error
     }
     
     for (my($a)=$FIRST_ADDR; $a<=$MAX_ROM_ADDR; $a++) {                                 # finally, split signed words & check ranges
