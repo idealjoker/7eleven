@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ D M D . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Sep 20 22:22:47 2024
+#                    dlm: Wed Sep 25 08:37:15 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 243 63 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 89 57 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -47,6 +47,8 @@ define_label('__FINDTHREAD_ID',						0x5D);
 define_label('_FINDTHREAD_ID+1',					0x5E);
 define_label('__FINDTHREAD_MASK',					0x5F);
 
+define_label('_GI_POWERSAVER_TIMER',				0x6D);		# minutes
+
 define_label('_BALLTILTED??',						0x86);	
 define_label('_GAMEOVER??',							0x87);	
 define_label('_BALLTROUGH_LOCKOUT',					0x88);	
@@ -72,6 +74,7 @@ define_label('=UNKNOWN_THREAD_DATA_1',				0x366);
 define_label('^LOW_PRIORITY_THREADS',				0x36F);		
 define_label('=END_OF_THREADLIST??',				0x371);		
 define_label('=STATUS_AREA_POINTER',				0x380);		# Scott
+define_label('=GI_BRIGHTNESS',						0x3D6); 	# 5 bytes
 
 define_label('_PLAYER_UP',							0x40F);
 define_label('_BALL_IN_PLAY',						0x410);
@@ -82,6 +85,9 @@ define_label('_DMD_ANIMATION_PLAYING',				0x483);
 define_label('_LAST_DMD_ANIMATION_PLAYED??',		0x487);
 define_label('=PLAYER_MEM_DATA??',					0x4AC);
 define_label('_SIZE_PLAYER_MEM_DATA??',				0x4AE);
+define_label('_CRON_MINUTE_COUNTER_1',				0x4B4);
+define_label('_CRON_MINUTE_COUNTER_2',				0x4B5);
+define_label('_CRON_MINUTE_LASTEXEC',				0x4B6);
 define_label('_BALLSEARCH_SUSPEND_TIMER',			0x4C7);
 define_label('_TILTWARNINGS_LEFT',					0x4D4);
 
@@ -180,8 +186,8 @@ define_syscall('memSetBY',							0x8378,'B');
 define_syscall('solCmd',							0x8385,'O');
 define_syscall('pulseFlasher',						0x8392,'B');
 define_syscall('solCmd_wait',						0x839F,'B');
-define_syscall('syscall_83DB',						0x83DB,'B');
-define_syscall('syscall_83E8',						0x83E8,'B');
+define_syscall('setGIbrightness80',					0x83DB,'B');
+define_syscall('setGIbrightness81',					0x83E8,'B');
 define_syscall('lampOn',							0x841C,'L');
 define_syscall('lampOff',							0x842B,'L');
 define_syscall('lampToggle',						0x843A,'L');
@@ -318,6 +324,7 @@ $Thread[0x0004] = 'SYSTHD_Balltrough_handler';
 $Thread[0x0005] = 'SYSTHD_Diagnostics';		
 $Thread[0x780D] = 'SYSTHD_OutholeKicker_busy';	
 $Thread[0x780F] = 'SYSTHD_Balltrough_disabled';
+$Thread[0x787F] = 'SYSTHD_StartButton_thread';
 $Thread[0x2010] = 'SYSTHD_BallSearch';
 $Thread[0x007A] = 'SYSTHD_Playfield_qualified';
 
