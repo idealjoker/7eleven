@@ -1,14 +1,15 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Sat Jun  8 17:50:25 2024
+#                    dlm: Tue Oct 22 11:04:58 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 11 70 NIL 0 0 72 64 2 4 NIL ofnI
+#                    uE-Info: 308 34 NIL 0 0 72 64 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May 27, 2024: - created
 #	Jun  8, 2024: - changed sys_score[A]_now with sys_score[A]_noSound
+#	Oct 22, 2024: - renamed updateGameLogic and runGameEvents syscalls
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
@@ -279,7 +280,8 @@ define_label('sys_exec_switchSolCmd',						0x71C9);
 define_label('sys_B=RAM[X+B]', 							 	0x721F);
 define_label('sys_award_SPECIAL',							0x72A8);
 define_label('sys_switch_script',							0x7230);
-define_label('sys_lampStatusUpdate_then_run_timedScripts',  0x7300);
+#define_label('sys_lampStatusUpdate_then_run_timedScripts', 0x7300);
+define_label('sys_updateGameLogic_and runGameEvents',		 0x7300);
 define_label('sys_clearScoreQueue_outhole_handler',		 	0x7306);
 define_label('sys_outhole_handler',						 	0x730D);
 define_label('sys_start_ball', 							 	0x73E9);
@@ -300,27 +302,30 @@ define_label('sys_award_freeGame', 						 	0x766C);
 define_label('sys_delay[B]',								0x76CC);
 define_label('sys_delay[AB]',								0x76D9);
 define_label('sys_copyRAM',								 	0x76DD);
-define_label('sys_lampStatusUpdate',						0x76F1);
-define_label('sys_pinOp_solCmd',							0x7832);
-define_label('sys_exitOnGameOverOrTilt',					0x79BF);
-define_label('sys_exit',								  	0x79C6);
-define_label('sys_play_soundScript',						0x79CB);
-define_label('sys_execStatusupdate[X]',						0x7744);
+#define_label('sys_lampStatusUpdate',						0x76F1);
+define_label('sys_updateGameLogic',							0x76F1);
+#define_label('sys_execStatusupdate[X]',					0x7744);
+define_label('sys_update_gameLogic[X]',						0x7744);
 define_label('sys_testBit',									0x777C);
-define_label('sys_run_timedScripts',						0x77A8);
+#define_label('sys_run_timedScripts',						0x77A8);
+define_label('sys_runGameEvents',							0x77A8);
 define_label('sys_play_sound', 								0x77F0);
-define_label('sys_light_EBlamp',							0x7925);
-define_label('sys_setBitgroup',								0x7897);
 define_label('sys_pinOp[A]',								0x780E);
+define_label('sys_pinOp_solCmd',							0x7832);
+define_label('sys_setBitgroup',								0x7897);
 define_label('sys_bitgroupOp[A]_until[B]', 					0x78A8);
-define_label('sys_checkAdjustment',							0x7980);
+define_label('sys_light_EBlamp',							0x7925);
 define_label('sys_setBit', 									0x792C);
 define_label('sys_clearBit',								0x793D);
 define_label('sys_blinkLamps', 								0x794A);
 define_label('sys_BX=lampMask[A]', 							0x7953);
+define_label('sys_checkAdjustment',							0x7980);
 define_label('sys_bobTilt_handler',							0x7993);
 define_label('sys_ballTilt_handler',						0x79A3);
 define_label('sys_tilt_sound', 								0x79B6);
+define_label('sys_exitOnGameOverOrTilt',					0x79BF);
+define_label('sys_exit',								  	0x79C6);
+define_label('sys_play_soundScript',						0x79CB);
 define_label('sys_score[A]',								0x79E4);
 define_label('sys_score[A]_noSound',						0x7A00);
 define_label('sys_clear_displays', 							0x7AD6);
