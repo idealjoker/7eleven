@@ -1,0 +1,33 @@
+#======================================================================
+#                    C 7 1 1 . S O U N D C M D . S 6 
+#                    doc: Wed Oct 30 08:18:58 2024
+#                    dlm: Wed Oct 30 09:50:12 2024
+#                    (c) 2023 idealjoker@mailbox.org
+#                    uE-Info: 17 1 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Oct 30, 2024: - created
+
+sub SoundCmd_s6($$)
+{
+	my($str,$src_line) = @_;
+
+	my($count,$snd) = ($str =~ m{^(1?[0-9]x)?(.*)$});
+#	print(STDERR "SoundCmd_s6: $count,$snd\n");
+	die("SoundCmd: cannot decode '$str' at input line $src_line\n")
+		unless defined($snd);
+
+	$count = 1 unless defined($count);
+	die("SoundCmd: invalid repeat count '$count' at input line $src_line\n")
+		unless  $count > 0 && $count < 16;
+
+	$snd = $ALIAS{$snd} if defined($ALIAS{$snd});
+	die("SoundCmd: unknown SOUND_TABLE index '$str' at input line $src_line\n")
+		unless numberp($snd) && $snd >= 0 && $snd < 16;
+
+	return $count*0x10 + $snd;
+}
+
+1;
+

@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Tue Oct 22 11:04:58 2024
+#                    dlm: Wed Oct 30 14:41:47 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 308 34 NIL 0 0 72 64 2 4 NIL ofnI
+#                    uE-Info: 283 0 NIL 0 0 72 64 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -93,10 +93,10 @@ define_label('__script_timer2_handler1',			0x45);
 define_label('_match',								0x46);
 define_label('_bonusX', 							0x47);
 
-define_label('=cycleCounter',						0x50);		# 4 bytes
-define_label('=cycleCounter+1',						0x51);		
-define_label('=cycleCounter+2',						0x52);		
-define_label('=cycleCounter+3',						0x53);
+define_label('=intervalTrigger',					0x50);		# 4 bytes
+define_label('=intervalTrigger+1',					0x51);		
+define_label('=intervalTrigger+2',					0x52);		
+define_label('=intervalTrigger+3',					0x53);
 define_label('_blink_counter',						0x54);
 define_label('_playerUp',							0x55);
 define_label('_maxPlayerInGame',					0x56);
@@ -187,14 +187,14 @@ define_label('=BB_AU08_totalCredits',				0x0134);
 define_label('=BB_AU09_extraballs',					0x013A);	
 define_label('=BB_AU10_ballTime',					0x0140);	
 define_label('=BB_AU11_ballsPlayed',				0x0146);	
-define_label('=BB_HSTD',							0x0148);
-define_label('=BB_HSTD+2',							0x014A);
-define_label('=BB_HSTD+4',							0x014C);
+define_label('=BB_AU12_HSTD',						0x0148);
+define_label('=BB_AU12_HSTD+2',						0x014A);
+define_label('=BB_AU12_HSTD+4',						0x014C);
 
 define_label('_BB_Credits',							0x0152);
 
-define_label('_BB_AU12_HSTD',						0x017F);	
-define_label('_BB_AU12_HSTD+1',						0x0180);	
+define_label('_BB_CheckByte',						0x017F);	
+define_label('_BB_CheckByte+1',						0x0180);	
 define_label('_BB_AD13_BUHSTD',						0x0181);	
 define_label('_BB_AD13_BUHSTD+1',					0x0182);	
 define_label('_BB_AD14_replay1',					0x0183);	
@@ -280,8 +280,7 @@ define_label('sys_exec_switchSolCmd',						0x71C9);
 define_label('sys_B=RAM[X+B]', 							 	0x721F);
 define_label('sys_award_SPECIAL',							0x72A8);
 define_label('sys_switch_script',							0x7230);
-#define_label('sys_lampStatusUpdate_then_run_timedScripts', 0x7300);
-define_label('sys_updateGameLogic_and runGameEvents',		 0x7300);
+define_label('sys_updateGameLogic_and runGameEvents',		0x7300);
 define_label('sys_clearScoreQueue_outhole_handler',		 	0x7306);
 define_label('sys_outhole_handler',						 	0x730D);
 define_label('sys_start_ball', 							 	0x73E9);
