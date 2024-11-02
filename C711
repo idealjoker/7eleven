@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Oct 30 09:41:47 2024
+#                    dlm: Sat Nov  2 10:00:31 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1846 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 309 56 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -305,6 +305,8 @@
 #	Oct 10, 2024: - BUG: Flag# with trailing arithmetic was not allowed?!?!?!
 #	Oct 25, 2024: - if encoder not found, try with WMS-system suffix (e.g. .s6)
 #	Oct 27, 2024: - change order of encoder loading, starting with the one with a suffix
+#	Nov  2, 2024: - BUG: -t/-r did not respect -p
+#				  - adapted -D to allow multiple symbols
 # HISTORY END
 
 # RELEASE NOTES:
@@ -525,9 +527,12 @@ if ($opt_2) {
 	}
 }
 
-$ALIAS{$opt_D} = '!DEFINED!',
-    $ALIAS_REFD{$opt_D}++                                       # define symbol from command line
-        if defined($opt_D);
+if (defined($opt_D)) { 											# define symbol from command line 
+	foreach my $s (split(',',$opt_D)) {
+		$ALIAS{$s} = '!DEFINED!';
+	    $ALIAS_REFD{$s}++;
+    }
+}
 
 load_vROM(split(/,/,$opt_t)) if defined($opt_t);
 
@@ -1037,12 +1042,14 @@ sub resolve_labels($)
 
         if (numberp($ROM[$a])) {                                                        # already a number (opcodes, data & immediate args)
             if (defined($opt_r)) {                                                      # check against ROM image if one is provided
+				my($preg,$posg) = split(',',$opt_g)
+			        if defined($opt_g);
                 if ($ROM[$a] <= 0xFF && 
-                    ($ROM[$a]&0xFF) != $vROMimage[$a-$MIN_ROM_ADDR] && 
+                    ($ROM[$a]&0xFF) != $vROMimage[$a-$MIN_ROM_ADDR+1024*$preg] && 
                     ($ROM[$a]&0xFF) != 0x80 && 
                     ($ROM[$a]&0xFF) != 0x90) {
                         print(STDERR sprintf("ROM mismatch at %04X: found %02X instead of %02X (... %02X %02X %02X)\n",
-                                    $a,$ROM[$a],$vROMimage[$a-$MIN_ROM_ADDR],@ROM[$a+1..$a+3]));
+                                    $a,$ROM[$a],$vROMimage[$a-$MIN_ROM_ADDR+1024*$preg],@ROM[$a+1..$a+3]));
                 }
             }
             next;
@@ -1557,11 +1564,14 @@ sub load_vROM(@)
 
 sub verify_vROM(@)
 {
+	my($preg,$posg) = split(',',$opt_g)
+		if defined($opt_g);
+	
     for (my($a)=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {
         my($val) = defined($ROM[$a]) ? $ROM[$a] : 0xFF;
-        next if ($val == $vROMimage[$a-$MIN_ROM_ADDR]);
-        printf(STDERR "ROM mismatch at %04X: %02X instead of %02X\n",
-                            $a,$val,$vROMimage[$a-$MIN_ROM_ADDR]);
+        next if ($val == $vROMimage[$a-$MIN_ROM_ADDR+1024*$preg]);
+        printf(STDERR "ROM mismatch at %04X: %02X instead of %02X [%04X]\n",
+                      $a,$val,$vROMimage[$a-$MIN_ROM_ADDR+1024*$preg],$a-$MIN_ROM_ADDR+1024*$preg);
     }
 }
 
