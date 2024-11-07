@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Nov  2 10:00:31 2024
+#                    dlm: Wed Nov  6 19:46:57 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 309 56 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2310 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -307,6 +307,7 @@
 #	Oct 27, 2024: - change order of encoder loading, starting with the one with a suffix
 #	Nov  2, 2024: - BUG: -t/-r did not respect -p
 #				  - adapted -D to allow multiple symbols
+#	Nov  6, 2024: - improved error messages
 # HISTORY END
 
 # RELEASE NOTES:
@@ -448,9 +449,11 @@ if ($WMS_System == 6) {											# System6
 	$MAX_ROM_ADDR = 0xFFFF;
 }
 if (defined($opt_i)) {											# override MIN_ROM_ADDR with -i
+	my($size) = $MAX_ROM_ADDR - $MIN_ROM_ADDR;
 	$MIN_ROM_ADDR = hex($opt_i);
 	die("$0: cannot decode -i $opt_i")
 		unless ($MIN_ROM_ADDR >= 0);
+	$MAX_ROM_ADDR = $MIN_ROM_ADDR + $size;
 }
 if (defined($opt_a)) {											# override MAX_ROM_ADDR with -a
 	$MAX_ROM_ADDR = hex($opt_a);
@@ -560,7 +563,7 @@ while (<>) {                                                # assemble source li
     local($OP,@OP_ARG);
 
     if (defined($ADDR) && ($ADDR<$MIN_ROM_ADDR || $ADDR>$MAX_ROM_ADDR+1)) {
-        if ($opt_v) {
+        if ($opt_v || $opt_t) {
             printf(STDERR "WARNING: ROM overflow (\$%04X) at input line $.\n",$ADDR);
         } elsif (!$opt_1) {
             die(sprintf("ROM overflow (\$%04X) at input line $.\n",$ADDR));
@@ -901,8 +904,13 @@ sub define_label(@)
     die("undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
         unless defined($addr);
     die("ERROR: Unmatched END on line $.\n") unless (length($lbl) > 0);
-    die("ERROR: label <$lbl> already defined with different value at input line $.\n")
-        if defined($LBL{$lbl}) && ($LBL{$lbl} ne $addr) && ($lbl ne 'ANALYSIS_GAP');
+	if (defined($LBL{$lbl}) && ($LBL{$lbl} ne $addr) && ($lbl ne 'ANALYSIS_GAP')) {
+		my($msg) = sprintf("label <$lbl> = $addr [\$%04X] already defined with different value ($LBL{$lbl} [\$%04X]) at input line $.\n",$addr,$LBL{$lbl});
+		if ($opt_w) { print(STDERR "WARNING: $msg"); }
+		else 		{ die("ERROR: $msg"); }
+	}
+	printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$%04X to $lbl\n",$addr)
+		if !$opt_w && defined($LBL[$addr]) && ($LBL[$addr] ne $lbl) && !($lbl =~ m/^auto_label_\d*$/ || $LBL[$addr] =~ m/^auto_label_\d*$/);
     $LBL{$lbl} = $addr;
     $LBL[$addr] = $lbl;
 }
@@ -1715,7 +1723,7 @@ sub setROM($$)
     my($addr,$val) = @_;
 
     if (defined($ROM[$addr])) {
-        if ($opt_v) {
+        if ($opt_v || $opt_t) {
             printf(STDERR "WARNING: ROM overflow at %04X at input line $LINE[$addr] ($ROM[$addr])\n",$addr);
         } else {
             die(sprintf("ROM overflow at %04X at input line $LINE[$addr] ($ROM[$addr])\n",$addr))
@@ -2277,25 +2285,26 @@ sub assemble_pragma()
 	# 	- do not move this to the beginning of the routine
 	#-----------------------------------------------------------
 
-    if ($OP eq '.ORG') {                                                               	# .ORG
-		if ($OP_ARG[0] =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {
+    if ($OP eq '.ORG') {                                                               		# .ORG
+    	my($opa) = $OP_ARG[0];
+		if ($opa =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {
 			die unless defined($2);
-			   if ($1 eq '$') { $OP_ARG[0] = hex($2);	}									# decimalize
-			elsif ($1 eq '%') { $OP_ARG[0] = eval('0b' . $2); }
-			else			  { $OP_ARG[0] = $2; }
+			   if ($1 eq '$') { $opa = hex($2);	}											# decimalize
+			elsif ($1 eq '%') { $opa = eval('0b' . $2); }
+			else			  { $opa = $2; }
 			die("Cannot decode number <$OP_ARG[$i]> at input line $.\n")
-				unless numberp($OP_ARG[0]);
-			die(".ORG address out of range (<@_> at input line $.)\n")
-				unless ($OP_ARG[0] >= $MIN_ROM_ADDR && $OP_ARG[0] <= $MAX_ROM_ADDR);
+				unless numberp($opa);
+			die(sprintf(".ORG address \$%04X out of range [\$%04X-\$%04X] at input line $.\n",$opa,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
+				unless ($opa >= $MIN_ROM_ADDR && $opa <= $MAX_ROM_ADDR);
 		} else {
 	        die("Syntax: .ORG ROM-addr (<@_> at input line $.)\n");
         }
-        $ADDR = $OP_ARG[0];
+        $ADDR = $opa;
         $FIRST_ADDR = $ADDR if ($ADDR < $FIRST_ADDR);
 		if (defined($ROM[$ADDR])) {
 			my($nBytes) = 0;
 			while (defined($ROM[$ADDR + ++$nBytes])) {}
-			if (defined($opt_v)) {
+			if ($opt_v || $opt_t) {
 				printf(STDERR "%5d: WARNING: ROM overflow (<.ORG \$%04X>) at input line $.\n",$LINE[$ADDR],$ADDR);
 			} else {
 				die(sprintf("ROM overflow ($nBytes bytes; <.ORG \$%04X> replacing $ROM[$ADDR]) at input line $.\n",$ADDR))
