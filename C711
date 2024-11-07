@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Nov  6 19:46:57 2024
+#                    dlm: Wed Nov  6 21:14:53 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 2310 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 913 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -897,22 +897,34 @@ sub check_duplicate_label_types()
     }
 }
 
+{ my($last_label_addr) = -1; 
+
 sub define_label(@)
 {
     my($lbl,$addr) = @_;
     $addr = $ADDR unless defined($addr);
-    die("undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
+
+    die("ERROR: undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
         unless defined($addr);
+        
     die("ERROR: Unmatched END on line $.\n") unless (length($lbl) > 0);
-	if (defined($LBL{$lbl}) && ($LBL{$lbl} ne $addr) && ($lbl ne 'ANALYSIS_GAP')) {
-		my($msg) = sprintf("label <$lbl> = $addr [\$%04X] already defined with different value ($LBL{$lbl} [\$%04X]) at input line $.\n",$addr,$LBL{$lbl});
-		if ($opt_w) { print(STDERR "WARNING: $msg"); }
-		else 		{ die("ERROR: $msg"); }
+
+    unless ($opt_1) {
+		if (defined($LBL{$lbl}) && ($LBL{$lbl} ne $addr) && ($lbl ne 'ANALYSIS_GAP')) {
+			my($msg) = sprintf("label <$lbl> = $addr [\$%04X] already defined with different value ($LBL{$lbl} [\$%04X]) at input line $.\n",$addr,$LBL{$lbl});
+			if ($opt_w) { print(STDERR "WARNING: $msg"); }
+			else		{ die("ERROR: $msg"); }
+		}
+	
+		printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$%04X to $lbl\n",$addr)
+			if $addr!=$last_label_addr && !$opt_w && defined($LBL[$addr]) && ($LBL[$addr] ne $lbl) && !($lbl =~ m/^auto_label_\d*$/ || $LBL[$addr] =~ m/^auto_label_\d*$/);
+	    $last_label_addr = $addr;
 	}
-	printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$%04X to $lbl\n",$addr)
-		if !$opt_w && defined($LBL[$addr]) && ($LBL[$addr] ne $lbl) && !($lbl =~ m/^auto_label_\d*$/ || $LBL[$addr] =~ m/^auto_label_\d*$/);
+
     $LBL{$lbl} = $addr;
     $LBL[$addr] = $lbl;
+}
+
 }
 
 sub labelValue($$)

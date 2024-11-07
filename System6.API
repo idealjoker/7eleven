@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Wed Nov  6 20:00:35 2024
+#                    dlm: Wed Nov  6 21:35:44 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 333 36 NIL 0 0 72 64 2 4 NIL ofnI
+#                    uE-Info: 345 44 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -63,14 +63,14 @@ define_label('=SwitchBuf+4',						0x28);
 define_label('=SwitchBuf+5',						0x29);
 define_label('=SwitchBuf+6',						0x2A);
 define_label('=SwitchBuf+7',						0x2B);
-define_label('=SwitchStuckBuf', 		  			0x2C);	  	# 8 bytes; reverse column order
-define_label('=SwitchStuckBuf+1', 		  			0x2D);
-define_label('=SwitchStuckBuf+2', 		  			0x2E);
-define_label('=SwitchStuckBuf+3', 		  			0x2F);
-define_label('=SwitchStuckBuf+4', 		  			0x30);
-define_label('=SwitchStuckBuf+5', 		  			0x31);
-define_label('=SwitchStuckBuf+6', 		  			0x32);
-define_label('=SwitchStuckBuf+7', 		  			0x33);
+define_label('=SwitchMaskBuf', 			  			0x2C);	  	# 8 bytes; reverse column order
+define_label('=SwitchMaskBuf+1', 		  			0x2D);
+define_label('=SwitchMaskBuf+2', 		  			0x2E);
+define_label('=SwitchMaskBuf+3', 		  			0x2F);
+define_label('=SwitchMaskBuf+4', 		  			0x30);
+define_label('=SwitchMaskBuf+5', 		  			0x31);
+define_label('=SwitchMaskBuf+6', 		  			0x32);
+define_label('=SwitchMaskBuf+7', 		  			0x33);
 define_label('=SwitchQueue',						0x34);		# 3 bytes
 define_label('=SwitchQueue+1',						0x35);		
 define_label('=SwitchQueue+2',						0x36);
@@ -137,19 +137,19 @@ define_label('=max_score+3',						0x73);
 define_label('__ballTime',							0x74);	    
 define_label('_gameStatusFlags',					0x78);	   # 01: gameOver 02:gameTilted  04:EBpending 08: EBearned 10:balltimeOverflow(1min passed) 80:playfield qualified
 define_label('=switchDebounceTimer',				0x7A);	    
-define_label('__expiredTimerHandler',				0x7E);	    
-define_label('__expiredTimerHandler+1',				0x7F);	    
+define_label('__expiredTimer_handler',				0x7E);	    
+define_label('__expiredTimer_handler+1',			0x7F);	    
 
 define_label('__score_tmpX',						0x80);
 define_label('__score_tmpX+1',						0x81);
-define_label('__tmp1_X',							0x82);	    
-define_label('__tmp1_X+1',							0x83);
+define_label('__Xptr',								0x82);	    
+define_label('__Xptr+1',							0x83);
 define_label('__RAM[X+B]_tmpX',						0x86);
 define_label('__RAM[X+B]_tmpX+1',					0x87);
 define_label('__lampMask[A]_Xin',					0x88);
 define_label('__lampMask[A]_Xin+1',					0x89);
-define_label('__tmp2_X',							0x8A);
-define_label('__tmp2_X+1',							0x8B);
+define_label('__tmpX',								0x8A);
+define_label('__tmpX+1',							0x8B);
 define_label('__switch_params',						0x8C);	    
 define_label('__switch_params+1',					0x8D);	    
 
@@ -226,8 +226,8 @@ define_label('_BB_AD24_coinsBonus',					0x0197);
 define_label('_BB_AD24_coinsBonus+1',				0x0198);	
 define_label('_BB_AD25_HScredits',					0x0199);	
 define_label('_BB_AD25_HScredits+1',				0x019A);	
-define_label('_BB_AD26_match_multipleEB',			0x019B);	
-define_label('_BB_AD26_match_multipleEB+1',			0x019C);	
+define_label('_BB_AD26_multipleEB',					0x019B);	
+define_label('_BB_AD26_match',						0x019C);	
 define_label('_BB_AD27_SpecialAward',				0x019D);	
 define_label('_BB_AD27_SpecialAward+1',				0x019E);	
 define_label('_BB_AD28_ScoringAward',				0x019F);	
@@ -306,15 +306,15 @@ define_label('sys_delay[B]',								0x76CC);
 define_label('sys_delay[AB]',								0x76D9);
 define_label('sys_copyRAM',								 	0x76DD);
 #define_label('sys_lampStatusUpdate',						0x76F1);
-define_label('sys_updateGameLogic',							0x76F1);
+define_label('sys_update_gameLogic',						0x76F1);
 #define_label('sys_execStatusupdate[X]',					0x7744);
 define_label('sys_update_gameLogic[X]',						0x7744);
-define_label('sys_testBit',									0x777C);
+define_label('sys_testBit[A]',								0x777C);
 #define_label('sys_run_timedScripts',						0x77A8);
-define_label('sys_runGameEvents',							0x77A8);
-define_label('sys_play_sound', 								0x77F0);
-define_label('sys_pinOp[A]',								0x780E);
-define_label('sys_pinOp_solCmd[B]',							0x7832);
+define_label('sys_run_gameEvents',							0x77A8);
+define_label('sys_soundCmd[A]',								0x77F0);
+define_label('sys_PinOp[A]',								0x780E);
+define_label('sys_PinOp_solCmd[B]',							0x7832);
 define_label('sys_setBitgroup',								0x7897);
 define_label('sys_bitgroupOp[A]_until[B]', 					0x78A8);
 define_label('sys_light_EBlamp',							0x7925);
@@ -342,6 +342,6 @@ define_label('sys_B=shiftLeft4[X,X+1]',						0x7E1E);
 define_label('sys_splitStore[B]',							0x7E2D);
 define_label('sys_HSreset_handler',							0x7E36);
 define_label('sys_IRQ_handler',								0x7E4C);
-define_label('sys_IRQ_handler_display[A]', 					0x7E9D);
+define_label('sys_IRQ_handler_post_display',				0x7E9D);
 
 
