@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Nov  6 21:14:53 2024
+#                    dlm: Thu Nov  7 21:48:52 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 913 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 311 38 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -308,6 +308,7 @@
 #	Nov  2, 2024: - BUG: -t/-r did not respect -p
 #				  - adapted -D to allow multiple symbols
 #	Nov  6, 2024: - improved error messages
+#	Nov  7, 2024: - improved -d output
 # HISTORY END
 
 # RELEASE NOTES:
@@ -875,11 +876,11 @@ sub verify_checksums()
 
 sub dump_labels()
 {
-	my($types) = '?MWD';
+	my(@type) = ('undef','asm','wvm','data');	
     foreach my $lbl (sort { $LBL{$a} <=> $LBL{$b} } keys(%LBL)) {
+        next if $lbl =~ m{^auto_label_\d+$};
         next unless defined($LBL{$lbl});
-        my($c) = substr($types,$LBL_TYPE{$lbl},1);
-        printf("%40s = \$%04X [$c]\n",$lbl,$LBL{$lbl});
+        printf("%40s = \$%04X [%s]\n",$lbl,$LBL{$lbl},$type[$LBL_TYPE{$lbl}]);
     }
 }
 
