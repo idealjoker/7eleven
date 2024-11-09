@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu Nov  7 21:48:52 2024
+#                    dlm: Fri Nov  8 20:26:55 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 311 38 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1751 91 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -308,7 +308,8 @@
 #	Nov  2, 2024: - BUG: -t/-r did not respect -p
 #				  - adapted -D to allow multiple symbols
 #	Nov  6, 2024: - improved error messages
-#	Nov  7, 2024: - improved -d output
+#	Nov  7, 2024: - replaced -i/-a by new -a
+#				  - added new -i to load API
 # HISTORY END
 
 # RELEASE NOTES:
@@ -406,20 +407,23 @@ $PATH = $0; $PATH =~ s{/[^/]*$}{};
 
 use Getopt::Std;
 die("Usage: $0 \n\t[system -6/-7 source] [-I)VM <stage>]" .
-              "\n\t[-1)st pass [-f)ind in range <from-addr,to-addr>]]" .
-              "\n\t[-2)nd pass [-o)ptimization info <file>]]" .
-              "\n\t[ROM output -s <suffix>] [create -e)qual-sized (32K) ROM images]" .
-              "\n\t[m-i)n/m-a)x ROM <hex addr>] [suppress chec-k)sum verification]" .
-              "\n\t[prepend image with -g)ap of <x> KB of FF bytes]" .
               "\n\t[-D)EFINE <symbol>]" .
+              "\n\t[-1)st pass [-F)ind optimizable statements <from-addr,to-addr>]]" .
+              "\n\t[-2)nd pass [-O)ptimization info <file>]]" .
+              "\n\t[system -i)nterface <API file>] [-l)ink system <code file>]" .
+              "\n\t[prepend image with -g)ap of <x> KB of FF bytes (s6)]" .
+              "\n\t[ROM output -s <suffix>] [create -e)qual-sized (32K) ROM images (s11)]" .
+              "\n\t[ROM -a)ddress range <min hex addr,max hex addr>]".
+			  "\n\t[-o)utput <file>] [also output -A)PI <file>]" .
+			  "\n\t[alt. output code -L)isting] [-x) alt. output D711 .dasm file]" .
+			  "\n\t[suppress chec-k)sum verification]" .
               "\n\t[suppres -w)arnings] [-v)erbose (show warnings)]" .
-			  "\n\t[output code -l)isting] [-x) output D711 .dasm file]" .
               "\n\t[-d)ump labels] [dump -J)SR targets] [dump -R)OM before resolving labels]" .
               "\n\t[-c)hecksum info] [report free -m)emory blocks]" .
-              "\n\t[trace -C)onditional assembly]" .
               "\n\t[-t)rust_but_verify <ROM_image[,...]> [check already during label -r)esolution]]" .
+#             "\n\t[trace -C)onditional assembly (debug)]" .
               "\n\t<asm file>\n")
-    unless &getopts('1267a:cCD:edf:g:i:I:Jklmo:Rrs:t:vwx') && (@ARGV == 1);
+    unless &getopts('1267Aa:cCD:edF:g:i:I:JkLl:mO:o:Rrs:t:vwx') && (@ARGV == 1);
 
 my($dummy,$basename,$ext) = ($ARGV[0] =~ m{([^/]+/)?([^\.]+)\.(.*)}); 
 $basename = 'out' unless defined($basename);
@@ -449,18 +453,15 @@ if ($WMS_System == 6) {											# System6
 	$MIN_ROM_ADDR = 0x4000; 			 
 	$MAX_ROM_ADDR = 0xFFFF;
 }
-if (defined($opt_i)) {											# override MIN_ROM_ADDR with -i
-	my($size) = $MAX_ROM_ADDR - $MIN_ROM_ADDR;
-	$MIN_ROM_ADDR = hex($opt_i);
-	die("$0: cannot decode -i $opt_i")
-		unless ($MIN_ROM_ADDR >= 0);
-	$MAX_ROM_ADDR = $MIN_ROM_ADDR + $size;
-}
-if (defined($opt_a)) {											# override MAX_ROM_ADDR with -a
-	$MAX_ROM_ADDR = hex($opt_a);
+
+if (defined($opt_a)) {											# override ROM address range with -a
+	my($mia,$maa) = split(',',$opt_a);
+	$MIN_ROM_ADDR = hex($mia);
+	$MAX_ROM_ADDR = hex($maa);
 	die("$0: cannot decode -a $opt_a")
 		unless ($MAX_ROM_ADDR > 0);
 }
+	
 my($FIRST_ADDR) = $MAX_ROM_ADDR + 1;                            # sentinel (true value set by .ORG)
 
 my(@SRC);														# source line 
@@ -495,17 +496,17 @@ while ($i < 20) {
 die("$ARGV[0]: No such file or directory\n")                    # check input file
     unless (-r $ARGV[0]);
 
-$opt_w = 1 if $opt_l;                                           # suppress warnings on code outputs
+$opt_w = 1 if $opt_L;                                           # suppress warnings on code outputs
 
 die("-f requires -1 (1st pass)\n")                              # OPTIMIZER (1st pass)
-    if ($opt_f && !$opt_1);
-my($opt_f_from,$opt_f_to) = (0x0000,0xFFFF);                    # address range for optimizations
-if (defined($opt_f)) {
-    ($opt_f_from,$opt_f_to) = split(',',$opt_f);
-    $opt_f_from = hex($opt_f_from);
-    $opt_f_to   = hex($opt_f_to);
-    die("cannot decode -f $opt_f\n")
-        unless ($opt_f_to > $opt_f_from);
+    if ($opt_F && !$opt_1);
+my($opt_F_from,$opt_F_to) = (0x0000,0xFFFF);                    # address range for optimizations
+if (defined($opt_F)) {
+    ($opt_F_from,$opt_F_to) = split(',',$opt_F);
+    $opt_F_from = hex($opt_F_from);
+    $opt_F_to   = hex($opt_F_to);
+    die("cannot decode -f $opt_F\n")
+        unless ($opt_F_to > $opt_F_from);
 }
 if ($opt_1 && -t 1) {                                           # open optimization output file
     open(OPTF,">.OPTINFO_$ARGV[0]")
@@ -513,11 +514,11 @@ if ($opt_1 && -t 1) {                                           # open optimizat
 }
 
 die("-o requires -2 (2nd pass)\n")                              # OPTIMIZER 2nd pass)
-    if ($opt_o && !$opt_2);
+    if ($opt_O && !$opt_2);
 my($next_statement_to_optimize);
 if ($opt_2) {
-    if (defined($opt_o)) {
-        open(OF,$opt_o) || die("$opt_o: $!\n");
+    if (defined($opt_O)) {
+        open(OF,$opt_O) || die("$opt_O: $!\n");
     } else {
         open(OF,".OPTINFO_$ARGV[0]") || die(".OPTINFO_$ARGV[0]: $!\n");
     }
@@ -548,13 +549,76 @@ chop($COMPILATION_INFO77 =                                      # PIN BOT (2x7-c
     $MERCURIAL_RELEASE . `date '+   %m%d%y'`);
 chop($COMPILATION_TIMESTAMP = uc(`date '+%h %d  %H %M '`));     # used for PIN BOT first
 printf(STDERR "$ARGV[0] [$COMPILATION_INFO]\n")                 # report on screen during 2nd pass
-    unless defined($opt_1 || $opt_l);
+    unless defined($opt_1 || $opt_L);
     
 #----------------------------------------------------------------------
-# Load API (Labels)
+# Load API
 #----------------------------------------------------------------------
 
-require "$PATH/System$WMS_System.API";
+my($LIB_API) = defined($opt_i) ? $opt_i : "$PATH/System$WMS_System.API";
+my($LIB_MIN_ADDR,$LIB_MAX_ADDR,@LIB_FN,@LIB_HASH);
+my($LIB_BASENAME) = ($LIB_API =~ m{([^/]+)$});
+
+{
+	sub code_address_range($$)
+	{
+		($LIB_MIN_ADDR,$LIB_MAX_ADDR) = @_;
+		die(sprintf("$LIB_BASENAME: invalid librarary address range (\$%04X-\$%04X)\n",
+			$LIB_MIN_ADDR,$LIB_MAX_ADDR,$MIN_ROM_ADDR))
+				unless ($LIB_MAX_ADDR - $LIB_MIN_ADDR >= 2048) && ($LIB_MIN_ADDR >= 0);
+	}
+
+	sub code_hash($)
+	{
+		foreach my $hd (@_) {
+			my($fn,$hash) = ($hd =~ m{^SHA2-256\((.*)\)= ([0-9a-fA-F]{64})$});
+			die("$LIB_BASENAME: invalid hash specifier <$hd>\n")
+				unless defined($hash);
+			push(@LIB_FN,$fn);
+			push(@LIB_HASH,$hash);				
+		}
+	}
+
+	require $LIB_API unless ($LIB_API eq '');
+}
+
+#----------------------------------------------------------------------
+# Linker
+#----------------------------------------------------------------------
+
+if (defined($opt_l)) {
+	die("$opt_l: need LIB_MIN_ADDR for linking\n")						# check address range
+		unless defined($LIB_MIN_ADDR);
+	printf(STDERR "$opt_l: WARNING: system code (\$%04X-\$%04X) outside " .
+									"ROM address range (\$%04X-\$%04X)\n",
+						$LIB_MIN_ADDR,$LIB_MAX_ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR)
+		if ($LIB_MIN_ADDR > $MAX_ROM_ADDR || $LIB_MAX_ADDR < $MIN_ROM_ADDR);
+
+	my($hd) = `openssl sha256 $opt_l`;									# verify sha256 hash (using openssl)
+	my($fn,$hash) = ($hd =~ m{^SHA2-256\((.*)\)= ([0-9a-fA-F]{64})$});
+	die("$opt_l: invalid hash specifier <$hd>\n")
+        unless defined($hash);
+	($fn) = ($fn =~ m{([^/]+)$});        
+   	my($match) = 0;
+    for (my($i)=0; $i<@LIB_HASH; $i++) {
+		next unless ($hash eq $LIB_HASH[$i]);
+		$match = 1;
+		print(STDERR "$opt_l: WARNING: filename mismatch [$fn vs $LIB_FN[$i]]\n")
+			unless ($fn eq $LIB_FN[$i]);
+		last;
+	}
+	die("$opt_l: hash mismatch\n")
+		unless $match;
+
+	open(F,$opt_l) || die("$opt_l: $!\n");								# read code
+	my($ROMimage);
+	my($nRead) = read(F,$ROMimage,0xFFFF);
+    die("$opt_l: no data\n") unless ($nRead > 0);
+	die("$opt_l: size does not match LIB_MIN/MAX_ADDR information\n")	# make sure API agrees 
+		unless ($nRead == $LIB_MAX_ADDR-$LIB_MIN_ADDR+1);
+
+	@ROM[$LIB_MIN_ADDR..$LIB_MAX_ADDR] = unpack("C*",$ROMimage); 		# populate @ROM
+}
 
 #======================================================================
 # Main Program
@@ -771,7 +835,7 @@ if ($opt_J) {                                               # dump JSR targets
 
 exit(0) if $opt_1;                                          # on 1st pass we are done
 
-unless ($opt_w || $opt_l) {
+unless ($opt_w || $opt_L) {
     foreach my $a (sort keys(%ALIAS_REFD)) {                    # final pass => produce warnings
         print(STDERR "WARNING: alias $a referenced but not defined\n")
             if ($ALIAS_REFD{$a} > 0) && !defined($ALIAS{$a});
@@ -876,11 +940,11 @@ sub verify_checksums()
 
 sub dump_labels()
 {
-	my(@type) = ('undef','asm','wvm','data');	
+	my($types) = '?MWD';
     foreach my $lbl (sort { $LBL{$a} <=> $LBL{$b} } keys(%LBL)) {
-        next if $lbl =~ m{^auto_label_\d+$};
         next unless defined($LBL{$lbl});
-        printf("%40s = \$%04X [%s]\n",$lbl,$LBL{$lbl},$type[$LBL_TYPE{$lbl}]);
+        my($c) = substr($types,$LBL_TYPE{$lbl},1);
+        printf("%40s = \$%04X [$c]\n",$lbl,$LBL{$lbl});
     }
 }
 
@@ -900,9 +964,9 @@ sub check_duplicate_label_types()
 
 { my($last_label_addr) = -1; 
 
-sub define_label(@)
+sub define_label($@)
 {
-    my($lbl,$addr) = @_;
+    my($lbl,$addr,$allow_relabel) = @_;
     $addr = $ADDR unless defined($addr);
 
     die("ERROR: undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
@@ -918,7 +982,10 @@ sub define_label(@)
 		}
 	
 		printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$%04X to $lbl\n",$addr)
-			if $addr!=$last_label_addr && !$opt_w && defined($LBL[$addr]) && ($LBL[$addr] ne $lbl) && !($lbl =~ m/^auto_label_\d*$/ || $LBL[$addr] =~ m/^auto_label_\d*$/);
+			if !$allow_relabel && $addr!=$last_label_addr
+							   && !$opt_w && defined($LBL[$addr])
+							   && ($LBL[$addr] ne $lbl)
+							   && !($lbl =~ m/^auto_label_\d*$/ || $LBL[$addr] =~ m/^auto_label_\d*$/);
 	    $last_label_addr = $addr;
 	}
 
@@ -1037,8 +1104,8 @@ sub resolve_labels($)
         }
 
         if ($opt_1 && !$NO_OPT[$a-$bo]                                                  # Optimizer: Pass 1: Write instructions
-                   && ($a-$bo)         >= $opt_f_from && ($a-$bo)         <= $opt_f_to
-                   && ($offset+$a+$bo) >= $opt_f_from && ($offset+$a+$bo) <= $opt_f_to) {
+                   && ($a-$bo)         >= $opt_F_from && ($a-$bo)         <= $opt_F_to
+                   && ($offset+$a+$bo) >= $opt_F_from && ($offset+$a+$bo) <= $opt_F_to) {
             if ((($opt_I >= 1) &&
                     (($OP[$a] eq '_WVM_MODE') ||
                      ($OP[$a] eq '_SETFLAG[A]') ||
@@ -1063,14 +1130,12 @@ sub resolve_labels($)
 
         if (numberp($ROM[$a])) {                                                        # already a number (opcodes, data & immediate args)
             if (defined($opt_r)) {                                                      # check against ROM image if one is provided
-				my($preg,$posg) = split(',',$opt_g)
-			        if defined($opt_g);
                 if ($ROM[$a] <= 0xFF && 
-                    ($ROM[$a]&0xFF) != $vROMimage[$a-$MIN_ROM_ADDR+1024*$preg] && 
+                    ($ROM[$a]&0xFF) != $vROMimage[$a-$MIN_ROM_ADDR+1024*$opt_g] && 
                     ($ROM[$a]&0xFF) != 0x80 && 
                     ($ROM[$a]&0xFF) != 0x90) {
                         print(STDERR sprintf("ROM mismatch at %04X: found %02X instead of %02X (... %02X %02X %02X)\n",
-                                    $a,$ROM[$a],$vROMimage[$a-$MIN_ROM_ADDR+1024*$preg],@ROM[$a+1..$a+3]));
+                                    $a,$ROM[$a],$vROMimage[$a-$MIN_ROM_ADDR+1024*$opt_g],@ROM[$a+1..$a+3]));
                 }
             }
             next;
@@ -1131,8 +1196,8 @@ sub resolve_labels($)
                 printf(STDERR "\$%04X %5d: WARNING: optimizable statement %s\n",$a-$bo,$LINE[$a-$bo],$SRC[$a-$bo])
                     if ($opt_v);
                 if ($opt_1 && !$NO_OPT[$a-$bo]
-                           && ($a-$bo)         >= $opt_f_from && ($a-$bo)         <= $opt_f_to
-                           && ($offset+$a+$bo) >= $opt_f_from && ($offset+$a+$bo) <= $opt_f_to) {
+                           && ($a-$bo)         >= $opt_F_from && ($a-$bo)         <= $opt_F_to
+                           && ($offset+$a+$bo) >= $opt_F_from && ($offset+$a+$bo) <= $opt_F_to) {
                     my($opt) = "$LINE[$a-$bo] $SRC[$a-$bo]\n";
                     if (! -t 1) { print($opt); }
                     else        { print(OPTF $opt); }									# Optimizer pass 1
@@ -1150,8 +1215,8 @@ sub resolve_labels($)
                 printf(STDERR "\$%04X %5d: WARNING: optimizable statement $SRC[$a-1]\n",$a-1,$LINE[$a-1])
                     if ($opt_v);
                 if ($opt_1 && !$NO_OPT[$a-$bo]
-                           && ($a-1)            >= $opt_f_from && ($a-1)         <= $opt_f_to
-                           && ($offset+$a+1)    >= $opt_f_from && ($offset+$a+1) <= $opt_f_to) {
+                           && ($a-1)            >= $opt_F_from && ($a-1)         <= $opt_F_to
+                           && ($offset+$a+1)    >= $opt_F_from && ($offset+$a+1) <= $opt_F_to) {
                     my($opt) = "$LINE[$a-1] $SRC[$a-1]\n";
                     if (! -t 1) { print($opt); }
                     else        { print(OPTF $opt); }									# Optimizer pass 1
@@ -1585,14 +1650,11 @@ sub load_vROM(@)
 
 sub verify_vROM(@)
 {
-	my($preg,$posg) = split(',',$opt_g)
-		if defined($opt_g);
-	
     for (my($a)=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {
         my($val) = defined($ROM[$a]) ? $ROM[$a] : 0xFF;
-        next if ($val == $vROMimage[$a-$MIN_ROM_ADDR+1024*$preg]);
+        next if ($val == $vROMimage[$a-$MIN_ROM_ADDR+1024*$opt_g]);
         printf(STDERR "ROM mismatch at %04X: %02X instead of %02X [%04X]\n",
-                      $a,$val,$vROMimage[$a-$MIN_ROM_ADDR+1024*$preg],$a-$MIN_ROM_ADDR+1024*$preg);
+                      $a,$val,$vROMimage[$a-$MIN_ROM_ADDR+1024*$opt_g],$a-$MIN_ROM_ADDR+1024*$opt_g);
     }
 }
 
@@ -1620,7 +1682,7 @@ sub find_free_space()
             if $opt_m;
     }
     printf(STDERR "Total Free Space = %d bytes\n",$totalfree)
-        unless $opt_1 || $opt_l;
+        unless $opt_1 || $opt_L;
     return $totalfree;
 }
 
@@ -1630,7 +1692,7 @@ sub find_free_space()
 
 sub produce_output()
 {
-    if ($opt_l) {                                                                               # code listing
+    if ($opt_L) {                                                                               # code listing
         my($src_line,$src_addr,$src_lbl,$a);
         for ($a=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {
             next unless defined($SRC[$a]);                                                      # skip to next opcode
@@ -1671,31 +1733,30 @@ sub produce_output()
             print("$src_line\n");                                                               
         }
         exit(0);
-    } # if $opt_l
+    } # if $opt_L
 
-	if ($WMS_System == 6) {																		# system 6
-		if (defined($opt_g)) {																	# add pre/post gaps
-			my($preg,$posg) = split(',',$opt_g);
-			die("$0: cannot decode -g $opt_g\n")
-				unless ($preg+$posg > 0);
-	        open(F,">${basename}${opt_s}.bin") || die("${basename}${opt_s}.bin: $!\n");     	# 0000-7FFF
-			for (my($k)=0; $k<$preg; $k++) {
-				my($FF) = pack('c',0xFF);
-				for (my($b)=0; $b<1024; $b++) { print(F $FF); }
-			}
-		} else {
-	        open(F,">${basename}${opt_s}_U14.bin") || die("${basename}${opt_s}_U14.bin: $!\n");     # 6000-7FFF
-	    }
-        for (my($a)=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {
+	if ($WMS_System == 6) {																		# System 6
+		if (defined($opt_o)) {																	# single linked output file
+			open(F,">$opt_o") || die("$opt_o: $!\n");
+			if (defined($opt_g)) {																# add pre gap
+				die("$0: invalid -g $opt_g\n") unless ($opt_g > 0);
+				for (my($k)=0; $k<$opt_g; $k++) {
+					my($FF) = pack('c',0xFF);
+					for (my($b)=0; $b<1024; $b++) { print(F $FF); }
+				}
+	        } 
+		} else {																				# default system 6 file
+			print(STDERR "WARNING: linker-options ignored\n")
+				if defined($opt_g) || defined($opt_l);
+			die(sprintf("${basename}${opt_s}_U14.bin: invalid ROM address range (\$%04X-\$%04X) for System 6\n",
+							$MIN_ROM_ADDR,$MAX_ROM_ADDR))
+				unless ($MIN_ROM_ADDR == 0x6000 && $MAX_ROM_ADDR == 0x7FFF);
+	        open(F,">${basename}${opt_s}_U14.bin") || die("${basename}${opt_s}_U14.bin: $!\n"); # 6000-7FFF
+		}
+			
+        for (my($a)=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {									# output code
             print(F pack('c',defined($ROM[$a])?$ROM[$a]:0xFF));
         }
-        if (defined($opt_g)) {
-			my($preg,$posg) = split(',',$opt_g);
-			for (my($k)=0; $k<$posg; $k++) {
-				my($FF) = pack('c',0xFF);
-				for (my($b)=0; $b<1024; $b++) { print(F $FF); }
-			}
-		}
         close(F);
     } elsif ($WMS_System == 7) {                                                                  # system 7
         open(F,">${basename}${opt_s}_U26.bin") || die("${basename}${opt_s}_U26.bin: $!\n");     # D800-DFFF
@@ -1863,39 +1924,48 @@ sub assemble_pragma()
     # Defines (Aliases & Conditional Assembly)
     #-----------------------------------------
 
-    if ($OP eq '.DEFINE') {                                                             # .DEFINE (define alias)
-        die("Syntax: .DEFINE name [value] (<@_> at input line $.)\n")
-            unless (@OP_ARG >= 1);
-        $ALIAS_REFD{$OP_ARG[0]}++;
-        if (@OP_ARG == 1) {                                                             # no argument (just define)
-            $ALIAS{$OP_ARG[0]} = '!DEFINED!';
-        } elsif ($OP_ARG[1] =~ m{^'}) {                                                 # string argument (copy including quotes)
-            ($ALIAS{$OP_ARG[0]}) = m{('.*')};
-        } else {                                                                        # non-string argument
-            $ALIAS{$OP_ARG[0]} = "@OP_ARG[1..$#OP_ARG]";
-        }
-        return 1;
-    }
+	if ($OP eq '.DEFINE') { 															# .DEFINE (define alias)
+		die("Syntax: .DEFINE name [value] (<@_> at input line $.)\n")
+			unless (@OP_ARG >= 1);
+		$ALIAS_REFD{$OP_ARG[0]}++;
+		if (@OP_ARG == 1) { 															# no argument (just define)
+			$ALIAS{$OP_ARG[0]} = '!DEFINED!';
+		} elsif ($OP_ARG[1] =~ m{^'}) { 												# string argument (copy including quotes)
+			($ALIAS{$OP_ARG[0]}) = m{('.*')};
+		} else {																		# non-string argument
+			$ALIAS{$OP_ARG[0]} = "@OP_ARG[1..$#OP_ARG]";
+		}
+		return 1;
+	}
 
-    if ($OP eq '.UNDEF' || $OP eq '.UNDEFINE') {                                        # .UNDEF (undefine alias)
-        die("Syntax: .UNDEFINE name [value] (<@_> at input line $.)\n")                         # using this prevents warnings of used but not defined defines
-            unless (@OP_ARG >= 1);
-        $ALIAS_REFD{$OP_ARG[0]} = -99;
-        undef($ALIAS{$OP_ARG[0]});
-        return 1;
-    }
+	if ($OP eq '.UNDEF' || $OP eq '.UNDEFINE') {										# .UNDEF (undefine alias)
+		die("Syntax: .UNDEFINE name [value] (<@_> at input line $.)\n") 				# using this prevents warnings of used but not defined defines  
+			unless (@OP_ARG >= 1);
+		$ALIAS_REFD{$OP_ARG[0]} = -99;
+		undef($ALIAS{$OP_ARG[0]});
+		return 1;
+	}
 
-    #--------
-    # Labels 
-    #--------
+	#--------
+	# Labels 
+	#--------
 
-    if ($OP eq '.LBL') {                                                                # .LBL (define label)
-        die("Syntax: .LBL id value (<@_> at input line $.)\n")
-            unless (@OP_ARG == 2);
-        my($a) = $OP_ARG[1];
-        $a = hex($a) if ($a =~ m{^\$([0-9a-fA-F]+)$});
-        define_label($OP_ARG[0],$a);
-        return 1;
+	if ($OP eq '.LBL' || $OP eq '.LABEL') { 											# .LBL/.LABEL (define label)
+		die("Syntax: .LBL id value (<@_> at input line $.)\n")
+			unless (@OP_ARG == 2);
+		my($a) = $OP_ARG[1];
+		$a = hex($a) if ($a =~ m{^\$([0-9a-fA-F]+)$});
+		define_label($OP_ARG[0],$a);
+		return 1;
+	}
+
+	if ($OP eq '.RELBL' || $OP eq '.RELABEL') { 										# .RELBL/.RELABEL (redefine label)
+		die("Syntax: .LBL id value (<@_> at input line $.)\n")
+			unless (@OP_ARG == 2);
+		my($a) = $OP_ARG[1];
+		$a = hex($a) if ($a =~ m{^\$([0-9a-fA-F]+)$});
+		define_label($OP_ARG[0],$a,1);													# suppress overwrite warning
+		return 1;
     }
 
     #--------

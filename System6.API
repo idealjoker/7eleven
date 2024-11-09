@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Wed Nov  6 21:35:44 2024
+#                    dlm: Fri Nov  8 09:24:02 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 345 44 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 29 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -13,9 +13,20 @@
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
-#	- only define_label() statements allowed in here
+#	- mainly define_label() statements allowed in here
 # 	- labels with simple addition must be defined for [D711.pm]
 #	  to work correctly. They are, however, not output 
+
+#----------------------------------------------------------------------
+# Code Meta Data
+#	- min address
+#	- max address
+#	- SHA-256 hashes 
+#----------------------------------------------------------------------
+
+code_address_range(0x7000,0x7FFF);
+code_hash('SHA2-256(GreenROM.bin)= 577d3834eda49a178dee8610e7699d37f68850bbd681986e019d95312850c4a0');
+code_hash('SHA2-256(IGR.bin)= 6ef56a3ef9c5d1e0bd1b62bfefb9d5a5f098105470f771bf1f91e8c86552a59f');
 
 #----------------------------------------------------------------------
 # RAM Labels
