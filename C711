@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri Nov  8 20:26:55 2024
+#                    dlm: Sat Nov  9 09:40:39 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1751 91 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 313 57 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -310,6 +310,7 @@
 #	Nov  6, 2024: - improved error messages
 #	Nov  7, 2024: - replaced -i/-a by new -a
 #				  - added new -i to load API
+#	Nov  9, 2024: - shuffled options and added API output
 # HISTORY END
 
 # RELEASE NOTES:
@@ -406,24 +407,24 @@ my($OPTIMIZABLE_LABEL_PREFIX) = '`';                            # this is preced
 $PATH = $0; $PATH =~ s{/[^/]*$}{};
 
 use Getopt::Std;
-die("Usage: $0 \n\t[system -6/-7 source] [-I)VM <stage>]" .
-              "\n\t[-D)EFINE <symbol>]" .
-              "\n\t[-1)st pass [-F)ind optimizable statements <from-addr,to-addr>]]" .
+die("Usage: $0 \n\t[system -6/-7 source] [sys11 I-V)M <stage>]" .
+              "\n\t[-D)EFINE <symbol>]" .																# conditional compilation
+              "\n\t[-1)st pass [-F)ind optimizable statements <from-addr,to-addr>]]" .					# code optimization
               "\n\t[-2)nd pass [-O)ptimization info <file>]]" .
-              "\n\t[system -i)nterface <API file>] [-l)ink system <code file>]" .
-              "\n\t[prepend image with -g)ap of <x> KB of FF bytes (s6)]" .
-              "\n\t[ROM output -s <suffix>] [create -e)qual-sized (32K) ROM images (s11)]" .
-              "\n\t[ROM -a)ddress range <min hex addr,max hex addr>]".
-			  "\n\t[-o)utput <file>] [also output -A)PI <file>]" .
-			  "\n\t[alt. output code -L)isting] [-x) alt. output D711 .dasm file]" .
+              "\n\t[system -i)nterface <API file>] [-l)ink system <code file> (s6)]" .					# game code compilation/linker
+			  "\n\t[output -I)nterface on stdout (s6)]" .												# system code compilation/linker
+			  "\n\t[-o)utput <file> (s6)] [prepend image with -g)ap of <x> KB of FF bytes (s6)]" .		# linker output control
+              "\n\t[ROM -a)ddress range <min hex addr,max hex addr>]".									# compilation/output address range
+              "\n\t[ROM output -s <suffix>] [create -e)qual-sized (32K) ROM images (s11)]" .			# ROM image output control
+              "\n\t[suppres -w)arnings] [-v)erbose (show warnings)]" .									# general compilation options
 			  "\n\t[suppress chec-k)sum verification]" .
-              "\n\t[suppres -w)arnings] [-v)erbose (show warnings)]" .
-              "\n\t[-d)ump labels] [dump -J)SR targets] [dump -R)OM before resolving labels]" .
+			  "\n\t[alt. output code -L)isting] [-x) alt. output D711 .dasm file]" .					# alternative output options
+              "\n\t[-d)ump labels] [dump -J)SR targets] [dump -R)OM before resolving labels]" .			
               "\n\t[-c)hecksum info] [report free -m)emory blocks]" .
-              "\n\t[-t)rust_but_verify <ROM_image[,...]> [check already during label -r)esolution]]" .
-#             "\n\t[trace -C)onditional assembly (debug)]" .
+              "\n\t[-t)rust_but_verify <ROM_image[,...]> [check already during label -r)esolution]]" .	# ouput checking
+#             "\n\t[trace -C)onditional assembly (debug)]" .											# debugging
               "\n\t<asm file>\n")
-    unless &getopts('1267Aa:cCD:edF:g:i:I:JkLl:mO:o:Rrs:t:vwx') && (@ARGV == 1);
+    unless &getopts('1267a:cCD:edF:g:i:IJkLl:mO:o:Rrs:t:V:vwx') && (@ARGV == 1);
 
 my($dummy,$basename,$ext) = ($ARGV[0] =~ m{([^/]+/)?([^\.]+)\.(.*)}); 
 $basename = 'out' unless defined($basename);
@@ -479,12 +480,12 @@ my($MODE) = 0;													# 0: undefined; 1: M6800; 2: WVM/IVM
 # Command-Line Options
 #----------------------------------------------------------------------
 
-if (defined($opt_I)) {                                          # IVM support
-    die("cannot decode -I $opt_I\n")
-        unless ($opt_I =~ m/^\d+$/);
+if (defined($opt_V)) {                                          # IVM support
+    die("cannot decode -V $opt_V\n")
+        unless ($opt_V =~ m/^\d+$/);
 }
 my($i);     
-for ($i=1; $i<=$opt_I; $i++) {
+for ($i=1; $i<=$opt_V; $i++) {
     $ALIAS{"IVM_STAGE$i"} = '!DEFINED!';
     $ALIAS_REFD{"IVM_STAGE$i"}++;
 }
@@ -665,7 +666,7 @@ while (<>) {                                                # assemble source li
 					$subst += s/\bJMP\b/BRA/g;							# JMP
 					$subst += s/\bJSR\b/BSR/g;							# JSR
 					$subst += s/\bjump/branch/g;						# branchIf, branchUnless, branch
-					if ($opt_I >= 1) {									# IVM STAGE1
+					if ($opt_V >= 1) {									# IVM STAGE1
 						$subst += s/\b_WVM_MODE\b/!IVM_mode/g;			# _WVM_MODE
 						$subst += s/\b_SETFLAG\[A\]/!setBits/g; 		# _SETFLAG[A]
 						$subst += s/\b_SETFLAG\[B\]/!setBits/g; 		# _SETFLAG[B]
@@ -675,13 +676,13 @@ while (<>) {                                                # assemble source li
 						$subst += s/\b_LAMPOFF\[A\]/!clearBits/g;		# _LAMPOFF[A]
 						$subst += s/\b_EXIT_THREAD\b/!exitThread/g; 	# _EXIT_THREAD
 					}
-					if ($opt_I >= 4) {									# IVM STAGE4
+					if ($opt_V >= 4) {									# IVM STAGE4
 						$subst += s/\b_PSHX\b/!PSHX/g;					# _PSHX
 						$subst += s/\b_PULX\b/!PULX/g;					# _PULX
 						$subst += s/\b_AAX\b/!AAX/g;					# _AAX
 						$subst += s/\b_ABX\b/!ABX/g;					# _ABX
 					}
-					if ($opt_I >= 5) {									# IVM STAGE5
+					if ($opt_V >= 5) {									# IVM STAGE5
 						$subst += s/\b_SLEEP\b/!sleep/g;				# _SLEEP
 					}
 				    
@@ -836,13 +837,30 @@ if ($opt_J) {                                               # dump JSR targets
 exit(0) if $opt_1;                                          # on 1st pass we are done
 
 unless ($opt_w || $opt_L) {
-    foreach my $a (sort keys(%ALIAS_REFD)) {                    # final pass => produce warnings
+    foreach my $a (sort keys(%ALIAS_REFD)) { 				# final pass => produce warnings	
         print(STDERR "WARNING: alias $a referenced but not defined\n")
             if ($ALIAS_REFD{$a} > 0) && !defined($ALIAS{$a});
     }
 }
 
-produce_output();                                           # output 
+produce_output();                                           # output either code listing or ROM image files
+
+if (defined($opt_I)) {										# output Interface (API)
+	printf("code_address_range(0x%04X,0x%04X);\n",
+		$MIN_ROM_ADDR,$MAX_ROM_ADDR);
+	if (defined($opt_o)) {
+		chomp(my($hash) = `openssl sha256 $opt_o`);
+		print("code_hash('$hash');\n");
+    }
+	foreach my $lbl (sort { $LBL{$a} <=> $LBL{$b} } keys(%LBL)) {
+		next unless defined($LBL{$lbl});
+		next if ($lbl =~ m{^auto_label_\d+});				# ignore auto labels
+		next if ($lbl =~ m{^~});							# ignore local labels
+		next if ($lbl =~ m{[+-]\d+$});						# ignore labels with trailing arithmetic
+		printf("define_label('%s',0x%02X);\n",$lbl,$LBL{$lbl});
+	}
+}
+
 exit(0);
 
 #======================================================================
@@ -1106,7 +1124,7 @@ sub resolve_labels($)
         if ($opt_1 && !$NO_OPT[$a-$bo]                                                  # Optimizer: Pass 1: Write instructions
                    && ($a-$bo)         >= $opt_F_from && ($a-$bo)         <= $opt_F_to
                    && ($offset+$a+$bo) >= $opt_F_from && ($offset+$a+$bo) <= $opt_F_to) {
-            if ((($opt_I >= 1) &&
+            if ((($opt_V >= 1) &&
                     (($OP[$a] eq '_WVM_MODE') ||
                      ($OP[$a] eq '_SETFLAG[A]') ||
                      ($OP[$a] eq '_SETFLAG[B]') ||
@@ -1115,12 +1133,12 @@ sub resolve_labels($)
                      ($OP[$a] eq '_CLEARFLAG[B]') ||
                      ($OP[$a] eq '_LAMPOFF[A]') ||
                      ($OP[$a] eq '_EXIT_THREAD'))) ||
-                (($opt_I >= 4) &&                   
+                (($opt_V >= 4) &&                   
                     (($OP[$a] eq '_PSHX') ||
                      ($OP[$a] eq '_PULX') ||
                      ($OP[$a] eq '_AAX') ||
                      ($OP[$a] eq '_ABX'))) ||
-                (($opt_I >= 5) &&                   
+                (($opt_V >= 5) &&                   
                     ($OP[$a] eq '_SLEEP'))) {
                         my($opt) = "$LINE[$a] $SRC[$a]\n";
                         if (! -t 1) { print($opt); }
@@ -1472,7 +1490,7 @@ sub unroll_structure()
 		$MODE=1,return if macro_IF_6800('_IF_MI','BPL');
 	    $MODE=1,return if macro_IF_6800('_IF_PL','BMI');
 
-		if ($opt_I > 0) {
+		if ($opt_V > 0) {
 			$MODE=1,return if macro_IF_6800('_!IF','!branchUnless');
 			$MODE=1,return if macro_IF_6800('_!UNLESS','!branchIf');
 		}
@@ -1688,6 +1706,8 @@ sub find_free_space()
 
 #----------------------------------------------------------------------
 # Produce Output
+#	-L			code listing
+#	otherwise	create one or more ROM image files
 #----------------------------------------------------------------------
 
 sub produce_output()
@@ -2926,7 +2946,7 @@ sub assemble_6800()
 #	print(STDERR "assemble_6800(MODE=$MODE): $OP @OP_ARG\n");
 	if ($OP =~ /^!/) {																	# !oneShot support
 		die("IVM: Illegal !oneShot while IVM is not enabled at input line $.\n")
-			unless ($opt_I > 0);
+			unless ($opt_V > 0);
 		die("IVM: Illegal !oneShot (perhaps due to optimization) while .IVM_DISABLED is active at input line $.\n")
 			if $IVM_DISABLED;
 		die("IVM: Illegal !oneShot in begin6800/end6800[$EXEC6800_BLOCK_ID] at input line $.\n")
@@ -2937,7 +2957,7 @@ sub assemble_6800()
 
 		$MODE=2,return 1 if asm_wvm_op('IVM_mode'		,'' 	,0x00);
 
-		if ($opt_I >= 2) {
+		if ($opt_V >= 2) {
 			$MODE=1,return 1 if asm_wvm_op('displayStr' 	,'WB'	,0x3F);
 			$MODE=1,return 1 if asm_wvm_op('incAudit'		,'W'	,0x23);
 			$MODE=1,return 1 if asm_wvm_op('soundcardCmd'	,'B'	,0x27);
@@ -2948,7 +2968,7 @@ sub assemble_6800()
 				   asm_wvm_op('incAudit'		,'' 	,0x27);
 	    }
 
-		if ($opt_I >= 4) {
+		if ($opt_V >= 4) {
 			$MODE=1,return 1 if asm_wvm_op('PSHX'		,'' 	,0x02);
 			$MODE=1,return 1 if asm_wvm_op('PULX'		,'' 	,0x04);
 			$MODE=1,return 1 if asm_wvm_op('AAX'		,'' 	,0x0C);
@@ -4001,7 +4021,7 @@ sub assemble_wvm($)
 	my($current_mode) = @_;																# 1 for !oneShot, 2 for normal
 	
 #	print(STDERR "assemble_wvm(MODE=$MODE): $OP @OP_ARG\n");
-	if ($opt_I >= 2) {
+	if ($opt_V >= 2) {
 		$MODE=$current_mode,return 1 if asm_wvm_op('displayStr' 	,'WB'	,0x3F);
 		$MODE=$current_mode,return 1 if asm_wvm_op('incAudit'		,'W'	,0x23);
 		$MODE=$current_mode,return 1 if asm_wvm_op('soundcardCmd'	,'B'	,0x27);
