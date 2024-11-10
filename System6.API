@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Fri Nov  8 09:24:02 2024
+#                    dlm: Sat Nov  9 18:13:08 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 29 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 181 56 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -147,7 +147,11 @@ define_label('=max_score+2',						0x72);
 define_label('=max_score+3',						0x73);	    
 define_label('__ballTime',							0x74);	    
 define_label('_gameStatusFlags',					0x78);	   # 01: gameOver 02:gameTilted  04:EBpending 08: EBearned 10:balltimeOverflow(1min passed) 80:playfield qualified
+define_label('RAM_79',								0x79);
 define_label('=switchDebounceTimer',				0x7A);	    
+define_label('RAM_7B',								0x7B);
+define_label('RAM_7C',								0x7C);
+define_label('RAM_7D',								0x7D);
 define_label('__expiredTimer_handler',				0x7E);	    
 define_label('__expiredTimer_handler+1',			0x7F);	    
 
@@ -170,6 +174,11 @@ define_label('=data_p1',							0x94);		# 18 bytes
 define_label('=data_p2',							0xA6);		# 18 bytes
 define_label('=data_p3',							0xB8);		# 18 bytes
 define_label('=data_p4',							0xCA);		# 18 bytes
+
+define_label('RAM_DC',								0xDC);
+define_label('RAM_DD',								0xDD);
+define_label('RAM_DE',								0xDE);
+define_label('RAM_DF',								0xDF);
 
 define_label('_GameVarE0',							0xE0);		# 3 used in Alien Poker, more very likely possible (c.f. Sys 7); competes with stack
 define_label('_GameVarE1',							0xE1);
