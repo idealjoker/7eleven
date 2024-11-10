@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Nov  9 09:40:39 2024
+#                    dlm: Sun Nov 10 12:44:08 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 313 57 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1276 1 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -994,7 +994,7 @@ sub define_label($@)
 
     unless ($opt_1) {
 		if (defined($LBL{$lbl}) && ($LBL{$lbl} ne $addr) && ($lbl ne 'ANALYSIS_GAP')) {
-			my($msg) = sprintf("label <$lbl> = $addr [\$%04X] already defined with different value ($LBL{$lbl} [\$%04X]) at input line $.\n",$addr,$LBL{$lbl});
+			my($msg) = sprintf("label <$lbl> = \$%04X [$addr] already defined with different value (\$%04X [$LBL{$lbl}]) at input line $.\n",$addr,$LBL{$lbl});
 			if ($opt_w) { print(STDERR "WARNING: $msg"); }
 			else		{ die("ERROR: $msg"); }
 		}
@@ -1262,8 +1262,8 @@ sub resolve_labels($)
         #       LDAB    =SolBuf{LSB}+2
         #----------------------------------------------------------------------
 
-        my($str,$encoder) = ($ROM[$a] =~ m/^([^{]+)\{([^}]+)\}/);                   	# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
-		if (defined($encoder)) {
+		my($str,$encoder) = ($ROM[$a] =~ m/^'?(.+)\{([^}\s]+)\}'?/);					# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
+		if (defined($encoder)) {														# 	initial '? allows for strings with spaces e.g. in 'ls -l{ShellCmd}'
 			my($remainder) = $';
 #			print(STDERR "encoder($str,$encoder)\n");
 			$encoder .= ".s$WMS_System"

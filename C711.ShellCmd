@@ -1,0 +1,26 @@
+#======================================================================
+#                    C 7 1 1 . S H E L L C M D 
+#                    doc: Sun Nov 10 11:06:02 2024
+#                    dlm: Sun Nov 10 11:18:48 2024
+#                    (c) 2024 A.M. Thurnherr
+#                    uE-Info: 13 1 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Nov 10, 2024:	- created
+
+# EXAMPLES:
+#
+#	.DW	'hg tip | sed -n "/changeset:/s/changeset: *\(....\):.*/\$\1/p"{ShellCmd}'
+
+sub ShellCmd($$)
+{
+	my($str,$src_line) = @_;
+	my($result) = `$str`;
+	die("\n") unless defined($result);
+	chomp($result);
+	return $result;
+}
+
+1;
+
