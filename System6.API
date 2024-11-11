@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Sat Nov  9 18:13:08 2024
+#                    dlm: Sun Nov 10 15:28:19 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 181 56 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 326 27 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -147,11 +147,11 @@ define_label('=max_score+2',						0x72);
 define_label('=max_score+3',						0x73);	    
 define_label('__ballTime',							0x74);	    
 define_label('_gameStatusFlags',					0x78);	   # 01: gameOver 02:gameTilted  04:EBpending 08: EBearned 10:balltimeOverflow(1min passed) 80:playfield qualified
-define_label('RAM_79',								0x79);
+define_label('_ISRvar79',							0x79);
 define_label('=switchDebounceTimer',				0x7A);	    
-define_label('RAM_7B',								0x7B);
-define_label('RAM_7C',								0x7C);
-define_label('RAM_7D',								0x7D);
+define_label('_ISRmask7B',							0x7B);
+define_label('__ISRptr7C',							0x7C);
+define_label('__ISRptr7C+1',						0x7D);
 define_label('__expiredTimer_handler',				0x7E);	    
 define_label('__expiredTimer_handler+1',			0x7F);	    
 
@@ -175,10 +175,10 @@ define_label('=data_p2',							0xA6);		# 18 bytes
 define_label('=data_p3',							0xB8);		# 18 bytes
 define_label('=data_p4',							0xCA);		# 18 bytes
 
-define_label('RAM_DC',								0xDC);
-define_label('RAM_DD',								0xDD);
-define_label('RAM_DE',								0xDE);
-define_label('RAM_DF',								0xDF);
+define_label('__ISRvarDC',							0xDC);
+define_label('__ISRvarDC+1',							0xDD);
+define_label('_ISRvarDE',							0xDE);
+define_label('_ISRvarDF',							0xDF);
 
 define_label('_GameVarE0',							0xE0);		# 3 used in Alien Poker, more very likely possible (c.f. Sys 7); competes with stack
 define_label('_GameVarE1',							0xE1);
@@ -322,8 +322,8 @@ define_label('sys_coinLeft_handler',						0x75FE);
 define_label('sys_coinCenter_handler', 					 	0x7602);
 define_label('sys_coinRight_handler',						0x7606);
 define_label('sys_update_credits[A]', 					 	0x766C);
-define_label('sys_delay[B]',								0x76CC);
-define_label('sys_delay[AB]',								0x76D9);
+define_label('sys_sleep_0.3sec',							0x76CC);
+define_label('sys_usleep[A]',								0x76D9);
 define_label('sys_copyRAM',								 	0x76DD);
 #define_label('sys_lampStatusUpdate',						0x76F1);
 define_label('sys_update_gameLogic',						0x76F1);
