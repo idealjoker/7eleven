@@ -1,15 +1,16 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Sun Nov 10 15:28:19 2024
+#                    dlm: Tue Nov 12 15:54:52 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 326 27 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 33 20 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May 27, 2024: - created
-#	Jun  8, 2024: - changed sys_score[A]_now with sys_score[A]_noSound
-#	Oct 22, 2024: - renamed updateGameLogic and runGameEvents syscalls
+#	Jun - Nov	: - updated
+#	Nov  7, 2024: - adapted to work with Sys 6 linker
+#	Nov 12, 2024: - added ROM identifiers
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
@@ -19,11 +20,14 @@
 
 #----------------------------------------------------------------------
 # Code Meta Data
-#	- min address
-#	- max address
-#	- SHA-256 hashes 
+#	- version identifier
+#	- address ranges
+#	- compatible SHA-256 hashes 
 #----------------------------------------------------------------------
 
+define_alias('GREENROM');
+define_alias('SYSTEM6');
+define_alias('WMS_SYSTEM6');
 code_address_range(0x7000,0x7FFF);
 code_hash('SHA2-256(GreenROM.bin)= 577d3834eda49a178dee8610e7699d37f68850bbd681986e019d95312850c4a0');
 code_hash('SHA2-256(IGR.bin)= 6ef56a3ef9c5d1e0bd1b62bfefb9d5a5f098105470f771bf1f91e8c86552a59f');

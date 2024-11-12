@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Nov 10 12:44:08 2024
+#                    dlm: Tue Nov 12 08:26:31 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1276 1 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 314 38 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -311,6 +311,7 @@
 #	Nov  7, 2024: - replaced -i/-a by new -a
 #				  - added new -i to load API
 #	Nov  9, 2024: - shuffled options and added API output
+#	Nov 12, 2024: - added define_alias()
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1376,6 +1377,14 @@ sub calc_checksums()                                                            
 #       - other multi-word aliases are commands that need
 #         to be spliced into @_
 #----------------------------------------------------------------------
+
+sub define_alias($@)																# used in API files
+{
+	my($name,$value) = @_;
+	die("ERROR: cannot define alias <$name>\n")
+		unless defined($name);
+	$ALIAS{$name} = defined($value) ? $value : '!DEFINED!';
+}
 
 sub aliasValue($)
 {
