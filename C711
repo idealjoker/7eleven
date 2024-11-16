@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Tue Nov 12 08:26:31 2024
+#                    dlm: Thu Nov 14 12:15:18 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 314 38 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1994 39 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -312,6 +312,8 @@
 #				  - added new -i to load API
 #	Nov  9, 2024: - shuffled options and added API output
 #	Nov 12, 2024: - added define_alias()
+#	Nov 14, 2024: - added .DECLARE
+#				  - added match_pragma to deal properly with abbreviations
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1400,11 +1402,25 @@ sub aliasValue($)
     return $val;
 }
 
+sub match_pragma($$$)
+{
+	my($s,$m,$o) = @_;
+
+	return undef unless ($s =~ m{^$m});													# mandatory part does not match
+
+	my($l) = (length($s) > (length($m)+length($o)))
+		   ? length($m) + length($o)
+		   : length($s);
+	return 0 unless substr($s,0,$l) eq substr($m.$o,0,$l);							 	# no match unless optional part matches
+	return 1;
+}
+
 
 sub expand_aliases()                                        
 {														    
 	for (my($i)=0; $i<@_; $i++) {
-		next if ($i == 1 && $_[0] eq '.DEFINE');										# this caused a lot of confusion when I accidentally redefined the number 47 :)
+		next if ($i == 1 && match_pragma($_[0],'.DEF','INE'));							# forgeting this caused a lot of confusion when I accidentally redefined the number 47 :)
+		next if ($i == 1 && match_pragma($_[0],'.DECL','ARE'));
 		while (1) {
 ##			my($pre,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
 			my($pre,$alias,$post) = ($_[$i] =~ m/}$/)
@@ -1953,8 +1969,8 @@ sub assemble_pragma()
     # Defines (Aliases & Conditional Assembly)
     #-----------------------------------------
 
-	if ($OP eq '.DEFINE') { 															# .DEFINE (define alias)
-		die("Syntax: .DEFINE name [value] (<@_> at input line $.)\n")
+	if (match_pragma($OP,'.DEF','INE')) { 												# .DEFINE (define alias)
+		die("Syntax: .DEF[INE] name [value] (<@_> at input line $.)\n")
 			unless (@OP_ARG >= 1);
 		$ALIAS_REFD{$OP_ARG[0]}++;
 		if (@OP_ARG == 1) { 															# no argument (just define)
@@ -1967,11 +1983,18 @@ sub assemble_pragma()
 		return 1;
 	}
 
-	if ($OP eq '.UNDEF' || $OP eq '.UNDEFINE') {										# .UNDEF (undefine alias)
-		die("Syntax: .UNDEFINE name [value] (<@_> at input line $.)\n") 				# using this prevents warnings of used but not defined defines  
+	if (match_pragma($OP,'.UNDEF','INE')) {												# .UNDEF (undefine alias)
+		die("Syntax: .UNDEF[INE] name [value] (<@_> at input line $.)\n") 				# using this prevents warnings of used but not defined defines  
 			unless (@OP_ARG >= 1);
 		$ALIAS_REFD{$OP_ARG[0]} = -99;
 		undef($ALIAS{$OP_ARG[0]});
+		return 1;
+	}
+
+	if (match_pragma($OP,'.DECL','ARE')) {												# .DECLARE (undefine alias)
+		die("Syntax: .DECL[ARE] name (<@_> at input line $.)\n") 						# using this prevents warnings but does not set value
+			unless (@OP_ARG >= 1);
+		$ALIAS_REFD{$OP_ARG[0]} = -99;
 		return 1;
 	}
 
