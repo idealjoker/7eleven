@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Tue Nov 12 15:54:52 2024
+#                    dlm: Fri Nov 15 22:54:47 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 33 20 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 317 41 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -314,7 +314,7 @@ define_label('sys_outhole_handler',						 	0x730D);
 define_label('sys_start_ball', 							 	0x73E9);
 define_label('sys_ball_kickout',							0x740A);
 define_label('sys_end_of_game',							 	0x7426);
-define_label('sys_match_handler',							0x7457);
+define_label('sys_endOfGame_match[tmp1]',					0x7457);
 define_label('sys_endOfGame_noMatch',						0x746B);
 define_label('sys_load_playerData',						 	0x7520);
 define_label('sys_X=playerData',							0x7562);
