@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu Nov 14 12:15:18 2024
+#                    dlm: Sat Nov 16 09:57:19 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1994 39 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 317 56 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -314,6 +314,7 @@
 #	Nov 12, 2024: - added define_alias()
 #	Nov 14, 2024: - added .DECLARE
 #				  - added match_pragma to deal properly with abbreviations
+#	Nov 16, 2024: - added .+1 capability to define_label
 # HISTORY END
 
 # RELEASE NOTES:
@@ -987,11 +988,15 @@ sub check_duplicate_label_types()
 
 sub define_label($@)
 {
+#	print(STDERR "define_label(@_) $ADDR\n");
     my($lbl,$addr,$allow_relabel) = @_;
-    $addr = $ADDR unless defined($addr);
 
+    $addr = $ADDR unless defined($addr);
     die("ERROR: undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
         unless defined($addr);
+
+    my($lofs) = ($addr =~ m{^\.\+(\d+)$}); 												# handle .+1
+    $addr = $last_label_addr + $lofs if defined($lofs);
         
     die("ERROR: Unmatched END on line $.\n") unless (length($lbl) > 0);
 
@@ -1043,6 +1048,7 @@ sub labelValue($$)
 
 sub eval_label($@)                                                                  # addr argument is used when -x is set
 {                                                                                   #   set to undef when no output on -x should be generated
+#	print(STDERR "eval_label(@_)\n");
     my($lexpr,$addr,$suppress_errors) = @_;
 
     return $LBL{$lexpr} if (numberp($LBL{$lexpr}));                                 # number
@@ -1294,7 +1300,7 @@ sub resolve_labels($)
             next;
         }
 
-        $ROM[$a] = labelValue(666,$ROM[$a]);                                            # this will always trigger an error
+        $ROM[$a] = labelValue(666,$ROM[$a]);                                            # this will always trigger an error unless ROM[a] is numeric
     }
     
     for (my($a)=$FIRST_ADDR; $a<=$MAX_ROM_ADDR; $a++) {                                 # finally, split signed words & check ranges
