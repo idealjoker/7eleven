@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Fri Nov 15 22:54:47 2024
+#                    dlm: Sat Nov 16 21:59:21 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 317 41 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 224 38 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -221,6 +221,8 @@ define_label('=BB_AU12_HSTD+4',						0x014C);
 
 define_label('_BB_Credits',							0x0152);
 
+define_label('=BB_saved_display_data',				0x0154);
+
 define_label('_BB_CheckByte',						0x017F);	
 define_label('_BB_CheckByte+1',						0x0180);	
 define_label('_BB_AD13_BUHSTD',						0x0181);	
@@ -314,8 +316,8 @@ define_label('sys_outhole_handler',						 	0x730D);
 define_label('sys_start_ball', 							 	0x73E9);
 define_label('sys_ball_kickout',							0x740A);
 define_label('sys_end_of_game',							 	0x7426);
-define_label('sys_endOfGame_match[tmp1]',					0x7457);
-define_label('sys_endOfGame_noMatch',						0x746B);
+define_label('sys_end_of_game_match[tmp1]',					0x7457);
+define_label('sys_end_of_game_noMatch',						0x746B);
 define_label('sys_load_playerData',						 	0x7520);
 define_label('sys_X=playerData',							0x7562);
 define_label('sys_creditButton_handler',					0x7571);
