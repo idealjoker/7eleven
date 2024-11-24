@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Sat Nov 16 21:59:21 2024
+#                    dlm: Sun Nov 24 12:50:56 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 224 38 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 14 42 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -11,6 +11,7 @@
 #	Jun - Nov	: - updated
 #	Nov  7, 2024: - adapted to work with Sys 6 linker
 #	Nov 12, 2024: - added ROM identifiers
+#	Nov 24, 2024: - new .nibble convention
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
@@ -194,15 +195,14 @@ define_label('TOP_OF_STACK',						0xFF);
 #----------------------------------------------------------------------
 
 define_label('=BB_RAM_START',						0x0100);						# Battery Backed RAM
-define_label('_BB_unused?_0101',					0x0101);
-define_label('_BB_unused_0102', 					0x0102);
-define_label('_BB_unused_0103', 					0x0103);
-define_label('_BB_unused_0104', 					0x0104);
-define_label('_BB_unused_0105', 					0x0105);
-define_label('_BB_unused_0106', 					0x0106);
-define_label('_BB_unused_0107', 					0x0107);
-define_label('_BB_unused_0108', 					0x0108);
-define_label('_BB_unused_0109', 					0x0109);
+define_label('.BB_unused_0102', 					0x0102);
+define_label('.BB_unused_0103', 					0x0103);
+define_label('.BB_unused_0104', 					0x0104);
+define_label('.BB_unused_0105', 					0x0105);
+define_label('.BB_unused_0106', 					0x0106);
+define_label('.BB_unused_0107', 					0x0107);
+define_label('.BB_unused_0108', 					0x0108);
+define_label('.BB_unused_0109', 					0x0109);
 define_label('=BB_AUDIT_START',						0x010A);
 define_label('=BB_AU01_leftCoins',					0x010A);	
 define_label('=BB_AU02_centerCoins',				0x0110);	
@@ -219,59 +219,59 @@ define_label('=BB_AU12_HSTD',						0x0148);
 define_label('=BB_AU12_HSTD+2',						0x014A);
 define_label('=BB_AU12_HSTD+4',						0x014C);
 
-define_label('_BB_Credits',							0x0152);
+define_label('.BB_Credits',							0x0152);
 
 define_label('=BB_saved_display_data',				0x0154);
 
-define_label('_BB_CheckByte',						0x017F);	
-define_label('_BB_CheckByte+1',						0x0180);	
-define_label('_BB_AD13_BUHSTD',						0x0181);	
-define_label('_BB_AD13_BUHSTD+1',					0x0182);	
-define_label('_BB_AD14_replay1',					0x0183);	
-define_label('_BB_AD14_replay+1',					0x0184);	
-define_label('_BB_AD15_replay2',					0x0185);	
-define_label('_BB_AD15_replay2+1',					0x0186);	
-define_label('_BB_AD16_replay3',					0x0187);	
-define_label('_BB_AD16_replay3+1',					0x0188);	
-define_label('_BB_AD17_replay4',					0x0189);	
-define_label('_BB_AD17_replay4+1',					0x018A);	
-define_label('_BB_AD18_maxCredits',					0x018B);	
-define_label('_BB_AD18_maxCredits+1',				0x018C);	
-define_label('_BB_AD19_priceControl',				0x018D);	
-define_label('_BB_AD19_priceControl+1',				0x018E);	
-define_label('_BB_AD20_lCoinMult',					0x018F);	
-define_label('_BB_AD20_lCoinMult+1',				0x0190);	
+define_label('.BB_CheckByte',						0x017F);	
+define_label('.BB_CheckByte+1',						0x0180);	
+define_label('.BB_AD13_BUHSTD',						0x0181);	
+define_label('.BB_AD13_BUHSTD+1',					0x0182);	
+define_label('.BB_AD14_replay1',					0x0183);	
+define_label('.BB_AD14_replay+1',					0x0184);	
+define_label('.BB_AD15_replay2',					0x0185);	
+define_label('.BB_AD15_replay2+1',					0x0186);	
+define_label('.BB_AD16_replay3',					0x0187);	
+define_label('.BB_AD16_replay3+1',					0x0188);	
+define_label('.BB_AD17_replay4',					0x0189);	
+define_label('.BB_AD17_replay4+1',					0x018A);	
+define_label('.BB_AD18_maxCredits',					0x018B);	
+define_label('.BB_AD18_maxCredits+1',				0x018C);	
+define_label('.BB_AD19_priceControl',				0x018D);	
+define_label('.BB_AD19_priceControl+1',				0x018E);	
+define_label('.BB_AD20_lCoinMult',					0x018F);	
+define_label('.BB_AD20_lCoinMult+1',				0x0190);	
 
-define_label('_BB_AD21_cCoinMult',					0x0191);	
-define_label('_BB_AD21_cCoinMult+1',				0x0192);	
-define_label('_BB_AD22_rCoinMult',					0x0193);	
-define_label('_BB_AD22_rCoinJult+1'	,				0x0194);	
-define_label('_BB_AD23_coins4credit',				0x0195);	
-define_label('_BB_AD23_coins4credit+1',				0x0196);	
-define_label('_BB_AD24_coinsBonus',					0x0197);	
-define_label('_BB_AD24_coinsBonus+1',				0x0198);	
-define_label('_BB_AD25_HScredits',					0x0199);	
-define_label('_BB_AD25_HScredits+1',				0x019A);	
-define_label('_BB_AD26_multipleEB',					0x019B);	
-define_label('_BB_AD26_match',						0x019C);	
-define_label('_BB_AD27_SpecialAward',				0x019D);	
-define_label('_BB_AD27_SpecialAward+1',				0x019E);	
-define_label('_BB_AD28_ScoringAward',				0x019F);	
-define_label('_BB_AD28_ScoringAward+1',				0x01A0);	
-define_label('_BB_AD29_tiltWarnings',				0x01A1);	
-define_label('_BB_AD29_tiltWarnings+1',				0x01A2);	
-define_label('_BB_AD30_ballsPerGame',				0x01A3);	
-define_label('_BB_AD30_ballsPerGame+1',				0x01A4);	
-define_label('_BB_AD31',							0x01A5);	
-define_label('_BB_AD31+1',							0x01A6);	
-define_label('_BB_AD32',							0x01A7);	
-define_label('_BB_AD32+1',							0x01A8);	
-define_label('_BB_AD33',							0x01A9);	
-define_label('_BB_AD33+1',							0x01AA);	
-define_label('_BB_AD34',							0x01AB);	
-define_label('_BB_AD34+1',							0x01AC);	
-define_label('_BB_AD35',							0x01AD);	
-define_label('_BB_AD35+1',							0x01AE);	
+define_label('.BB_AD21_cCoinMult',					0x0191);	
+define_label('.BB_AD21_cCoinMult+1',				0x0192);	
+define_label('.BB_AD22_rCoinMult',					0x0193);	
+define_label('.BB_AD22_rCoinJult+1'	,				0x0194);	
+define_label('.BB_AD23_coins4credit',				0x0195);	
+define_label('.BB_AD23_coins4credit+1',				0x0196);	
+define_label('.BB_AD24_coinsBonus',					0x0197);	
+define_label('.BB_AD24_coinsBonus+1',				0x0198);	
+define_label('.BB_AD25_HScredits',					0x0199);	
+define_label('.BB_AD25_HScredits+1',				0x019A);	
+define_label('.BB_AD26_multipleEB',					0x019B);	
+define_label('.BB_AD26_match',						0x019C);	
+define_label('.BB_AD27_SpecialAward',				0x019D);	
+define_label('.BB_AD27_unused',						0x019E);	
+define_label('.BB_AD28_ScoringAward',				0x019F);	
+define_label('.BB_AD28_unused',						0x01A0);	
+define_label('.BB_AD29_tiltWarnings',				0x01A1);	
+define_label('.BB_AD29_unused',						0x01A2);	
+define_label('.BB_AD30_ballsPerGame',				0x01A3);	
+define_label('.BB_AD30_unused',						0x01A4);	
+define_label('.BB_AD31',							0x01A5);	
+define_label('.BB_AD31+1',							0x01A6);	
+define_label('.BB_AD32',							0x01A7);	
+define_label('.BB_AD32+1',							0x01A8);	
+define_label('.BB_AD33',							0x01A9);	
+define_label('.BB_AD33+1',							0x01AA);	
+define_label('.BB_AD34',							0x01AB);	
+define_label('.BB_AD34+1',							0x01AC);	
+define_label('.BB_AD35',							0x01AD);	
+define_label('.BB_AD35+1',							0x01AE);	
 
 #----------------------------------------------------------------------
 # PIA Addresses
