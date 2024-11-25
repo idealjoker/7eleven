@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Nov 16 09:57:19 2024
+#                    dlm: Sun Nov 24 21:12:54 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 317 56 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1286 1 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -315,6 +315,7 @@
 #	Nov 14, 2024: - added .DECLARE
 #				  - added match_pragma to deal properly with abbreviations
 #	Nov 16, 2024: - added .+1 capability to define_label
+#	Nov 24, 2024: - BUG: encoder alias substitution did not work any more for TCM
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1274,7 +1275,7 @@ sub resolve_labels($)
 		my($str,$encoder) = ($ROM[$a] =~ m/^'?(.+)\{([^}\s]+)\}'?/);					# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
 		if (defined($encoder)) {														# 	initial '? allows for strings with spaces e.g. in 'ls -l{ShellCmd}'
 			my($remainder) = $';
-#			print(STDERR "encoder($str,$encoder)\n");
+##			print(STDERR "encoder($str,$encoder) [$ROM[$a]]\n");
 			$encoder .= ".s$WMS_System"
 				if (-f "$PATH/C711.$encoder.s$WMS_System");
 			require "$PATH/C711.$encoder";
@@ -1428,11 +1429,18 @@ sub expand_aliases()
 		next if ($i == 1 && match_pragma($_[0],'.DEF','INE'));							# forgeting this caused a lot of confusion when I accidentally redefined the number 47 :)
 		next if ($i == 1 && match_pragma($_[0],'.DECL','ARE'));
 		while (1) {
-##			my($pre,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
-			my($pre,$alias,$post) = ($_[$i] =~ m/}$/)
-								  ? ($_[$i] =~ m{^([\#\[]?[A-Za-z0-9_]+\()?([A-Za-z\?0-9_\.\#\+-]+)(.*)$}) 
-								  : ($_[$i] =~ m{^([\#\[])?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
-##			print(STDERR "$_[0] $pre/$alias/$post [$ALIAS{$alias}]\n");
+			my($pre,$alias,$post);
+##			if ($_[$i] =~ m/}$/) {														# encoder
+			if ($_[$i] =~ m/{.+}/) {													# encoder
+				my($p1,$p2);
+				($p1,$p2,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z0-9_]+\()?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
+				$pre = $p1 . $p2;
+#				print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n");
+            } else {	
+				($pre,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
+			}
+#			print(STDERR "$_[$i] $pre/$alias/$post [$ALIAS{$alias}]\n");
+
 			last unless defined($ALIAS{$alias});
 			$ALIAS_REFD{$alias}++;
 			my(@sali) = split(/\s+/,$ALIAS{$alias});
@@ -1442,6 +1450,7 @@ sub expand_aliases()
 				splice(@_,$i,1,@sali);
 			}
 		}
+#		print(STDERR "$_[$i]\n");
 	}
 }
 

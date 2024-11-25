@@ -1,18 +1,28 @@
 #======================================================================
 #                    C 7 1 1 . B Y T E O F F S E T 
 #                    doc: Fri May 31 11:52:25 2024
-#                    dlm: Sat Jun  8 12:38:29 2024
+#                    dlm: Mon Nov 25 08:12:32 2024
 #                    (c) 2023 idealjoker@mailbox.orgXSxsq
-#                    uE-Info: 12 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 25 26 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #   May 31, 2024: - created
 #	Jun  8, 2024: - adapted to new interface
+#	Nov 25, 2024: - disabled because it is byte offset is ambiguous
+
+# NOTES:
+#	- it appears that both lamps and flags have already been substituted
+#	  and decimalized, so the if and elsif clauses are never called
+#	- for flags it is unclear whether the offset should be with respect
+#	  to the start of the lamp or flag buffer
+#	- flag buffer in player data is 4 bytes, flag buffer in current
+#	  player data is 8 bytes => no proper error check possible
 
 sub ByteOffset($$)
 {
     my($str,$line) = @_;														# works for Flags and Lamps, which by this stage have been decimalized
+    die("ByteOfset Encoder: disabled due to ambiguity\n");
 
 #	print(STDERR "ByteOffset($str,$addr)\n");
 	if ($str =~ m{^Lamp#([0-9A-Fa-f]{2})$}) {
