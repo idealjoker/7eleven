@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Sun Dec  8 16:37:25 2024
+#                    dlm: Wed Dec 11 13:20:22 2024
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 365 38 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 16 34 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -13,6 +13,7 @@
 #	Nov 12, 2024: - added ROM identifiers
 #	Nov 24, 2024: - new .nibble convention
 #				  - updated syscall names
+#	Dec 11, 1024: - updated labels
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
@@ -182,7 +183,7 @@ define_label('=data_p3',							0xB8);		# 18 bytes
 define_label('=data_p4',							0xCA);		# 18 bytes
 
 define_label('__ISRvarDC',							0xDC);
-define_label('__ISRvarDC+1',							0xDD);
+define_label('__ISRvarDC+1',						0xDD);
 define_label('_ISRvarDE',							0xDE);
 define_label('_ISRvarDF',							0xDF);
 
@@ -200,10 +201,10 @@ define_label('.unused_0102', 						0x0102);
 define_label('.unused_0103', 						0x0103);
 define_label('.unused_0104', 						0x0104);
 define_label('.unused_0105', 						0x0105);
-define_label('.unused_0106', 						0x0106);
-define_label('.unused_0107', 						0x0107);
-define_label('.unused_0108', 						0x0108);
-define_label('.unused_0109', 						0x0109);
+define_label('.unknown_display_0106', 				0x0106);
+define_label('.unknown_display_0107', 				0x0107);
+define_label('.unknown_display_0108', 				0x0108);
+define_label('.unknown_display_0109', 				0x0109);
 define_label('=BB_AUDIT_START',						0x010A);
 define_label('=BB_AU01_leftCoins',					0x010A);	
 define_label('=BB_AU02_centerCoins',				0x0110);	
