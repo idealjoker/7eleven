@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri Dec 13 22:46:46 2024
+#                    dlm: Sat Dec 14 11:07:10 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 366 66 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2003 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -317,6 +317,7 @@
 #	Nov 16, 2024: - added .+1 capability to define_label
 #	Nov 24, 2024: - BUG: encoder alias substitution did not work any more for TCM
 #	Dec 13, 2024: - added export support for @ALIASes when  producing API
+#	Dec 14, 2024: - added .ASSUME_DEFINED, .ASSUME_UNDEFINED
 # HISTORY END
 
 # RELEASE NOTES:
@@ -732,7 +733,8 @@ while (<>) {                                                # assemble source li
         }
     
         &expand_aliases                                     # expand aliases (except for .IFDEF, .IFNDEF, which are handled in assemble_pragma())
-            unless ($_[0] =~ m{^\.IFN?DEF});
+            unless ($_[0] =~ m{^\.IFN?DEF}) ||
+            	   ($_[0] =~ m{^\.ASSUME});
 
         &decimalize;                                        # convert all numbers to decimal (e.g. for .ORG); NB: does not deal with #$numbers
         ($OP,@OP_ARG) = @_;                                 # make available to all subroutines (local)
@@ -1992,7 +1994,28 @@ sub assemble_pragma()
         return 1;
     }
 
-    return 1 if ($IF_STACK[$#IF_STACK] < 0);                                            # assembly is suspended
+    return 1 if ($IF_STACK[$#IF_STACK] < 0);                                            # conditional assembly is suspended 
+
+	if ($OP eq '.ASSUME_DEFINED') { 													# .ASSUME_DEFINED
+		die("Syntax: .ASSUME_DEFINED id[...] (<@_> at input line $.)\n")
+			unless (@OP_ARG >= 1);
+		for my $sym (@OP_ARG) {
+			die("Undefined alias <$sym> assumed defined at input line $.\n")
+				unless defined($ALIAS{$sym});
+		}
+		return 1;
+	}
+
+	if ($OP eq '.ASSUME_UNDEFINED') { 													# .ASSUME_UNDEFINED
+		die("Syntax: .ASSUME_UNDEFINED id[...] (<@_> at input line $.)\n")
+			unless (@OP_ARG >= 1);
+		for my $sym (@OP_ARG) {
+			die("Defined alias <$sym> assumed undefined at input line $.\n")
+				if defined($ALIAS{$sym});
+			$ALIAS_REFD{$sym}++;				
+		}
+		return 1;
+	}
 
     #-----------------------------------------
     # Defines (Aliases & Conditional Assembly)
