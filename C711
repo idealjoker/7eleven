@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Nov 24 21:12:54 2024
+#                    dlm: Fri Dec 13 22:46:46 2024
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1286 1 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 366 66 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -316,6 +316,7 @@
 #				  - added match_pragma to deal properly with abbreviations
 #	Nov 16, 2024: - added .+1 capability to define_label
 #	Nov 24, 2024: - BUG: encoder alias substitution did not work any more for TCM
+#	Dec 13, 2024: - added export support for @ALIASes when  producing API
 # HISTORY END
 
 # RELEASE NOTES:
@@ -356,7 +357,16 @@
 #			- this could be disallowed because {eval} provided alternatives
 #			  e.g. LDAA (=Solbuf&$00FF)+2{eval}
 
-# Ideal Virtual Machine (IVM) Support:
+# System 6 Linker Support:
+#	- option -I is used to compile OS and produces API on STDOUT:
+#		- metadata (address range & code hash)
+#		- non-local (not starting with ~) labels
+#		- exported (starting with @) aliases
+#	- option -l <OS binary file> is used to compile game code
+#		- in addition to <OS binary file> it also reads (imports) the API
+#		- API file has same basename and .API extension
+
+# System 11 Ideal Virtual Machine (IVM) Support:
 #   - Stage 1:  !oneShot                            IVM_STAGE1
 #               IVM_mode
 #               _WVM_MODE       optimization
@@ -863,6 +873,10 @@ if (defined($opt_I)) {										# output Interface (API)
 		next if ($lbl =~ m{^~});							# ignore local labels
 		next if ($lbl =~ m{[+-]\d+$});						# ignore labels with trailing arithmetic
 		printf("define_label('%s',0x%02X);\n",$lbl,$LBL{$lbl});
+	}
+	foreach my $alias (keys(%ALIAS)) {						# export @ALIASes
+		next unless ($alias =~ m{^@});
+		printf("define_alias('%s');\n",$alias);
 	}
 }
 
