@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Wed Dec 11 21:04:12 2024
+#                    dlm: Wed Jan 29 19:18:44 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 204 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 17 68 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -14,6 +14,7 @@
 #	Nov 24, 2024: - new .nibble convention
 #				  - updated syscall names
 #	Dec 11, 1024: - updated labels
+#	Jan 29, 2025: - BUG: Code Meta Data was enabled for disassembler
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
@@ -22,18 +23,20 @@
 #	  to work correctly. They are, however, not output 
 
 #----------------------------------------------------------------------
-# Code Meta Data
+# Code Meta Data (not used by disassembler)
 #	- version identifier
 #	- address ranges
 #	- compatible SHA-256 hashes 
 #----------------------------------------------------------------------
 
-define_alias('GREENROM');
-define_alias('SYSTEM6');
-define_alias('WMS_SYSTEM6');
-code_address_range(0x7000,0x7FFF);
-code_hash('SHA2-256(GreenROM.bin)= 577d3834eda49a178dee8610e7699d37f68850bbd681986e019d95312850c4a0');
-code_hash('SHA2-256(IGR.bin)= 6ef56a3ef9c5d1e0bd1b62bfefb9d5a5f098105470f771bf1f91e8c86552a59f');
+unless (defined($D711::WMS_System)) {
+	define_alias('GREENROM');
+	define_alias('SYSTEM6');
+	define_alias('WMS_SYSTEM6');
+	code_address_range(0x7000,0x7FFF);
+	code_hash('SHA2-256(GreenROM.bin)= 577d3834eda49a178dee8610e7699d37f68850bbd681986e019d95312850c4a0');
+	code_hash('SHA2-256(IGR.bin)= 6ef56a3ef9c5d1e0bd1b62bfefb9d5a5f098105470f771bf1f91e8c86552a59f');
+}
 
 #----------------------------------------------------------------------
 # RAM Labels
