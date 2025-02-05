@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Dec 14 11:07:10 2024
+#                    dlm: Tue Feb  4 21:13:36 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 2003 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 321 73 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -318,6 +318,7 @@
 #	Nov 24, 2024: - BUG: encoder alias substitution did not work any more for TCM
 #	Dec 13, 2024: - added export support for @ALIASes when  producing API
 #	Dec 14, 2024: - added .ASSUME_DEFINED, .ASSUME_UNDEFINED
+#	Feb  4, 2025: - BUG: .ASSUME_UNDEFINED increased the reference counts
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2012,7 +2013,6 @@ sub assemble_pragma()
 		for my $sym (@OP_ARG) {
 			die("Defined alias <$sym> assumed undefined at input line $.\n")
 				if defined($ALIAS{$sym});
-			$ALIAS_REFD{$sym}++;				
 		}
 		return 1;
 	}
