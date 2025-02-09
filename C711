@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Tue Feb  4 21:13:36 2025
+#                    dlm: Sun Feb  9 14:45:26 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 321 73 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 322 79 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -319,6 +319,7 @@
 #	Dec 13, 2024: - added export support for @ALIASes when  producing API
 #	Dec 14, 2024: - added .ASSUME_DEFINED, .ASSUME_UNDEFINED
 #	Feb  4, 2025: - BUG: .ASSUME_UNDEFINED increased the reference counts
+#	Feb  9. 2025: - BUG: expand_aliases did not handle all exceptions correctly
 # HISTORY END
 
 # RELEASE NOTES:
@@ -733,10 +734,7 @@ while (<>) {                                                # assemble source li
             next if (@_ == 0);                              # label-only line => nothing to assemble
         }
     
-        &expand_aliases                                     # expand aliases (except for .IFDEF, .IFNDEF, which are handled in assemble_pragma())
-            unless ($_[0] =~ m{^\.IFN?DEF}) ||
-            	   ($_[0] =~ m{^\.ASSUME});
-
+        &expand_aliases;                                    # expand aliases (except for .IFDEF, .IFNDEF, etc. which are handled in assemble_pragma())	
         &decimalize;                                        # convert all numbers to decimal (e.g. for .ORG); NB: does not deal with #$numbers
         ($OP,@OP_ARG) = @_;                                 # make available to all subroutines (local)
         $OP[$ADDR] = $OP;                                   # make available to OPTIMIZER
@@ -1444,10 +1442,14 @@ sub expand_aliases()
 {														    
 	for (my($i)=0; $i<@_; $i++) {
 		next if ($i == 1 && match_pragma($_[0],'.DEF','INE'));							# forgeting this caused a lot of confusion when I accidentally redefined the number 47 :)
+		next if ($i == 1 && match_pragma($_[0],'.UNDEF','INE'));
 		next if ($i == 1 && match_pragma($_[0],'.DECL','ARE'));
+		next if match_pragma($_[0],'.IFDEF','');
+		next if match_pragma($_[0],'.IFNDEF','');
+		next if match_pragma($_[0],'.ASSUME_DEFINED','');
+		next if match_pragma($_[0],'.ASSUME_UNDEFINED','');
 		while (1) {
 			my($pre,$alias,$post);
-##			if ($_[$i] =~ m/}$/) {														# encoder
 			if ($_[$i] =~ m/{.+}/) {													# encoder
 				my($p1,$p2);
 				($p1,$p2,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z0-9_]+\()?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
@@ -2024,6 +2026,7 @@ sub assemble_pragma()
 	if (match_pragma($OP,'.DEF','INE')) { 												# .DEFINE (define alias)
 		die("Syntax: .DEF[INE] name [value] (<@_> at input line $.)\n")
 			unless (@OP_ARG >= 1);
+		die if ($OP_ARG[0] =~ m{^!.*!$});
 		$ALIAS_REFD{$OP_ARG[0]}++;
 		if (@OP_ARG == 1) { 															# no argument (just define)
 			$ALIAS{$OP_ARG[0]} = '!DEFINED!';
@@ -2038,14 +2041,17 @@ sub assemble_pragma()
 	if (match_pragma($OP,'.UNDEF','INE')) {												# .UNDEF (undefine alias)
 		die("Syntax: .UNDEF[INE] name [value] (<@_> at input line $.)\n") 				# using this prevents warnings of used but not defined defines  
 			unless (@OP_ARG >= 1);
+		die if ($OP_ARG[0] =~ m{^!.*!$});
 		$ALIAS_REFD{$OP_ARG[0]} = -99;
 		undef($ALIAS{$OP_ARG[0]});
+		die if defined($ALIAS{$OP_ARG[0]});
 		return 1;
 	}
 
 	if (match_pragma($OP,'.DECL','ARE')) {												# .DECLARE (undefine alias)
 		die("Syntax: .DECL[ARE] name (<@_> at input line $.)\n") 						# using this prevents warnings but does not set value
 			unless (@OP_ARG >= 1);
+		die if ($OP_ARG[0] =~ m{^!.*!$});
 		$ALIAS_REFD{$OP_ARG[0]} = -99;
 		return 1;
 	}
@@ -2997,20 +3003,20 @@ sub asm_6800_op($$@)
 		}
 		if ($am eq 'R') {																# relative mode (1-byte relative address)
 			$ROM[$ADDR++] = $opc[$i];
-			$OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]				# _EXITLOOP pseudo label
+			$OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]						# _EXITLOOP pseudo label
 		        if ($OP_ARG[0] eq '_EXITLOOP' ||
 					$OP_ARG[0] eq '>_EXITLOOP');
-			$OP_ARG[0] = $LOOP_LBL[$#LOOP_LBL]      								# _NEXTLOOP pseudo label
+			$OP_ARG[0] = $LOOP_LBL[$#LOOP_LBL]      									# _NEXTLOOP pseudo label
 			        if ($OP_ARG[0] eq '_NEXTLOOP' ||
 					    $OP_ARG[0] eq '<_LOOP');
 
-			if ($OP_ARG[0] eq '<RTS') {											# lexical labels
+			if ($OP_ARG[0] eq '<RTS') {													# lexical labels
 				$OP_ARG[0] = $last_RTS_addr;
             } elsif ($OP_ARG[0] eq '>RTS') {
             	push(@forward_lexical_RTS_branch,$ADDR);
             	$OP_ARG[0] = 'XXXX';
             } else {
-				unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {							# set type of branch target
+				unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {									# set type of branch target
 					push(@newly_defined_label,($OP_ARG[0]));
 					set_label_type(1);
             	}
