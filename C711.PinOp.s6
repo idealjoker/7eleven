@@ -1,14 +1,15 @@
 #======================================================================
 #                    C 7 1 1 . P I N O P . S 6 
 #                    doc: Sat Jun  8 12:22:52 2024
-#                    dlm: Wed Oct 30 08:51:26 2024
+#                    dlm: Wed Feb 19 14:48:31 2025
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 11 48 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 12 64 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Oct 27, 2024: - created
 #	Oct 30, 2024: - added line numbers to errors
+#	Feb 19, 2025: - renamed bitgroup ops set->fill, clear->empty
 
 sub PinOp_s6($$)
 {
@@ -87,7 +88,7 @@ sub PinOp_s6($$)
         }
     }
 
-	if ($op eq 'clear') {
+	if ($op eq 'empty') {
 		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
 			return hex($1) | 0x70;
         } else {
@@ -95,7 +96,7 @@ sub PinOp_s6($$)
         }
     }
 
-	if ($op eq 'set') {
+	if ($op eq 'fill') {
 		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
 			return hex($1) | 0x78;
         } else {
