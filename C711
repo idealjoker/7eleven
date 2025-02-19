@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Feb  9 14:45:26 2025
+#                    dlm: Wed Feb 19 09:50:19 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 322 79 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 323 31 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -320,6 +320,7 @@
 #	Dec 14, 2024: - added .ASSUME_DEFINED, .ASSUME_UNDEFINED
 #	Feb  4, 2025: - BUG: .ASSUME_UNDEFINED increased the reference counts
 #	Feb  9. 2025: - BUG: expand_aliases did not handle all exceptions correctly
+#	Feb 19, 2025: - added .[UN]LOCK_ROM_PAGE
 # HISTORY END
 
 # RELEASE NOTES:
@@ -759,8 +760,12 @@ while (<>) {                                                # assemble source li
         die("unrecognized mode-$MODE statement <@_> at input line $.\n");
     }
 }
-die("missing .ENDIF at EOF\n")
+
+die("missing .ENDIF at EOF\n")								# End-of-File checks
     if ($IF_STACK[$#IF_STACK] != 0);
+
+die("missing .UNLOCK_PAGE at EOF\n")
+	if defined($locked_page);
 
 die("Unfinished if statement(s) at EOF [@IF_CONT_LBL]\n")
     if (@IF_CONT_LBL);
@@ -773,6 +778,8 @@ if (@LOOP_DONE_LBL) {
     }
     exit(1);
 }
+
+#----------------------------------------------------------------------
 
 if ($opt_d) {                                               # dump labels
     dump_labels();
@@ -1932,6 +1939,29 @@ sub assemble_pragma()
         die("Syntax: .SUPPRESS_OPTIMIZATION <string> (<@_> at input line $.)\n")
             unless (@OP_ARG == 1);
         push(@optimization_suppressed,$OP_ARG[0]);
+        return 1;
+    }
+
+	#--------------------
+	# Memory Management
+	#	- Page locking
+	#--------------------
+
+    if ($OP eq '.LOCK_ROM_PAGE') {                                              
+        die("Syntax: .LOCK_ROM_PAGE (<@_> at input line $.)\n")
+            unless (@OP_ARG == 0);
+		$locked_page = ($ADDR >> 8);
+        return 1;
+    }
+
+    if ($OP eq '.UNLOCK_ROM_PAGE') {                                              
+        die("Syntax: .UNLOCK_ROM_PAGE (<@_> at input line $.)\n")
+            unless (@OP_ARG == 0);
+		die("unexpected .UNLOCK_ROM_PAGE at input line $.\n")
+			unless defined($locked_page);            
+		die("page-lock violation at input line $.\n")
+			unless $locked_page == ($ADDR >> 8);
+		undef($locked_page);
         return 1;
     }
 
