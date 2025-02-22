@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Sun Aug 25 12:07:11 2024
+#                    dlm: Sat Feb 22 10:28:44 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 27 58 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 28 71 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -25,6 +25,7 @@
 #	Jul 20, 2024: - moved isMember() to [D711.pm]
 #	Aug 23, 2024: - added support for <_LOOP and >_EXITLOOP pseusdo labels
 #	Aug 25, 2024: - generalized support for lexical labels
+#	Feb 22, 2025: - BUG: switch script magic produced garbage in Gorgar
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -502,12 +503,19 @@ sub apply_magic_System6($)
             }
         }
 		if (direct_code_path($addr,'^sys_switch_script$')) {
+			my($script_addr);
 			if ($OP[$addr-5] eq 'LDX') {
-				$OPA[$addr-5][0] =~ m{\$(....)};
-				my($script_addr) = hex($1);
-				def_switch_script("unknown_$1",$script_addr,1);
+				if ($OPA[$addr-5][0] =~ m{^#}) {
+					if ($' =~ m{\$([0-9A-F]{4})}) {
+						$script_addr = hex($1);
+					} else {
+						$script_addr = $Lbl{$'}
+					}
+					die unless ($script_addr>=$MIN_ROM_ADDR && $script_addr<$MAX_ROM_ADDR);
+					def_switch_script("unknown_$1",$script_addr,1);
+				}
 			} else {
-				printf(STDERR "WARNING: unknown switch script (X) called at address \$%04X\n",$addr);
+				printf(STDERR "WARNING: unknown switch script called at address \$%04X\n",$addr);
 			}
 	    }
     }

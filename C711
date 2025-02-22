@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Feb 19 09:50:19 2025
+#                    dlm: Sat Feb 22 09:42:01 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 323 31 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 324 42 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -321,6 +321,7 @@
 #	Feb  4, 2025: - BUG: .ASSUME_UNDEFINED increased the reference counts
 #	Feb  9. 2025: - BUG: expand_aliases did not handle all exceptions correctly
 #	Feb 19, 2025: - added .[UN]LOCK_ROM_PAGE
+#	Feb 22, 2025: - BUG: sys6 compilation without -o option broken (wrong ROM range)
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1836,7 +1837,7 @@ sub produce_output()
 				if defined($opt_g) || defined($opt_l);
 			die(sprintf("${basename}${opt_s}_U14.bin: invalid ROM address range (\$%04X-\$%04X) for System 6\n",
 							$MIN_ROM_ADDR,$MAX_ROM_ADDR))
-				unless ($MIN_ROM_ADDR == 0x6000 && $MAX_ROM_ADDR == 0x7FFF);
+				unless ($MIN_ROM_ADDR == 0x6000 && $MAX_ROM_ADDR == 0x67FF);
 	        open(F,">${basename}${opt_s}_U14.bin") || die("${basename}${opt_s}_U14.bin: $!\n"); # 6000-7FFF
 		}
 			
