@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Feb 22 09:42:01 2025
+#                    dlm: Sun Feb 23 09:20:24 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 324 42 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 326 88 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -322,6 +322,8 @@
 #	Feb  9. 2025: - BUG: expand_aliases did not handle all exceptions correctly
 #	Feb 19, 2025: - added .[UN]LOCK_ROM_PAGE
 #	Feb 22, 2025: - BUG: sys6 compilation without -o option broken (wrong ROM range)
+#	Feb 23, 2025: - BUG: -I defined @aliases that were not defined in library
+#				  - changed defined value from !DEFINED! to ALIAS_IS_DEFINED for clarity
 # HISTORY END
 
 # RELEASE NOTES:
@@ -506,7 +508,7 @@ if (defined($opt_V)) {                                          # IVM support
 }
 my($i);     
 for ($i=1; $i<=$opt_V; $i++) {
-    $ALIAS{"IVM_STAGE$i"} = '!DEFINED!';
+    $ALIAS{"IVM_STAGE$i"} = 'ALIAS_IS_DEFINED';
     $ALIAS_REFD{"IVM_STAGE$i"}++;
 }
 while ($i < 20) {
@@ -555,7 +557,7 @@ if ($opt_2) {
 
 if (defined($opt_D)) { 											# define symbol from command line 
 	foreach my $s (split(',',$opt_D)) {
-		$ALIAS{$s} = '!DEFINED!';
+		$ALIAS{$s} = 'ALIAS_IS_DEFINED';
 	    $ALIAS_REFD{$s}++;
     }
 }
@@ -883,9 +885,14 @@ if (defined($opt_I)) {										# output Interface (API)
 		next if ($lbl =~ m{[+-]\d+$});						# ignore labels with trailing arithmetic
 		printf("define_label('%s',0x%02X);\n",$lbl,$LBL{$lbl});
 	}
-	foreach my $alias (keys(%ALIAS)) {						# export @ALIASes
+	foreach my $alias (keys(%ALIAS)) {						# export @ALIASes 
 		next unless ($alias =~ m{^@});
-		printf("define_alias('%s');\n",$alias);
+		next unless defined($ALIAS{$alias});
+		if ($ALIAS{$alias} eq 'ALIAS_IS_DEFINED') {
+			printf("define_alias('%s');\n",$alias);
+		} else {
+			printf("define_alias('%s','%s');\n",$alias,$ALIAS{$alias});
+		}
 	}
 }
 
@@ -1415,7 +1422,7 @@ sub define_alias($@)																# used in API files
 	my($name,$value) = @_;
 	die("ERROR: cannot define alias <$name>\n")
 		unless defined($name);
-	$ALIAS{$name} = defined($value) ? $value : '!DEFINED!';
+	$ALIAS{$name} = defined($value) ? $value : 'ALIAS_IS_DEFINED';
 }
 
 sub aliasValue($)
@@ -2060,7 +2067,7 @@ sub assemble_pragma()
 		die if ($OP_ARG[0] =~ m{^!.*!$});
 		$ALIAS_REFD{$OP_ARG[0]}++;
 		if (@OP_ARG == 1) { 															# no argument (just define)
-			$ALIAS{$OP_ARG[0]} = '!DEFINED!';
+			$ALIAS{$OP_ARG[0]} = 'ALIAS_IS_DEFINED';
 		} elsif ($OP_ARG[1] =~ m{^'}) { 												# string argument (copy including quotes)
 			($ALIAS{$OP_ARG[0]}) = m{('.*')};
 		} else {																		# non-string argument
