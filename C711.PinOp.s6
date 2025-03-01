@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . P I N O P . S 6 
 #                    doc: Sat Jun  8 12:22:52 2024
-#                    dlm: Wed Feb 19 17:39:53 2025
+#                    dlm: Sat Mar  1 16:49:25 2025
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 13 63 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 93 0 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -11,6 +11,7 @@
 #	Oct 30, 2024: - added line numbers to errors
 #	Feb 19, 2025: - renamed bitgroup ops set->fill, clear->empty
 #				  - BUG: fill had been alias for advance before
+#	Mar  1, 2025: - renamed empty() to clear() again
 
 sub PinOp_s6($$)
 {
@@ -89,7 +90,7 @@ sub PinOp_s6($$)
         }
     }
 
-	if ($op eq 'empty') {
+	if ($op eq 'clear') {
 		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
 			return hex($1) | 0x70;
         } else {
