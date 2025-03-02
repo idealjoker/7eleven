@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Sun Mar  2 08:22:07 2025
+#                    dlm: Sun Mar  2 10:01:55 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 331 27 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 19 41 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -16,6 +16,7 @@
 #	Dec 11, 1024: - updated labels
 #	Jan 29, 2025: - BUG: Code Meta Data was enabled for disassembler
 #	Feb 22, 2025: - BUG: wrong = prefix for _switchDebounceTimer
+#	Mar  2, 2025: - added code_checksum()
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
@@ -30,13 +31,14 @@
 #	- compatible SHA-256 hashes 
 #----------------------------------------------------------------------
 
-unless (defined($D711::WMS_System)) {
-	define_alias('GREENROM');
+unless (defined($D711::WMS_System)) {							# ignore by disassembler
+	define_alias('GREENROM');									# "standard" identifiers (one would be enough)
 	define_alias('SYSTEM6');
 	define_alias('WMS_SYSTEM6');
-	code_address_range(0x7000,0x7FFF);
-	code_hash('SHA2-256(GreenROM.bin)= 577d3834eda49a178dee8610e7699d37f68850bbd681986e019d95312850c4a0');
-	code_hash('SHA2-256(IGR.bin)= 6ef56a3ef9c5d1e0bd1b62bfefb9d5a5f098105470f771bf1f91e8c86552a59f');
+	code_address_range(0x7000,0x7FFF);							# address range
+	code_checksum(0xC4);										# System 6 check sum
+	code_hash('SHA2-256(GreenROM.bin)= 577d3834eda49a178dee8610e7699d37f68850bbd681986e019d95312850c4a0');		# original Green ROM
+	code_hash('SHA2-256(KnockerPatch.bin)= b518b94d4269269f3ee9346a59b62b9884508506223c767ece9bf568d2e819e7');	# freeplay knocker patch
 }
 
 #----------------------------------------------------------------------

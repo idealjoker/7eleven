@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Feb 23 09:20:24 2025
+#                    dlm: Sun Mar  2 10:01:28 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 326 88 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 328 35 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -324,6 +324,8 @@
 #	Feb 22, 2025: - BUG: sys6 compilation without -o option broken (wrong ROM range)
 #	Feb 23, 2025: - BUG: -I defined @aliases that were not defined in library
 #				  - changed defined value from !DEFINED! to ALIAS_IS_DEFINED for clarity
+#	Mar  2, 2025: - BUG: checksum handling was wrong for Sys 6 code linked with
+#						 non-std OS
 # HISTORY END
 
 # RELEASE NOTES:
@@ -579,7 +581,7 @@ printf(STDERR "$ARGV[0] [$COMPILATION_INFO]\n")                 # report on scre
 #----------------------------------------------------------------------
 
 my($LIB_API) = defined($opt_i) ? $opt_i : "$PATH/System$WMS_System.API";
-my($LIB_MIN_ADDR,$LIB_MAX_ADDR,@LIB_FN,@LIB_HASH);
+my($LIB_MIN_ADDR,$LIB_MAX_ADDR,$LIB_CHECKSUM,@LIB_FN,@LIB_HASH);
 my($LIB_BASENAME) = ($LIB_API =~ m{([^/]+)$});
 
 {
@@ -589,6 +591,13 @@ my($LIB_BASENAME) = ($LIB_API =~ m{([^/]+)$});
 		die(sprintf("$LIB_BASENAME: invalid librarary address range (\$%04X-\$%04X)\n",
 			$LIB_MIN_ADDR,$LIB_MAX_ADDR,$MIN_ROM_ADDR))
 				unless ($LIB_MAX_ADDR - $LIB_MIN_ADDR >= 2048) && ($LIB_MIN_ADDR >= 0);
+	}
+
+	sub code_checksum($)
+	{
+		($LIB_CHECKSUM) = @_;
+		die(sprintf("$LIB_BASENAME: invalid librarary checksum (\$%02X)\n",$LIB_CHECKSUM))
+			unless ($LIB_CHECKSUM>=0 && $LIB_CHECKSUM<=0xFF);
 	}
 
 	sub code_hash($)
@@ -874,7 +883,20 @@ produce_output();                                           # output either code
 if (defined($opt_I)) {										# output Interface (API)
 	printf("code_address_range(0x%04X,0x%04X);\n",
 		$MIN_ROM_ADDR,$MAX_ROM_ADDR);
-	if (defined($opt_o)) {
+	my($sum,$carry) = (0,0);
+	for (my($a)=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {
+		$sum += defined($ROM[$a]) ? $ROM[$a] : 0xFF;
+		$sum++ if ($carry);
+		if ($sum > 0xFF) {
+			$sum &= 0xFF;
+			$carry = 1;
+		} else {
+			$carry = 0;
+		}
+	}
+	printf("code_checksum(0x%02X);\n",$sum);		
+
+	if (defined($opt_o)) {									# single linked output 
 		chomp(my($hash) = `openssl sha256 $opt_o`);
 		print("code_hash('$hash');\n");
     }
@@ -931,19 +953,21 @@ sub dump_JSR()
 
 sub checkSumS6()
 {
-    	my($sum,$carry) = (0xC4,0);									# trial and error!
-    	for (my($a)=0x6FFF; $a>0x6000; $a--) {
-    		$sum += defined($ROM[$a]) ? $ROM[$a] : 0xFF;
-    		$sum++ if ($carry);
-			if ($sum > 0xFF) {
-	    		$sum &= 0xFF;
-	    		$carry = 1;
-	    	} else {
-	    		$carry = 0;
-	    	}
-#	    	printf(STDERR "%04X: <$ROM[$a](%d)> -> %02X(%d)\n",$a,defined($ROM[$a]),$sum,$carry);
-	    }
-	    return $sum;
+	die unless defined($LIB_CHECKSUM);
+	my($sum,$carry) = ($LIB_CHECKSUM,0); 
+#	for (my($a)=0x6FFF; $a>0x6000; $a--) {
+	for (my($a)=$MAX_ROM_ADDR; $a>0x6000; $a--) {
+		$sum += defined($ROM[$a]) ? $ROM[$a] : 0xFF;
+		$sum++ if ($carry);
+		if ($sum > 0xFF) {
+			$sum &= 0xFF;
+			$carry = 1;
+		} else {
+			$carry = 0;
+		}
+#		printf(STDERR "%04X: <$ROM[$a](%d)> -> %02X(%d)\n",$a,defined($ROM[$a]),$sum,$carry);
+	}
+    return $sum;
 }
 
 
@@ -971,7 +995,18 @@ sub checkSumS711($)                                                             
 sub verify_checksums()
 {
     if ($WMS_System == 6) {
-    	my($sum) = checkSumS6();
+		my($sum,$carry) = ($LIB_CHECKSUM,0); 
+		for (my($a)=0x7FFF; $a>0x6000; $a--) {
+			next if ($a>=LIB_MIN_ADDR && $a<=LIB_MAX_ADDR); 
+			$sum += defined($ROM[$a]) ? $ROM[$a] : 0xFF;
+			$sum++ if ($carry);
+			if ($sum > 0xFF) {
+				$sum &= 0xFF;
+				$carry = 1;
+			} else {
+				$carry = 0;
+			}
+		}
         print(STDERR sprintf("Checksum Error (got: %02X expected: %02X)\n",$sum,$ROM[0x6000]))
 			unless ($sum == $ROM[0x6000]);
     } elsif ($WMS_System == 7) {
