@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Mar  2 12:00:39 2025
+#                    dlm: Sun Mar  2 13:03:16 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 330 41 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 972 1 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -896,6 +896,7 @@ if (defined($opt_I)) {										# output Interface (API)
 			$carry = 0;
 		}
 	}
+	$sum++ if $carry;										# IMPORTANT!!!
 	printf("code_checksum(0x%02X);\n",$sum);		
 
 	if (defined($opt_o)) {									# single linked output 
@@ -956,9 +957,10 @@ sub dump_JSR()
 sub checkSumS6()
 {
 	die unless defined($LIB_CHECKSUM);
-	my($sum,$carry) = ($LIB_CHECKSUM,0); 
+	my($sum,$carry) = ($LIB_CHECKSUM,0); 							# NB: LIB_CHECKSUM must include final carry!
 #	for (my($a)=0x6FFF; $a>0x6000; $a--) {
 	for (my($a)=$MAX_ROM_ADDR; $a>0x6000; $a--) {
+		next if ($a>=$LIB_MIN_ADDR && $a<=$LIB_MAX_ADDR);
 		$sum += defined($ROM[$a]) ? $ROM[$a] : 0xFF;
 		$sum++ if ($carry);
 		if ($sum > 0xFF) {
@@ -999,7 +1001,7 @@ sub verify_checksums()
     if ($WMS_System == 6) {
 		my($sum,$carry) = ($LIB_CHECKSUM,0); 
 		for (my($a)=0x7FFF; $a>0x6000; $a--) {
-			next if ($a>=LIB_MIN_ADDR && $a<=LIB_MAX_ADDR); 
+			next if ($a>=$LIB_MIN_ADDR && $a<=$LIB_MAX_ADDR); 
 			$sum += defined($ROM[$a]) ? $ROM[$a] : 0xFF;
 			$sum++ if ($carry);
 			if ($sum > 0xFF) {
@@ -1414,7 +1416,10 @@ sub calc_checksums()                                                            
             if ($opt_x);
 
 		if ($WMS_System == 6) {
-	    	$ROM[0x6000] = checkSumS6();
+	    	$ROM[$a] = checkSumS6();
+	        printf(STDERR "<%04X> \@CHECKSUM_BYTE = \$%02X\n",$a,$ROM[$a])
+            if defined($opt_c);
+	    	
 			return;
         }
             
