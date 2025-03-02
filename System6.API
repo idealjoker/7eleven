@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Sat Feb 22 09:20:15 2025
+#                    dlm: Sun Mar  2 08:22:07 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 18 45 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 331 27 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -328,7 +328,7 @@ define_label('sys_load_playerData',						 	0x7520);
 define_label('sys_X=playerData',							0x7562);
 define_label('sys_creditButton_handler',					0x7571);
 define_label('sys_add_player_to_game', 					 	0x75C2);
-define_label('sys_init_game',								0x75D8);
+define_label('sys_init_ball',								0x75D8);
 define_label('sys_clear_scoreQueue',						0x75F0);
 define_label('sys_coinLeft_handler',						0x75FE);
 define_label('sys_coinCenter_handler', 					 	0x7602);

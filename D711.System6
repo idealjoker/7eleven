@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Sat Feb 22 10:28:44 2025
+#                    dlm: Sun Mar  2 08:21:59 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 28 71 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 29 38 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -26,6 +26,7 @@
 #	Aug 23, 2024: - added support for <_LOOP and >_EXITLOOP pseusdo labels
 #	Aug 25, 2024: - generalized support for lexical labels
 #	Feb 22, 2025: - BUG: switch script magic produced garbage in Gorgar
+#	Mar  2, 2025: - changed identifier
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -391,7 +392,7 @@ sub disassemble_greenROM()
 	$Address = 0x7562; def_code('sys_X=playerData');
 	$Address = 0x7571; def_code('sys_creditButton_handler');
 	$Address = 0x75C2; def_code('sys_add_player_to_game');
-	$Address = 0x75D8; def_code('sys_init_game');
+	$Address = 0x75D8; def_code('sys_init_ball');
 	$Address = 0x75F0; def_code('sys_clear_scoreQueue');
 	$Address = 0x75FE; def_code('sys_coinLeft_handler');
 	$Address = 0x7602; def_code('sys_coinCenter_handler');
