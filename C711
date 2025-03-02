@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Mar  2 10:01:28 2025
+#                    dlm: Sun Mar  2 12:00:39 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 328 35 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 330 41 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -326,6 +326,8 @@
 #				  - changed defined value from !DEFINED! to ALIAS_IS_DEFINED for clarity
 #	Mar  2, 2025: - BUG: checksum handling was wrong for Sys 6 code linked with
 #						 non-std OS
+#				  - added fake error message to label when >RTS is used without
+#				    RTS in following code
 # HISTORY END
 
 # RELEASE NOTES:
@@ -3087,7 +3089,7 @@ sub asm_6800_op($$@)
 				$OP_ARG[0] = $last_RTS_addr;
             } elsif ($OP_ARG[0] eq '>RTS') {
             	push(@forward_lexical_RTS_branch,$ADDR);
-            	$OP_ARG[0] = 'XXXX';
+            	$OP_ARG[0] = 'no RTS found after branch to >RTS';
             } else {
 				unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {									# set type of branch target
 					push(@newly_defined_label,($OP_ARG[0]));
