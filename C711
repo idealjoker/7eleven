@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Mar  2 13:03:16 2025
+#                    dlm: Tue Mar  4 16:07:43 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 972 1 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3948 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -328,6 +328,9 @@
 #						 non-std OS
 #				  - added fake error message to label when >RTS is used without
 #				    RTS in following code
+#	Mar  4, 2025: - added -T)race assembly
+#				  - BUG: label-type error preventing PEMBOT from compiling
+#				  - BUG: oneshot jump/branchSubroutine6800 had wrong code mode
 # HISTORY END
 
 # RELEASE NOTES:
@@ -448,9 +451,9 @@ die("Usage: $0 \n\t[system -6/-7 source] [sys11 I-V)M <stage>]" .
               "\n\t[-d)ump labels] [dump -J)SR targets] [dump -R)OM before resolving labels]" .			
               "\n\t[-c)hecksum info] [report free -m)emory blocks]" .
               "\n\t[-t)rust_but_verify <ROM_image[,...]> [check already during label -r)esolution]]" .	# ouput checking
-#             "\n\t[trace -C)onditional assembly (debug)]" .											# debugging
+              "\n\t[-T)race assembly (debug)] [trace -C)onditional assembly (debug)]" .					# debugging
               "\n\t<asm file>\n")
-    unless &getopts('1267a:cCD:edF:g:i:IJkLl:mO:o:Rrs:t:V:vwx') && (@ARGV == 1);
+    unless &getopts('1267a:cCD:edF:g:i:IJkLl:mO:o:Rrs:Tt:V:vwx') && (@ARGV == 1);
 
 my($dummy,$basename,$ext) = ($ARGV[0] =~ m{([^/]+/)?([^\.]+)\.(.*)}); 
 $basename = 'out' unless defined($basename);
@@ -741,10 +744,14 @@ while (<>) {                                                # assemble source li
     @_ = split;                                             # separate into operator and operands                                    
     next unless (@_ > 0);                                   # empty line => nothing to assemble
 
+	print(STDERR "$.\[$MODE]: @_ (@newly_defined_label)\n")							# trace assembly
+		if $opt_T;
+
     if ($IF_STACK[$#IF_STACK] >= 0) {                       # currently assembling code
         if ($_[0] =~ m{:$}) {                               # define label
             define_label($`);
             push(@newly_defined_label,$`);
+            set_label_type($MODE) if ($MODE > 0);
             shift(@_);
             next if (@_ == 0);                              # label-only line => nothing to assemble
         }
@@ -934,6 +941,7 @@ sub set_label_type($@)
 {
     my($lt,$id) = @_;
 
+	print(STDERR "\tset_label_type($lt)\n") if $opt_T;
 	foreach my $l (@newly_defined_label) {
     	die("attempting to re-define mode-$LBL_TYPE{$l} label <$l> to mode-$lt at input line $.\n")
     		if ($LBL_TYPE{$l}>0 && $LBL_TYPE{$l} != $lt);
@@ -3160,11 +3168,11 @@ sub assemble_6800()
 			   asm_wvm_exec6800op('begin6800'			,0x44) || # to 4F
 			   asm_wvm_exec6800op('end6800')				   ||
 			   asm_wvm_jumpOp('jumpSubroutine'			,0x56,2) ||
-			   asm_wvm_jumpOp('jumpSubroutine6800'		,0x57,2) ||
+			   asm_wvm_jumpOp('jumpSubroutine6800'		,0x57,1) ||
 			   asm_wvm_jumpOp('jump'					,0x5F,2) ||
 			   asm_wvm_branchOp('branch'				,0x80,2) || # to 8F
 			   asm_wvm_branchOp('branchSubroutine'		,0x90,2) || # to 9F
-			   asm_wvm_branchOp('branchSubroutine6800'	,0xA0,2); # to AF
+			   asm_wvm_branchOp('branchSubroutine6800'	,0xA0,1); # to AF
 
 		return &assemble_wvm(1);			   
     } # !oneShot
@@ -3849,9 +3857,12 @@ sub asm_wvm_grpOp($$)																	# bit group operators
 sub asm_wvm_jumpOp($$$)																	# optimizable jump operations
 {
 	my($trg,$opc,$branchtarget_mode) = @_;
+	print(STDERR "asm_wvm_jumpOp($trg,$opc,$branchtarget_mode)\n") if $opt_T;
 	return undef unless ($OP eq $trg);													# don't do anything unless operation is a match
 
-	unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {												# set type of branch target
+	set_label_type(2);																	# allow unknown_mode_label: jumpSubroutine6800 6800_mode_label
+
+	unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {										# set type of branch target
 		push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
 		set_label_type($branchtarget_mode);
     }                   
@@ -3862,12 +3873,14 @@ sub asm_wvm_jumpOp($$$)																	# optimizable jump operations
 	return 1;
 }
 
-sub asm_wvm_cJumpOp($$$)																	# optimizable conditional jump operators
+sub asm_wvm_cJumpOp($$$)																# optimizable conditional jump operators
 {
 	my($trg,$opc,$branchtarget_mode) = @_;
 	return undef unless ($OP eq $trg);
 
-	unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {												# set type of branch target
+	set_label_type(2);																	# allow unknown_mode_label: jumpSubroutine6800 6800_mode_label
+
+	unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {										# set type of branch target
 		push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
 		set_label_type($branchtarget_mode);
     }                   
@@ -3888,6 +3901,8 @@ sub asm_wvm_cBranchOp($$$)																# conditional branch operators (8-bit 
 {
 	my($trg,$opc,$branchtarget_mode) = @_;
 	return undef unless ($OP eq $trg);
+
+	set_label_type(2);																	# allow unknown_mode_label: jumpSubroutine6800 6800_mode_label
 
 	$ROM[$ADDR++] = $opc;
 	die("conditional branch operator $OP requires at least one argument at input line $.\n")
@@ -3927,6 +3942,8 @@ sub asm_wvm_branchOp($$$)																# branch operators (12-bit address)
 {
     my($trg,$opc,$branchtarget_mode) = @_;
     return undef unless ($OP eq $trg);
+
+	set_label_type(2);																	# allow unknown_mode_label: jumpSubroutine6800 6800_mode_label
 
 	die("unconditional branch operator $OP requires one argument at input line $.\n")
 	        unless (@OP_ARG == 1);
@@ -4270,8 +4287,7 @@ sub assemble_wvm($)
 	$MODE=$current_mode,return 1 if asm_wvm_op('queueScore'				,'$'	,0x41);
 	$MODE=$current_mode,return 1 if asm_wvm_op('score' 					,'$'	,0x42);
 	$MODE=$current_mode,return 1 if asm_wvm_op('score_digitSound'		,'$'	,0x43);
-	$MODE=1,return 1 if asm_wvm_exec6800op('begin6800'				,0x44); # to 4F
-#	$MODE=$current_mode,return 1 if asm_wvm_exec6800op('end6800');
+	$MODE=1,return 1 			 if asm_wvm_exec6800op('begin6800'				,0x44); # to 4F
 	
 	$MODE=$current_mode,return 1 if asm_wvm_addTo('addTo');					   # 0x50	# and  B0-BF
 	$MODE=$current_mode,return 1 if asm_wvm_copyTo('copyTo'						,0x51);
