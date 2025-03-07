@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Tue Mar  4 16:07:43 2025
+#                    dlm: Tue Mar  4 18:46:54 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 3948 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3907 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -3860,7 +3860,8 @@ sub asm_wvm_jumpOp($$$)																	# optimizable jump operations
 	print(STDERR "asm_wvm_jumpOp($trg,$opc,$branchtarget_mode)\n") if $opt_T;
 	return undef unless ($OP eq $trg);													# don't do anything unless operation is a match
 
-	set_label_type(2);																	# allow unknown_mode_label: jumpSubroutine6800 6800_mode_label
+###	set_label_type($branchtarget_mode);													# NB: branchtarget_mode==1 for !oneShot, 2 otherwise
+	set_label_type(2);
 
 	unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {										# set type of branch target
 		push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
@@ -3878,7 +3879,8 @@ sub asm_wvm_cJumpOp($$$)																# optimizable conditional jump operators
 	my($trg,$opc,$branchtarget_mode) = @_;
 	return undef unless ($OP eq $trg);
 
-	set_label_type(2);																	# allow unknown_mode_label: jumpSubroutine6800 6800_mode_label
+###	set_label_type($branchtarget_mode);													# NB: branchtarget_mode==1 for !oneShot, 2 otherwise
+	set_label_type(2);
 
 	unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {										# set type of branch target
 		push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
@@ -3902,7 +3904,8 @@ sub asm_wvm_cBranchOp($$$)																# conditional branch operators (8-bit 
 	my($trg,$opc,$branchtarget_mode) = @_;
 	return undef unless ($OP eq $trg);
 
-	set_label_type(2);																	# allow unknown_mode_label: jumpSubroutine6800 6800_mode_label
+	set_label_type($branchtarget_mode);													# NB: branchtarget_mode==1 for !oneShot, 2 otherwise
+###	set_label_type(2);
 
 	$ROM[$ADDR++] = $opc;
 	die("conditional branch operator $OP requires at least one argument at input line $.\n")
@@ -3943,7 +3946,8 @@ sub asm_wvm_branchOp($$$)																# branch operators (12-bit address)
     my($trg,$opc,$branchtarget_mode) = @_;
     return undef unless ($OP eq $trg);
 
-	set_label_type(2);																	# allow unknown_mode_label: jumpSubroutine6800 6800_mode_label
+###	set_label_type($branchtarget_mode);													# NB: branchtarget_mode==1 for !oneShot, 2 otherwise
+	set_label_type(2);
 
 	die("unconditional branch operator $OP requires one argument at input line $.\n")
 	        unless (@OP_ARG == 1);
