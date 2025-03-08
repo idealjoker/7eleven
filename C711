@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Tue Mar  4 18:46:54 2025
+#                    dlm: Sat Mar  8 14:00:57 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 3907 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 335 43 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -331,6 +331,8 @@
 #	Mar  4, 2025: - added -T)race assembly
 #				  - BUG: label-type error preventing PEMBOT from compiling
 #				  - BUG: oneshot jump/branchSubroutine6800 had wrong code mode
+#	Mar  6, 2025: - made .DECLARE multi-valued
+#				  - improved .UNDEF parsing
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2121,6 +2123,8 @@ sub assemble_pragma()
 		} elsif ($OP_ARG[1] =~ m{^'}) { 												# string argument (copy including quotes)
 			($ALIAS{$OP_ARG[0]}) = m{('.*')};
 		} else {																		# non-string argument
+			die("Syntax: .DEF[INE] name [value] (<@_> at input line $.)\n")
+				unless (@OP_ARG == 2);
 			$ALIAS{$OP_ARG[0]} = "@OP_ARG[1..$#OP_ARG]";
 		}
 		return 1;
@@ -2128,7 +2132,9 @@ sub assemble_pragma()
 
 	if (match_pragma($OP,'.UNDEF','INE')) {												# .UNDEF (undefine alias)
 		die("Syntax: .UNDEF[INE] name [value] (<@_> at input line $.)\n") 				# using this prevents warnings of used but not defined defines  
-			unless (@OP_ARG >= 1);
+			unless (@OP_ARG == 1) ||
+				   (@OP_ARG == 2) ||
+				   ($OP_ARG[1] =~ m{^'});
 		die if ($OP_ARG[0] =~ m{^!.*!$});
 		$ALIAS_REFD{$OP_ARG[0]} = -99;
 		undef($ALIAS{$OP_ARG[0]});
@@ -2137,10 +2143,12 @@ sub assemble_pragma()
 	}
 
 	if (match_pragma($OP,'.DECL','ARE')) {												# .DECLARE (undefine alias)
-		die("Syntax: .DECL[ARE] name (<@_> at input line $.)\n") 						# using this prevents warnings but does not set value
+		die("Syntax: .DECL[ARE] name [...](<@_> at input line $.)\n") 					# using this prevents warnings but does not set value
 			unless (@OP_ARG >= 1);
-		die if ($OP_ARG[0] =~ m{^!.*!$});
-		$ALIAS_REFD{$OP_ARG[0]} = -99;
+		foreach my $id (@OP_ARG) {
+			die if ($id =~ m{^!.*!$});
+			$ALIAS_REFD{$id} = -99;
+		}
 		return 1;
 	}
 
