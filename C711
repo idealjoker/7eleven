@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Mar  8 14:00:57 2025
+#                    dlm: Sat Mar  8 14:29:59 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 335 43 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 338 90 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -333,6 +333,9 @@
 #				  - BUG: oneshot jump/branchSubroutine6800 had wrong code mode
 #	Mar  6, 2025: - made .DECLARE multi-valued
 #				  - improved .UNDEF parsing
+#	Mar  8, 2025: - BUG: oneshot did not work correctly with mode checking
+#				  - BUG: .UNDEF needs to allow multiple arguments, since .DEFINE does
+#				  > first version that correctly compiles Ideal.s6, PEMBOT.s11 and TCM.s11
 # HISTORY END
 
 # RELEASE NOTES:
@@ -943,7 +946,7 @@ sub set_label_type($@)
 {
     my($lt,$id) = @_;
 
-	print(STDERR "\tset_label_type($lt)\n") if $opt_T;
+	print(STDERR "\tset_label_type($lt) [@newly_defined_label]\n") if $opt_T;
 	foreach my $l (@newly_defined_label) {
     	die("attempting to re-define mode-$LBL_TYPE{$l} label <$l> to mode-$lt at input line $.\n")
     		if ($LBL_TYPE{$l}>0 && $LBL_TYPE{$l} != $lt);
@@ -1756,12 +1759,14 @@ sub unroll_structure()
 			$OP = 'branchUnless';									#	- add branchUnless statement
 			push(@OP_ARG,pop(@LOOP_LBL));							#	- pop labels from loop stack
 			define_label(pop(@LOOP_DONE_LBL),$ADDR+1+@OP_ARG);
+			$MODE=2,return;
 		}
 	
 		if ($OP eq '_While') {										# end finite loop on FALSE
 			$OP = 'branchIf';									    
 			push(@OP_ARG,pop(@LOOP_LBL));
 			define_label(pop(@LOOP_DONE_LBL),$ADDR+1+@OP_ARG);
+			$MODE=2,return;
 		}
 	
 		if ($WMS_System == 11) {									# end for-next loop
@@ -1769,6 +1774,7 @@ sub unroll_structure()
 				$OP = 'decAndBranchUnless0';						# decrement register and branch unless 0
 				push(@OP_ARG,pop(@LOOP_LBL));
 				define_label(pop(@LOOP_DONE_LBL),$ADDR+3);
+				$MODE=2,return;
 			}
 	    }
 	}
@@ -2114,7 +2120,7 @@ sub assemble_pragma()
     #-----------------------------------------
 
 	if (match_pragma($OP,'.DEF','INE')) { 												# .DEFINE (define alias)
-		die("Syntax: .DEF[INE] name [value] (<@_> at input line $.)\n")
+		die("Syntax: .DEF[INE] name [value...] (<@_> at input line $.)\n")
 			unless (@OP_ARG >= 1);
 		die if ($OP_ARG[0] =~ m{^!.*!$});
 		$ALIAS_REFD{$OP_ARG[0]}++;
@@ -2123,18 +2129,14 @@ sub assemble_pragma()
 		} elsif ($OP_ARG[1] =~ m{^'}) { 												# string argument (copy including quotes)
 			($ALIAS{$OP_ARG[0]}) = m{('.*')};
 		} else {																		# non-string argument
-			die("Syntax: .DEF[INE] name [value] (<@_> at input line $.)\n")
-				unless (@OP_ARG == 2);
 			$ALIAS{$OP_ARG[0]} = "@OP_ARG[1..$#OP_ARG]";
 		}
 		return 1;
 	}
 
 	if (match_pragma($OP,'.UNDEF','INE')) {												# .UNDEF (undefine alias)
-		die("Syntax: .UNDEF[INE] name [value] (<@_> at input line $.)\n") 				# using this prevents warnings of used but not defined defines  
-			unless (@OP_ARG == 1) ||
-				   (@OP_ARG == 2) ||
-				   ($OP_ARG[1] =~ m{^'});
+		die("Syntax: .UNDEF[INE] name [value...] (<@_> at input line $.)\n")			# using this prevents warnings of used but not defined defines  
+			unless (@OP_ARG >= 1);
 		die if ($OP_ARG[0] =~ m{^!.*!$});
 		$ALIAS_REFD{$OP_ARG[0]} = -99;
 		undef($ALIAS{$OP_ARG[0]});
@@ -3865,11 +3867,10 @@ sub asm_wvm_grpOp($$)																	# bit group operators
 sub asm_wvm_jumpOp($$$)																	# optimizable jump operations
 {
 	my($trg,$opc,$branchtarget_mode) = @_;
-	print(STDERR "asm_wvm_jumpOp($trg,$opc,$branchtarget_mode)\n") if $opt_T;
+#	print(STDERR "asm_wvm_jumpOp($trg,$opc,$branchtarget_mode)\n") if $opt_T;
 	return undef unless ($OP eq $trg);													# don't do anything unless operation is a match
 
-###	set_label_type($branchtarget_mode);													# NB: branchtarget_mode==1 for !oneShot, 2 otherwise
-	set_label_type(2);
+	set_label_type($current_mode);														# local($current_mode)==1 for !oneShot, 2 otherwise
 
 	unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {										# set type of branch target
 		push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
@@ -3882,17 +3883,16 @@ sub asm_wvm_jumpOp($$$)																	# optimizable jump operations
 	return 1;
 }
 
-sub asm_wvm_cJumpOp($$$)																# optimizable conditional jump operators
+sub asm_wvm_cJumpOp($$)																	# optimizable conditional jump operators
 {
-	my($trg,$opc,$branchtarget_mode) = @_;
+	my($trg,$opc) = @_;
 	return undef unless ($OP eq $trg);
 
-###	set_label_type($branchtarget_mode);													# NB: branchtarget_mode==1 for !oneShot, 2 otherwise
-	set_label_type(2);
+	set_label_type($current_mode);														# local($current_mode)==1 for !oneShot, 2 otherwise
 
 	unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {										# set type of branch target
 		push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
-		set_label_type($branchtarget_mode);
+		set_label_type($current_mode);													# NB!
     }                   
 
 	my($opc_addr) = $ADDR;
@@ -3907,13 +3907,12 @@ sub asm_wvm_cJumpOp($$$)																# optimizable conditional jump operators
 	return 1;
 }
 
-sub asm_wvm_cBranchOp($$$)																# conditional branch operators (8-bit offsets)
+sub asm_wvm_cBranchOp($$)																# conditional branch operators (8-bit offsets)
 {
-	my($trg,$opc,$branchtarget_mode) = @_;
+	my($trg,$opc) = @_;
 	return undef unless ($OP eq $trg);
 
-	set_label_type($branchtarget_mode);													# NB: branchtarget_mode==1 for !oneShot, 2 otherwise
-###	set_label_type(2);
+	set_label_type($current_mode);														# local($current_mode)==1 for !oneShot, 2 otherwise
 
 	$ROM[$ADDR++] = $opc;
 	die("conditional branch operator $OP requires at least one argument at input line $.\n")
@@ -3925,9 +3924,9 @@ sub asm_wvm_cBranchOp($$$)																# conditional branch operators (8-bit 
 	$OP_ARG[$#OP_ARG] = $LOOP_LBL[$#LOOP_LBL]											# _NextLoop label
 		if ($OP_ARG[$#OP_ARG] eq '_NextLoop');
 
-	unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {												# set type of branch target
+	unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {										# set type of branch target
 		push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
-		set_label_type($branchtarget_mode);
+		set_label_type($current_mode);													# NB!
     }                   
 
 	$ROM[$ADDR++] = $EIGHT_BIT_LABEL_PREFIX . $OP_ARG[$#OP_ARG];						# 8-bit branch offset
@@ -3954,8 +3953,7 @@ sub asm_wvm_branchOp($$$)																# branch operators (12-bit address)
     my($trg,$opc,$branchtarget_mode) = @_;
     return undef unless ($OP eq $trg);
 
-###	set_label_type($branchtarget_mode);													# NB: branchtarget_mode==1 for !oneShot, 2 otherwise
-	set_label_type(2);
+	set_label_type($current_mode);														# local($current_mode)==1 for !oneShot, 2 otherwise
 
 	die("unconditional branch operator $OP requires one argument at input line $.\n")
 	        unless (@OP_ARG == 1);
@@ -4217,7 +4215,7 @@ sub asm_wvm_copyTo($$)																	# copyTo Reg Reg
 
 sub assemble_wvm($)
 {
-	my($current_mode) = @_;																# 1 for !oneShot, 2 for normal
+	local($current_mode) = @_;															# 1 for !oneShot, 2 for normal
 	
 #	print(STDERR "assemble_wvm(MODE=$MODE): $OP @OP_ARG\n");
 	if ($opt_V >= 2) {
@@ -4309,22 +4307,22 @@ sub assemble_wvm($)
 	$MODE=$current_mode,return 1 if asm_wvm_sleep('sleep_subOptimal',1); 	   # 0x53	# should be used only by [D711.pm]
 	$MODE=$current_mode,return 1 if asm_wvm_op('killThread'				,'BT'	,0x54);
 	$MODE=$current_mode,return 1 if asm_wvm_op('killThreads'			,'BT'	,0x55);
-	$MODE=$current_mode,return 1 if asm_wvm_jumpOp('jumpSubroutine'				,0x56,$current_mode);
+	$MODE=$current_mode,return 1 if asm_wvm_jumpOp('jumpSubroutine'				,0x56,2);
 	$MODE=$current_mode,return 1 if asm_wvm_jumpOp('jumpSubroutine6800'			,0x57,1);
-	$MODE=$current_mode,return 1 if asm_wvm_cJumpOp('jumpIf'					,0x58,$current_mode);
-	$MODE=$current_mode,return 1 if asm_wvm_cJumpOp('jumpUnless'				,0x59,$current_mode);
-	$MODE=$current_mode,return 1 if asm_wvm_cBranchOp('branchIf'				,0x5A,$current_mode);
-	$MODE=$current_mode,return 1 if asm_wvm_cBranchOp('branchUnless'			,0x5B,$current_mode);
+	$MODE=$current_mode,return 1 if asm_wvm_cJumpOp('jumpIf'					,0x58);
+	$MODE=$current_mode,return 1 if asm_wvm_cJumpOp('jumpUnless'				,0x59);
+	$MODE=$current_mode,return 1 if asm_wvm_cBranchOp('branchIf'				,0x5A);
+	$MODE=$current_mode,return 1 if asm_wvm_cBranchOp('branchUnless'			,0x5B);
 	$MODE=0,return 1 			 if asm_wvm_op('jump6800'				,'A'	,0x5C);
 	$MODE=$current_mode,return 1 if asm_wvm_switchOp('triggerSwitches'			,0x5D);
 	$MODE=$current_mode,return 1 if asm_wvm_switchOp('clearSwitches'			,0x5E);
-	$MODE=0,return 1 			 if asm_wvm_jumpOp('jump'						,0x5F,$current_mode);
+	$MODE=0,return 1 			 if asm_wvm_jumpOp('jump'						,0x5F,2);
 
 																	# 60-7F handled by sleep
 
-	$MODE=0,return 1 			 if asm_wvm_branchOp('branch'	 				,0x80,$current_mode);	# to 8F
-	$MODE=$current_mode,return 1 if asm_wvm_branchOp('branchSubroutine'			,0x90,$current_mode);	# to 9F
-	$MODE=$current_mode,return 1 if asm_wvm_branchOp('branchSubroutine6800'		,0xA0,1);				# to AF
+	$MODE=0,return 1 			 if asm_wvm_branchOp('branch'	 				,0x80,2);	# to 8F
+	$MODE=$current_mode,return 1 if asm_wvm_branchOp('branchSubroutine'			,0x90,2);	# to 9F
+	$MODE=$current_mode,return 1 if asm_wvm_branchOp('branchSubroutine6800'		,0xA0,1);	# to AF
 
 	$MODE=$current_mode,return 1 if asm_wvm_load('load');						#0xC0 to CF, 0C, 0E
 	
