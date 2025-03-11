@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Mar  8 14:29:59 2025
+#                    dlm: Tue Mar 11 12:12:50 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 338 90 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 341 79 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -336,6 +336,9 @@
 #	Mar  8, 2025: - BUG: oneshot did not work correctly with mode checking
 #				  - BUG: .UNDEF needs to allow multiple arguments, since .DEFINE does
 #				  > first version that correctly compiles Ideal.s6, PEMBOT.s11 and TCM.s11
+#	Mar 11, 2025: - updated assertions for new defined alias string (DEFINED_ALIAS)
+#				  - extended -D to allow assignment of values
+#				  - BUG: Cannot decode number error message did not list number
 # HISTORY END
 
 # RELEASE NOTES:
@@ -569,8 +572,14 @@ if ($opt_2) {
 
 if (defined($opt_D)) { 											# define symbol from command line 
 	foreach my $s (split(',',$opt_D)) {
-		$ALIAS{$s} = 'ALIAS_IS_DEFINED';
-	    $ALIAS_REFD{$s}++;
+		my(@tk) = split('=',$s);								# tokenize
+		if (@tk>1 && length($tk[0])>0 && length("@tk[1..$#tk]")>0) {
+			$ALIAS{$tk[0]} = "@tk[1..$#tk]";
+		    $ALIAS_REFD{$tk[0]}++;
+		} else {
+			$ALIAS{$s} = 'DEFINED_ALIAS';
+		    $ALIAS_REFD{$s}++;
+		}
     }
 }
 
@@ -2122,13 +2131,13 @@ sub assemble_pragma()
 	if (match_pragma($OP,'.DEF','INE')) { 												# .DEFINE (define alias)
 		die("Syntax: .DEF[INE] name [value...] (<@_> at input line $.)\n")
 			unless (@OP_ARG >= 1);
-		die if ($OP_ARG[0] =~ m{^!.*!$});
+		die if ($OP_ARG[0] eq 'DEFINED_ALIAS');
 		$ALIAS_REFD{$OP_ARG[0]}++;
 		if (@OP_ARG == 1) { 															# no argument (just define)
-			$ALIAS{$OP_ARG[0]} = 'ALIAS_IS_DEFINED';
+			$ALIAS{$OP_ARG[0]} = 'DEFINED_ALIAS';
 		} elsif ($OP_ARG[1] =~ m{^'}) { 												# string argument (copy including quotes)
 			($ALIAS{$OP_ARG[0]}) = m{('.*')};
-		} else {																		# non-string argument
+		} else {																		# non-string arguments
 			$ALIAS{$OP_ARG[0]} = "@OP_ARG[1..$#OP_ARG]";
 		}
 		return 1;
@@ -2137,7 +2146,7 @@ sub assemble_pragma()
 	if (match_pragma($OP,'.UNDEF','INE')) {												# .UNDEF (undefine alias)
 		die("Syntax: .UNDEF[INE] name [value...] (<@_> at input line $.)\n")			# using this prevents warnings of used but not defined defines  
 			unless (@OP_ARG >= 1);
-		die if ($OP_ARG[0] =~ m{^!.*!$});
+		die if ($OP_ARG[0] eq 'DEFINED_ALIAS');
 		$ALIAS_REFD{$OP_ARG[0]} = -99;
 		undef($ALIAS{$OP_ARG[0]});
 		die if defined($ALIAS{$OP_ARG[0]});
@@ -2583,7 +2592,7 @@ sub assemble_pragma()
 			   if ($1 eq '$') { $opa = hex($2);	}											# decimalize
 			elsif ($1 eq '%') { $opa = eval('0b' . $2); }
 			else			  { $opa = $2; }
-			die("Cannot decode number <$OP_ARG[$i]> at input line $.\n")
+			die("Cannot decode number <$OP_ARG[0]> at input line $.\n")
 				unless numberp($opa);
 			die(sprintf(".ORG address \$%04X out of range [\$%04X-\$%04X] at input line $.\n",$opa,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
 				unless ($opa >= $MIN_ROM_ADDR && $opa <= $MAX_ROM_ADDR);
