@@ -1,53 +1,16 @@
 #======================================================================
-#                    D 7 1 1 . W P C _ D M D 
+#                    D 7 1 1 . W P C _ A L P H A N U M E R I C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Mar 16 08:35:19 2025
+#                    dlm: Sun Mar 16 08:41:17 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 50 45 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 13 27 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
 
 # HISTORY:
-#	Jul 18, 2024: - created; WMS CPU vectors disassemble correctly
-#	Aug  9, 2024: - continued
-#	Aug 10, 2024: - added support for ROM pages
-#	Aug 11, 2024: - System Call Pointers disassemble correctly
-#				  - BUG: WMS CPU vectors no longer disassemble correctly
-#	Aug 12, 2024: - added support for system strings
-#	Aug	14, 2024: - imported WPC specific code from [D711.pm]
-#	Aug 15, 2024: - BUG: def_WPC_codePtr() did not define target labels
-#	Aug 16, 2024: - many improvements; now switch table disassembles w/o errors
-#	Aug 17, 2024: - many improvements
-#	Aug 18, 2024: - BUG: API loaded before ROM
-#	Aug 19, 2024: - added _skip
-#				  - started adapting to ! WPC shortcut
-#	Aug 21, 2024: - BUG: EXTRA_IND, EXTRA_BEFORE_LABEL and EXTRA_AFTER_OP where not
-#						 paged in and out
-#	Aug 23, 2024: - decimalized !*Sleep args
-#	Aug 25, 2024: - renamed addScore because it was wrnog
-#				  - BUG: substr used wrong length arg
-#	Aug 27, 2024: - BUG: @DIVIDER was not swapped in and out
-#				  - additions
-#	Aug 28, 2024: - BUG: switchTable allowed labels for bytes
-#				  - BUG: wrong page labels in set_WPC_ref
-#	Aug 29, 2024: - moved extra lines after RTS, JMP, etc in here from [D711.M6809]
-#	Aug 31, 2024: - moved API loading into disassemble_WPC_DMD
-#				  - BUG: decimalization of sleep args did not work for lower case sleep
-#	Sep  1, 2024: - added support for _IF_true and _IF_false "macros"
-#	Sep  2, 2024: - made lamps decimal
-#	Sep  4, 2024: - BUG: _IF_true did not work correctly with &skip
-#	Sep  8, 2024: - added empty lines after tables
-#				  - added def_WPC_lockTable()
-#	Sep 10, 2024: - BUG: lock table has different structure
-#	Sep 15, 2024: - new label syntax
-#	Sep 21, 2024: - BUG: line spacing
-#	Mar 11, 2025: - BUG: WCP_codeRef defined AUTO_LBL in wrong ROM page (difficult!)
-#				  - BUG: lockTable had .DWBW instead of .DWB
-#	Mar 14, 2025: - improved error message
-#	Mar 15, 2025: - adapted to new interface w/o _DMD in function names
-#				  - BUG: init_WPC() set _cur_RPG
-#	Mar 16, 2025: - BUG: couple of label bugs
+#	Mar 14, 2025: - created from [D711.WPC_DMD]
+#	Mar 15, 2025: - fiddled
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -57,13 +20,11 @@
 sub disassemble_WPC()
 {
 	my($dasm_CPU_vectors) 		= 1;
-	my($dasm_system_pointers) 	= 1;
-	my($dasm_switchTables)		= 1;
-	my($dasm_lockTable)			= 1;
-	my($dasm_randomFindings)	= 1;
-	my($dasm_sys_gaps)			= 1;
-	my($dasm_fontTable)			= 0;
-	my($dasm_DMDtable)			= 0;
+	my($dasm_system_pointers) 	= 0;
+	my($dasm_switchTables)		= 0;
+	my($dasm_lockTable)			= 0;
+	my($dasm_randomFindings)	= 0;
+	my($dasm_sys_gaps)			= 0;
 
 	if ($dasm_CPU_vectors) {
 		$Address = 0xFFF0;														# CPU vectors
@@ -259,11 +220,6 @@ sub disassemble_WPC()
 		def_WPC_fontTable('sys_fontTable','Font Table');
 	}
 
-	if ($dasm_DMDtable) {
-		$Address = 0x8288;
-		my($addr) = def_ptr('^sys_DMDtable');
-		def_WPC_DMDTable('sys_DMDtable','DMD Table');
-	}
 }
 
 #----------------------------------------------------------------------
@@ -275,9 +231,6 @@ sub apply_magic_WPC($$)
 	my($fa,$la) = @_;
 
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
-##		if ($addr==0x44B4 && $_cur_RPG==0x31) {
-##			printf(STDERR "OP=$OP[$addr] RPG=%02X LBL=$LBL[$addr+3] OPA0=$OPA[$addr][0]\n",$_cur_RPG);
-##		}
 		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {			# 1) JMP *+3 
 			undef($OP[$addr]);													# 		generate postfix tag
 			push(@{$OPA[$addr-3]},'&skip');
@@ -314,7 +267,7 @@ sub init_WPC(@)
 {
 	my(@linc) = @_;
 	
-	require 'WPC_DMD.API';														# define API after ROM has been loaded but before -i are processed
+	require 'WPC_Alphanumeric.API';														# define API after ROM has been loaded but before -i are processed
 	while (@linc) {
 		require './' . shift(@linc);
 	}
@@ -333,13 +286,13 @@ sub init_WPC(@)
 sub select_WPC_RPG($)
 {
 	my($RPG) = @_;
-##	printf(STDERR "select_WPC_RPG(%02X) [%02X]\n",$RPG,$_cur_RPG);
+#	die("$_cur_RGP") unless numberp($_cur_RPG);
 
 	if (!defined($RPG) || !numberp($RPG) || ($RPG != 0xFF && ($RPG<0 && $RPG>0x3D))) {
 		if (numberp($RPG)) {
 			die(sprintf("select_WPC_RPG(%02X): bad page id\n",$RPG))
 		} else {
-			die(sprintf("select_WPC_RPG($RPG): bad page id\n"))
+			die(sprintf("select_WPC_RPG($RPG): non-numeric page id\n"))
 		}
 	}
 		
@@ -797,15 +750,6 @@ sub defThread($$)
 	die("defThread: invalid thread id\n")
 		unless ($no>0 && $no<=0xFFFF);
 	$Thread[$no] = $name;
-}
-
-sub defDMD($$)
-{
-	my($no,$name) = @_;
-
-	die("defDMD: invalid DMD animation\n")
-		unless ($no>0 && $no<=0xFFFF);
-	$DMD[$no] = $name;
 }
 
 #----------------------------------------------------------------------

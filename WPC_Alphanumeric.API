@@ -1,30 +1,14 @@
 #======================================================================
-#                    W P C _ D M D . A P I 
-#                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Mar 11 16:34:56 2025
+#                    W P C _ A L P H A N U M E R I C . A P I 
+#                    doc: Fri Mar 14 18:12:59 2025
+#                    dlm: Sun Mar 16 08:42:11 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 168 81 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 11 76 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
-#	Jul 18, 2024: - created
-#	Jul 19, 2024: - added info from FreeWPC
-#	Jul 20, 2024: - added first own labels
-#	Aug 16, 2024: - switch table disassembles error free
-#	Aug 17, 2024: - additions
-#	Aug 18, 2024: - additions
-#	Aug 19, 2024: - additions
-#	Aug 25, 2024: - renamed addScore because it was wrnog
-#	Aug 26, 2024: - added sycalls
-#				  - changed capitalization to be consistent with IVM
-#	Aug 27, 2024: - added !exitThread
-#				  - added 'T' argument type
-#				  - other additions
-#	Aug 30, 2024: - added errors
-#	Aug 31, 2024: - lamp matrices & other additions
-#	Sep     2024: - additions
-#	Mar 11, 2025: - renamed many ASIC labels
-#				  - added labels for other WPC systems
+#	Mar 14, 2025: - created from [WPC_DMD.API]
+#	Mar 16, 2026: - added DMDanimation syscall, because it seems to be there
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -82,9 +66,9 @@ define_label('_PLAYER_UP',							0x040F);
 define_label('_BALL_IN_PLAY',						0x0410);
 define_label('_EXTRABALLS_PENDING??',				0x0411);
 define_label('_BACKGROUND_MUSIC_PLAYING',			0x0446);
-define_label('^DMD_PLAYING_ANIMATION_DATA',			0x0481);
-define_label('_DMD_ANIMATION_PLAYING',				0x0483);
-define_label('_LAST_DMD_ANIMATION_PLAYED??',		0x0487);
+##define_label('^DMD_PLAYING_ANIMATION_DATA',			0x0481);
+##define_label('_DMD_ANIMATION_PLAYING',				0x0483);
+##define_label('_LAST_DMD_ANIMATION_PLAYED??',		0x0487);
 define_label('=PLAYER_MEM_DATA??',					0x04AC);
 define_label('_SIZE_PLAYER_MEM_DATA??',				0x04AE);
 define_label('_CRON_MINUTE_COUNTER_1',				0x04B4);
@@ -144,6 +128,7 @@ if ($WMS_System eq 'WPC(Alphanumeric)') {						# Display
 	define_label('_ALPHANUMERIC_ROW1',				0x3FEC); 	
 	define_label('_ALPHANUMERIC_ROW2',				0x3FEE); 	
 } else {
+	die;
 	define_label('_DMD_ACTIVE_FRAME',				0x3FBF);	# Digital Matrix Display
 	define_label('_DMD_FRAMESELECT_3800',			0x3FBE);	# W
 	define_label('_DMD_FRAMESELECT_3A00',			0x3FBC);	# W
@@ -295,10 +280,12 @@ define_syscall('MBD_callHandler_A',					0xFDFC,'B');
 
 # non-global
 
+if (0) {
 define_label('sys_tilt',							0x5921, 0x39);
 
 define_label('sys_rotLeft_AB',						0x66F5, 0x3B);
 define_label('sys_fill_AB',							0x6706, 0x3B);
+}
 
 # global, own analysis
 

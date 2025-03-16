@@ -1,25 +1,16 @@
 #!/usr/bin/perl
 #======================================================================
-#					 D I S A S S E M B L E _ W P C _ D M D 
-#					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Sun Mar 16 08:39:56 2025
+#					 D I S A S S E M B L E _ W P C _ A L P H A N U M E R I C 
+#					 doc: Fri Mar 14 17:24:34 2025
+#					 dlm: Sun Mar 16 08:20:49 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 22 41 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 51 127 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
 
 # HISTORY:
-#	Jul 18, 2024: - created in Zermatt
-#	Aug  9, 2024: - continued
-#	Aug 10, 2024: - continued
-#	Aug 30, 2024: - re-made -l use fmt 1
-#	Aug 31, 2024: - moved API loading here from [D711.WPC_DMD]
-#	Sep  1, 2024: - added undocumented -Q option for beautification of Makefiles
-#	Sep  3, 2024: - added -L
-#	Mar 11, 2025: - adapted to updated [WPC_DMD.API]
-#	Mar 14, 2025: - adapted to new function names without _DMD
-#	Mar 15, 2025: - adapted to start_page
+#	Mar 14, 2025: - created from [disassemble_WPC_DMD]
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -38,7 +29,7 @@ die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
 	unless &getopts('acgi:lLQs') && @ARGV==1;
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
-use D711 ('WPC(DMD)','$opt_Q = 1;');										# suppress D711 splash message
+use D711 ('WPC(Alphanumeric)','$opt_Q = 1;');								# suppress D711 splash message
 
 $D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
@@ -48,8 +39,8 @@ $D711::fill_gaps	= !$opt_g;
 # Load ROM
 #----------------------------------------------------------------------
 
-$D711::start_page = 0x20;
-&D711::load_ROM($ARGV[0],0x4000,$D711::start_page,16);						# Load ROM: first game page (512KB ROM)
+$D711::start_page = 0x30;
+&D711::load_ROM($ARGV[0],0x4000,$D711::start_page,16);						# Load ROM: first game page (256KB ROM)
 &D711::load_ROM($ARGV[0],0x8000,0x3E,32);									# Load ROM: System pages
 
 #----------------------------------------------------------------------
@@ -57,6 +48,7 @@ $D711::start_page = 0x20;
 #----------------------------------------------------------------------
 
 &D711::init_WPC(split(',',$opt_i));											# load API & -i args
+$D711::verbose = !$opt_l;													# suppress disassembly abort output on -l (allLbls)
 &D711::disassemble_WPC();													# Code Disassembly
 
 #----------------------------------------------------------------------
@@ -67,7 +59,7 @@ $D711::start_page = 0x20;
 	unless ($opt_s);
 &D711::substitute_labels(0x8000,0xFFFF); 									# resolve labels
 &D711::substitute_identifiers(0x8000,0xFFFF);								# rename game-specific ids
-&D711::apply_magic_WPC(0x8000,0xFFFF);  		                            # e.g. &skip
+&D711::apply_magic_WPC(0x8000,0xFFFF); 		 	                            # e.g. &skip
 
 for (my($rpg)=$D711::start_page; $rpg<0x3E; $rpg++) {
 	&D711::select_WPC_RPG($rpg);
@@ -75,7 +67,7 @@ for (my($rpg)=$D711::start_page; $rpg<0x3E; $rpg++) {
 		unless ($opt_s);
 	&D711::substitute_labels(0x4000,0x7FFF); 								# resolve labels
 	&D711::substitute_identifiers(0x4000,0x7FFF);							# rename game-specific ids
-	&D711::apply_magic_WPC(0x4000,0x7FFF);                              	# e.g. &split
+	&D711::apply_magic_WPC(0x4000,0x7FFF); 									# e.g. &skip
 }
 
 #----------------------------------------------------------------------
@@ -93,7 +85,7 @@ if ($opt_l) {																# dump label information
 }
 
 &D711::select_WPC_RPG($D711::start_page);									# 1st game pg with headers
-my($decoded) = &D711::produce_output(0x4000,0x7FFF,1);	
+my($decoded) = &D711::produce_output(0x4000,0x7FFF,1);
 for (my($rpg)=$D711::start_page+1; $rpg<0x3E; $rpg++) {						# remaining game pages without headers
 	&D711::select_WPC_RPG($rpg);		
 	$decoded += &D711::produce_output(0x4000,0x7FFF,0);

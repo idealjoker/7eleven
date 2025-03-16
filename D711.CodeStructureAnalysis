@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Mon Sep 16 16:03:24 2024
+#                    dlm: Wed Mar 12 00:39:52 2025
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 21 43 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 22 27 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -19,6 +19,7 @@
 #	Sep  4, 2024: - allow exit to single target in loops
 #	Sep 16, 2024: - BUG: local label detection did not work any more
 #				  - added JMP to LEX_LABELS
+#	Mar 11, 2025: - fiddled
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -70,14 +71,16 @@ sub same_block($$@)
 	##	local($trace) = ($la == 0x6443 && $ha == 0x6449) ? 1 : 0;
 	## local($trace) = ($la == 0x635A && $ha == 0x636C) ? 1 : 0;
 
+	#local($trace) = 1;
+
 	my($block_ind) = $IND[$la];
 	for (my($i)=0; $i<@{$EXTRA[$la]}; $i++) {
 		next unless $EXTRA_IND[$la][$i] > 0;						# ignore dividers
 		$block_ind = $EXTRA_IND[$la][$i] if ($EXTRA_IND[$la][$i] < $block_ind);
 	}
-	print(STDERR "block_ind = $block_ind ($OP[$la]/$EXTRA[$la][$#{$EXTRA[$la]}])\n") if $trace;	
 
 	printf(STDERR "\nsame_block(%04X,%04X,if_block = $if_block)\ninside block limits?\n",$la,$ha,) if $trace;
+#	print(STDERR "[block_ind = $block_ind ($OP[$la]/$EXTRA[$la][$#{$EXTRA[$la]}])]\n") if $trace;	
 	my(@bb) = split(':',$BEGIN_BLOCK[$#BEGIN_BLOCK]);
 	my(@eb) = split(':',$END_BLOCK[$#END_BLOCK]);
 	my($good);
@@ -106,7 +109,7 @@ sub same_block($$@)
 						&& !$LBL[$a] =~ m{^([0-9A-F]{2}:)?\.} 
 						&& substr($LBL[$a],0,1) ne '.'											# allow local labels inside blocks
 						&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,4)) == $a);		# allow &skip inside blocks
-			print(STDERR "no. non-local AUTO_LBL (= $AUTO_LBL[$a]) defined?\n") if $trace;
+			printf(STDERR "no. non-local AUTO_LBL (= $AUTO_LBL[$a], _cur_RPG = %02X) defined?\n",$_cur_RPG) if $trace;
 			printf(STDERR "[$OP[$a-3] $OPA[$a-3][0]]\n") if $trace;
 			return 0 if defined($AUTO_LBL[$a]) && substr($AUTO_LBL[$a],0,1) ne '.'				# non local label exists
 							&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,4)) == $a);	# ... and it's not part of a &skip
@@ -347,6 +350,7 @@ sub cs_if_else($$$$$$$)
 		my($rv);
 		if (($else_trg > $addr) && ($else_trg <= $eaddr) && 				# ... that is forward and...
 				same_block($addr,$else_trg,1)) {							# ... in same block => IF
+			print(STDERR "($OP[$else_trg-2] eq $branch_op)?\n") if $trace;
 			if ($OP[$else_trg-2] eq $branch_op) {							# unconditional BRA before ELSE target...
 				my($endif_trg) = ($OPA[$else_trg-2][$#{$OPA[$else_trg-2]}] =~ m{\$([0-9A-Fa-f]+)$});
 				$endif_trg = hex($endif_trg);
