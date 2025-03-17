@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sun Mar 16 08:33:06 2025
+#                    dlm: Mon Mar 17 01:39:19 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 43 56 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 735 100 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -501,8 +501,8 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 #	printf(STDERR "start_addr = %04X\n",$start_addr);
 	while ($addr-$start_addr < $max_bytes) {
 		my($rv);
-##		die(sprintf("$code_lbl,$OP[$Address-5]:%04X",$Address-3)) if $_cur_RPG==0x31 && $decoded[0x499A]; ####
-#		printf(STDERR "M6809 disassembling opcode %02X at %02X:%04X (decoded = $decoded[$addr])\n",BYTE($addr),$_cur_RPG,$addr);
+##		printf(STDERR "M6809 disassembling opcode %02X at %02X:%04X (decoded = $decoded[$addr])\n",BYTE($addr),$_cur_RPG,$addr)
+##			if ($addr>=0xD0BB && $addr<0xD0E3);
 		unless (defined(BYTE($addr))) {
 			printf(STDERR "; WARNING: disassembly address %04X outside ROM range\n",$addr)
 				if ($verbose > 0);
@@ -732,7 +732,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			next if op_IDX(0xEE,$addr-1,$ind,'LDS'); 	next if op_IDX(0xEF,$addr-1,$ind,'STS');
 	        next if op_EXT(0xFE,$addr-1,$ind,'LDS',2);	next if op_EXT(0xFF,$addr-1,$ind,'STS',2);
 
-			printf("ABORT: Unknown M6809 opcode \$%04X at addr \$%04X\n",WORD($addr),$addr)
+			printf("ABORT: Unknown M6809 opcode \$%04X at addr \$%02X:%04X\n",WORD($addr),$_cur_RPG,$addr)
 				if ($verbose > 0);
 			$OP[$addr-1] = '.DW'; $IND[$addr-1] = $ind;
 			$OPA[$addr-1][0] = sprintf('$%04X!',WORD($addr-1));
@@ -753,7 +753,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			next if op_IDX(0xA3,$addr-1,$ind,'CMPU');	next if op_IDX(0xAC,$addr-1,$ind,'CMPS');
 	        next if op_EXT(0xB3,$addr-1,$ind,'CMPU',2);	next if op_EXT(0xBC,$addr-1,$ind,'CMPS',2);
 
-			printf("ABORT: Unknown M6809 opcode \$%04X at addr \$%04X\n",WORD($addr),$addr)
+			printf("ABORT: Unknown M6809 opcode \$%04X at addr \$%02X:%04X\n",WORD($addr),$_cur_RPG,$addr)
 				if ($verbose > 0);
 			$OP[$addr-1] = '.DW'; $IND[$addr-1] = $ind;
 			$OPA[$addr-1][0] = sprintf('$%04X!',WORD($addr-1));

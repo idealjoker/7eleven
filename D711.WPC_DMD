@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Mar 16 08:35:19 2025
+#                    dlm: Mon Mar 17 04:19:53 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 50 45 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 824 37 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -59,11 +59,14 @@ sub disassemble_WPC()
 	my($dasm_CPU_vectors) 		= 1;
 	my($dasm_system_pointers) 	= 1;
 	my($dasm_switchTables)		= 1;
-	my($dasm_lockTable)			= 1;
+#	my($dasm_lockTable)			= 1;
+	my($dasm_MBD)				= 1;
 	my($dasm_randomFindings)	= 1;
 	my($dasm_sys_gaps)			= 1;
 	my($dasm_fontTable)			= 0;
 	my($dasm_DMDtable)			= 0;
+
+	define_MBD_syscalls() if ($dasm_MBD);
 
 	if ($dasm_CPU_vectors) {
 		$Address = 0xFFF0;														# CPU vectors
@@ -314,7 +317,7 @@ sub init_WPC(@)
 {
 	my(@linc) = @_;
 	
-	require 'WPC_DMD.API';														# define API after ROM has been loaded but before -i are processed
+	require 'WPC.API';														# load API after ROM has been loaded but before -i are processed
 	while (@linc) {
 		require './' . shift(@linc);
 	}
@@ -815,9 +818,10 @@ sub defDMD($$)
 #		1: routine does not return
 #----------------------------------------------------------------------
 
-sub define_syscall($$$@)
+sub define_syscall($$@)
 {
 	my($lbl,$addr,$args,$note) = @_;
+	$args = '' unless defined($args);
 
 	define_label($lbl,$addr);
 	push(@SYSCALL,$lbl);

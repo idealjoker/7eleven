@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Mar 16 08:37:15 2025
+#					 dlm: Mon Mar 17 03:59:06 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 246 10 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 468 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -244,6 +244,7 @@
 #				  - BUG: same-page labels had page-prefices in output
 #	Mar 15, 2025: - improved .ORG handling
 #	Mar 16, 2025: - improved auto labels
+#				  - added scanCode()
 # END OF HISTORY
 
 # TO-DO:
@@ -378,6 +379,93 @@ sub load_ROM($$@)
 
     &init_system_11() if ($WMS_System==11 && WORD(0xFFFE)>0);               # this should be moved into a future [disassemble_s11]
 
+}
+
+#----------------------------------------------------------------------
+# Code Scanner
+#----------------------------------------------------------------------
+
+sub scanCode($$$$)
+{
+	my($RPG,$saddr,$eaddr,$pat) = @_;
+
+	my($maxMatch) = 0;
+	my($maxAddr);
+	select_WPC_RPG($RPG);													# initialize
+	$saddr--; $Address = $saddr;
+	
+ RESTART_SCAN:
+## 	printf(STDERR "RESTART_SCAN (len = %d)\n",$Address - $saddr);
+	if (($Address-$saddr) > $maxMatch) {									# record best match so far
+	 	$maxMatch = $Address - $saddr;
+		$maxAddr = $saddr;
+	}
+ 	$saddr++;
+ 	die(sprintf("scanCode: no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
+		if ($saddr > $eaddr);
+	undef(@out);
+	my(@out);
+	$Address = $saddr;
+
+	for (my($si)=0; $si<length($pat); ) {
+##		printf(STDERR "<%04X> si = $si (%s)\n",$Address,substr($pat,$si));
+		if (substr($pat,$si,1) eq ' ' || substr($pat,$si,1) eq "\t") {
+			$si++; 
+			next;
+		}
+		if (substr($pat,$si,8) eq 'RAM_ADDR') {
+			my($taddr) = WORD($Address);
+			if ($taddr <= 0x1FFF) {
+				push(@out,$taddr);
+				$si += 8;
+				$Address += 2;
+				next;
+			} 
+			goto RESTART_SCAN;
+		}
+		if (substr($pat,$si,9) eq 'PAGE_ADDR') {
+			my($taddr) = WORD($Address);
+			if ($taddr>=0x4000 && $taddr<=0x7FFF) {
+				push(@out,$taddr);
+				$si += 9;
+				$Address += 2;
+				next;
+			}
+			goto RESTART_SCAN;
+		}
+		if (substr($pat,$si,12) eq 'SYSCALL_ADDR') {
+			my($taddr) = WORD($Address);
+			if ($taddr>=0x8000 && $taddr<=0xFFFF) {
+				push(@out,$taddr);
+				$si += 12;
+				$Address += 2;
+				next;
+			}
+			goto RESTART_SCAN;
+		}
+		if (substr($pat,$si,8) eq 'ROM_PAGE') {
+			my($trpg) = BYTE($Address);
+##			printf(STDERR "byte = %02X (%02X)\n",$trpg,$start_page);
+			if ($trpg>=$start_page && $trpg<=0x3D) {
+				push(@out,$trpg);
+				$si += 8;
+				$Address += 1;
+				next;
+			}
+			goto RESTART_SCAN;
+		}
+
+		die(sprintf("scanCode: invalid next token in pattern <%s>\n",substr($pat,$si)))
+			unless (substr($pat,si,2) =~ m{^[0-9A-F]{2}$});
+		if (hex(substr($pat,$si,2)) == BYTE($Address)) {			
+			$Address++;
+			$si += 2;
+			next;
+		}
+		goto RESTART_SCAN;
+	}
+	unshift(@out,$saddr);
+	return @out;
 }
 
 #----------------------------------------------------------------------

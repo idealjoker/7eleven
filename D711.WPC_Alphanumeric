@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ A L P H A N U M E R I C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Mar 16 08:41:17 2025
+#                    dlm: Mon Mar 17 04:18:43 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 13 27 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 753 37 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -20,11 +20,13 @@
 sub disassemble_WPC()
 {
 	my($dasm_CPU_vectors) 		= 1;
-	my($dasm_system_pointers) 	= 0;
-	my($dasm_switchTables)		= 0;
-	my($dasm_lockTable)			= 0;
+	my($dasm_system_pointers) 	= 1;
+	my($dasm_switchTables)		= 1;
+	my($dasm_MBD)				= 1;
 	my($dasm_randomFindings)	= 0;
 	my($dasm_sys_gaps)			= 0;
+
+	define_MBD_syscalls() if ($dasm_MBD);
 
 	if ($dasm_CPU_vectors) {
 		$Address = 0xFFF0;														# CPU vectors
@@ -138,7 +140,8 @@ sub disassemble_WPC()
 
 		$Address = 0x8296;
 		def_ptr_hex('^=STATUS_AREA');
-		insert_divider($Address,'System Code');}
+		insert_divider($Address,'System Code');
+	}
 
 	if ($dasm_switchTables) {
 		$Address = 0x81C5;
@@ -150,24 +153,9 @@ sub disassemble_WPC()
 				if defined($Address);
 	}
 
-	if  ($dasm_lockTable) {
-		select_WPC_RPG(0x30);											# BYU=lockDataAndHandlerPointer_A
-		$Address = 0x7F13;	
-		def_WPC_lockTable('=LOCKTABLE','Lock Table / Multiball Device Table',1)
-	}
-
 	if ($dasm_randomFindings) {											# manual findings
 		$Address = 0xAE39; def_code('sys_bitIsSet_4BG');				# ???
 		$Address = 0xAE46; def_code('sys_bitIsClear_4BG');
-
-		select_WPC_RPG(0x31);
-		$Address= 0x4D9C; def_byteblock_hex(5,sprintf('HuntershipTarget_masks',$Address));		# Data Tables
-		$Address= 0x50E4; def_wordblock_hex(10,sprintf('targetBank_soundTable',$Address));
-		$Address= 0x5CBC; def_wordblock_hex(10,sprintf('data_table_%04X',$Address));
-		$Address= 0x5CC6; def_byteblock_hex(4,sprintf('data_table_%04X',$Address));
-		$Address= 0x5FC9; def_byteblock_hex(10,sprintf('score_table_%04X',$Address));
-		$Address= 0x5FEB; def_byteblock_hex(10,sprintf('score_table_%04X',$Address));
-		$Address= 0x62C0; def_wordblock_hex(10,sprintf('jetBumper_soundTable',$Address));
 
 		select_WPC_RPG(0x3B);
 		$Address = 0x6717; def_code('unkown_bitgroupOp_hook?_6717');	# finding bitgroup syscalls
@@ -267,7 +255,7 @@ sub init_WPC(@)
 {
 	my(@linc) = @_;
 	
-	require 'WPC_Alphanumeric.API';														# define API after ROM has been loaded but before -i are processed
+	require 'WPC.API';															# load API after ROM has been loaded but before -i are processed
 	while (@linc) {
 		require './' . shift(@linc);
 	}
@@ -759,9 +747,10 @@ sub defThread($$)
 #		1: routine does not return
 #----------------------------------------------------------------------
 
-sub define_syscall($$$@)
+sub define_syscall($$@)
 {
 	my($lbl,$addr,$args,$note) = @_;
+	$args = '' unless defined($args);
 
 	define_label($lbl,$addr);
 	push(@SYSCALL,$lbl);
