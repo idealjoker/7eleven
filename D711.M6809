@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Mon Mar 17 01:39:19 2025
+#                    dlm: Tue Mar 18 04:03:58 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 735 100 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 462 2 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -459,7 +459,7 @@ sub disassemble_syscall($$)
 			}
 			select_WPC_RPG($orpg);
 			push(@{$OPA[$oaddr]},$tlbl);
-			push(@{$OPA[$oaddr]},sprintf('$%02X',$trpg));
+##			push(@{$OPA[$oaddr]},sprintf('$%02X',$trpg));
 		} else {
 			die("invalid inline argument spec <$SC_ARGS[$sc]>");
 		}
@@ -650,7 +650,11 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			for ($sc=0; $sc<@SYSCALL; $sc++) {
 				die($SYSCALL[$sc]) unless defined($Lbl{$SYSCALL[$sc]});
 				next if $SC_NOTE[$sc] == 2;														# NOTE 2: JMP target syscall
-				last if disassemble_syscall($sc,$rv);
+				if (disassemble_syscall($sc,$rv)) {
+					die(sprintf("syscall $SYSCALL[$sc] can only be called from PG#3B (not PG#%02X)\n",$_cur_RPG))
+						if $SC_NOTE[$sc] == 3 && $_cur_RPG != 0x3B;								# NOTE 3: syscall can only be called from PG#3B
+					last;
+				}
 			}
 			disassemble_asm($ind,$rv,$lbl_root,undef,$follow_code)								# disassemble subroutine code (syscall or not)
 				if ($follow_code);

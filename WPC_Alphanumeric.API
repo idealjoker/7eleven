@@ -1,35 +1,14 @@
 #======================================================================
-#                    W P C . A P I 
-#                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Mar 18 04:19:35 2025
+#                    W P C _ A L P H A N U M E R I C . A P I 
+#                    doc: Fri Mar 14 18:12:59 2025
+#                    dlm: Sun Mar 16 08:42:11 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 275 61 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 11 76 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
-#	Jul 18, 2024: - created
-#	Jul 19, 2024: - added info from FreeWPC
-#	Jul 20, 2024: - added first own labels
-#	Aug 16, 2024: - switch table disassembles error free
-#	Aug 17, 2024: - additions
-#	Aug 18, 2024: - additions
-#	Aug 19, 2024: - additions
-#	Aug 25, 2024: - renamed addScore because it was wrnog
-#	Aug 26, 2024: - added sycalls
-#				  - changed capitalization to be consistent with IVM
-#	Aug 27, 2024: - added !exitThread
-#				  - added 'T' argument type
-#				  - other additions
-#	Aug 30, 2024: - added errors
-#	Aug 31, 2024: - lamp matrices & other additions
-#	Sep     2024: - additions
-#	Mar 11, 2025: - renamed many ASIC labels
-#				  - added labels for other WPC systems
+#	Mar 14, 2025: - created from [WPC_DMD.API]
 #	Mar 16, 2026: - added DMDanimation syscall, because it seems to be there
-#				  - added "new" (FH) syscalls
-#				  - BUG: 2 syscalls (unused in T2) had wrong args 
-#	Mar 17, 2025: - moved define_MBD_syscalls() to D711.WPC/disassemble_MBD_system()
-#				  - moved syscalls from D711.WPC_DMD
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -87,11 +66,9 @@ define_label('_PLAYER_UP',							0x040F);
 define_label('_BALL_IN_PLAY',						0x0410);
 define_label('_EXTRABALLS_PENDING??',				0x0411);
 define_label('_BACKGROUND_MUSIC_PLAYING',			0x0446);
-unless ($WMS_System eq 'WPC(Alphanumeric)') {
-	define_label('^DMD_PLAYING_ANIMATION_DATA',		0x0481);
-	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
-	define_label('_LAST_DMD_ANIMATION_PLAYED??',	0x0487);
-}
+##define_label('^DMD_PLAYING_ANIMATION_DATA',			0x0481);
+##define_label('_DMD_ANIMATION_PLAYING',				0x0483);
+##define_label('_LAST_DMD_ANIMATION_PLAYED??',		0x0487);
 define_label('=PLAYER_MEM_DATA??',					0x04AC);
 define_label('_SIZE_PLAYER_MEM_DATA??',				0x04AE);
 define_label('_CRON_MINUTE_COUNTER_1',				0x04B4);
@@ -103,6 +80,8 @@ define_label('_TILTWARNINGS_LEFT',					0x04D4);
 define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN',	0x0CC9);
 define_label('_LOCKED_BALLS_DEFICIT',				0x0CCA);
 define_label('_NUM_BALLS_LOCKED',					0x0CCB);
+define_label('^MBD_LOCK_DATA',						0x0CCC);
+define_label('_MBD_NUM_LOCKS',						0x0CCE);
 define_label('_BALLS_IN_TROUGH',					0x0CCF);
 define_label('_BALLS_INSTALLED_IN_GAME',			0x0CD0);
 
@@ -149,6 +128,7 @@ if ($WMS_System eq 'WPC(Alphanumeric)') {						# Display
 	define_label('_ALPHANUMERIC_ROW1',				0x3FEC); 	
 	define_label('_ALPHANUMERIC_ROW2',				0x3FEE); 	
 } else {
+	die;
 	define_label('_DMD_ACTIVE_FRAME',				0x3FBF);	# Digital Matrix Display
 	define_label('_DMD_FRAMESELECT_3800',			0x3FBE);	# W
 	define_label('_DMD_FRAMESELECT_3A00',			0x3FBC);	# W
@@ -215,76 +195,39 @@ define_label('_DEBUGGER_DATA',						0x3D60);	# Hardware Debugger
 define_label('_DEBUGGER_CTRL',						0x3D61);	
 
 #----------------------------------------------------------------------
-# Fixed-Location System Calls
-#	- in-line arguments:
-#		R	code reference (code pointer & PG)
-#		W	untyped word 
-#		T	thread word
-#		U	audit word
-#		P	data pointer (address word)
-#		C	code pointer (address word)
-#		B	untyped byte
-#		S	switch byte
-#		O	solenoid byte
-#		L	lamp byte
-#		E	error byte
-#		G	bitgroup byte
-#		F	flag byte
-#		A	adjustment byte
-#		D	DMD animation byte
-#	- NOTES
-#		1	JSR system call that does not return
-#		2	JMP system call
-#		3	system call can only be called from PG#3B
+# System Calls
 #----------------------------------------------------------------------
 
 define_syscall('Panic',								0x8298,'E',1);	# NOTE 1: does not return
 define_syscall('Error',								0x82B6,'E');
-define_syscall('addToAudit??',						0x82E2,'B');
 define_syscall('Y=adjustment',						0x82F2,'A');
 define_syscall('A=adjustment',						0x82FF,'A');
 define_syscall('B=adjustment',						0x830C,'A');
 define_syscall('switchClosed?',						0x8319,'S');
-define_syscall('syscall_8329',0x8329);
 define_syscall('switchBroken??',					0x8339,'S');
 define_syscall('sleep',								0x8346,'B');
-define_syscall('memCopy_XY',						0x835E,'B');
 define_syscall('memClearY',							0x836B,'B');
 define_syscall('memSetBY',							0x8378,'B');
 define_syscall('solCmd',							0x8385,'O');
 define_syscall('pulseFlasher',						0x8392,'B');
 define_syscall('solCmd_wait',						0x839F,'B');
-define_syscall('syscall_83B0',						0x83B0,'B');			# FH
-define_syscall('syscall_83C1',						0x83C1,'B');
-define_syscall('syscall_83CE',						0x83CE,'B');
 define_syscall('setGIbrightness80',					0x83DB,'B');
 define_syscall('setGIbrightness81',					0x83E8,'B');
-define_syscall('syscall_83F5',						0x83F5,'B');
-define_syscall('syscall_8402',						0x8402,'L');
-define_syscall('syscall_840F',						0x840F,'L');
 define_syscall('lampOn',							0x841C,'L');
 define_syscall('lampOff',							0x842B,'L');
 define_syscall('lampToggle',						0x843A,'L');
 define_syscall('lampOn?',							0x8449,'L');
-define_syscall('lampOn_blinkOff',					0x8458,'L');			# FH
-define_syscall('lampOff_blinkOff',					0x846C,'L');			# FH
 define_syscall('setFlag',							0x8480,'F');
 define_syscall('clearFlag',							0x848F,'F');
 define_syscall('toggleFlag',						0x849E,'F');
 define_syscall('flagSet?',							0x84AD,'F');
-define_syscall('syscall_84E9',						0x84E9,'B');			# FH
-define_syscall('syscall_84BC',						0x84BC,'B');			# FH
 define_syscall('syscall_8505',						0x8505,'B');
-define_syscall('syscall_8512',						0x8512,'B');
 define_syscall('addScore',							0x851F,'B');
-define_syscall('syscall_852C',						0x852C,'B');
 define_syscall('syscall_8539',						0x8539,'B');
 define_syscall('playSound',							0x8546,'B');
 define_syscall('DMDanimation',						0x8553,'D');
 define_syscall('lampFX',							0x85B2,'B');
 define_syscall('syscall_85A2',						0x85A2,'B');
-define_syscall('syscall_85C1',						0x85C1,'B');			# FH
-define_syscall('syscall_85D1',						0x85D1,'B');			# FH
 define_syscall('syscall_85E1',						0x85E1,'B');
 define_syscall('syscall_85F1',						0x85F1,'B');
 define_syscall('syscall_8601',						0x8601,'B');
@@ -297,10 +240,8 @@ define_syscall('killThreads',						0x869E,'T');
 define_syscall('setThreadId',						0x86AC,'T');
 define_syscall('becomeThread_ifNotRunning',			0x86BA,'T');
 define_syscall('becomeOnlyThread',					0x86D0,'T');
-define_syscall('syscall_86FB',						0x86FB,'W');			# FH
 define_syscall('setBit',							0x8715,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
 define_syscall('clearBit',							0x8722,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
-define_syscall('syscall_872F',						0x872F,'LB');			# FH
 define_syscall('bitSet?',							0x873C,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
 define_syscall('clearAll',							0x87BE,'GB');
 define_syscall('allSet?',							0x87CB,'GB');
@@ -329,90 +270,78 @@ define_syscall('spawnLowPriorityThreadIfNeeded',	0x8BC3,'TR');			# don't spaawn 
 define_syscall('spawnHighPriorityThreadIfNeeded',	0x8BF7,'TR');
 define_syscall('memCopy',							0x8C2B,'WWB');
 define_syscall('exitThread',						0x99A2,'',2);			# NOTE 2: sycall is JMP target (rather than JSR)
-define_syscall('CS=randomBit',						0xA70B);
-define_syscall('BX=^tableElt_AX',					0xAC5B,'');
-define_syscall('BX=^tableElt_AXY',					0xAC89,'');
 define_syscall('syscall_D799',						0xD799,'WBW');
-define_syscall('syscall_DD3B',						0xDD3B,'B');			# FH
-define_syscall('syscall_F365',						0xF365,'B');			# FH
-define_syscall('syscall_F377',						0xF377,'B');			# FH
-define_syscall('syscall_F389',						0xF389,'W');			# FH
-define_syscall('syscall_F3AD',						0xF3AD,'W');			# FH
-define_syscall('syscall_F407',						0xF407,'B');			# FH
 define_syscall('lastBall?',							0xF7EF,'');
 define_syscall('rotLeft',							0xFDA2,'GB');
 define_syscall('fill',								0xFDB4,'GB');
 define_syscall('unknownBitgroupOp1',				0xFDC6,'GB');
 define_syscall('unknownBitgroupOp2',				0xFDD8,'GB');
-define_syscall('MBD_callHandler[A]',				0xFDFC,'B',3);			# NOTE 3: must only be called from PG#3B
+define_syscall('MBD_callHandler_A',					0xFDFC,'B');
 
 # non-global
 
-if ($WMS_System eq 'WPC(DMD)') {
-	define_label('sys_tilt',						0x5921, 0x39);			# T2
-}
+if (0) {
+define_label('sys_tilt',							0x5921, 0x39);
 
 define_label('sys_rotLeft_AB',						0x66F5, 0x3B);
 define_label('sys_fill_AB',							0x6706, 0x3B);
+}
 
 # global, own analysis
 
-define_syscall('syscall_82CB',						0x82CB);
-define_syscall('lampOn_blinkOff',					0x8458);
-define_syscall('lampOff_blinkOff',					0x846C);
-define_syscall('sys_longJSR_indirect[X]',			0x862B);
-define_syscall('sys_longJSR_indirect[AX]',			0x8631);
-define_syscall('sys_setBank=3B',					0x90B4);
-define_syscall('sys_setBank[B]',					0x90BC);
-define_syscall('A=[XB]==1?_INX',					0x90E7);
-define_syscall('A=[XB]==1?',						0x90EC);
-define_syscall('BX=loadRef[X]',						0x90C5);
-define_syscall('sys_lock_RAM[B]',					0x9207);
-define_syscall('sys_unlock_RAM',					0x9223);
-define_syscall('sys_lock_RAM',						0x922C);
-define_syscall('CS=badChecksum[XY]',				0x928A);
-define_syscall('Y=adjustmentA??==1',				0x92D4);
-define_syscall('A=adjustmentA??==1',				0x92DE);
-define_syscall('D=adjustmentA??==1',				0x92EC);
-define_syscall('Y=adjustmentA??',					0x92F8);
-define_syscall('sys_kill_thread',					0x9B24);
-define_syscall('sys_findThread[Y]?',				0x9B34);
-define_syscall('sys_findThread[DY]?',				0x9B3D);
-define_syscall('find_thread_in_list',				0x9B55);
-define_syscall('sys_zeroCrossIRQ_clear',			0x9D00);
-define_syscall('sys_clearBit[AB]',					0x9E92);
-define_syscall('sys_twiddle_BitShifter_input',		0x9EA5);
-define_syscall('sys_setBit[AB]',					0x9E7F);
-define_syscall('bit[AB]Set?',						0x9EDD);
-define_syscall('sys_setBit[AB]_withLamps',			0x9EF1);
-define_syscall('BitShifter_setBit[AB]',				0x9F47);
-define_syscall('BitShifter_clearBit[AB]',			0x9F73);
-define_syscall('BitShifter_testBit[AB]',			0x9FA0);
-define_syscall('sys_suspendThread',					0x98BB);
-define_syscall('lamp[A]On?',						0xA0B9);
-define_syscall('sys_memCopy[AXY]',					0xA6B9);
-define_syscall('sys_memClear[AY]',					0xA6C4);
-define_syscall('sys_memClear[XY]',					0xA6D1);
-define_syscall('sys_solCmd[A]_wait',				0xA84D);
-define_syscall('sys_solCmd[A]',						0xA895);
-define_syscall('sys_memSet[ABY]',					0xA6E3);
-define_syscall('sys_pulseFlasher[A]',				0xA9EC);
-define_syscall('sys_bitgroup[D]_clearAll',			0xAE09);
-define_syscall('sys_bitgroup[D]_allSet?',			0xAE19);
-define_syscall('sys_bitgroup[D]_allOff?',			0xAE29);
-define_syscall('sys_bitgroupOp_bitSet?',			0xAE39);
-define_syscall('sys_bitgroupOp_bitClear?',			0xAE46);
-define_syscall('sys_bitgroupOp[ABXY]',				0xAE53);
-define_syscall('sys_printString[BXY]',				0xB97B);
-define_syscall('sys_lampFX[A]',						0xCC3A);
-define_syscall('sys_IRQ_timer_handler??',			0xECCA);
-define_syscall('NE=gameDisabled',					0xF759);
-define_syscall('addBonus[A]',						0xFA7D);
-define_syscall('addBonus_1130', 					0xFAA8);
-define_syscall('addBonus_3330', 					0xFAAE);
-define_syscall('addBonus_5530', 					0xFAB4);
-define_syscall('addBonus_9930', 					0xFABA);
-define_syscall('addBonus[A]',						0xFABE);
+define_label('NE=gameDisabled',						0xF759);
+define_label('=bitShifter_lookUpTable',				0x81B6);
+define_label('lampOn_blinkOff',						0x8458);
+define_label('lampOff_blinkOff',					0x846C);
+define_label('sys_longJSR_indirect[X]',				0x862B);
+define_label('sys_longJSR_indirect[AX]',			0x8631);
+define_label('sys_setBank=3B',						0x90B4);
+define_label('sys_setBank[B]',						0x90BC);
+define_label('A=[XB]==1?_INX',						0x90E7);
+define_label('A=[XB]==1?',							0x90EC);
+define_label('BX=loadRef[X]',						0x90C5);
+define_label('sys_lock_RAM[B]',						0x9207);
+define_label('sys_unlock_RAM',						0x9223);
+define_label('sys_lock_RAM',						0x922C);
+define_label('CS=badChecksum[XY]',					0x928A);
+define_label('Y=adjustmentA??==1',					0x92D4);
+define_label('A=adjustmentA??==1',					0x92DE);
+define_label('D=adjustmentA??==1',					0x92EC);
+define_label('Y=adjustmentA??',						0x92F8);
+define_label('sys_kill_thread',						0x9B24);
+define_label('sys_findThread[Y]?',					0x9B34);
+define_label('sys_findThread[DY]?',					0x9B3D);
+define_label('find_thread_in_list',					0x9B55);
+define_label('sys_zeroCrossIRQ_clear',				0x9D00);
+define_label('sys_clearBit[AB]',					0x9E92);
+define_label('sys_twiddle_BitShifter_input',		0x9EA5);
+define_label('sys_setBit[AB]',						0x9E7F);
+define_label('bit[AB]Set?',							0x9EDD);
+define_label('sys_setBit[AB]_withLamps',			0x9EF1);
+define_label('BitShifter_setBit[AB]',				0x9F47);
+define_label('BitShifter_clearBit[AB]',				0x9F73);
+define_label('BitShifter_testBit[AB]',				0x9FA0);
+define_label('sys_suspendThread',					0x98BB);
+define_label('lamp[A]On?',							0xA0B9);
+define_label('sys_memCopy[AXY]',					0xA6B9);
+define_label('sys_memClear[AY]',					0xA6C4);
+define_label('sys_memClear[XY]',					0xA6D1);
+define_label('sys_solCmd[A]_wait',					0xA84D);
+define_label('sys_solCmd[A]',						0xA895);
+define_label('sys_memSet[ABY]',						0xA6E3);
+define_label('sys_pulseFlasher[A]',					0xA9EC);
+define_label('sys_bitgroup[D]_clearAll',			0xAE09);
+define_label('sys_bitgroup[D]_allSet?',				0xAE19);
+define_label('sys_bitgroup[D]_allOff?',				0xAE29);
+define_label('sys_bitgroupOp[ABXY]',				0xAE53);
+define_label('sys_printString[BXY]',				0xB97B);
+define_label('sys_lampFX[A]',						0xCC3A);
+define_label('sys_IRQ_timer_handler??',				0xECCA);
+define_label('sys_addBonus_1130',					0xFAA8);
+define_label('sys_addBonus_3330',					0xFAAE);
+define_label('sys_addBonus_5530',					0xFAB4);
+define_label('sys_addBonus_9930',					0xFABA);
+define_label('sys_addBonus[A]',						0xFABE);
 
 #----------------------------------------------------------------------
 # System Threads

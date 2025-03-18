@@ -1,225 +1,231 @@
 #======================================================================
-#                    D 7 1 1 . W P C _ A L P H A N U M E R I C 
+#                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Mar 16 08:41:17 2025
+#                    dlm: Tue Mar 18 03:38:18 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 13 27 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 78 23 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
 
 # HISTORY:
-#	Mar 14, 2025: - created from [D711.WPC_DMD]
-#	Mar 15, 2025: - fiddled
+#	Jul 18, 2024: - created; WMS CPU vectors disassemble correctly
+#	Aug  9, 2024: - continued
+#	Aug 10, 2024: - added support for ROM pages
+#	Aug 11, 2024: - System Call Pointers disassemble correctly
+#				  - BUG: WMS CPU vectors no longer disassemble correctly
+#	Aug 12, 2024: - added support for system strings
+#	Aug	14, 2024: - imported WPC specific code from [D711.pm]
+#	Aug 15, 2024: - BUG: def_WPC_codePtr() did not define target labels
+#	Aug 16, 2024: - many improvements; now switch table disassembles w/o errors
+#	Aug 17, 2024: - many improvements
+#	Aug 18, 2024: - BUG: API loaded before ROM
+#	Aug 19, 2024: - added _skip
+#				  - started adapting to ! WPC shortcut
+#	Aug 21, 2024: - BUG: EXTRA_IND, EXTRA_BEFORE_LABEL and EXTRA_AFTER_OP where not
+#						 paged in and out
+#	Aug 23, 2024: - decimalized !*Sleep args
+#	Aug 25, 2024: - renamed addScore because it was wrnog
+#				  - BUG: substr used wrong length arg
+#	Aug 27, 2024: - BUG: @DIVIDER was not swapped in and out
+#				  - additions
+#	Aug 28, 2024: - BUG: switchTable allowed labels for bytes
+#				  - BUG: wrong page labels in set_WPC_ref
+#	Aug 29, 2024: - moved extra lines after RTS, JMP, etc in here from [D711.M6809]
+#	Aug 31, 2024: - moved API loading into disassemble_WPC_DMD
+#				  - BUG: decimalization of sleep args did not work for lower case sleep
+#	Sep  1, 2024: - added support for _IF_true and _IF_false "macros"
+#	Sep  2, 2024: - made lamps decimal
+#	Sep  4, 2024: - BUG: _IF_true did not work correctly with &skip
+#	Sep  8, 2024: - added empty lines after tables
+#				  - added def_WPC_lockTable()
+#	Sep 10, 2024: - BUG: lock table has different structure
+#	Sep 15, 2024: - new label syntax
+#	Sep 21, 2024: - BUG: line spacing
+#	Mar 11, 2025: - BUG: WCP_codeRef defined AUTO_LBL in wrong ROM page (difficult!)
+#				  - BUG: lockTable had .DWBW instead of .DWB
+#	Mar 14, 2025: - improved error message
+#	Mar 15, 2025: - adapted to new interface w/o _DMD in function names
+#				  - BUG: init_WPC() set _cur_RPG
+#	Mar 16, 2025: - BUG: couple of label bugs
+#	Mar 17, 2025: - merged from D711.WPC_DMD (mainly) and D711.WPC_Alphanumeric
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
-# Game Disassembly Routine
+# WPC Disassembly Routines
 #----------------------------------------------------------------------
 
-sub disassemble_WPC()
+sub disassemble_MBD_system()												# execute this early on, because it defines syscalls
 {
-	my($dasm_CPU_vectors) 		= 1;
-	my($dasm_system_pointers) 	= 0;
-	my($dasm_switchTables)		= 0;
-	my($dasm_lockTable)			= 0;
-	my($dasm_randomFindings)	= 0;
-	my($dasm_sys_gaps)			= 0;
+	my($pattern) = '34 12 B1 RAM_ADDR 25 05 BD 82 B6 47 4F 34 02 C6 05' .	# BYU=lockRAMandTableDataRefs[A]
+				   '3D FE RAM_ADDR 33 CB 35 02 8E PAGE_ADDR C6 ROM_PAGE' .
+				   'BD SYSCALL_ADDR BD SYSCALL_ADDR 1E 23 35 92';
+	my(@matchData) = scanCode(0x3B,0x4000,0x7FFF,$pattern);
+	define_label('BYU=lockRAMandTableDataRefs[A]',$matchData[0]);
+	define_label('_MBD_NUM_LOCKS',$matchData[1]);
+	define_label('^MBD_LOCK_DATA',$matchData[2]);
+	define_syscall('X=^tableElt[ABX]',$matchData[5],'');
+	define_syscall('Y=[XB]',$matchData[6],'');
+	my($orpg) = select_WPC_RPG($matchData[4]);
+	$Address = $matchData[3];   
+	def_WPC_lockTable('=LOCKTABLE','Lock Table / Multiball Device Table',1)
+}
 
-	if ($dasm_CPU_vectors) {
-		$Address = 0xFFF0;														# CPU vectors
-		insert_divider($Address,'CPU Vectors');
+
+sub disassemble_syscalls()													# execute this after all syscalls have been defined
+{
+	for (my($sc)=0; $sc<@SYSCALL; $sc++) {
+		disassemble_asm($code_base_indent,$SC_ADDR[$sc]);						# labels already defined
+	}
+}
+
+
+sub disassemble_CPU_vectors()
+{
+	$Address = 0xFFF0;														# CPU vectors
+	insert_divider($Address,'CPU Vectors');
 	
-		def_code_ptr('RESERVED_vector','RESERVED_handler','CPU Vector Handler');	
-		def_code_ptr('SWI3_vector','SWI3_handler','CPU Vector Handler');
-		def_code_ptr('SWI2_vector','SWI2_handler','CPU Vector Handler');			
-		def_code_ptr('FIRQ_vector','FIRQ_handler','CPU Vector Handler');
-		def_code_ptr('IRQ_vector','IRQ_handler','CPU Vector Handler');
-		def_code_ptr('SWI_vector','SWI_handler','CPU Vector Handler');
-		def_code_ptr('NMI_vector','NMI_handler','CPU Vector Handler');				
-	    def_code_ptr('RST_vector','RST_handler','CPU Vector Handler');				
-    }
+	def_code_ptr('RESERVED_vector','RESERVED_handler','CPU Vector Handler');    
+	def_code_ptr('SWI3_vector','SWI3_handler','CPU Vector Handler');
+	def_code_ptr('SWI2_vector','SWI2_handler','CPU Vector Handler');		    
+	def_code_ptr('FIRQ_vector','FIRQ_handler','CPU Vector Handler');
+	def_code_ptr('IRQ_vector','IRQ_handler','CPU Vector Handler');
+	def_code_ptr('SWI_vector','SWI_handler','CPU Vector Handler');
+	def_code_ptr('NMI_vector','NMI_handler','CPU Vector Handler');			    
+	def_code_ptr('RST_vector','RST_handler','CPU Vector Handler');              
+}
 
-	if ($dasm_system_pointers) {
-		$Address = 0x8000;
-		insert_divider($Address,'Bank Id');
-		def_byte_hex('_ROMPG_SYS1_ID');
 
-		insert_divider($Address,'System Call Pointers');
-		while ($Address < 0x812D) {
-			my($taddr) = sprintf('%04X',WORD($Address));
-			my($trpg) = sprintf('%02X',BYTE($Address+2));
-			def_WPC_codeRef("syscall_$taddr",'System Call');
-		}
-
-		my($ubyte,$uword);
-
-		$Address = 0x812D;
-		insert_divider($Address,'System Data Pointers');
-		$Address = def_WPC_ref('_RAM_04AF_INIT_VALUE');
-			def_byte_hex();
-
-		$Address = 0x813C;
-		def_WPC_stringRef('sysstr_gameName','System String');
-		def_WPC_stringRef('sysstr_gameNumber','System String');
-		def_WPC_stringRef('sysstr_buildDate','System String');
-
-		$Address = 0x813C;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x813F;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x8142;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x8145;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x814E;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x8151;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x8157;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x815A;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x8166;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
-			def_word_hex();
-
-		$Address = 0x8184;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
-			def_word_hex();
-
-		$Address = 0x8187;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
-			def_word_hex();
-
-		$Address = 0x818A;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
-			def_word_hex();
-
-		$Address = 0x8190;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
-			def_word_hex();
-
-		$Address = 0x8193;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x8199;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x819C;
-		$Address = def_WPC_ref('=UNKNOWN_SYSTEM_TABLE_1');
-			def_wordblock_hex(8,'=UNKNOWN_SYSTEM_TABLE_1','System Table');
-
-        $Address = 0x819F;
-		$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-			def_byte_hex();
-
-		$Address = 0x81B6;
-		$Address = def_WPC_ref('=BITSHIFTER_LAMPMATRIX_LOOKUPTABLE');
-			def_byteblock_hex(65);
-
-		$Address = 0x8296;
-		def_ptr_hex('^=STATUS_AREA');
-		insert_divider($Address,'System Code');}
-
-	if ($dasm_switchTables) {
-		$Address = 0x81C5;
-		$Address = def_WPC_ref('=SWITCHTABLE');
-			def_WPC_switchTable(undef,'Switch Table',1);				# label already defined, follow code
-		$Address = 0x821C;
-		$Address = def_WPC_ref('=AUX_SWITCHTABLE');
-			def_WPC_switchTable(undef,'Switch Table',1)
-				if defined($Address);
+sub disassemble_system_pointers()
+{
+	$Address = 0x8000;
+	insert_divider($Address,'Bank Id');
+	def_byte_hex('_ROMPG_SYS1_ID');
+	
+	insert_divider($Address,'System Call Pointers');
+	while ($Address < 0x812D) {
+		my($taddr) = sprintf('%04X',WORD($Address));
+		my($trpg) = sprintf('%02X',BYTE($Address+2));
+		def_WPC_codeRef("syscall_$taddr",'System Call');
 	}
+	
+	my($ubyte,$uword);
+	
+	$Address = 0x812D;
+	insert_divider($Address,'System Data Pointers');
+	$Address = def_WPC_ref('_RAM_04AF_INIT_VALUE');
+		def_byte_hex();
+	
+	$Address = 0x813C;
+	def_WPC_stringRef('sysstr_gameName','System String');
+	def_WPC_stringRef('sysstr_gameNumber','System String');
+	def_WPC_stringRef('sysstr_buildDate','System String');
+	
+	$Address = 0x813C;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x813F;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x8142;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x8145;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x814E;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x8151;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x8157;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x815A;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x8166;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
+		def_word_hex();
+	
+	$Address = 0x8184;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
+		def_word_hex();
+	
+	$Address = 0x8187;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
+		def_word_hex();
+	
+	$Address = 0x818A;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
+		def_word_hex();
+	
+	$Address = 0x8190;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
+		def_word_hex();
+	
+	$Address = 0x8193;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x8199;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x819C;
+	$Address = def_WPC_ref('=UNKNOWN_SYSTEM_TABLE_1');
+		def_wordblock_hex(8,'=UNKNOWN_SYSTEM_TABLE_1','System Table');
+	
+	$Address = 0x819F;
+	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
+		def_byte_hex();
+	
+	$Address = 0x81B6;
+	$Address = def_WPC_ref('=BITSHIFTER_LAMPMATRIX_LOOKUPTABLE');
+		def_byteblock_hex(65);
+	
+	$Address = 0x8296;
+	def_ptr_hex('^=STATUS_AREA');
+	insert_divider($Address,'System Code');
+}
 
-	if  ($dasm_lockTable) {
-		select_WPC_RPG(0x30);											# BYU=lockDataAndHandlerPointer_A
-		$Address = 0x7F13;	
-		def_WPC_lockTable('=LOCKTABLE','Lock Table / Multiball Device Table',1)
-	}
 
-	if ($dasm_randomFindings) {											# manual findings
-		$Address = 0xAE39; def_code('sys_bitIsSet_4BG');				# ???
-		$Address = 0xAE46; def_code('sys_bitIsClear_4BG');
+sub disassemble_switch_tables()
+{
+	$Address = 0x81C5;
+	$Address = def_WPC_ref('=SWITCHTABLE');
+		def_WPC_switchTable(undef,'Switch Table',1);				# label already defined, follow code
+	$Address = 0x821C;
+	$Address = def_WPC_ref('=AUX_SWITCHTABLE');
+		def_WPC_switchTable(undef,'Switch Table',1)
+	        if defined($Address);
+}
 
-		select_WPC_RPG(0x31);
-		$Address= 0x4D9C; def_byteblock_hex(5,sprintf('HuntershipTarget_masks',$Address));		# Data Tables
-		$Address= 0x50E4; def_wordblock_hex(10,sprintf('targetBank_soundTable',$Address));
-		$Address= 0x5CBC; def_wordblock_hex(10,sprintf('data_table_%04X',$Address));
-		$Address= 0x5CC6; def_byteblock_hex(4,sprintf('data_table_%04X',$Address));
-		$Address= 0x5FC9; def_byteblock_hex(10,sprintf('score_table_%04X',$Address));
-		$Address= 0x5FEB; def_byteblock_hex(10,sprintf('score_table_%04X',$Address));
-		$Address= 0x62C0; def_wordblock_hex(10,sprintf('jetBumper_soundTable',$Address));
 
-		select_WPC_RPG(0x3B);
-		$Address = 0x6717; def_code('unkown_bitgroupOp_hook?_6717');	# finding bitgroup syscalls
-		$Address = 0x6781; def_code('unkown_bitgroupOp_hook?_6781');
-		$Address = 0x6F8C; def_code('MBD_lockEject_thread');			# tracing MBD system
-		$Address = 0x75AF;
-			def_code_ptr('MBD_eject_handlers','MBD_LT00_eject[A]');
-								   def_code_ptr(undef,'MBD_LT01_eject[A]');
-								   def_code_ptr(undef,'MBD_LT02_eject[A]');
-								   def_code_ptr(undef,'MBD_LT03_eject[A]');
-								   def_code_ptr(undef,'MBD_LT04_eject[A]');
-		$Address = 0x75B9;												# random find; table accessed identically to 0x75AF
-			def_code_ptr('MBD_forceEject_handlers','MBD_LT00_forceEject[A]');
-								   def_code_ptr(undef,'MBD_LT01_forceEject[A]');
-								   def_code_ptr(undef,'MBD_LT02_forceEject[A]');
-								   def_code_ptr(undef,'MBD_LT03_forceEject[A]');
-								   def_code_ptr(undef,'MBD_LT04_forceEject[A]');
+sub disassemble_font_table()
+{
+	die("disassemble_font_table(): not yet implemented\n");
+	$Address = 0x8285;
+	my($addr) = def_ptr('^sys_fontTable');
+	def_WPC_fontTable('sys_fontTable','Font Table');
+}
 
-		$Address = 0x715E; def_code('MBD_Balltrough_ejectBall_thread'); 		# tracing sys_ballServe
 
-	}
-
-	if ($dasm_sys_gaps) {												# code disassembled to help understand big picture
-		$Address = 0x82CB; def_code('unknown_82CB');
-		$Address = 0x82E2; def_code('unknown_82E2');
-		$Address = 0x8329; def_code('unknown_8329');
-		$Address = 0x835E; def_code('memCopy_XY');
-		$Address = 0x8378; def_code('unknown_8378');
-		$Address = 0x83B0; def_code('unknown_83B0');
-		$Address = 0x83C1; def_code('unknown_83C1');
-		$Address = 0x83CE; def_code('unknown_83CE');
-		$Address = 0x83F5; def_code('unknown_83F5');
-		$Address = 0x8402; def_code('unknown_8402');
-		$Address = 0x840F; def_code('unknown_840F');
-		$Address = 0x843A; def_code('unknown_lampOp');
-		$Address = 0x8458; def_code('unknown_lamp_or_bitOp_1');
-		$Address = 0x846C; def_code('unknown_lamp_or_bitOp_2');
-		$Address = 0x849E; def_code('unknown_bitOp');
-		$Address = 0x8512; def_code('unknown_8512');
-		$Address = 0x852C; def_code('unknown_852C');
-
-		$Address = 0xA70B; def_code('unknown_A70B');
-		$Address = 0xFA7D; def_code('sys_growJackpot[A]');				# gap code
-				
-	}
-
-	if ($dasm_fontTable) {
-		$Address = 0x8285;
-		my($addr) = def_ptr('^sys_fontTable');
-		def_WPC_fontTable('sys_fontTable','Font Table');
-	}
-
+sub disassemble_DMD_table()
+{
+	die("disassemble_DMD_table(): not yet implemented\n");
+	$Address = 0x8288;
+	my($addr) = def_ptr('^sys_DMDtable');
+	def_WPC_DMDTable('sys_DMDtable','DMD Table');
 }
 
 #----------------------------------------------------------------------
@@ -231,6 +237,9 @@ sub apply_magic_WPC($$)
 	my($fa,$la) = @_;
 
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
+##		if ($addr==0x44B4 && $_cur_RPG==0x31) {
+##			printf(STDERR "OP=$OP[$addr] RPG=%02X LBL=$LBL[$addr+3] OPA0=$OPA[$addr][0]\n",$_cur_RPG);
+##		}
 		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {			# 1) JMP *+3 
 			undef($OP[$addr]);													# 		generate postfix tag
 			push(@{$OPA[$addr-3]},'&skip');
@@ -267,7 +276,7 @@ sub init_WPC(@)
 {
 	my(@linc) = @_;
 	
-	require 'WPC_Alphanumeric.API';														# define API after ROM has been loaded but before -i are processed
+	require 'WPC.API';														# load API after ROM has been loaded but before -i are processed
 	while (@linc) {
 		require './' . shift(@linc);
 	}
@@ -286,13 +295,13 @@ sub init_WPC(@)
 sub select_WPC_RPG($)
 {
 	my($RPG) = @_;
-#	die("$_cur_RGP") unless numberp($_cur_RPG);
+##	printf(STDERR "select_WPC_RPG(%02X) [%02X]\n",$RPG,$_cur_RPG);
 
 	if (!defined($RPG) || !numberp($RPG) || ($RPG != 0xFF && ($RPG<0 && $RPG>0x3D))) {
 		if (numberp($RPG)) {
 			die(sprintf("select_WPC_RPG(%02X): bad page id\n",$RPG))
 		} else {
-			die(sprintf("select_WPC_RPG($RPG): non-numeric page id\n"))
+			die(sprintf("select_WPC_RPG($RPG): bad page id\n"))
 		}
 	}
 		
@@ -752,6 +761,15 @@ sub defThread($$)
 	$Thread[$no] = $name;
 }
 
+sub defDMD($$)
+{
+	my($no,$name) = @_;
+
+	die("defDMD: invalid DMD animation\n")
+		unless ($no>0 && $no<=0xFFFF);
+	$DMD[$no] = $name;
+}
+
 #----------------------------------------------------------------------
 #	Define System Calls
 #
@@ -759,9 +777,10 @@ sub defThread($$)
 #		1: routine does not return
 #----------------------------------------------------------------------
 
-sub define_syscall($$$@)
+sub define_syscall($$@)
 {
 	my($lbl,$addr,$args,$note) = @_;
+	$args = '' unless defined($args);
 
 	define_label($lbl,$addr);
 	push(@SYSCALL,$lbl);

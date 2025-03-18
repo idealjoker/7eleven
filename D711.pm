@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Mar 17 03:59:06 2025
+#					 dlm: Mon Mar 17 23:11:39 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 468 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 248 47 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -245,6 +245,7 @@
 #	Mar 15, 2025: - improved .ORG handling
 #	Mar 16, 2025: - improved auto labels
 #				  - added scanCode()
+#	Mar 17, 2025: - adapted to unified D711.WPC
 # END OF HISTORY
 
 # TO-DO:
@@ -319,7 +320,7 @@ sub import($@)
 		require "$PATH/D711.System$WMS_System";
 	} elsif ($WMS_System =~ m{^WPC\((.*)\)$}) {
 		require "$PATH/D711.M6809";
-		require "$PATH/D711.WPC_$1";
+		require "$PATH/D711.WPC";
 	} else {
 		die("$0: unknown WMS system type $WMS_System\n")
 	}

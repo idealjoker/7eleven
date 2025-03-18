@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C _ D M D 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Mar 17 04:19:53 2025
+#                    dlm: Mon Mar 17 22:00:49 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 824 37 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 59 36 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -53,6 +53,24 @@
 #----------------------------------------------------------------------
 # Game Disassembly Routine
 #----------------------------------------------------------------------
+
+sub define_MBD_syscalls()
+{
+	my($lockRAMandTableDataRefs_pat) = '34 12 B1 RAM_ADDR 25 05 BD 82' .		# BYU=lockRAMandTableDataRefs[A]
+	 							   'B6 47 4F 34 02 C6 05 3D FE RAM_ADDR' .
+								   '33 CB 35 02 8E PAGE_ADDR C6 ROM_PAGE' .
+								   'BD SYSCALL_ADDR BD SYSCALL_ADDR' .
+								   '1E 23 35 92';
+	my(@matchData) = scanCode(0x3B,0x4000,0x7FFF,$lockRAMandTableDataRefs_pat);
+	define_label('BYU=lockRAMandTableDataRefs[A]',$matchData[0]);
+	define_label('_MBD_NUM_LOCKS',$matchData[1]);
+	define_label('^MBD_LOCK_DATA',$matchData[2]);
+	define_syscall('X=^tableElt[ABX]',$matchData[5],'');
+	define_syscall('Y=[XB]',$matchData[6],'');
+	my($orpg) = select_WPC_RPG($matchData[4]);
+	$Address = $matchData[3];   
+	def_WPC_lockTable('=LOCKTABLE','Lock Table / Multiball Device Table',1)
+}
 
 sub disassemble_WPC()
 {
