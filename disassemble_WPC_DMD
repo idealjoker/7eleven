@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ D M D 
 #					 doc: Thu Jul 18 06:30:12 2024
-#					 dlm: Tue Mar 18 03:37:31 2025
+#					 dlm: Wed Mar 19 06:00:23 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 61 27 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 23 51 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -20,6 +20,7 @@
 #	Mar 11, 2025: - adapted to updated [WPC_DMD.API]
 #	Mar 14, 2025: - adapted to new function names without _DMD
 #	Mar 15, 2025: - adapted to start_page
+#	Mar 19, 2025: - adapted to freespace autodetect
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -102,9 +103,12 @@ for (my($rpg)=$D711::start_page+1; $rpg<0x3E; $rpg++) {						# remaining game pa
 	&D711::select_WPC_RPG($rpg);		
 	$decoded += &D711::produce_output(0x4000,0x7FFF,0);
 }
+$D711::_cur_RPG = 0xFF;														# allow free space to be found in system code
 $decoded += &D711::produce_output(0x8000,0xFFFF,0);							# WPC System
 
 printf("; %.1f KB decoded\n",$decoded/1024);
+printf("; %.1f KB free\n",$D711::freeBytes/1024)
+	if ($D711::freeBytes);
 
 exit(0);
 

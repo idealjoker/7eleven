@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ A L P H A N U M E R I C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Tue Mar 18 18:36:07 2025
+#					 dlm: Wed Mar 19 06:00:02 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 14 20 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 105 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -12,6 +12,7 @@
 # HISTORY:
 #	Mar 14, 2025: - created from [disassemble_WPC_DMD]
 #	Mar 18, 2025: - enabled disassemble_sycalls()
+#	Mar 19, 2025: - adapted to free space autodection
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -56,7 +57,6 @@ $D711::verbose = !$opt_l;													# suppress disassembly abort output on -l 
 &D711::disassemble_system_pointers();
 &D711::disassemble_switch_tables();
 
-
 #----------------------------------------------------------------------
 # Make Human Readable
 #----------------------------------------------------------------------
@@ -68,7 +68,7 @@ $D711::verbose = !$opt_l;													# suppress disassembly abort output on -l 
 &D711::apply_magic_WPC(0x8000,0xFFFF); 		 	                            # e.g. &skip
 
 for (my($rpg)=$D711::start_page; $rpg<0x3E; $rpg++) {
-	&D711::select_WPC_RPG($rpg);
+	&D711::select_WPC_RPG($rpg,20);
 	&D711::process_code_structure(0x4000,0x7FFF)							# if, while, ...
 		unless ($opt_s);
 	&D711::substitute_labels(0x4000,0x7FFF); 								# resolve labels
@@ -90,15 +90,18 @@ if ($opt_l) {																# dump label information
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 
-&D711::select_WPC_RPG($D711::start_page);									# 1st game pg with headers
+&D711::select_WPC_RPG($D711::start_page,21);								# 1st game pg with headers
 my($decoded) = &D711::produce_output(0x4000,0x7FFF,1);
 for (my($rpg)=$D711::start_page+1; $rpg<0x3E; $rpg++) {						# remaining game pages without headers
-	&D711::select_WPC_RPG($rpg);		
+	&D711::select_WPC_RPG($rpg,22);		
 	$decoded += &D711::produce_output(0x4000,0x7FFF,0);
 }
+$D711::_cur_RPG = 0xFF;														# allow free space to be found in system code
 $decoded += &D711::produce_output(0x8000,0xFFFF,0);							# WPC System
 
 printf("; %.1f KB decoded\n",$decoded/1024);
+printf("; %.1f KB free\n",$D711::freeBytes/1024)
+	if ($D711::freeBytes);
 
 exit(0);
 

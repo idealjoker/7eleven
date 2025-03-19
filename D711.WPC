@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Mar 18 18:34:25 2025
+#                    dlm: Wed Mar 19 05:58:42 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 52 51 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 54 72 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -50,6 +50,8 @@
 #	Mar 16, 2025: - BUG: couple of label bugs
 #	Mar 17, 2025: - merged from D711.WPC_DMD (mainly) and D711.WPC_Alphanumeric
 #	Mar 18, 2025: - improved disassemble_syscalls()
+#	Mar 19, 2025: - BUG: select_WPC_RPG() did not always return correct value
+#				  - BUG: select_WPC_RPG() check of page ids did not work
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -67,7 +69,7 @@ sub disassemble_MBD_system()												# execute this early on, because it defi
 	define_label('^MBD_LOCK_DATA',$matchData[2]);
 	define_syscall('X=^tableElt[ABX]',$matchData[5],'');
 	define_syscall('Y=[XB]',$matchData[6],'');
-	my($orpg) = select_WPC_RPG($matchData[4]);
+	my($orpg) = select_WPC_RPG($matchData[4],1);
 	$Address = $matchData[3];   
 	def_WPC_lockTable('=LOCKTABLE','Lock Table / Multiball Device Table',1)
 }
@@ -288,7 +290,7 @@ sub init_WPC(@)
 		require './' . shift(@linc);
 	}
 
-	select_WPC_RPG($start_page);
+	select_WPC_RPG($start_page,2);
 }
 
 #======================================================================
@@ -299,12 +301,12 @@ sub init_WPC(@)
 # ROM Paging
 #----------------------------------------------------------------------
 
-sub select_WPC_RPG($)
+sub select_WPC_RPG($@)
 {
-	my($RPG) = @_;
-##	printf(STDERR "select_WPC_RPG(%02X) [%02X]\n",$RPG,$_cur_RPG);
-
-	if (!defined($RPG) || !numberp($RPG) || ($RPG != 0xFF && ($RPG<0 && $RPG>0x3D))) {
+	my($RPG,$caller) = @_;
+##	printf(STDERR "select_WPC_RPG(%02X) [caller=$caller, _cur_RPG=%02X]\n",$RPG,$_cur_RPG);
+	
+	if (!defined($RPG) || !numberp($RPG) || ($RPG != 0xFF && ($RPG<0 || $RPG>0x3D))) {
 		if (numberp($RPG)) {
 			die(sprintf("select_WPC_RPG(%02X): bad page id\n",$RPG))
 		} else {
@@ -392,21 +394,20 @@ sub def_WPC_lockTable(@)
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 	for (my($lck)=0; $lck<$rows; $lck++) {
-#		print(STDERR "lck = $lck\n");
-		my($ptr) = WORD($Address);
 		$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
 		$OP[$Address] = '.DW';
-		my($taddr) = WORD($Address);
-			my($tlbl) = $LBL[$taddr];
-			$tlbl = sprintf('Lock#%02X_data',$lck) unless defined($tlbl);
-		    setLabel($tlbl,$taddr);
-		push(@{$OPA[$Address]},sprintf('$%04X',$taddr));
+		my($daddr) = WORD($Address);
+			my($dlbl) = $LBL[$daddr];
+			$dlbl = sprintf('Lock#%02X_data',$lck) unless defined($dlbl);
+		    setLabel($dlbl,$daddr);
+		push(@{$OPA[$Address]},sprintf('$%04X',$daddr));
 		$REM[$Address] = 'pointer to lock definition data (4-10 bytes)' if !defined($REM[$Address]) && $lck==0;
 	    $decoded[$Address++] = $decoded[$Address++] = 1;
 
-		my($trpg);
 	    my($sa) = $Address;
-	    $Address = $taddr;
+	    $Address = $daddr;
+
+		my($taddr,$trpg);
 		$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
 		$REM[$Address] = sprintf('Lock#%02X',$lck) if !defined($REM[$Address]);
 		$OP[$Address] = '.DBR';
@@ -438,13 +439,13 @@ sub def_WPC_lockTable(@)
 		}
 
 	    if ($follow_code) {
-	    	my($srpg) = select_WPC_RPG($trpg);
+	    	my($srpg) = select_WPC_RPG($trpg,8);
 	    	insert_divider($taddr,'Lock Event Handler');
 			my($tlbl) = $LBL[$taddr];
 			$tlbl = sprintf('Lock#%02X_handler',$lck) unless defined($tlbl);
 		    setLabel($tlbl,$taddr);
 			disassemble_asm($code_base_indent,$taddr,$tlbl,undef,$follow_code);
-			select_WPC_RPG($srpg);
+			select_WPC_RPG($srpg,9);
 	    }
 
 	    $Address = $sa;
@@ -523,7 +524,7 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 	my($pointee_addr) = WORD($Address);
 	my($RPG) = BYTE($Address+2);
 #	printf(STDERR "def_WPC_ref: %02X:%04X\n",$RPG,$pointee_addr);
-	select_WPC_RPG($RPG)
+	select_WPC_RPG($RPG,3)
 		unless ($RPG == 0x00);																# NULL ref
 
 	$pointee_lbl = $` if ($pointee_lbl =~ m{\[[0-9A-F]{2}\]$});            					# remove previous RPG if there is one
@@ -597,7 +598,7 @@ sub def_WPC_stringRef($@)														# DOES NOT MAINTAIN RPG
 
 	my($str_addr) = WORD($Address);
 	my($RPG) = BYTE($Address+2);
-	select_WPC_RPG($RPG);
+	select_WPC_RPG($RPG,4);
 
 	$str_lbl = $` if ($str_lbl =~ m{\[[0-9A-F]{2}\]$});            					# remove previous RPG if there is one
 	setLabel("^$str_lbl",$Address);
@@ -629,7 +630,7 @@ sub WPC_codeRef($@)
 	my($code_addr) = WORD($Address);
 
 	my($RPG) = BYTE($Address+2);
-	my($orpg) = select_WPC_RPG($RPG);
+	my($orpg) = select_WPC_RPG($RPG,5);
 
 	label_address($code_addr,$code_lbl,1);												# suppress address suffix in label
 
@@ -642,7 +643,7 @@ sub WPC_codeRef($@)
 	disassemble_asm($code_base_indent,$code_addr,$code_lbl,$divider_label,$follow_code);
 #	die if $unclean;
 
-	select_WPC_RPG($orpg);
+	select_WPC_RPG($orpg,6);
 #	return $Address-3;
 }
 
@@ -737,7 +738,7 @@ sub defLabel($$$)
 {
 	my($pg,$addr,$lbl) = @_;
 
-	select_WPC_RPG($pg);
+	select_WPC_RPG($pg,7);
 	define_label($lbl,$addr);
 }
 

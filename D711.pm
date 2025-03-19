@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Mar 17 23:11:39 2025
+#					 dlm: Wed Mar 19 06:03:32 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 248 47 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3157 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -246,6 +246,8 @@
 #	Mar 16, 2025: - improved auto labels
 #				  - added scanCode()
 #	Mar 17, 2025: - adapted to unified D711.WPC
+#	Mar 19, 2025: - improved output of ANALYSIS_GAPs
+#				  - added detection of free space in gaps
 # END OF HISTORY
 
 # TO-DO:
@@ -392,7 +394,7 @@ sub scanCode($$$$)
 
 	my($maxMatch) = 0;
 	my($maxAddr);
-	select_WPC_RPG($RPG);													# initialize
+	select_WPC_RPG($RPG,10);													# initialize
 	$saddr--; $Address = $saddr;
 	
  RESTART_SCAN:
@@ -503,7 +505,7 @@ sub setLabel($$@)
     if (defined($_cur_RPG) && $addr>=0x4000 && $addr<0x8000) {
         die(sprintf("setLabel($lbl,%04X) [%02X]",$addr,$_cur_RPG))
              unless ($_cur_RPG >= 0 && $_cur_RPG <= 0x3F || $_cur_RPG == 0xFF);
-        select_WPC_RPG($pg) if defined($pg);             
+        select_WPC_RPG($pg,11) if defined($pg);             
         unless ($_cur_RPG == 0xFF) {
             $faddr = sprintf("%02X:%04X",$_cur_RPG,$addr);
 			$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:}); 
@@ -541,7 +543,7 @@ sub overwriteLabel($$@)
     if (defined($_cur_RPG) && $addr>=0x4000 && $addr<0x8000) {
         die(sprintf("overwriteLabel($lbl,%04X) [%02X]",$addr,$_cur_RPG))
              unless ($_cur_RPG >= 0 && $_cur_RPG <= 0x3F || $_cur_RPG == 0xFF);
-        select_WPC_RPG($pg) if defined($pg);             
+        select_WPC_RPG($pg,12) if defined($pg);             
         unless ($_cur_RPG == 0xFF) {
 			$faddr = sprintf("%02X:%04X",$_cur_RPG,$addr);
 			$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:}); 
@@ -654,7 +656,7 @@ sub substitute_label($$)                                        # replace addres
 	        my($pga) = $OPA[$opaddr][$ai+1];
     	    $pga = hex($1) if ($pga =~ m{^\$([0-9A-F]{2})$});
 #       	print(STDERR "select_WPC_RPG($OPA[$opaddr][$ai+1]=$pga)\n"),
-	        $opg = select_WPC_RPG($pga),						# change RPG to rom page of reference (opg is original page, the page of the code0
+	        $opg = select_WPC_RPG($pga,13),						# change RPG to rom page of reference (opg is original page, the page of the code0
     	        if (numberp($pga) && $pga>=0 && $pga<0x3E);
     }
 
@@ -665,12 +667,12 @@ sub substitute_label($$)                                        # replace addres
 		if (defined($_cur_RPG) && $_cur_RPG == $opg) {			# code and label on the same page
 			$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:});
 		} else {												# different pages
-	        select_WPC_RPG($opg) if defined($opg);				# if so, switch back to ROM page of code
+	        select_WPC_RPG($opg,14) if defined($opg);				# if so, switch back to ROM page of code
 	    }
         return $imm.$lbl;
     }
 
-    select_WPC_RPG($opg) if defined($opg);
+    select_WPC_RPG($opg,15) if defined($opg);
 
     my($auto_lbl) = $AUTO_LBL[$addr];                           # use auto label if defined
     return $opa unless defined($auto_lbl);
@@ -689,7 +691,7 @@ sub substitute_label($$)                                        # replace addres
                 if (defined($_cur_RPG) && $_cur_RPG == $opg) {
                 	$auto_lbl = $' if ($auto_lbl =~ m{^[0-9A-F]{2}:});
                 } else {
-                	select_WPC_RPG($opg) if defined($opg);
+                	select_WPC_RPG($opg,16) if defined($opg);
                 }
                 return $imm.$auto_lbl;
             }
@@ -754,14 +756,18 @@ sub insert_divider($$)                                          # Subroutine, Ju
     return unless defined($label);
 	return if $DIVIDER[$addr];
 
+	my($hline) = ';----------------------------------------------------------------------';
+	$hline = ';======================================================================'
+		if ($label =~ m{ROM PAGE});
+
     $DIVIDER[$addr] = 1;
     push(@{$EXTRA[$addr]},'');
     push(@{$EXTRA_IND[$addr]},0); $EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1; $EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
-    push(@{$EXTRA[$addr]},';----------------------------------------------------------------------');
+    push(@{$EXTRA[$addr]},$hline);
     push(@{$EXTRA_IND[$addr]},0); $EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1; $EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
     push(@{$EXTRA[$addr]},"; $label");
     push(@{$EXTRA_IND[$addr]},0); $EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1; $EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
-    push(@{$EXTRA[$addr]},';----------------------------------------------------------------------');
+    push(@{$EXTRA[$addr]},$hline);
     push(@{$EXTRA_IND[$addr]},0); $EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1; $EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
     push(@{$EXTRA[$addr]},'');
     push(@{$EXTRA_IND[$addr]},0); $EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1; $EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
@@ -3138,13 +3144,15 @@ sub output_labels($)
 
 sub print_addr($)
 {
-    my($addr) = @_;
+	my($addr) = @_;
 
-    if (defined($_cur_RPG) && $addr<0x8000) {
-        printf("<%02X:%04X>\t",$_cur_RPG,$addr);
-    } else {
-        printf("<%04X>\t",$addr);
-    }
+	if (defined($_cur_RPG) && $addr<0x8000) {
+		printf("<%02X:%04X>\t",$_cur_RPG,$addr);
+	} elsif (defined($_cur_RPG)) {
+	   printf("<FF:%04X>\t",$addr);
+	} else {
+		printf("<%04X>\t",$addr);
+	}
 }
 
 
@@ -3291,44 +3299,101 @@ sub produce_output(@)                                                       # wi
 				$line .= indent($line,$hard_tab*$EXTRA_IND[$addr][$i]) . $EXTRA[$addr][$i];
 				print_addr($addr) if ($print_addrs);
 				printf('			')	   if ($print_code);
-				print("$line\n"); undef($line);					# @@@
+				print("$line\n"); undef($line);										
 			}
 			 
-		} elsif (!$decoded[$addr]) {										# this address was not decoded -> gap
-			if ($fill_gaps && defined($org)) {								# output gaps as byte blocks
+		} elsif (!$decoded[$addr]) {												# this address was not decoded -> gap
+			if ($fill_gaps && defined($org)) {										# output gaps as byte blocks
 				if ($print_code) {
 					for (my($a)=$addr+1; $a<=$MAX_ROM_ADDR; $a++) {
 						die(sprintf("$0: cannot print code at address %04X with gap auto filling enabled (implementation restriction)\n",$addr))
 							if ($decoded[$a]);
                     }
-					last;													# gap extends to end of ROM
+					last;															# gap extends to end of ROM
                 }
+				my($n) = 1;															# count repeat bytes
+				my($GB) = BYTE($addr);
+				while (!$decoded[$addr+$n] && BYTE($addr+$n)==$GB) { $n++; }
+				
+	FREE_GAP_SPACE:
+				if ($GB==0xFF && $n>20) {											# FREE SPACE
+					$freeBytes += $n;
+					print_addr($addr) if ($print_addrs);
+					print("\n"); print_addr($addr) if ($print_addrs);
+					print(";----------------------------------------------------------------------\n");
+					print_addr($addr) if ($print_addrs);
+					printf("; FREE SPACE (%.1f KB)\n",$n/1024);
+					print_addr($addr) if ($print_addrs);
+					print(";----------------------------------------------------------------------\n");
+					print_addr($addr) if ($print_addrs);
+					print("\n"); print_addr($addr) if ($print_addrs);
+					$LBL[$addr] = 'FREE_SPACE' unless defined($LBL[$addr]);
+					print("$LBL[$addr]:");
+					printf("%s.DB \$%02X{${n}x}",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
+					$addr += $n;
+					if (defined($_cur_RPG) && $_cur_RPG<=0x3D && $addr>=0x8000) {	# free space extends exactly to end of ROM page
+						die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr > 0x8000);
+						print("\n");
+					} elsif ($_cur_RPG == 0xFF) {									# free space in system ROM
+						die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr < 0x8000);
+						print("\n");
+                    } else {
+						print("\n"); print_addr($addr) if ($print_addrs);
+						print("\n"); print_addr($addr) if ($print_addrs);
+					}
+					next;
+				} 
+
 				print_addr($addr) if ($print_addrs);
+				print("\n"); print_addr($addr) if ($print_addrs);					# new gap
+				print(";----------------------------------------------------------------------\n");
+				print_addr($addr) if ($print_addrs);
+				print("; ANALYSIS GAP\n");
+				print_addr($addr) if ($print_addrs);
+				print(";----------------------------------------------------------------------\n");
+				print_addr($addr) if ($print_addrs);
+				print("\n"); print_addr($addr) if ($print_addrs);
 				$LBL[$addr] = 'ANALYSIS_GAP' unless defined($LBL[$addr]);
-				printf("$LBL[$addr]:") if defined($LBL[$addr]);
+				printf("$LBL[$addr]:");
 				printf("%s.DB \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
+                print("{${n}x}") if ($n > 1);
 				my($col) = 1;
-				while ($addr<=$MAX_ROM_ADDR && !$decoded[$addr+1]) {
-					$addr++;
-					if (defined($LBL[$addr])) {
+				$addr += $n;
+
+				while ($addr<=$MAX_ROM_ADDR && !$decoded[$addr]) {					# continue ANALYSIS_GAP
+					$n = 1;															# count repeat bytes
+					$GB = BYTE($addr);
+					while (!$decoded[$addr+$n] && BYTE($addr+$n)==$GB) { $n++; }
+					print("\n"),goto FREE_GAP_SPACE if ($GB==0xFF && $n>20);
+					
+					if (defined($LBL[$addr])) {										# pre-existing label in gap
 						printf("\n");
 						print_addr($addr) if ($print_addrs);
-						printf("$LBL[$addr]:%s.DB  \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
+						printf("$LBL[$addr]:%s.DB  \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),$GB);
+						print("{${n}x}") if ($n > 1);
 						$col = 1;
-					} elsif ($col == 8) {
+					} elsif ($col >= 8) {											# continue gap on new line
 						printf("\n");
 						print_addr($addr) if ($print_addrs);
 						printf("ANALYSIS_GAP:");
-						printf("%s.DB \$%02X",indent("ANALYSIS_GAP:",$hard_tab*$data_indent),BYTE($addr));
+						printf("%s.DB \$%02X",indent("ANALYSIS_GAP:",$hard_tab*$data_indent),$GB);
+						print("{${n}x}") if ($n > 1);
 						$col = 1;
-					} else {
-						printf(" \$%02X",BYTE($addr));
+					} else {														# continue gap on current line
+						printf(" \$%02X",$GB);
+						print("{${n}x}"),$col++ if ($n > 1);
 						$col++;
 					}
+					$addr += $n;
 				}
-				printf("\n");
-##			} elsif ($print_code && defined($org)) {						# print code in gaps
-##				print_addr($addr) if ($print_addrs);					# code disabled 07/20 to avoid zillions of single-byte no-code lines
+				$addr--;
+				print("\n");
+				if (defined($_cur_RPG) && $addr> 0x8000) {
+					print_addr($addr) if ($print_addrs);
+					printf("\n");
+				}
+##			} elsif ($print_code && defined($org)) {								# print code in gaps
+##				print_addr($addr) if ($print_addrs);								# code disabled 07/20 to avoid zillions of single-byte no-code lines
 ##				printf("%02X		  $LBL[$addr]:\n",BYTE($addr));
 			} else {
 				undef($org);
