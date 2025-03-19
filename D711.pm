@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Mar 19 06:03:32 2025
+#					 dlm: Wed Mar 19 06:44:34 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 3157 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3146 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -248,6 +248,7 @@
 #	Mar 17, 2025: - adapted to unified D711.WPC
 #	Mar 19, 2025: - improved output of ANALYSIS_GAPs
 #				  - added detection of free space in gaps
+#				  - BUG: overwriteLabel no longer worked with WPC labels
 # END OF HISTORY
 
 # TO-DO:
@@ -474,8 +475,9 @@ sub scanCode($$$$)
 #----------------------------------------------------------------------
 # Label Functions
 #   - 2 data structures need to be maintained in sync:
-#       - %Lbl{label} = addr
-#       - @LBL[addr]  = label
+#       - %Lbl{label} 	= addr
+#		- %LblPg{label} = WPC rom page
+#       - @LBL[addr]  	= label
 #   - setLabel:
 #       - if 3rd argument evaluates to true, allow for duplicate
 #         definitions (C711 -x)
@@ -530,6 +532,7 @@ sub setLabel($$@)
     }
     $LBL[$addr] = $lbl;                                         # define label
     $Lbl{$lbl} = $faddr;
+    $LblPg{$lbl} = $pg;
     return $lbl;
 }
 
@@ -537,24 +540,15 @@ sub setLabel($$@)
 
 sub overwriteLabel($$@)
 {
-    my($lbl,$addr,$pg) = @_;
+	my($lbl,$addr,$pg) = @_;
+##	print(STDERR "overwriteLabel($lbl,$addr,$pg)\n");
 
-    my($faddr) = $addr;
-    if (defined($_cur_RPG) && $addr>=0x4000 && $addr<0x8000) {
-        die(sprintf("overwriteLabel($lbl,%04X) [%02X]",$addr,$_cur_RPG))
-             unless ($_cur_RPG >= 0 && $_cur_RPG <= 0x3F || $_cur_RPG == 0xFF);
-        select_WPC_RPG($pg,12) if defined($pg);             
-        unless ($_cur_RPG == 0xFF) {
-			$faddr = sprintf("%02X:%04X",$_cur_RPG,$addr);
-			$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:}); 
-            $lbl = sprintf("%02X:$lbl",$_cur_RPG); # unless $lbl =~ m{^\.};
-		}
-	}
-
-    undef($Lbl{$LBL[$addr]});
-    $LBL[$addr] = $lbl;                                         # define label
-    $Lbl{$lbl} = $faddr;
-    return $lbl;
+	select_WPC_RPG($pg,12) if defined($pg);
+	undef($Lbl{$LBL[$addr]});
+	$LBL[$addr] = $lbl; 										# define label
+	$Lbl{$lbl} = $addr;
+    $LblPg{$lbl} = $pg;
+	return $lbl;
 }
 
 ##sub underwriteLabel($$)
@@ -685,6 +679,7 @@ sub substitute_label($$)                                        # replace addres
             }
         } else {
             my($pg,$ad) = split(':',$Lbl{$auto_lbl});
+            die unless ($pg == $LblPg{$auto_lbl});
             $pg = hex($pg); $ad = hex($ad);
             if (($ad == $addr) && ($pg == $_cur_RPG)) {
                 $Lbl_refs{$auto_lbl}++;
@@ -3413,12 +3408,12 @@ sub dump_labels($)
 {
 	my($fmt) = @_;
 
-	if ($fmt == 1) {														# label code
+	if ($fmt == 1) {																# label code
 		foreach my $lbl (sort { $Lbl{$a} <=> $Lbl{$b} } keys(%Lbl)) {
 			next unless defined($Lbl{$lbl});
 			my($laddr) = $Lbl{$lbl};
 			if (numberp($laddr)) {
-				printf("D711::overwriteLabel('$lbl',0x%04X);\n",$Lbl{$lbl});
+				printf("D711::overwriteLabel('$lbl',0x%04X,0x%02X);\n",$Lbl{$lbl},$LblPg{$lbl});
 			} else {
 				my($pg);
 				($pg,$laddr) = split(':',$laddr);
@@ -3426,7 +3421,7 @@ sub dump_labels($)
 				printf("D711::overwriteLabel('$lbl',0x%04X,0x%02X);\n",$laddr,$pg);
 			}
 		}	
-	} else {
+	} else {																		# human readable
 		print("Labels:\n");
 		foreach my $lbl (sort byHexValue keys %Lbl) {
 			next unless defined($Lbl{$lbl});
