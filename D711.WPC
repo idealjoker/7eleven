@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Mar 19 05:58:42 2025
+#                    dlm: Wed Mar 19 15:25:36 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 54 72 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 670 40 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -52,6 +52,7 @@
 #	Mar 18, 2025: - improved disassemble_syscalls()
 #	Mar 19, 2025: - BUG: select_WPC_RPG() did not always return correct value
 #				  - BUG: select_WPC_RPG() check of page ids did not work
+#				  - added support for Game Event Hooks (@Hook)
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -111,11 +112,14 @@ sub disassemble_system_pointers()
 	insert_divider($Address,'Bank Id');
 	def_byte_hex('_ROMPG_SYS1_ID');
 	
-	insert_divider($Address,'System Call Pointers');
-	while ($Address < 0x812D) {
+	insert_divider($Address,'Game Event Hooks');
+	for (my($h)=0; $Address<0x812D; $h++) {
 		my($taddr) = sprintf('%04X',WORD($Address));
 		my($trpg) = sprintf('%02X',BYTE($Address+2));
-		def_WPC_codeRef("syscall_$taddr",'System Call');
+		my($handler) = defined($Hook[$h])
+				  	 ? $Hook[$h] . '_event'
+				  	 : "GameHook#${h}_event";
+		def_WPC_codeRef($handler,'Game Event Hook');
 	}
 	
 	my($ubyte,$uword);
@@ -663,7 +667,7 @@ sub def_WPC_codeRef($@)																	# ROUTINE DOES NOT MAINTAIN RPG
     push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address+2)));
 	$REM[$Address] = $rem unless defined($REM[$Address]);
 
-	WPC_codeRef($code_lbl,'System Call');    
+	WPC_codeRef($code_lbl,$divider_title);    
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 }
