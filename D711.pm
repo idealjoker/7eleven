@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Mar 19 06:44:34 2025
+#					 dlm: Fri Mar 21 21:32:21 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 3146 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 452 45 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -440,6 +440,16 @@ sub scanCode($$$$)
 		if (substr($pat,$si,12) eq 'SYSCALL_ADDR') {
 			my($taddr) = WORD($Address);
 			if ($taddr>=0x8000 && $taddr<=0xFFFF) {
+				push(@out,$taddr);
+				$si += 12;
+				$Address += 2;
+				next;
+			}
+			goto RESTART_SCAN;
+		}
+		if (substr($pat,$si,12) eq 'PAGEROM_ADDR') {
+			my($taddr) = WORD($Address);
+			if ($taddr>=0x4000 && $taddr<=0x7FFF) {
 				push(@out,$taddr);
 				$si += 12;
 				$Address += 2;

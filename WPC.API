@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Mar 19 16:18:22 2025
+#                    dlm: Fri Mar 21 21:34:53 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 526 37 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 113 1 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -109,18 +109,20 @@ define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$ofs);
 define_label('_BALLSEARCH_SUSPEND_TIMER',			0x04C7+$ofs);
 define_label('_TILTWARNINGS_LEFT',					0x04D4+$ofs);
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-    $ofs = -1835;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-    $ofs = 0;
-} else {
-    die("WPC.API: $WMS_System not yet implemented\n");
-}
-define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN',	0x0CC9+$ofs);	# 59E
-define_label('_LOCKED_BALLS_DEFICIT',				0x0CCA+$ofs);
-define_label('_NUM_BALLS_LOCKED',					0x0CCB+$ofs);
-define_label('_BALLS_IN_TROUGH',					0x0CCF+$ofs);
-define_label('_BALLS_INSTALLED_IN_GAME',			0x0CD0+$ofs);
+# handled by disassemble_MBD_system()
+#
+#if ($WMS_System eq 'WPC(Alphanumeric)') {
+#    $ofs = -1835;
+#} elsif ($WMS_System eq 'WPC(DMD)') {
+#    $ofs = 0;
+#} else {
+#    die("WPC.API: $WMS_System not yet implemented\n");
+#}
+#define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN',	0x0CC9+$ofs);	# 59E
+#define_label('_LOCKED_BALLS_DEFICIT',				0x0CCA+$ofs);
+#define_label('_NUM_BALLS_LOCKED',					0x0CCB+$ofs);
+#define_label('_BALLS_IN_TROUGH',					0x0CCF+$ofs);
+#define_label('_BALLS_INSTALLED_IN_GAME',			0x0CD0+$ofs);
 
 define_label('_RND_1',								0x1790);
 define_label('_RND_2',								0x1791);
@@ -396,7 +398,7 @@ define_syscall('Y=adjustmentA??==1',					0x92D4+$ofs);
 define_syscall('A=adjustmentA??==1',					0x92DE+$ofs);
 define_syscall('D=adjustmentA??==1',					0x92EC+$ofs);
 define_syscall('Y=adjustmentA??',						0x92F8+$ofs);
-define_syscall('Bitshifter_testSwitch[B]',				0x93E4+$ofs);
+define_syscall('switch[B]closed?',						0x93E4+$ofs);
 define_syscall('Bitshifter_testUnknownSwitchState[B]',	0x93ED+$ofs);
 define_syscall('Bitshifter_testSwitch[BX]',				0x93F6+$ofs);
 define_syscall('start_thread_execution',				0x975F+$ofs);
@@ -576,6 +578,21 @@ if ($WMS_System eq 'WPC(Alphanumeric)') {
 }
 define_syscall('resetBallSearchTimer[A]',			0xCF4B+$ofs);	# CE02 -329
 
+if ($WMS_System eq 'WPC(Alphanumeric)') {
+	$ofs = -2549;
+} elsif ($WMS_System eq 'WPC(DMD)') {
+	$ofs = 0;
+} else {
+	die("WPC.API: $WMS_System not yet implemented\n");
+}
+
+define_syscall('rotLeft',							0xFDA2+$ofs,'GB');
+define_syscall('fill', 								0xFDB4+$ofs,'GB');
+define_syscall('unknownBitgroupOp1',				0xFDC6+$ofs,'GB');
+define_syscall('unknownBitgroupOp2',				0xFDD8+$ofs,'GB');
+define_syscall('MBD_callHandler[A]',               	0xFDFC+$ofs,'B',3);          # NOTE 3: must only be called from PG#3B
+define_syscall('switchActive[B]?',					0xFE0D+$ofs);
+
 #----------------------------------------------------------------------
 # Group 3:
 #	- different syscalls in different subversions
@@ -588,8 +605,6 @@ if ($WMS_System eq 'WPC(Alphanumeric)') {
  define_syscall('syscall_F365',						0xF365,'B');			# FH
  define_syscall('syscall_F377',						0xF377,'B');			# FH
  define_syscall('syscall_F389',						0xF389,'W');			# FH
- define_syscall('syscall_F3AD',						0xF3AD,'W');			# FH
- define_syscall('syscall_F407',						0xF407,'B',3);			# FH NOTE 3: must only be called from PG#3B
 }
 
 if ($WMS_System eq 'WPC(DMD)') {
@@ -613,11 +628,6 @@ if ($WMS_System eq 'WPC(DMD)') {
  define_syscall('addBonus_5530',					0xFAB4);
  define_syscall('addBonus_9930',					0xFABA);
  define_syscall('addBonus[A]',						0xFABE);
- define_syscall('rotLeft',							0xFDA2,'GB');
- define_syscall('fill', 							0xFDB4,'GB');
- define_syscall('unknownBitgroupOp1',				0xFDC6,'GB');
- define_syscall('unknownBitgroupOp2',				0xFDD8,'GB');
- define_syscall('MBD_callHandler[A]',               0xFDFC,'B',3);          # NOTE 3: must only be called from PG#3B
 }
 
 # non-global
@@ -626,8 +636,21 @@ if ($WMS_System eq 'WPC(DMD)') {
 	define_label('sys_tilt',						0x5921, 0x39);			# T2
 }
 
-define_label('sys_rotLeft_AB',						0x66F5, 0x3B);
-define_label('sys_fill_AB',							0x6706, 0x3B);
+if ($WMS_System eq 'WPC(Alphanumeric)') {
+	$ofs = 1902;
+} elsif ($WMS_System eq 'WPC(DMD)') {
+	$ofs = 0;
+} else {
+	die("WPC.API: $WMS_System not yet implemented\n");
+}
+#define_syscall('sys_rotLeft_AB',						0x66F5+$ofs, '', 3);
+#define_syscall('sys_fill_AB',							0x6706+$ofs, '', 3);
+
+#define_syscall('A=MBD_ballsFound==all?',				0x7031+$ofs, '', 3);	
+#define_syscall('A=MBD_ballsLocked[A]==1?',				0x7041+$ofs, '', 3);	
+#define_syscall('A=MBD_lockEnabled[A]==1?',				0x704C+$ofs, '', 3);	
+#define_syscall('A=ballsInTrough-troughIdle?',			0x7057+$ofs, '', 3);	
+#define_syscall('A=MBD_ballsMissing-allFound?',			0x7065+$ofs, '', 3);	# 77C8 + 1891
 
 #----------------------------------------------------------------------
 # System Hooks

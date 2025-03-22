@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C _ A L P H A N U M E R I C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Wed Mar 19 06:00:02 2025
+#					 dlm: Fri Mar 21 21:24:06 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 105 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 54 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -51,7 +51,7 @@ $D711::start_page = 0x30;
 
 &D711::init_WPC(split(',',$opt_i));											# load API & -i args
 $D711::verbose = !$opt_l;													# suppress disassembly abort output on -l (allLbls)
-&D711::disassemble_MBD_system();
+&D711::disassemble_MBD_system();											# used to find offset, then edited [WPC.API]
 &D711::disassemble_syscalls();
 &D711::disassemble_CPU_vectors();
 &D711::disassemble_system_pointers();
