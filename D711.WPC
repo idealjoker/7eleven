@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Fri Mar 21 21:35:07 2025
+#                    dlm: Sat Mar 22 10:37:03 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 88 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 73 38 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -61,30 +61,56 @@
 
 sub disassemble_MBD_system()												# execute this early on, because it defines syscalls
 {
-	my($name,$patt,$orpg);
+	my(@matchInfo,$matchHandler);
+	
+	@matchInfo = (0x3B,
+				  'BYU=MBD_dafaRefs','3412B1',
+				  'RAM_ADDR:_MBD_NUM_LOCKS','2505BD82B6474F3402C6053DFE',
+				  'RAM_ADDR:^MBD_LOCK_DATA','33CB35028E',
+				  'PGROM_ADDR:','C6',
+				  'PGROM_ID:','BD',
+				  'SYSCALL_ADDR:X=^tableElt[ABX]','BD',
+				  'SYSCALL_ADDR:Y=[XB]','1E233592');
+	$matchHandler = sub {
+		my(@matchData) = @_;
+		my($orpg) = select_WPC_RPG($matchData[3]);
+		$Address = $matchData[2];   
+		def_WPC_lockTable('=LOCKTABLE','Lock Table / Multiball Device Table',1);
+		select_WPC_RPG($orpg); 
+	};
+	scanCode(@matchInfo,$matchHandler);
 
-	$name = 'BYU=MBD_dafaRefs';
-	$patt = '34 12 B1 RAM_ADDR 25 05 BD 82 B6 47 4F 34 02 C6 05' .			
-			'3D FE RAM_ADDR 33 CB 35 02 8E PAGE_ADDR C6 ROM_PAGE' .
-			'BD SYSCALL_ADDR BD SYSCALL_ADDR 1E 23 35 92';
-	@matchData = scanCode(0x3B,0x4000,0x7FFF,$patt);
-	define_label($name,$matchData[0]);
-	define_label('_MBD_NUM_LOCKS',$matchData[1]);
-	define_label('^MBD_LOCK_DATA',$matchData[2]);
-	define_syscall('X=^tableElt[ABX]',$matchData[5],'');
-	define_syscall('Y=[XB]',$matchData[6],'');
-	$orpg = select_WPC_RPG($matchData[4],1);
-	$Address = $matchData[3];   
-	def_WPC_lockTable('=LOCKTABLE','Lock Table / Multiball Device Table',1);
-	select_WPC_RPG($orpg);
+	@matchInfo = (0x3B,
+				  'MBD_checkBalls_bookkeeping','3402B6',
+				  'RAM_ADDR:_BALLS_IN_TROUGH','BB',
+				  'RAM_ADDR:_BALLS_LOCKED','B1',
+				  'RAM_ADDR:_BALLS_ACCOUNTED_FOR','2303BD',
+                  'PGROM_ADDR:','3582');
+	scanCode(@matchInfo);
 
-	$name = 'MBD_checkBalls_bookkeeping';
-	$patt = '34 02 B6 RAM_ADDR BB RAM_ADDR B1 RAM_ADDR 23 03 BD PAGEROM_ADDR 35 82';
-	@matchData = scanCode(0x3B,0x4000,0x7FFF,$patt);
-	define_label($name,$matchData[0]);
-	define_label('_BALLS_IN_TROUGH',$matchData[1]);
-	define_label('_BALLS_LOCKED',$matchData[2]);
-	define_label('_BALLS_ACCOUNTED_FOR',$matchData[3]);
+#	my($name,$patt,$orpg);
+#	$name = 'BYU=MBD_dafaRefs';
+#	$patt = '34 12 B1 RAM_ADDR 25 05 BD 82 B6 47 4F 34 02 C6 05' .			
+#			'3D FE RAM_ADDR 33 CB 35 02 8E PAGE_ADDR C6 ROM_PAGE' .
+#			'BD SYSCALL_ADDR BD SYSCALL_ADDR 1E 23 35 92';
+#	@matchData = scanCode(0x3B,0x4000,0x7FFF,$patt);
+#	define_label($name,$matchData[0]);
+#	define_label('_MBD_NUM_LOCKS',$matchData[1]);
+#	define_label('^MBD_LOCK_DATA',$matchData[2]);
+#	define_syscall('X=^tableElt[ABX]',$matchData[5],'');
+#	define_syscall('Y=[XB]',$matchData[6],'');
+#	$orpg = select_WPC_RPG($matchData[4],1);
+#	$Address = $matchData[3];   
+#	def_WPC_lockTable('=LOCKTABLE','Lock Table / Multiball Device Table',1);
+#	select_WPC_RPG($orpg);
+#
+#	$name = 'MBD_checkBalls_bookkeeping';
+#	$patt = '34 02 B6 RAM_ADDR BB RAM_ADDR B1 RAM_ADDR 23 03 BD PAGEROM_ADDR 35 82';
+#	@matchData = scanCode(0x3B,0x4000,0x7FFF,$patt);
+#	define_label($name,$matchData[0]);
+#	define_label('_BALLS_IN_TROUGH',$matchData[1]);
+#	define_label('_BALLS_LOCKED',$matchData[2]);
+#	define_label('_BALLS_ACCOUNTED_FOR',$matchData[3]);
 }
 
 

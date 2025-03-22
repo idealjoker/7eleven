@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Mar 21 21:34:53 2025
+#                    dlm: Sat Mar 22 08:23:33 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 113 1 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 139 2 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -135,8 +135,8 @@ if ($WMS_System eq 'WPC(Alphanumeric)') {
 } else {
     die("WPC.API: $WMS_System not yet implemented\n");
 }
-define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$ofs);
-define_label('_BALLS_ACCOUNTED_FOR_COMPL',			0x1ED1+$ofs);
+##define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$ofs);
+##define_label('_BALLS_ACCOUNTED_FOR_COMPL',			0x1ED1+$ofs);
 
 #----------------------------------------------------------------------
 # ASIC

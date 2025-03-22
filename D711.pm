@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri Mar 21 21:32:21 2025
+#					 dlm: Sat Mar 22 10:57:11 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 452 45 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 488 2 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -249,6 +249,10 @@
 #	Mar 19, 2025: - improved output of ANALYSIS_GAPs
 #				  - added detection of free space in gaps
 #				  - BUG: overwriteLabel no longer worked with WPC labels
+#	Mar 21, 2025: - BUG: scanCode did no have PAGEROM label
+#	Mar 22, 2025: - modified label handling to croak on trying to re-define label
+#				    with different address
+#				  - majorly improved scanCode 
 # END OF HISTORY
 
 # TO-DO:
@@ -389,97 +393,104 @@ sub load_ROM($$@)
 # Code Scanner
 #----------------------------------------------------------------------
 
-sub scanCode($$$$)
+sub scanCode(@)
 {
-	my($RPG,$saddr,$eaddr,$pat) = @_;
+	my($pg) = shift;														# 1st argument is PGid
+	select_WPC_RPG($pg);
+	my($lbl) = shift;
+	my(@matchInfo) = @_;
 
-	my($maxMatch) = 0;
-	my($maxAddr);
-	select_WPC_RPG($RPG,10);													# initialize
-	$saddr--; $Address = $saddr;
-	
+	my($saddr) = 0x3FFF;													# start of match
+	$Address = $saddr;
+
+	my($maxMatch,$maxAddr,@matchData,@matchLabel);
  RESTART_SCAN:
-## 	printf(STDERR "RESTART_SCAN (len = %d)\n",$Address - $saddr);
+	my($mi) = -1;
+## 	printf(STDERR "RESTART_SCAN (len = %d) at %04X\n",$Address - $saddr,$saddr);
 	if (($Address-$saddr) > $maxMatch) {									# record best match so far
 	 	$maxMatch = $Address - $saddr;
 		$maxAddr = $saddr;
 	}
- 	$saddr++;
+ 	$saddr++;																# try next
  	die(sprintf("scanCode: no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
-		if ($saddr > $eaddr);
-	undef(@out);
-	my(@out);
+		if ($saddr > 0x7FFF);
+	undef(@matchData); 
+	undef(@matchLabel);
 	$Address = $saddr;
 
-	for (my($si)=0; $si<length($pat); ) {
-##		printf(STDERR "<%04X> si = $si (%s)\n",$Address,substr($pat,$si));
-		if (substr($pat,$si,1) eq ' ' || substr($pat,$si,1) eq "\t") {
-			$si++; 
+	while ($mi < $#matchInfo) {
+		$mi++;
+##		print(STDERR "mi = $matchInfo[$mi] (@matchData)\n");
+		
+		if (ref($matchInfo[$mi])) {											# handler called at end
+			die unless ($mi == $#matchInfo);
+			$matchInfo[$mi]->(@matchData);
 			next;
 		}
-		if (substr($pat,$si,8) eq 'RAM_ADDR') {
+
+		if ($matchInfo[$mi] =~ m{^RAM_ADDR:}) {
 			my($taddr) = WORD($Address);
 			if ($taddr <= 0x1FFF) {
-				push(@out,$taddr);
-				$si += 8;
+				push(@matchLabel,$');
+				push(@matchData,$taddr);
 				$Address += 2;
 				next;
 			} 
-			goto RESTART_SCAN;
+			goto RESTART_SCAN;												# match failure 
 		}
-		if (substr($pat,$si,9) eq 'PAGE_ADDR') {
+
+		if ($matchInfo[$mi] =~ m{^PGROM_ADDR:}) {
 			my($taddr) = WORD($Address);
 			if ($taddr>=0x4000 && $taddr<=0x7FFF) {
-				push(@out,$taddr);
-				$si += 9;
+				push(@matchLabel,$');
+				push(@matchData,$taddr);
 				$Address += 2;
 				next;
 			}
 			goto RESTART_SCAN;
 		}
-		if (substr($pat,$si,12) eq 'SYSCALL_ADDR') {
-			my($taddr) = WORD($Address);
-			if ($taddr>=0x8000 && $taddr<=0xFFFF) {
-				push(@out,$taddr);
-				$si += 12;
-				$Address += 2;
-				next;
-			}
-			goto RESTART_SCAN;
-		}
-		if (substr($pat,$si,12) eq 'PAGEROM_ADDR') {
-			my($taddr) = WORD($Address);
-			if ($taddr>=0x4000 && $taddr<=0x7FFF) {
-				push(@out,$taddr);
-				$si += 12;
-				$Address += 2;
-				next;
-			}
-			goto RESTART_SCAN;
-		}
-		if (substr($pat,$si,8) eq 'ROM_PAGE') {
+
+		if ($matchInfo[$mi] =~ m{^PGROM_ID:}) {
 			my($trpg) = BYTE($Address);
-##			printf(STDERR "byte = %02X (%02X)\n",$trpg,$start_page);
 			if ($trpg>=$start_page && $trpg<=0x3D) {
-				push(@out,$trpg);
-				$si += 8;
+				push(@matchLabel,$');
+				push(@matchData,$trpg);
 				$Address += 1;
 				next;
 			}
 			goto RESTART_SCAN;
 		}
 
-		die(sprintf("scanCode: invalid next token in pattern <%s>\n",substr($pat,$si)))
-			unless (substr($pat,si,2) =~ m{^[0-9A-F]{2}$});
-		if (hex(substr($pat,$si,2)) == BYTE($Address)) {			
-			$Address++;
-			$si += 2;
-			next;
+		if ($matchInfo[$mi] =~ m{^SYSCALL_ADDR:}) {
+			die("scanCode: label required for SYSCALL_ADDR:\n")
+				unless length($')>0;
+			my($taddr) = WORD($Address);
+			if ($taddr>=0x8000 && $taddr<=0xFFFF) {
+				push(@matchLabel,$');
+				push(@matchData,-$taddr);
+				$Address += 2;
+				next;
+			}
+			goto RESTART_SCAN;
 		}
-		goto RESTART_SCAN;
+
+		for (my($j)=0; $j<length($matchInfo[$mi])/2; $j++,$Address++) {
+			die("scanCode: invalid matchInfo <$matchInfo[$mi]>\n")
+				unless (substr($matchInfo[$mi],2*$j,2) =~ m{^[0-9A-f]{2}});
+			next if hex(substr($matchInfo[$mi],2*$j,2)) == BYTE($Address);
+	        goto RESTART_SCAN;
+	    }
 	}
-	unshift(@out,$saddr);
-	return @out;
+
+	setLabel($lbl,$saddr);
+	for (my($i)=0; $i<@matchData; $i++) {
+		if ($matchData[$i] >= 0) {
+##			print(STDERR "$i: setLabel($matchLabel[$i],$matchData[$i])\n");
+			setLabel($matchLabel[$i],$matchData[$i]);
+		} else {
+			define_syscall($matchLabel[$i],-$matchData[$i]);
+		}
+    }
 }
 
 #----------------------------------------------------------------------
@@ -528,6 +539,7 @@ sub setLabel($$@)
         if (($LBL[$addr] =~ m{_[0-9A-F]{4}$}) &&                #   otherwise, make duplicate
             !($lbl =~ m{_[0-9A-F]{4}$}));
 	if (defined($Lbl{$lbl}) && $Lbl{$lbl}!=$addr && $Lbl{$lbl} ne $faddr) {		# trying to re-define label with different address
+			die(sprintf("setLabel(%s,\$%04X): label already defined at \$%04X\n",$lbl,$addr,$Lbl{$lbl}));
 			my($tl,$pg);
 			if ($lbl =~ m{(\[[0-9A-F]{2}\])$}) {
 				$tl = $`;
