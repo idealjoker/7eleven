@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Mar 18 04:03:58 2025
+#                    dlm: Sat Mar 22 16:52:16 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 462 2 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 651 87 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -648,7 +648,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			my($oaddr) = $addr - 3;
 			my($sc);
 			for ($sc=0; $sc<@SYSCALL; $sc++) {
-				die($SYSCALL[$sc]) unless defined($Lbl{$SYSCALL[$sc]});
+				die("syscall $SYSCALL[$sc] undefined -- replaced by $LBL[$SC_ADDR[$sc]]\n") unless defined($Lbl{$SYSCALL[$sc]});
 				next if $SC_NOTE[$sc] == 2;														# NOTE 2: JMP target syscall
 				if (disassemble_syscall($sc,$rv)) {
 					die(sprintf("syscall $SYSCALL[$sc] can only be called from PG#3B (not PG#%02X)\n",$_cur_RPG))

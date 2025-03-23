@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Mar 22 10:57:11 2025
+#					 dlm: Sat Mar 22 16:45:03 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 488 2 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 415 31 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -412,7 +412,7 @@ sub scanCode(@)
 		$maxAddr = $saddr;
 	}
  	$saddr++;																# try next
- 	die(sprintf("scanCode: no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
+ 	die(sprintf("scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
 		if ($saddr > 0x7FFF);
 	undef(@matchData); 
 	undef(@matchLabel);

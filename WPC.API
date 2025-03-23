@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Mar 22 08:23:33 2025
+#                    dlm: Sat Mar 22 16:48:04 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 139 2 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 378 29 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -109,15 +109,6 @@ define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$ofs);
 define_label('_BALLSEARCH_SUSPEND_TIMER',			0x04C7+$ofs);
 define_label('_TILTWARNINGS_LEFT',					0x04D4+$ofs);
 
-# handled by disassemble_MBD_system()
-#
-#if ($WMS_System eq 'WPC(Alphanumeric)') {
-#    $ofs = -1835;
-#} elsif ($WMS_System eq 'WPC(DMD)') {
-#    $ofs = 0;
-#} else {
-#    die("WPC.API: $WMS_System not yet implemented\n");
-#}
 #define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN',	0x0CC9+$ofs);	# 59E
 #define_label('_LOCKED_BALLS_DEFICIT',				0x0CCA+$ofs);
 #define_label('_NUM_BALLS_LOCKED',					0x0CCB+$ofs);
@@ -384,7 +375,7 @@ define_syscall('longJSR[BX]',							0x90D1+$ofs);
 define_syscall('A=[XB]==1?_INX',						0x90E7+$ofs);
 define_syscall('A=[XB]==1?',							0x90EC+$ofs);
 define_syscall('BX=loadRef[X]',							0x90C5+$ofs);
-define_syscall('Y=[XB]_INX22',							0x910E+$ofs);
+define_syscall('Y=[XB]_INXINX',							0x910E+$ofs);
 define_syscall('Y=[XB]',								0x9113+$ofs);    
 define_syscall('Y=indexed[X]==1?X',						0x9117+$ofs);
 define_syscall('memCopy[ABXY]',							0x9139+$ofs);
