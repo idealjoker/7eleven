@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Mar 22 16:45:03 2025
+#					 dlm: Sun Mar 23 11:03:44 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 415 31 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 256 61 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -252,7 +252,8 @@
 #	Mar 21, 2025: - BUG: scanCode did no have PAGEROM label
 #	Mar 22, 2025: - modified label handling to croak on trying to re-define label
 #				    with different address
-#				  - majorly improved scanCode 
+#				  - majorly improved scanCode
+#	Mar 23, 2025: - modified scanCode to work with .obj files
 # END OF HISTORY
 
 # TO-DO:
@@ -395,6 +396,8 @@ sub load_ROM($$@)
 
 sub scanCode(@)
 {
+##	print(STDERR "scanCode(@_)\n");
+
 	my($pg) = shift;														# 1st argument is PGid
 	select_WPC_RPG($pg);
 	my($lbl) = shift;
@@ -403,7 +406,7 @@ sub scanCode(@)
 	my($saddr) = 0x3FFF;													# start of match
 	$Address = $saddr;
 
-	my($maxMatch,$maxAddr,@matchData,@matchLabel);
+	my($maxMatch,$maxAddr,@matchData,@matchLabel,@matchREM);
  RESTART_SCAN:
 	my($mi) = -1;
 ## 	printf(STDERR "RESTART_SCAN (len = %d) at %04X\n",$Address - $saddr,$saddr);
@@ -428,68 +431,49 @@ sub scanCode(@)
 			next;
 		}
 
-		if ($matchInfo[$mi] =~ m{^RAM_ADDR:}) {
-			my($taddr) = WORD($Address);
-			if ($taddr <= 0x1FFF) {
-				push(@matchLabel,$');
-				push(@matchData,$taddr);
-				$Address += 2;
-				next;
-			} 
-			goto RESTART_SCAN;												# match failure 
+		if (substr($matchInfo[$mi],0,1) eq ';') {							# comment
+			my($ro) = $Address-$saddr;
+			$matchREM[$ro] = substr($matchInfo[$mi],1)
+				unless defined($matchRem[$ro]);
+			next;
 		}
 
-		if ($matchInfo[$mi] =~ m{^PGROM_ADDR:}) {
-			my($taddr) = WORD($Address);
-			if ($taddr>=0x4000 && $taddr<=0x7FFF) {
-				push(@matchLabel,$');
-				push(@matchData,$taddr);
-				$Address += 2;
-				next;
-			}
-			goto RESTART_SCAN;
+		if (substr($matchInfo[$mi],0,1) eq ':') {							# WORD
+			my($tlbl) = substr($matchInfo[$mi],1);
+			my($tval) = WORD($Address);
+			goto RESTART_SCAN
+				if defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval);
+			push(@matchData,$tval);
+			push(@matchLabel,$tlbl);
+			$Address += 2;
+			next;
 		}
 
-		if ($matchInfo[$mi] =~ m{^PGROM_ID:}) {
-			my($trpg) = BYTE($Address);
-			if ($trpg>=$start_page && $trpg<=0x3D) {
-				push(@matchLabel,$');
-				push(@matchData,$trpg);
-				$Address += 1;
-				next;
-			}
-			goto RESTART_SCAN;
+		if (substr($matchInfo[$mi],0,1) eq '.') {							# BYTE
+			my($tlbl) = substr($matchInfo[$mi],1);
+			my($tval) = BYTE($Address);
+			goto RESTART_SCAN
+				if defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval);
+			push(@matchData,$tval);
+			push(@matchLabel,$tlbl);
+			$Address += 1;
+			next;
 		}
 
-		if ($matchInfo[$mi] =~ m{^SYSCALL_ADDR:}) {
-			die("scanCode: label required for SYSCALL_ADDR:\n")
-				unless length($')>0;
-			my($taddr) = WORD($Address);
-			if ($taddr>=0x8000 && $taddr<=0xFFFF) {
-				push(@matchLabel,$');
-				push(@matchData,-$taddr);
-				$Address += 2;
-				next;
-			}
-			goto RESTART_SCAN;
-		}
-
-		for (my($j)=0; $j<length($matchInfo[$mi])/2; $j++,$Address++) {
+		for (my($j)=0; $j<length($matchInfo[$mi])/2; $j++,$Address++) {		# HEX
 			die("scanCode: invalid matchInfo <$matchInfo[$mi]>\n")
 				unless (substr($matchInfo[$mi],2*$j,2) =~ m{^[0-9A-f]{2}});
-			next if hex(substr($matchInfo[$mi],2*$j,2)) == BYTE($Address);
-	        goto RESTART_SCAN;
+	        goto RESTART_SCAN
+	        	unless hex(substr($matchInfo[$mi],2*$j,2)) == BYTE($Address);
 	    }
 	}
 
 	setLabel($lbl,$saddr);
 	for (my($i)=0; $i<@matchData; $i++) {
-		if ($matchData[$i] >= 0) {
-##			print(STDERR "$i: setLabel($matchLabel[$i],$matchData[$i])\n");
-			setLabel($matchLabel[$i],$matchData[$i]);
-		} else {
-			define_syscall($matchLabel[$i],-$matchData[$i]);
-		}
+		setLabel($matchLabel[$i],$matchData[$i]);
+    }
+    for (my($i)=0; $i<@matchREM; $i++) {
+    	$REM[$saddr+$i] = $matchREM[$i];
     }
 }
 

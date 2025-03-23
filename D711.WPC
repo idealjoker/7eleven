@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Mar 22 19:46:50 2025
+#                    dlm: Sun Mar 23 11:02:33 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 89 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 57 77 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -53,22 +53,26 @@
 #	Mar 19, 2025: - BUG: select_WPC_RPG() did not always return correct value
 #				  - BUG: select_WPC_RPG() check of page ids did not work
 #				  - added support for Game Event Hooks (@Hook)
+#	Mar 21, 2025: - updated disassemble_MBD_system() to work with scanCode
+#	Mar 23, 2025: - updated disassemble_MBD_system() to work with WPC_MBD.obj
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
 # WPC Disassembly Routines
 #----------------------------------------------------------------------
 
-sub disassemble_MBD_system()												# execute this early on, because it defines syscalls
+sub disassemble_MBD_system_old()											# execute this early on, because it defines syscalls
 {
 	my(@matchObj,$matchHandler);
 	
-	@matchObj = ('3412B1','RAM_ADDR:_MBD_NUM_LOCKS','2505BD82B6474F3402C6053DFE',	
-				 'RAM_ADDR:^MBD_LOCK_DATA','33CB35028E','PGROM_ADDR:','C6',		
-				 'PGROM_ID:','BD','SYSCALL_ADDR:X=^tableElt[ABX]','BD',
-				 'SYSCALL_ADDR:Y=[XB]','1E233592');
+	@matchObj = ('3412B1',':_MBD_NUM_LOCKS','2505BD82B6474F3402C6053DFE',	
+				 ':^MBD_LOCK_DATA','33CB35028E',':','C6',		
+				 '.','BD',':X=^tableElt[ABX]','BD',
+				 ':Y=[XB]','1E233592');
 	$matchHandler = sub {
 		my(@matchData) = @_;
+		define_syscall('X=^tableElt[ABX]',$matchData[4]);
+		define_syscall('Y=[XB]',$matchData[5]);
 		my($orpg) = select_WPC_RPG($matchData[3]);
 		$Address = $matchData[2];   
 		def_WPC_lockTable('=MBD_LOCKTABLE','Lock Table / Multiball Device Table',1);
@@ -76,16 +80,42 @@ sub disassemble_MBD_system()												# execute this early on, because it defi
 	};
 	scanCode(0x3B,'BYU=MBD_dafaRefs',@matchObj,$matchHandler);				# =MBD_LOCKTABLE / BYU=MBD_dafaRefs
 
-	@matchObj = ('3402B6','RAM_ADDR:_BALLS_IN_TROUGH','BB',
-				 'RAM_ADDR:_BALLS_LOCKED','B1','RAM_ADDR:_BALLS_ACCOUNTED_FOR',
-				 '2303BD','PGROM_ADDR:','3582');
+	@matchObj = ('3402B6',':_BALLS_IN_TROUGH','BB',
+				 ':_BALLS_LOCKED','B1',':_BALLS_ACCOUNTED_FOR',
+				 '2303BD',':','3582');
 	scanCode(0x3B,'MBD_checkBalls_bookkeeping',@matchObj);					# MBD_checkBalls_bookkeeping
 
-	@matchObj = ('3476BD','PGROM_ADDR:BYU=MBD_dafaRefs','3041BD',
-				 'SYSCALL_ADDR:Y=[XB]_INXINX','BD','SYSCALL_ADDR:A=[XB]==1?',
-				 '30A41F89A661BD','SYSCALL_ADDR:longJSR[BX]','35F6');
+	@matchObj = (';call lock handler','3476','BD',':BYU=MBD_dafaRefs','3041BD',
+				 ':Y=[XB]_INXINX','BD',':A=[XB]==1?',
+				 '30A41F89A661BD',':longJSR[BX]','35F6');
 	scanCode(0x3B,'MBD_callHandler[AB]',@matchObj);							# MBD_callHandler[AB]
 
+}
+
+
+sub disassemble_MBD_system()												# execute this early on, because it defines syscalls
+{
+	my(@matchObj,$matchHandler);
+
+	open(OBJ,"$PATH/WPC_MBD.obj")
+		|| die("$PATH/WPC_MBD.obj: $!\n");
+
+	my($lbl);
+	while (<OBJ>) {
+		chomp;
+		my($c) = substr($_,0,1);
+		next if ($c eq '#');												# comment
+		if ($c eq '>') {													# new obj
+			scanCode(0x3B,$lbl,@matchObj) if defined($lbl);
+			$lbl = substr($_,1);
+			undef(@matchObj);
+        } elsif ($c eq ';') {												# comment
+        	push(@matchObj,$_);
+		} else {															# obj information
+			push(@matchObj,split);
+		}
+	}
+	close(OBJ);
 }
 
 
