@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C _ M B D . O B J 
 #                    doc: Sat Mar 22 20:06:21 2025
-#                    dlm: Sun Mar 23 10:04:22 2025
+#                    dlm: Mon Mar 24 08:11:30 2025
 #                    (c) 2025 A.M. Thurnherr
-#                    uE-Info: 14 9 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 29 25 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 #
 >BYU=MBD_dataRefs[A]
@@ -11,10 +11,11 @@
 3412
 B1 :_MBD_NUM_LOCKS 2505BD82B6474F3402C6053DFE :^MBD_LOCK_DATA 
 ;Y_out = pointer to lock RAM data (argument for handler routine?)
-33CB3502 8E : 
+33CB3502 
+;=MBD_LOCKTABLE (!!!)
+8E7F13
 ;B_out = pg of lock table
-C6 . 
-BD :X=^tableElt[ABX] BD :Y=[XB] 
+C630BD :X=^tableElt[ABX] BD :Y=[XB] 
 ;U_out = lock table data (pointer)
 1E23
 ;RTS
@@ -23,10 +24,11 @@ BD :X=^tableElt[ABX] BD :Y=[XB]
 >MBD_checkBalls_bookkeeping
 ;called early in Balltrough_eventDispatcher
 3402
-B6 :_BALLS_IN_TROUGH BB :_BALLS_LOCKED B1 :_BALLS_ACCOUNTED_FOR
+B6 :_BALLS_IN_TROUGH BB :_BALLS_LOCKED 
 ;number of located balls
-2303BD :
+B1 :_BALLS_ACCOUNTED_FOR 2303
 ;update ball bookkeeping
+BD75FE
 3582
 ;RTS
 #

@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Mar 23 11:03:44 2025
+#					 dlm: Sun Mar 23 21:50:46 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 256 61 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 257 39 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -254,6 +254,7 @@
 #				    with different address
 #				  - majorly improved scanCode
 #	Mar 23, 2025: - modified scanCode to work with .obj files
+#				  - made scanCode fuzzy
 # END OF HISTORY
 
 # TO-DO:
@@ -408,6 +409,7 @@ sub scanCode(@)
 
 	my($maxMatch,$maxAddr,@matchData,@matchLabel,@matchREM);
  RESTART_SCAN:
+	my($mismatches); $mismatches = 0;
 	my($mi) = -1;
 ## 	printf(STDERR "RESTART_SCAN (len = %d) at %04X\n",$Address - $saddr,$saddr);
 	if (($Address-$saddr) > $maxMatch) {									# record best match so far
@@ -423,7 +425,7 @@ sub scanCode(@)
 
 	while ($mi < $#matchInfo) {
 		$mi++;
-##		print(STDERR "mi = $matchInfo[$mi] (@matchData)\n");
+##		print(STDERR "mi = $matchInfo[$mi] (@matchData)\n") if ($mi>5);
 		
 		if (ref($matchInfo[$mi])) {											# handler called at end
 			die unless ($mi == $#matchInfo);
@@ -441,30 +443,38 @@ sub scanCode(@)
 		if (substr($matchInfo[$mi],0,1) eq ':') {							# WORD
 			my($tlbl) = substr($matchInfo[$mi],1);
 			my($tval) = WORD($Address);
-			goto RESTART_SCAN
-				if defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval);
-			push(@matchData,$tval);
 			push(@matchLabel,$tlbl);
+			push(@matchData,$tval);
 			$Address += 2;
+			if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
+				$mismatches++;
+				goto RESTART_SCAN if ($mismatches > 5);
+			}
 			next;
 		}
 
 		if (substr($matchInfo[$mi],0,1) eq '.') {							# BYTE
 			my($tlbl) = substr($matchInfo[$mi],1);
 			my($tval) = BYTE($Address);
-			goto RESTART_SCAN
-				if defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval);
-			push(@matchData,$tval);
 			push(@matchLabel,$tlbl);
+			push(@matchData,$tval);
 			$Address += 1;
+			if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
+				$mismatches++;
+				goto RESTART_SCAN if ($mismatches > 5);
+			}
 			next;
 		}
 
 		for (my($j)=0; $j<length($matchInfo[$mi])/2; $j++,$Address++) {		# HEX
 			die("scanCode: invalid matchInfo <$matchInfo[$mi]>\n")
 				unless (substr($matchInfo[$mi],2*$j,2) =~ m{^[0-9A-f]{2}});
-	        goto RESTART_SCAN
-	        	unless hex(substr($matchInfo[$mi],2*$j,2)) == BYTE($Address);
+##			printf(STDERR "%04X: %02X (<-%s) [$mismatches]\n",$Address,BYTE($Address),substr($matchInfo[$mi],2*$j,2))
+##				if $mi>5;
+			if (hex(substr($matchInfo[$mi],2*$j,2)) != BYTE($Address)) {
+				$mismatches++; 
+				goto RESTART_SCAN if ($mismatches > 5);
+			}
 	    }
 	}
 
