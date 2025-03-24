@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sat Mar 22 16:52:16 2025
+#                    dlm: Mon Mar 24 15:33:39 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 651 87 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 830 52 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -41,6 +41,7 @@
 #				  - moved insert_empty_line to [D711.pm]
 #	Mar 11, 2025: - added data definitions to op_EXT()
 #	Mar 15: 2025: - BUG: op_EXT() did not work correctly
+#	Mar 24, 2025: - added support for @OI (.obj output)
 # HISTORY END
 
 # NOTES:
@@ -51,6 +52,7 @@ sub op_INH($$$$)																	# operation with inherent (implied) addressing
 	my($opc,$opa,$ind,$op) = @_;
 	return undef unless (BYTE($addr) == $opc);
 	$OP[$opa] = $op; $IND[$opa] = $ind;
+	push(@{$OI[$opa]},sprintf('%02X',$opc));
 	$decoded[$addr++] = 1;
 	return 1;
 }
@@ -61,6 +63,7 @@ sub op_IMM(@)																		# operation with immediate addressing (page 1 onl
 	return undef unless (BYTE($addr) == $opc);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
 	push(@{$OPA[$addr]},sprintf('#$%02X',BYTE($addr+1)));
+	push(@{$OI[$addr]},sprintf('%02X%02X',BYTE($addr),BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;
 }
@@ -71,6 +74,7 @@ sub op_IMM2($$$$)																	# operation with immediate 2-byte addressing (
 	return undef unless (BYTE($addr) == $opc);
 	$OP[$opa] = $op; $IND[$opa] = $ind;
 	push(@{$OPA[$opa]},sprintf('#$%04X',WORD($addr+1)));
+	push(@{$OI[$addr]},sprintf('%02X%04X',BYTE($addr),WORD($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;
 }
@@ -82,6 +86,7 @@ sub op_DIR($$$$)																	# operation with direct addressing (relative to
 	my($op_DIR) = BYTE($addr+1);
 	$OP[$opa] = $op; $IND[$opa] = $ind;
 	push(@{$OPA[$opa]},sprintf('$%02X',BYTE($addr+1)));
+	push(@{$OI[$addr]},sprintf('%02X%02X',BYTE($addr),BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;
 }
@@ -98,12 +103,14 @@ sub op_EXT($$$$@)																	# operation with extended addressing (similar 
 				$IND[$trg_addr] = $data_indent; $TYPE[$trg_addr] =	$CodeType_data;
 				$OP[$trg_addr] = '.DW';
 				$OPA[$trg_addr][0] = sprintf('$%04X',WORD($trg_addr));
+				push(@{$OI[$trg_addr]},sprintf('%04X',WORD($trg_addr)));
 				$decoded[$trg_addr] = $decoded[$trg_addr+1] = 1;
 			} elsif ($data_bytes == 1) {											# data byte (not code)
 				label_address($trg_addr,'!data');									
 				$IND[$trg_addr] = $data_indent; $TYPE[$trg_addr] =	$CodeType_data;
 				$OP[$trg_addr] = '.DB';
 				$OPA[$trg_addr][0] = sprintf('$%02X',BYTE($trg_addr));
+				push(@{$OI[$trg_addr]},sprintf('%02X',BYTE($trg_addr)));
 				$decoded[$trg_addr] = 1;
 	        } else {																# code
 	        	if ($trg_addr >= 0x8000) {
@@ -118,11 +125,13 @@ sub op_EXT($$$$@)																	# operation with extended addressing (similar 
 	}
 	$OP[$opa] = $op; $IND[$opa] = $ind;
 	push(@{$OPA[$opa]},sprintf('$%04X',$trg_addr));
+	push(@{$OI[$opa]},sprintf('%02X',$opc));
+	push(@{$OI[$opa]},':');
 	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 	return $trg_addr ? $trg_addr : '0 but true';									# return address!!
 }
 
-sub op_REL($$$$$)																	# operation with 1-byte relative addressing (page 1 only)
+sub op_REL($$$$$)																	# operation with 1-byte relative addressing 
 {
 	my($opc,$ind,$op,$lbl_root,$follow_code) = @_;
 #	print(STDERR "op_rel($opc,$ind,$op,$lbl_root,$follow_code)\n");
@@ -130,6 +139,7 @@ sub op_REL($$$$$)																	# operation with 1-byte relative addressing (p
 	my($trg_addr) = $addr + 2 + ((BYTE($addr+1) < 128) ? BYTE($addr+1) : BYTE($addr+1)-256);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
 	$OPA[$addr][0] = label_address($trg_addr,'.' . $op); 							# mark with . for code analysis (local label)
+	push(@{$OI[$addr]},sprintf('%02X%02X',$opc,BYTE{$addr+1));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	if ($follow_code) {
 		disassemble_asm($ind,$trg_addr,$lbl_root,undef,$follow_code);
@@ -144,6 +154,7 @@ sub op_LREL($$$$$$)																	# operation with 2-byte relative addressing
 	my($trg_addr) = $addr + 3 + ((WORD($addr+1) < 32768) ? WORD($addr+1) : WORD($addr+1)-65536);
 	$OP[$opa] = $op; $IND[$opa] = $ind;
 	$OPA[$opa][0] = label_address($trg_addr,$op);									# do not mark with a . since those are not used for IF and LOOP
+	push(@{$OI[$addr]},sprintf('%02X%04X',$opc,WORD{$addr+1));
 	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 	if ($follow_code) {
 		disassemble_asm($ind,$trg_addr,$lbl_root,undef,$follow_code);
@@ -167,11 +178,13 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 
 	if ($PB == 0b10000100) {														# no offset, direct
 		push(@{$OPA[$opa]},sprintf(',%s',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10010100) {														# no offset, indirect
 		push(@{$OPA[$opa]},sprintf('[,%s]',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
@@ -179,6 +192,7 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		my($ofs) = $PB & 0b00011111;
 		$ofs = $ofs - 32 if ($ofs >= 16);						
 		push(@{$OPA[$opa]},sprintf('%d,%s',$ofs,$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
@@ -186,6 +200,7 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		my($ofs) = BYTE($addr+2);
 		$ofs = $ofs - 256 if ($ofs >= 128);						
 		push(@{$OPA[$opa]},sprintf('%d,%s',$ofs,$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X%02X',$opc,BYTE($addr+1),BYTE($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr - 3;
     }
@@ -193,6 +208,7 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		my($ofs) = BYTE($addr+2);
 		$ofs = $ofs - 256 if ($ofs >= 128);						
 		push(@{$OPA[$opa]},sprintf('[%d,%s]',$ofs,$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X%02X',$opc,BYTE($addr+1),BYTE($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-3;
     }
@@ -200,6 +216,7 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		my($ofs) = WORD($addr+2);
 		$ofs = $ofs - 65536 if ($ofs >= 32768);						
 		push(@{$OPA[$opa]},sprintf('%d,%s',$ofs,$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X%04X',$opc,BYTE($addr+1),WORD($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-4;
     }
@@ -207,66 +224,79 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		my($ofs) = WORD($addr+2);
 		$ofs = $ofs - 65536 if ($ofs >= 32768);						
 		push(@{$OPA[$opa]},sprintf('[%d,%s]',$ofs,$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X%04X',$opc,BYTE($addr+1),WORD($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-4;
     }
 	if ($PB == 0b10000110) {														# A-register offset, direct
 		push(@{$OPA[$opa]},sprintf('A,%s',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10010110) {														# A-register offset, indirect
 		push(@{$OPA[$opa]},sprintf('[A,%s]',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10000101) {														# B-register offset, direct
 		push(@{$OPA[$opa]},sprintf('B,%s',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10010101) {														# B-register offset, indirect
 		push(@{$OPA[$opa]},sprintf('[B,%s]',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10001011) {														# D-register offset, direct
 		push(@{$OPA[$opa]},sprintf('D,%s',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10010011) {														# D-register offset, indirect
 		push(@{$OPA[$opa]},sprintf('[D,%s]',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10000000) {														# post-increment by 1, direct
 		push(@{$OPA[$opa]},sprintf(',%s+',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10000001) {														# post-increment by 2, direct
 		push(@{$OPA[$opa]},sprintf(',%s++',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10010001) {														# post-increment by 2, indirect
 		push(@{$OPA[$opa]},sprintf('[,%s++]',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10000010) {														# post-decrement by 1, direct
 		push(@{$OPA[$opa]},sprintf(',%s-',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10000011) {														# post-decrement by 2, direct
 		push(@{$OPA[$opa]},sprintf(',%s--',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
 	if ($PB == 0b10010011) {														# post-decrement by 2, indirect
 		push(@{$OPA[$opa]},sprintf('[,%s--]',$IR));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
@@ -274,6 +304,7 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		my($ofs) = BYTE($addr+2);
 		$ofs = $ofs - 256 if ($ofs >= 128);						
 		push(@{$OPA[$opa]},sprintf('%d,PCR',$ofs));
+		push(@{$OI[$opa]},sprintf('%02X%02X%02X',$opc,BYTE($addr+1),BYTE($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-3;
     }
@@ -281,6 +312,7 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		my($ofs) = BYTE($addr+2);
 		$ofs = $ofs - 256 if ($ofs >= 128);						
 		push(@{$OPA[$opa]},sprintf('[%d,PCR]',$ofs));
+		push(@{$OI[$opa]},sprintf('%02X%02X%02X',$opc,BYTE($addr+1),BYTE($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-3;
     }
@@ -288,6 +320,7 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		my($ofs) = WORD($addr+2);
 		$ofs = $ofs - 65536 if ($ofs >= 32768);						
 		push(@{$OPA[$opa]},sprintf('%d,PCR',$ofs));
+		push(@{$OI[$opa]},sprintf('%02X%02X%04X',$opc,BYTE($addr+1),WORD($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-4;
     }
@@ -295,11 +328,14 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		my($ofs) = WORD($addr+2);
 		$ofs = $ofs - 65536 if ($ofs >= 32768);						
 		push(@{$OPA[$opa]},sprintf('[%d,PCR]',$ofs));
+		push(@{$OI[$opa]},sprintf('%02X%02X%04X',$opc,BYTE($addr+1),WORD($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-4;
     }
 	if ($PB == 0b10011111) {														# extended indirect
 		push(@{$OPA[$opa]},sprintf('[$%04X]',WORD($addr+2)));
+		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
+		push(@{$OI[$opa]},':');
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-4;
     }
@@ -335,6 +371,7 @@ sub op_PP($$$)																		# PUSH/PULL op (page 1 only)
 		push(@{$OPA[$addr]},substr($regs,0,length($regs)-1));						# remove trailing comma
     }
 	
+	push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	return $rv;
 }
@@ -356,6 +393,7 @@ sub op_2REGS($$$)																	# EXG/TFR
     }
 
 	push(@{$OPA[$addr]},"$R1,$R2");
+	push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;
 }
@@ -380,33 +418,41 @@ sub disassemble_syscall($$)
 	for (my($i)=0; $i<length($SC_ARGS[$sc]); $i++) {     
 		if (substr($SC_ARGS[$sc],$i,1) eq 'W') { 												# W: word (not addr!)
 			push(@{$OPA[$oaddr]},sprintf('$%04X!',WORD($addr)));
+			push(@{$OI[$oaddr]},sprintf('%04X',WORD($addr)));
 			$decoded[$addr++] = $decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'P') {											# P: pointer (address)
 			push(@{$OPA[$oaddr]},label_address(WORD($addr),''));
+			push(@{$OI[$oaddr]},':');
 			$decoded[$addr++] = $decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'B') {											# B: byte
 			push(@{$OPA[$oaddr]},sprintf('$%02X!',BYTE($addr)));
+			push(@{$OI[$oaddr]},srintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'S') {											# S: switch
 			die(sprintf("Invalid switch argument Switch#%02X",BYTE($addr)))
 				unless (BYTE($addr)>=0 && BYTE($addr)<=65);
 			push(@{$OPA[$oaddr]},sprintf('Switch#%02X',BYTE($addr)));
+			push(@{$OI[$oaddr]},srintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'O') {											# O: sOlenoid
 			die(sprintf("Invalid solenoid Sol#%d",BYTE($addr)))
 				unless (BYTE($addr)>=1 && BYTE($addr)<=65);
 			push(@{$OPA[$oaddr]},sprintf('Sol#%d',BYTE($addr)));
+			push(@{$OI[$oaddr]},srintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'L') {											# L: Lamp
 			die(sprintf("Invalid lamp argument Lamp#%d",BYTE($addr)))
 				unless (BYTE($addr)>=1 && BYTE($addr)<=65);
 			push(@{$OPA[$oaddr]},sprintf('Lamp#%d',BYTE($addr)));
+			push(@{$OI[$oaddr]},srintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'E') {											# E: Error
 			push(@{$OPA[$oaddr]},sprintf('Error#%02X',BYTE($addr)));
+			push(@{$OI[$oaddr]},srintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'G') {											# G: Bitgroup
 			push(@{$OPA[$oaddr]},sprintf('Bitgroup#%02X',BYTE($addr)));
+			push(@{$OI[$oaddr]},srintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'F') {											# F: Flag
 			my($fno) = BYTE($addr) - 0x40;														# Flag#00-3F
@@ -414,23 +460,30 @@ sub disassemble_syscall($$)
 			die(sprintf("Invalid flag argument Flag#%02X",$fno))
 				unless ($fno>=0x00 && $fno<0x80);
 			push(@{$OPA[$oaddr]},sprintf('Flag#%02X',$fno));
+			push(@{$OI[$oaddr]},srintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'T') {											# T: Thread
 			push(@{$OPA[$oaddr]},sprintf('Thread#%04X',WORD($addr)));
+			push(@{$OI[$oaddr]},srintf('%04X',WORD($addr)));
 			$decoded[$addr++] = $decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'A') {											# A: Adjustment
 			die(sprintf("Invalid adjustment argument Adj#%02X",BYTE($addr)))
 				unless (BYTE($addr)>=0 && BYTE($addr)<=255);
 			push(@{$OPA[$oaddr]},sprintf('Adj#%02X',BYTE($addr)));
+			push(@{$OI[$oaddr]},srintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'U') {											# U: aUdit
 			push(@{$OPA[$oaddr]},sprintf('Audit#%04X',WORD($addr)));
+			push(@{$OI[$oaddr]},srintf('%04X',WORD($addr)));
 			$decoded[$addr++] = $decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'D') {											# D: DMD animation
 			push(@{$OPA[$oaddr]},sprintf('DMD#%02X',BYTE($addr)));
+			push(@{$OI[$oaddr]},srintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'C') {											# C: code ptr (W)
-			my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
+			my($taddr) = WORD($addr);
+			$decoded[$addr++] = $decoded[$addr++] = 1;
+			push(@{$OI[$oaddr]},srintf('%04X',WORD($addr)));
 			push(@{$OPA[$oaddr]},sprintf('$%04X',$taddr));
 
 			my($tlbl) = sprintf("library_%04X",$taddr);
@@ -442,6 +495,7 @@ sub disassemble_syscall($$)
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'R') {											# R: code reference (WB)
 			my($taddr) = WORD($addr); $decoded[$addr++] = $decoded[$addr++] = 1;
 			my($trpg)  = BYTE($addr); $decoded[$addr++] = 1;
+			push(@{$OI[$oaddr]},srintf('%04X%02X',$taddr,$trpg));
 
 			my($orpg) = select_WPC_RPG($trpg);
 			my($tlbl) = sprintf('library_%04X',$taddr);
@@ -459,7 +513,6 @@ sub disassemble_syscall($$)
 			}
 			select_WPC_RPG($orpg);
 			push(@{$OPA[$oaddr]},$tlbl);
-##			push(@{$OPA[$oaddr]},sprintf('$%02X',$trpg));
 		} else {
 			die("invalid inline argument spec <$SC_ARGS[$sc]>");
 		}
@@ -741,6 +794,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			$OP[$addr-1] = '.DW'; $IND[$addr-1] = $ind;
 			$OPA[$addr-1][0] = sprintf('$%04X!',WORD($addr-1));
 			$REM[$addr-1] = 'WARNING: Unknown M6809 opcode';
+			push(@{$OI[$addr-1]},sprintf('%04X',WORD($addr-1)));
 			$decoded[$addr++] = 1;
 			$unclean = 1;
 	        return;
@@ -762,6 +816,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			$OP[$addr-1] = '.DW'; $IND[$addr-1] = $ind;
 			$OPA[$addr-1][0] = sprintf('$%04X!',WORD($addr-1));
 			$REM[$addr-1] = 'WARNING: Unknown M6809 opcode';
+			push(@{$OI[$addr-1]},sprintf('%04X',WORD($addr-1)));
 			$decoded[$addr++] = 1;
 			$unclean = 1;
 	        return;
@@ -772,6 +827,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		$OP[$addr] = '.DB'; $IND[$addr] = $ind;
 		$OPA[$addr][0] = sprintf('$%02X!',BYTE($addr));
 		$REM[$addr] = 'WARNING: Unknown M6809 opcode';
+		push(@{$OI[$addr]},sprintf('%02X',BYTE($addr)));
 		$decoded[$addr++] = 1;
 		$unclean = 1;
 		return;
