@@ -1,0 +1,66 @@
+#======================================================================
+#                    W P C _ M B D . O B J 
+#                    doc: Sat Mar 22 20:06:21 2025
+#                    dlm: Mon Mar 24 17:54:40 2025
+#                    (c) 2025 A.M. Thurnherr
+#                    uE-Info: 33 0 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+#
+>3B:BYU=MBD_dataRefs[A]
+;A_in = lock number
+3412 
+B1 :_MBD_NUM_LOCKS 
+2505 
+BD :Error 47 
+4F 
+3402 
+C605 
+3D 
+FE :^MBD_LOCK_DATA 
+;Y_out = pointer to lock RAM data (argument for handler routine?)
+33CB 
+3502 
+;=MBD_LOCKTABLE (!!!)
+8E4785 
+;B_out = pg of lock table
+C637 
+BD :X=^tableElt[ABX] 
+BD :Y=[XB] 
+;U_out = lock table data (pointer)
+1E23 
+;RTS
+3592 
+#
+>MBD_checkBalls_bookkeeping
+;called early in Balltrough_eventDispatcher
+3402
+B6 :_BALLS_IN_TROUGH BB :_BALLS_LOCKED 
+;number of located balls
+B1 :_BALLS_ACCOUNTED_FOR 2303
+;update ball bookkeeping
+BD75FE
+3582
+;RTS
+#
+>MBD_callHandler[AB]
+;call Multiball Device handler; A_in = lock number, B_in handler argument (A_in)
+3476
+;B := handler pg, Y := ^Lock Data, U=Lock Table Entry (pointer to 4-byte data)
+BD :BYU=MBD_dataRefs[A]
+;X := U+1 (skip first byte)
+3041
+;Y := addr of lock handler routine
+BD :Y=[XB]_INXINX
+;A := PG of lock handler routine
+BD :A=[XB]==1?
+;X := Y
+30A4
+;B := A
+1F89
+;A := B_in (handler argument)
+A661
+;call lock handler
+BD :longJSR[BX]
+;RTS
+35F6
+

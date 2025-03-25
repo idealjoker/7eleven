@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Mar 23 11:02:33 2025
+#                    dlm: Tue Mar 25 11:25:50 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 57 77 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 420 55 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -55,6 +55,7 @@
 #				  - added support for Game Event Hooks (@Hook)
 #	Mar 21, 2025: - updated disassemble_MBD_system() to work with scanCode
 #	Mar 23, 2025: - updated disassemble_MBD_system() to work with WPC_MBD.obj
+#	Mar 24, 2025: - adapted to @OI (.obj output)
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -115,6 +116,7 @@ sub disassemble_MBD_system()												# execute this early on, because it defi
 			push(@matchObj,split);
 		}
 	}
+	scanCode(0x3B,$lbl,@matchObj);
 	close(OBJ);
 }
 
@@ -290,6 +292,10 @@ sub disassemble_DMD_table()
 
 #----------------------------------------------------------------------
 # Post Disassembly Magic
+#	- replace JMP *+3 by &skip postfix tag of preceding JSR instruction
+#	- make sleep arguments decimal
+#	- add empty lines after RTS, JMP, etc.
+#	- handle WPC truth values (CC=true) after predicates marked with ?
 #----------------------------------------------------------------------
 
 sub apply_magic_WPC($$)
@@ -297,15 +303,14 @@ sub apply_magic_WPC($$)
 	my($fa,$la) = @_;
 
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
-##		if ($addr==0x44B4 && $_cur_RPG==0x31) {
-##			printf(STDERR "OP=$OP[$addr] RPG=%02X LBL=$LBL[$addr+3] OPA0=$OPA[$addr][0]\n",$_cur_RPG);
-##		}
 		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {			# 1) JMP *+3 
 			undef($OP[$addr]);													# 		generate postfix tag
 			push(@{$OPA[$addr-3]},'&skip');
+			splice(@{$OPA[$addr]},0,1);
 			undef($LBL[$addr+3])												# 		should probably also undef Lbl!
 				if ($Lbl_refs{$LBL[$addr+3]} == 1);
-			splice(@{$OPA[$addr]},0,1);
+			undef(@OI[$addr]);
+			push(@{$OI[$Addr-3]},sprintf('7E%04X',$Addr+3));
 		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{leep$}) {				# 2) decimalize sleep arguments
 			$OPA[$addr][1] = hex(substr($OPA[$addr][1],1,4));
 		} elsif ($IND[$addr] == $code_base_indent &&							# 3) add extra space after top-level "exit" instructions
@@ -372,6 +377,7 @@ sub select_WPC_RPG($@)
 	@{$INDPG[$_cur_RPG]}	 	= @IND[0x4000..0x7FFF]; 		    
 	@{$TYPEPG[$_cur_RPG]}	 	= @TYPE[0x4000..0x7FFF];		    
 	@{$OPAPG[$_cur_RPG]}	 	= @OPA[0x4000..0x7FFF]; 		    
+	@{$OIPG[$_cur_RPG]}		 	= @OI[0x4000..0x7FFF]; 		    
 	@{$REMPG[$_cur_RPG]}	 	= @REM[0x4000..0x7FFF]; 		    
 	@{$EXTRAPG[$_cur_RPG]}	 	= @EXTRA[0x4000..0x7FFF]; 		    
 	@{$EXTRA_INDPG[$_cur_RPG]}	= @EXTRA_IND[0x4000..0x7FFF]; 		    
@@ -388,6 +394,7 @@ sub select_WPC_RPG($@)
 	@IND[0x4000..0x7FFF] 		= @{$INDPG[$RPG]};
 	@TYPE[0x4000..0x7FFF]		= @{$TYPEPG[$RPG]};
 	@OPA[0x4000..0x7FFF] 		= @{$OPAPG[$RPG]};
+	@OI[0x4000..0x7FFF] 		= @{$OIPG[$RPG]};
 	@REM[0x4000..0x7FFF] 		= @{$REMPG[$RPG]};
 	@EXTRA[0x4000..0x7FFF] 		= @{$EXTRAPG[$RPG]};
 	@EXTRA_IND[0x4000..0x7FFF]	= @{$EXTRA_INDPG[$RPG]};
@@ -410,6 +417,7 @@ sub select_WPC_RPG($@)
 		my($oA) = $Address;
 		$Address = 0x4000;
 		def_byte_hex('_ROMPG_ID',sprintf('ROM PAGE %02X',$_cur_RPG));
+		push(@{$OI[0x4000]},sprintf('%02X',BYTE(0x4000)));								# this should eventually move into def_byte_hex()
 		$Address = $oA;
 	}
 	

@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Mar 23 21:50:46 2025
+#					 dlm: Tue Mar 25 11:52:26 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 257 39 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 318 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -313,6 +313,7 @@ my($unrealistic_score_limit) = 1e6;
 sub import($@)
 {
 	my($pkg,$sys,$opts) = @_;
+	print(STDERR "import($pkg,$sys,$opts)\n");
     
 	eval($opts) if defined($opts);
 
@@ -3417,7 +3418,7 @@ sub produce_output(@)                                                       # wi
 }
 
 #----------------------------------------------------------------------
-# Output Routine
+# Output Routines
 #----------------------------------------------------------------------
 
 sub dump_labels($)
@@ -3469,4 +3470,31 @@ sub dump_labels($)
 #	}
 }
 		    
+#----------------------------------------------------------------------
+# Produce Obj Output
+#----------------------------------------------------------------------
+
+sub produce_obj($$)
+{                 
+    my($fa,$la) = @_;
+    $fa = 0 unless defined($fa);
+    $la = $#ROM unless defined($la);
+
+    for (my($addr)=$fa; $addr<=$la; $addr++) {  
+    	next unless defined($OP[$addr]);
+
+		print(">$LBL[$addr]\n")												# next object
+			if defined($LBL[$addr]) && !($LBL[$addr] =~ m{[\.~]});
+		print(";$REM[$addr]\n") if defined($REM[$addr]);			
+		foreach my $oi (@{$OI[$addr]}) {									# loop through all object info elts
+			if ($oi =~ m{^:} && defined($LBL[hex($')])) {					# address with label
+				printf(":%s ",$LBL[hex($')]);
+			} else {														# anything else
+				print("$oi ");
+			}
+		}
+		print("\n");
+	}
+}
+
 1;

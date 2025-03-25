@@ -1,10 +1,10 @@
 #!/usr/bin/perl
 #======================================================================
-#					 D I S A S S E M B L E _ W P C _ A L P H A N U M E R I C 
+#					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Tue Mar 25 11:19:11 2025
+#					 dlm: Tue Mar 25 12:19:23 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 102 41 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 56 71 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -14,6 +14,7 @@
 #	Mar 18, 2025: - enabled disassemble_sycalls()
 #	Mar 19, 2025: - adapted to free space autodection
 #	Mar 25, 2025: - added -o
+#				  - merged with [disassemble_WPC_DMD] and renamed
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -30,11 +31,19 @@ die("Usage:\t$0\n\t\t" .
 			"[output -L)abel table]\n\t\t" .
 			"[output -l)abel definitions]\n\t\t" .
 			"[output -o)bject data <PG|FF>]\n\t\t" .
-			"<ROM image>\n")
-	unless &getopts('acgi:lLo:Qs') && @ARGV==1;
+			"<Alphanumeric|DMD> <ROM image>\n")
+	unless &getopts('acgi:lLo:Qs') && @ARGV==2;
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
-use D711 ('WPC(Alphanumeric)','$opt_Q = 1;');								# suppress D711 splash message
+
+my($lbl) = 'Alphanumeric';
+if ($lbl =~ m{^$ARGV[0]}) {
+	eval "use D711 ('WPC(Alphanumeric)','\$opt_Q = $opt_l;')";				# suppress D711 splash message during label generation
+} else {
+	eval "use D711 ('WPC(DMD)','\$opt_Q = $opt_l;')";
+}
+
+shift;
 
 $D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
@@ -44,7 +53,7 @@ $D711::fill_gaps	= !$opt_g;												# -g) exclude gap data
 # Load ROM
 #----------------------------------------------------------------------
 
-$D711::start_page = 0x30;
+$D711::start_page = ($WMS_System eq 'WPC(Alphanumeric)') ? 0x30 : 0x20;
 &D711::load_ROM($ARGV[0],0x4000,$D711::start_page,16);						# Load ROM: first game page (256KB ROM)
 &D711::load_ROM($ARGV[0],0x8000,0x3E,32);									# Load ROM: System pages
 

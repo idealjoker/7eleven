@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Mar 22 16:48:04 2025
+#                    dlm: Tue Mar 25 12:18:06 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 378 29 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 35 59 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -32,6 +32,7 @@
 #				  - moved syscalls from D711.WPC_DMD
 #	Mar 18, 2025: - updated to work both with T2 (DMD) and FH (Alphanumeric)
 #	Mar 19, 2025: - continued update
+#	Mar 25, 2025: - BUG: duplicated addBonus[A] in WPC(DMD)
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -613,7 +614,7 @@ if ($WMS_System eq 'WPC(DMD)') {
  define_syscall('NE=gameDisabled',					0xF759);
  define_syscall('wait4_Thread#0041_not_running',	0xF766);
  define_syscall('lastBall?',						0xF7EF,'');
- define_syscall('addBonus[A]',						0xFA7D);
+ define_syscall('growJackpot[A]',					0xFA7D);
  define_syscall('addBonus_1130',					0xFAA8);
  define_syscall('addBonus_3330',					0xFAAE);
  define_syscall('addBonus_5530',					0xFAB4);
