@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Mon Mar 24 22:25:35 2025
+#                    dlm: Tue Mar 25 17:18:02 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 157 19 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 45 68 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -42,6 +42,7 @@
 #	Mar 11, 2025: - added data definitions to op_EXT()
 #	Mar 15: 2025: - BUG: op_EXT() did not work correctly
 #	Mar 24, 2025: - added support for @OI (.obj output)
+#	Mar 25, 2025: - BUG: pg2/3 opcodes did not output 1st byte in OI
 # HISTORY END
 
 # NOTES:
@@ -755,6 +756,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next if op_EXT(0xFE,$addr,$ind,'LDU',2); 	next if op_EXT(0xFF,$addr,$ind,'STU',2); 	
 
 		if (BYTE($addr) == 0x10) {																	# page 2 opcodes
+			push(@{$OI[$addr]},'10');
 			$decoded[$addr++] = 1;
 
 			next if op_LREL(0x21,$addr-1,$ind,'LBRN',$lbl_root,0);
@@ -802,6 +804,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
         }
 		
 		if (BYTE($addr) == 0x11) {																	# page 3 opcodes
+			push(@{$OI[$addr]},'11');
 			$decoded[$addr++] = 1;
 
 			return if op_INH(0x113F,$addr-1,$ind,'SWI3'); 

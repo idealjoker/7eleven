@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Tue Mar 25 11:52:26 2025
+#					 dlm: Wed Mar 26 13:45:17 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 318 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 260 89 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -255,6 +255,9 @@
 #				  - majorly improved scanCode
 #	Mar 23, 2025: - modified scanCode to work with .obj files
 #				  - made scanCode fuzzy
+#	Mar 24, 2025: - BUG: produce_obj() did not handle gaps correctly
+#	Mar 26, 2025: - BUG: produce_obj() did not stop at RTS, JMP, LBRA or !exitThread
+#				  - BUG: anonymous/auto labels (e.g. RAM_0384) were not handled correclty
 # END OF HISTORY
 
 # TO-DO:
@@ -313,7 +316,7 @@ my($unrealistic_score_limit) = 1e6;
 sub import($@)
 {
 	my($pkg,$sys,$opts) = @_;
-	print(STDERR "import($pkg,$sys,$opts)\n");
+##	print(STDERR "import($pkg,$sys,$opts)\n");
     
 	eval($opts) if defined($opts);
 
@@ -400,7 +403,9 @@ sub scanCode(@)
 {
 ##	print(STDERR "scanCode(@_)\n");
 
-	my($pg) = shift;														# 1st argument is PGid
+	my($allowedMismatches) = shift;											# 1st argument is allowed mismatches
+
+	my($pg) = shift;														# next argument is PGid
 	select_WPC_RPG($pg);
 	my($lbl) = shift;
 	my(@matchInfo) = @_;
@@ -418,8 +423,12 @@ sub scanCode(@)
 		$maxAddr = $saddr;
 	}
  	$saddr++;																# try next
- 	die(sprintf("scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
-		if ($saddr > 0x7FFF);
+	if ($saddr > 0x7FFF) {
+#	 	die(sprintf("scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
+		printf(STDERR "scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr)
+	 		if ($allowedMismatches == 5);
+		return undef;
+	}
 	undef(@matchData); 
 	undef(@matchLabel);
 	$Address = $saddr;
@@ -449,7 +458,7 @@ sub scanCode(@)
 			$Address += 2;
 			if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
 				$mismatches++;
-				goto RESTART_SCAN if ($mismatches > 5);
+				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
 			}
 			next;
 		}
@@ -462,7 +471,7 @@ sub scanCode(@)
 			$Address += 1;
 			if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
 				$mismatches++;
-				goto RESTART_SCAN if ($mismatches > 5);
+				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
 			}
 			next;
 		}
@@ -474,18 +483,25 @@ sub scanCode(@)
 ##				if $mi>5;
 			if (hex(substr($matchInfo[$mi],2*$j,2)) != BYTE($Address)) {
 				$mismatches++; 
-				goto RESTART_SCAN if ($mismatches > 5);
+				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
 			}
 	    }
 	}
 
-	setLabel($lbl,$saddr);
-	for (my($i)=0; $i<@matchData; $i++) {
-		setLabel($matchLabel[$i],$matchData[$i]);
-    }
-    for (my($i)=0; $i<@matchREM; $i++) {
-    	$REM[$saddr+$i] = $matchREM[$i];
-    }
+	if (($Address-$saddr)-$mismatches > 15) {								# exclude short code snippets with likely multiple matches
+#		printf(STDERR "setLabel($lbl,%04X); [%d bytes, %d mismatches]\n",$saddr,$Address-$saddr,$mismatches);
+		setLabel($lbl,$saddr);
+		for (my($i)=0; $i<@matchData; $i++) {
+#			print(STDERR "setLabel($matchLabel[$i],$matchData[$i]);\n");
+			setLabel($matchLabel[$i],$matchData[$i])
+				unless ($matchLabel[$i] =~ m{^RAM_[0-9A-F]{4}$});			# "anonymous" labels (e.g. RAM_0384) are set automatically
+		}																	# by the disassembler and cannot migrate over
+		for (my($i)=0; $i<@matchREM; $i++) {
+			$REM[$saddr+$i] = $matchREM[$i];
+	    }
+	}
+
+	return 1;
 }
 
 #----------------------------------------------------------------------
@@ -534,18 +550,22 @@ sub setLabel($$@)
         if (($LBL[$addr] =~ m{_[0-9A-F]{4}$}) &&                #   otherwise, make duplicate
             !($lbl =~ m{_[0-9A-F]{4}$}));
 	if (defined($Lbl{$lbl}) && $Lbl{$lbl}!=$addr && $Lbl{$lbl} ne $faddr) {		# trying to re-define label with different address
+		if (numberp($Lbl{$lbl})) {
 			die(sprintf("setLabel(%s,\$%04X): label already defined at \$%04X\n",$lbl,$addr,$Lbl{$lbl}));
-			my($tl,$pg);
-			if ($lbl =~ m{(\[[0-9A-F]{2}\])$}) {
-				$tl = $`;
-				$pg = $1;
-			} else {
-				$tl = $lbl;
-				$pg = '';
-            }
-			my($i) = 0;
-			while (defined($Lbl{$tl.$i.$pg})) { $i++; }
-			$lbl = $tl.$i.$pg;
+	    } else {
+			die(sprintf("setLabel(%s,\$%04X): label already defined at $Lbl{$lbl}\n",$lbl,$addr,$Lbl{$lbl}));
+		}
+##		my($tl,$pg);											# make unique
+#		if ($lbl =~ m{(\[[0-9A-F]{2}\])$}) {
+#			$tl = $`;
+#			$pg = $1;
+#		} else {
+#			$tl = $lbl;
+#			$pg = '';
+#		}
+#		my($i) = 0;
+#		while (defined($Lbl{$tl.$i.$pg})) { $i++; }
+#       $lbl = $tl.$i.$pg;
     }
     $LBL[$addr] = $lbl;                                         # define label
     $Lbl{$lbl} = $faddr;
@@ -3480,12 +3500,20 @@ sub produce_obj($$)
     $fa = 0 unless defined($fa);
     $la = $#ROM unless defined($la);
 
+	my($assembling) = 0;
     for (my($addr)=$fa; $addr<=$la; $addr++) {  
-    	next unless defined($OP[$addr]);
+    	$assembling=0 unless $decoded[$addr];								# stop assembling when hitting a gap
+    	next unless defined($OP[$addr]);									# skip inter-op addresses
+    	$assembling=0 if isMember($OP[$addr],'RTS','JMP','LBRA') ||			# stop assembling at end of routine
+    					 ($OP[$addr] eq '!' && $OPA[$addr][0] eq 'exitThread') ||
+    					 ($REM[$addr] eq 'RTS');
 
-		print(">$LBL[$addr]\n")												# next object
-			if defined($LBL[$addr]) && !($LBL[$addr] =~ m{[\.~]});
-		print(";$REM[$addr]\n") if defined($REM[$addr]);			
+		print(">$LBL[$addr]\n"),$assembling=1								# start next object
+			if defined($LBL[$addr]) && !($LBL[$addr] =~ m{[\.~]});			# (no BRA labels)
+
+		next unless $assembling;											# skip local code after gaps
+		
+		print(";$REM[$addr]\n") if defined($REM[$addr]);					# add comment
 		foreach my $oi (@{$OI[$addr]}) {									# loop through all object info elts
 			if ($oi =~ m{^:} && defined($LBL[hex($')])) {					# address with label
 				printf(":%s ",$LBL[hex($')]);

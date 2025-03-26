@@ -1,1 +1,1647 @@
-WPC_MBD.obj_manual
+>3B:_ROMPG_ID
+3B 
+>3B:GameHook#43_event
+3402 
+C101 
+2615 
+7D :RAM_1ECF 
+2710 
+BD :syscall_89DD 00CD 95 
+BD :syscall_89DD 00CE 96 
+1CFE 
+>3B:GameHook#12_event
+3406 
+C600 
+BD :syscall_F944 7E5EC7 
+1CFE 
+>3B:GameHook#27_event
+BD :longJSR 720231 
+>3B:GameHook#21_event
+BD :longJSR 71F231 
+BD :solCmd 0B 
+>3B:GameHook#14_event
+BD :longJSR 723431 
+>3B:GameHook#53_event
+3416 
+BD :longJSR 71F631 
+BD :unlockRAM 
+8E1EC7 
+868C 
+8D05 
+BD :lockRAM 
+>3B:GameHook#0_event
+BD :3B:library_6D62 7E5F09 
+1CFE 
+>3B:GameHook#1_event
+3436 
+BD :longJSR 723031 
+B6 :RAM_179C 
+8143 
+2706 
+BD :longJSR 663E31 
+BD :syscall_F8DB 7E5F27 
+>3B:GameHook#24_event
+BD :killSpawnLowPriorityThread 0100 5F343B 
+1CFE 
+>3B:library_5F34
+BD :lampFX 36 
+>3B:GameHook#42_event
+BD :3B:library_76A8 
+>3B:GameHook#17_event
+BD :NE=gameDisabled 7E5F48 
+261C 
+8101 
+220A 
+BD :killSpawnLowPriorityThread 00EE 5FBE3B 
+2016 
+8102 
+220A 
+BD :killSpawnLowPriorityThread 00EE 5FA33B 
+2008 
+BD :killSpawnLowPriorityThread 00EE 5F6F3B 
+>3B:library_5F6F
+BD :killSpawnLowPriorityThread 00E7 60D13B 
+BD :solCmd 13 
+BD :sleep 02 
+BD :solCmd 13 
+BD :sleep 01 
+BD :solCmd 13 
+BD :sleep 02 
+BD :solCmd 13 
+BD :solCmd 01 
+BD :sleep 05 
+BD :solCmd 03 
+BD :sleep 05 
+>3B:library_5FA3
+BD :3B:library_609A 
+BD :solCmd 13 
+BD :sleep 02 
+BD :solCmd 13 
+BD :sleep 02 
+BD :solCmd 13 
+BD :sleep 05 
+>3B:library_5FBE
+8501 
+2630 
+BD :threadRunning? 00AA 
+2429 
+BD :threadRunning? 00BC 
+2422 
+BD :clearFlag C6 
+BD :solCmd 0A 
+BD :killSpawnLowPriorityThread 00E8 60AE3B 
+BD :killSpawnLowPriorityThread 00BD 667531 
+BD :killSpawnLowPriorityThread 00B9 60B93B 
+2034 
+BD :threadRunning? 00AB 
+242D 
+BD :threadRunning? 00AA 
+2426 
+BD :threadRunning? 00BD 
+241F 
+BD :threadRunning? 00BC 
+2418 
+BD :solCmd 07 
+BD :killSpawnLowPriorityThread 00BC 60CA3B 
+BD :killSpawnLowPriorityThread 00B9 60B93B 
+BD :sleep 05 
+BD :threadRunning? 00AE 
+240E 
+BD :switchClosed? 0F 
+2408 
+BD :solCmd 04 
+BD :sleep 05 
+BD :NE=gameDisabled 7E6041 
+2708 
+BD :solCmd 11 
+BD :sleep 05 
+BD :solCmd 0E 
+BD :sleep 05 
+BD :solCmd 0C 
+BD :sleep 05 
+BD :solCmd 0D 
+BD :sleep 05 
+BD :solCmd 0F 
+BD :sleep 05 
+BD :solCmd 10 
+BD :sleep 05 
+BD :solCmd 05 
+BD :sleep 05 
+BD :solCmd 09 
+BD :sleep 05 
+BD :killSpawnLowPriorityThread 00E7 60D13B 
+BD :solCmd 13 
+BD :sleep 02 
+BD :solCmd 13 
+>3B:library_609A
+BD :A=AD_value=? 14 00 
+270C 
+BD :killSpawnLowPriorityThread 00E7 60D13B 
+BD :solCmd 06 
+>3B:library_60AE
+BD :sleep C0 
+BD :solCmd 08 
+>3B:library_60B9
+BD :sleep E3 
+BD :killThreads 00BD 
+BD :killThreads 00BC 
+>3B:library_60CA
+BD :sleep E0 
+>3B:library_60D1
+BD :sleep A0 
+BD :flagSet? E3 
+240F 
+BD :solCmd 13 
+BD :sleep 02 
+BD :solCmd 13 
+>3B:GameHook#44_event
+BD :unknown_spawnThread_1 5F6F3B 
+>3B:GameHook#37_event
+BD :longJSR 71F231 
+BD :playSound 01 
+BD :NE=gameDisabled 7E610F 
+2604 
+BD :playSound 46 
+1CFE 
+>3B:GameHook#66_event
+BD :syscall_D360 
+BD :syscall_D799 0045 10 4017 
+BD :syscall_E274 
+BD :sleep 80 
+1A01 
+>3B:GameHook#49_event
+BD :longJSR 5F7A3D 
+>3B:GameHook#19_event
+BD :longJSR 478B31 
+BD :solCmd 09 
+1CFE 
+>3B:GameHook#46_event
+3436 
+8601 
+BD :syscall_9235 
+2405 
+8633 
+B7 :RAM_17A8 
+B6 :RAM_17A8 
+B7 :RAM_17A7 
+7F :RAM_17A8 
+8601 
+BD :.subroutine_9252 
+8608 
+BD :.subroutine_9FFE 
+8D27 
+BD :syscall_F975 7E616A 
+BD :setGIbrightness81 08 
+BD :clearFlag D4 
+8660 
+BD :changeBackgroundMusic[A] 
+8620 
+BD :changeBackgroundMusic[A] 
+8E0591 
+4F 
+8C060C 
+2704 
+A780 
+20F7 
+>3B:library_618B
+3416 
+8E00B7 
+BD :A=AD_value=? 9A 00 
+2705 
+CC0750 
+2003 
+CC0500 
+6F84 
+ED01 
+6F03 
+6F04 
+>3B:GameHook#28_event
+BD :3B:library_7625 
+>3B:GameHook#15_event
+3402 
+BD :syscall_F897 7E61B8 
+BD :clearAll 08 10 
+BD :clearAll 08 00 
+5F 
+BD :syscall_A003 
+BD :setBit 20 40 
+8E6256 
+BD :B=adjustment 08 
+3A 
+A684 
+8E0614 
+BD :X=X+playerNumber 7E61DE 
+A784 
+BD :A=adjustment 09 
+8E0618 
+BD :X=X+playerNumber 7E61ED 
+A784 
+BD :A=adjustment 09 
+8E061C 
+BD :X=X+playerNumber 7E61FC 
+A784 
+BD :A=adjustment 09 
+8E0620 
+BD :X=X+playerNumber 7E620B 
+A784 
+BD :A=adjustment 0B 
+8E0624 
+BD :X=X+playerNumber 7E621A 
+A784 
+BD :A=adjustment 0A 
+8E0628 
+BD :X=X+playerNumber 7E6229 
+A784 
+BD :A=adjustment 0D 
+8E0630 
+BD :X=X+playerNumber 7E6238 
+A784 
+BD :A=AD_value=? 07 02 
+2407 
+BD :A=AD_value=? 07 03 
+250C 
+86FF 
+97B1 
+BD :lampOn 09 
+BD :setFlag 44 
+>3B:GameHook#6_event
+3416 
+BD :flagSet? D0 
+2404 
+BD :DMDanimation 34 
+BD :clearFlag D1 
+BD :A=AD_value=? 04 00 
+2449 
+BD :A=ballInPlay_lastBall? 
+2544 
+BD :A=EBpending 
+4D 
+263E 
+8E05AD 
+BD :X=X+playerNumber 7E6286 
+6D84 
+2631 
+BD :A=playerUp 
+BD :.subroutine_BB3E 
+6DC4 
+2627 
+A641 
+8103 
+2421 
+BD :longJSR 4C7B38 
+6D8822 
+2616 
+EC8822 
+C11E 
+220F 
+BD :updateAudit 001F 
+BD :setFlag D1 
+BD :longJSR 572331 
+BD :A=AD_value=? 03 01 
+2405 
+BD :clearBit 0F 40 
+BD :setGIbrightness81 08 
+BD :clearFlag 42 
+BD :setFlag D2 
+BD :longJSR 680831 
+BD :clearAll 19 40 
+BD :flagSet? 41 
+241B 
+BD :syscall_F7DE 7E62EA 
+6F84 
+6F01 
+6F02 
+6F03 
+6F04 
+8E0591 
+BD :X=X+playerNumber 7E62FD 
+6F84 
+BD :clearFlag 41 
+8E0595 
+BD :X=X+playerNumber 7E630C 
+A684 
+8E0599 
+BD :X=X+playerNumber 7E6317 
+A184 
+2608 
+BD :lampOn 30 
+BD :lampOn 3A 
+BD :clearAll 0B 10 
+BD :clearAll 0B 00 
+BD :A=AD_value=? 07 00 
+2407 
+BD :A=AD_value=? 07 01 
+250E 
+86FF 
+97B1 
+BD :lampOn 09 
+BD :setFlag 44 
+201B 
+BD :A=AD_value=? 07 04 
+250C 
+0FB1 
+BD :clearFlag 44 
+BD :lampOff 09 
+2008 
+BD :flagSet? 44 
+24D9 
+20EC 
+BD :3B:update_backgroundTune 
+BD :longJSR 478B31 
+BD :lampFX 08 
+BD :setFlag D0 
+BD :flagSet? 45 
+2505 
+BD :setBit 2F 40 
+BD :flagSet? 46 
+2504 
+BD :lampOn 1A 
+BD :flagSet? 47 
+2504 
+BD :lampOn 0C 
+8E5F43 
+BD :longJSR 5F163D 
+2506 
+BD :longJSR 50AE31 
+>3B:GameHook#4_event
+BD :MBD_forceEject_all_locks 
+>3B:sys_ejectBall_and_updateBGtune
+;called from sys_ballServe
+BD :MBD_Balltrough_ejectBall 7E63B4 
+BD :playSound 2A 
+BD :flagSet? D4 
+250A 
+BD :syscall_B2F1 
+BD :clearFlag D4 
+1A01 
+>3B:GameHook#10_event
+8580 
+2703 
+BD :3B:update_backgroundTune 
+1CFE 
+>3B:syssbr_playfieldQualified
+BD :clearFlag CA 
+BD :killThreads 00BA 
+8638 
+BD :setDMDfunction[A] 
+BD :3B:update_backgroundTune 
+1CFE 
+>3B:GameHook#2_event
+0D88 
+2606 
+BD :addBonus_1130 7E63F6 
+1CFE 
+>3B:endOfBall_soundAndBookkeeping
+BD :A=EBpending 
+4D 
+2704 
+BD :playSound 6C 
+8610 
+BD :ensureBackgroundMusic[A] 
+BD :clearFlag 42 
+BD :clearFlag 43 
+BD :endOfBall_ballAccounting 
+>3B:GameHook#8_event
+BD :setFlag D3 
+BD :longJSR 478B31 
+BD :lampFX 39 
+BD :clearFlag DB 
+BD :clearFlag DA 
+>3B:GameHook#25_event
+BD :longJSR 720B31 
+BD :playSound 4F 
+>3B:GameHook#26_event
+BD :playSound 2B 
+>3B:GameHook#9_event
+3402 
+4D 
+270E 
+BD :playSound 4C 
+8638 
+BD :setDMDfunction[A] 
+8634 
+BD :setDMDfunction[A] 
+1CFE 
+>3B:GameHook#64_event
+81AF 
+2607 
+8E6501 
+C63B 
+2071 
+81AE 
+2607 
+8E650D 
+C63B 
+2066 
+81AD 
+2607 
+8E6519 
+C63B 
+205B 
+81AC 
+2607 
+8E6525 
+C63B 
+2050 
+81AB 
+2607 
+8E6531 
+C63B 
+2045 
+818D 
+2607 
+8E653D 
+C63B 
+203A 
+818C 
+2607 
+8E6549 
+C63B 
+202F 
+818B 
+2607 
+8E6555 
+C63B 
+2024 
+818A 
+2607 
+8E6561 
+C63B 
+2019 
+8189 
+2607 
+8E656D 
+C63B 
+200E 
+8187 
+2607 
+8E6579 
+C63B 
+2003 
+1CFE 
+>3B:GameHook#69_event
+BD :3B:library_7838 
+>3B:GameHook#70_event
+3476 
+BD :.subroutine_BB3E 
+8E803A 
+10 8E65DB 
+301F 
+ECA3 
+8D0A 
+25F8 
+BD :longJSR 525339 
+>3B:GameHook#61_event
+3426 
+3410 
+8E6600 
+6D84 
+2714 
+10 A384 
+2704 
+3004 
+20F3 
+10 AE02 
+3510 
+1F21 
+1A01 
+>3B:update_backgroundTune
+;this updates the background tune based on what the last DMD animation was
+3476 
+BD :NE=gameDisabled 7E663E 
+2607 
+BD :threadRunning? 00B4 
+2505 
+>turnOff_backgroundTune
+;turn off
+8601 
+>update_backgroundTune_confirmed
+BD :A=lastDMDanimation_played?? 
+;DMD#28 is unclear (ball drain?)
+C628 
+3404 
+A1E0 
+2605 
+8604 
+>^JSR_sys_setBackgroundMusic[A]_and_RTS
+BD :ensureBackgroundMusic[A] 
+>3B:library_66F5
+3436 
+1F01 
+10 8E6717 
+863B 
+C60C 
+BD :bitgroupOp[ABXY] 
+>3B:library_6706
+3436 
+1F01 
+10 8E6717 
+863B 
+C60E 
+BD :bitgroupOp[ABXY] 
+>3B:unkown_bitgroupOp_hook??_6717
+3406 
+327F 
+6D44 
+2708 
+A6C4 
+2734 
+847F 
+2012 
+BD :bit[AB]Set? 
+C600 
+59 
+E7E4 
+E6C4 
+2606 
+8A80 
+A7C4 
+201A 
+E662 
+6D46 
+2705 
+BD :clearBit[AB] 
+200F 
+C140 
+2608 
+BD :syscall_9FEF 
+BD :syscall_A003 
+C640 
+BD :setBit[AB] 
+E6E4 
+E746 
+3261 
+>3B:library_675B
+3436 
+1F01 
+C604 
+10 8E6781 
+863B 
+BD :bitgroupOp[ABXY] 
+3401 
+1F10 
+C140 
+2603 
+BD :syscall_A00C 
+3501 
+>3B:library_6779
+3436 
+1F01 
+C606 
+20E0 
+>3B:unkown_bitgroupOp_hook??_6781
+3404 
+6DC4 
+2608 
+C601 
+E7C4 
+E747 
+E6E4 
+BD :bit[AB]Set? 
+2409 
+BD :setBit[AB] 
+C601 
+E748 
+6F47 
+>3B:sys_OutholeKicker_and_exit
+;A_in = solenoid to fire; B_in = switch to test
+3406 
+33E4 
+;become Thread#0D, well protected
+BD :becomeThread_ifNotRunning 780D 
+;RAM_041A := 1 (signal something?)
+BD :syscall_B20A 
+BD :sleep 20 
+;outer loop count (re-try up to 7 times)
+8608 
+;kick ball into trough (where MSW_Balltrough_handler takes over)
+8D17 
+BD :sleep 20 
+;wait up to 1s for switch to open
+C604 
+8D18 
+250A 
+BD :sleep 10 
+5A 
+26F5 
+4A 
+26EA 
+>3B:library_6D62
+3436 
+8E7F13 
+C630 
+BD :syscall_AC42 
+1F20 
+F7 :_MBD_NUM_LOCKS 
+BE :=STATUS_AREA_POINTER 
+BF :^MBD_LOCK_DATA 
+8605 
+3D 
+308B 
+BF :=STATUS_AREA_POINTER 
+BD :3B:library_6E28 
+7F :_BALLS_LOCKED 
+BD :3B:library_75C3 
+BD :A=ballsAccountedFor 
+B7 :RAM_0CC9 
+7F :RAM_0CCA 
+B6 :RAM_17B2 
+8103 
+220B 
+8101 
+230A 
+8601 
+B7 :RAM_17B2 
+2003 
+7F :RAM_17B2 
+1CFE 
+>MBD_forceEject_all_locks
+3476 
+;VAR _lock_tmp
+327F 
+;loop over all locks
+8601 
+;_lock_tmp := A
+A7E4 
+;A := lock type
+BD :3B:BYU=MBD_dataRefs[A] 
+30C4 
+BD :A=[XB]==1? 
+;X := ^MBD_forceEject[A]
+48 
+8E75B9 
+3086 
+;A := A_in
+A6E4 
+;JSR MBD_forceEject[A]
+AD94 
+4C 
+B1 :_MBD_NUM_LOCKS 
+25E6 
+3261 
+>MBD_Balltrough_ejectBall
+3436 
+BD :MBD_updateBallsNeededInTrough4Drain 
+;kill balltrough threads
+8601 
+BD :Y=MBD_threadId[A] 
+BD :killThreads_Y 
+;spawn ball serve thread
+8E715E 
+C63B 
+BD :X=^spawnThread_1_myId??_codeRef[BX] 
+240D 
+BD :Error 4A 
+8601 
+BD :MBD_callHandler[A] 16 
+BD :sys_Balltrough_ejectBall 
+1CFE 
+>3B:library_6E28
+3476 
+8601 
+BD :3B:BYU=MBD_dataRefs[A] 
+3402 
+30C4 
+BD :A=[XB]==1? 
+8104 
+2304 
+BD :Error 52 
+5F 
+E721 
+E722 
+E723 
+E7A4 
+E724 
+3502 
+4C 
+B1 :_MBD_NUM_LOCKS 
+25DB 
+>3B:MBD_disable_lock[A]
+3404 
+5F 
+8D02 
+>3B:MBD_set_lock[A]_status[B]
+;B_in = [0 1]
+3466 
+BD :Y=MBD_lockDataPtr[A] 
+E661 
+;enabled := 0 or 1
+E721 
+E122 
+;if not enabled but there is a ball locked
+2402 
+8D09 
+>3B:MBD_ensure_lock[A]_isEmpty
+;A_in = lock number
+3404 
+5F 
+8D02 
+>MBD_ensure_lock[A]_holds_[B]balls
+;A_in = lock, B_in = 0 or 1
+3410 
+8E0000 
+8D0B 
+>3B:library_6E7B
+3410 
+8E0001 
+8D02 
+>MBD_ensure_lock[A]_holds_[B]balls_withOverride[X]
+;A_in = lock, B_in = [0 1], X_in = 0 or 1
+3420 
+;make space for 2 bytes on stack
+327E 
+10 9E53 
+10 8C0371 
+2606 
+10 8E0000 
+2003 
+BD :Y=threadId 
+10 AFE4 
+;test if lock is busy
+BD :Y=MBD_threadId[A] 
+BD :findThread[Y]? 
+2405 
+;test if this thread is lock thread
+10 ACE4 
+2608 
+;LOCK BUSY
+BD :Y=MBD_lockDataPtr[A] 
+BD :3B:library_6ECB 
+2015 
+;LOCK IDLE
+BD :Y=MBD_lockDataPtr[A] 
+;override: if X != 0, eject ball without testing 2,Y first
+8C0000 
+2604 
+;B_in >= number of balls locked?
+E122 
+2409 
+;,Y := 0 
+BD :3B:library_6ECB 
+BD :Y=MBD_threadId[A] 
+BD :MBD_lockEject[A] 
+3262 
+>3B:library_6ECB
+;1) ,Y := B_in if (,Y == 0) || (,Y >= B_in)
+3406 
+;2) mark ,Y with $80 flag if it has changed
+A6A4 
+;if ,Y == 0 		=> ,Y := B_in|$80
+2706 
+;if |,Y| < B_in 	=> ignore
+847F 
+;if |,Y| >= B_in 	=> ,Y := B_in|$80
+A161 
+2304 
+CA80 
+E7A4 
+>MBD_recordBallLocked_Y
+;unnecessary PSHS
+3402 
+;counter in RAM lock data
+6C22 
+;API counter
+7C :_BALLS_LOCKED 
+;-1 means one ball is currently locked
+7A :RAM_0CCA 
+>MBD_recordBallEjected_Y
+3402 
+;decrement balls in this lock
+6A22 
+;decrement total balls locked
+7A :_BALLS_LOCKED 
+7D :RAM_0CCA 
+;if there are any balls locked...
+2705 
+;... decrease their number by 1 (_LBD is -ve)
+7C :RAM_0CCA 
+;if there are no balls known to be locked...
+2003 
+;... increase the number of balls in trough (a lost ball has been found?)
+7C :RAM_0CC9 
+>MBD_updateBallsNeededInTrough4Drain
+3402 
+B6 :RAM_0CCA 
+BB :RAM_0CC9 
+B7 :RAM_0CC9 
+7F :RAM_0CCA 
+>MBD_becomeLockThread[A]
+;A_in = lock number
+3420 
+8D0D 
+BD :findThread[Y]? 
+2503 
+>Y=MBD_threadId[A]
+;A_in = lock number
+3406 
+4D 
+2604 
+BD :Error 4B 
+;B := lock number
+1F89 
+4F 
+;Thread id 0040-004F, where last nibble is lock number
+C30040 
+10 83004F 
+2304 
+BD :Panic 48 
+;Thread flags: protect from tilt & uknown system protection
+8A30 
+;Y_out = thread id
+1F02 
+>A=myLock_and_ejectBall
+;determine lock number belonging to running thread and eject ball from it
+3466 
+;VAR myLockNumber, myThreadid
+327D 
+;set myThreadId
+BD :Y=threadId 
+10 AF61 
+;D := my thread id
+1F20 
+;remove thread flags
+8401 
+830040 
+;error if thread id < $40
+2503 
+4D 
+;error if thread id > $13F (there are not caught by following test)
+2704 
+;weird error message
+BD :Panic 50 
+;here, B = lock number (from thread id)
+F1 :_MBD_NUM_LOCKS 
+;error if lock number too big (test only works up to $13F)
+24F7 
+;myLockNumber := B
+E7E4 
+;A := myLockNumber
+A6E4 
+BD :Y=MBD_lockDataPtr[A] 
+;A := lock type
+A6A4 
+;if it is valid...
+2707 
+;	Y := myThreadId
+10 AE61 
+;	A := myLockNumber
+A6E4 
+;eject a ball from the lock
+8D04 
+;restore stack
+3263 
+>MBD_lockEject[A]
+;eject a ball from the lock
+3416 
+8E6F8C 
+C63B 
+;X=spawnThread??_withHandler[BX]; X_out = ^thread structure
+BD :X=^spawnThread_1_myId??_codeRef[BX] 
+2408 
+BD :Error 51 
+;eject the ball without calling the event dispatcher (emergency continue)
+8D0F 
+2002 
+;store lock number as parameter (register A) of spawned thread
+A709 
+>3B:MBD_lockEject_thread
+BD :sleep 01 
+8D03 
+>MBD_callLock[A]ejectHandler
+;A_in = lock number (both trough and scoops)
+3476 
+;BU := ^lock handler
+BD :3B:BYU=MBD_dataRefs[A] 
+;X := ^lock table data
+30C4 
+;A := lock type
+BD :A=[XB]==1? 
+;A := 2*A (2 for trough, 4 for scoops)
+48 
+;table with code pointers for each lock type
+8E75AF 
+3086 
+A6E4 
+AD94 
+>Balltrough_eventDispatcher
+;for the T2 trough type this is a NOP
+BD :A=myLock_and_ejectBall 
+;exit if there is any lock thread running (includes other trough threads)
+BD :findThread? 0040 01F0 
+2461 
+;check/update ball bookkeeping
+8D66 
+BD :setThreadId 0040 
+8601 
+;signal EVT_BALL_HAS_DRAINED
+BD :MBD_callHandler[A] 03 
+;re-check for other lock threads because event handlers can sleep
+BD :findThread? 0040 01F0 
+244B 
+;do not dispatch events unless all balls accounted for
+BD :syssbr_A=MBD_ballsMissing_allFound? 
+2543 
+;do not dispatch events unless game in progress
+9687 
+263F 
+;END-OF-BALL CONDITION
+B6 :_BALLS_IN_TROUGH 
+B1 :RAM_0CC9 
+250A 
+8601 
+;calls Balltrough_event_handler with cmd $02 (end ball)
+BD :MBD_callHandler[A] 02 
+BD :Panic 4E 
+;not end-of-ball (balldrain during MB?)
+B6 :RAM_0CC9 
+BB :RAM_0CCA 
+;unclear when this should be done???
+261B 
+BD :Error 53 
+;error recovery: eject ball from lock instead
+C601 
+5C 
+F1 :_MBD_NUM_LOCKS 
+241F 
+1F98 
+BD :3B:A=MBD_ballsLocked[A]==1? 
+25F3 
+1E98 
+5A 
+BD :MBD_ensure_lock[A]_holds_[B]balls 
+200D 
+8601 
+BD :MBD_callHandler[A] 01 
+BD :Panic 4F 
+;update _MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN and _LOCKED_BALLS_DEFICIT
+BD :MBD_updateBallsNeededInTrough4Drain 
+>3B:MBD_checkBalls_bookkeeping
+;called early in Balltrough_eventDispatcher
+3402 
+B6 :_BALLS_IN_TROUGH 
+BB :_BALLS_LOCKED 
+;number of located balls
+B1 :_BALLS_ACCOUNTED_FOR 
+2303 
+;update ball bookkeeping
+BD :3B:.subroutine_75FE 
+3582 
+>3B:A=MBD_ballsLocked[A]==1?
+3420 
+BD :Y=MBD_lockDataPtr[A] 
+A622 
+8101 
+>3B:A=MBD_lockEnabled[A]==1?
+3420 
+BD :Y=MBD_lockDataPtr[A] 
+A621 
+8101 
+>3B:A=ballsInTrough_troughIdle?
+4F 
+BD :threadRunning? 0041 
+;invert carry flag
+49 
+8801 
+46 
+;A = balls in play? balls in trough?
+B6 :_BALLS_IN_TROUGH 
+>syssbr_A=MBD_ballsMissing_allFound?
+BD :A=ballsAccountedFor 
+B0 :_BALLS_IN_TROUGH 
+B0 :_BALLS_LOCKED 
+2203 
+4F 
+2002 
+1A01 
+>3B:BYU=MBD_dataRefs[A]
+;A_in = lock number
+3412 
+B1 :_MBD_NUM_LOCKS 
+2505 
+BD :Error 47 
+4F 
+3402 
+C605 
+3D 
+FE :^MBD_LOCK_DATA 
+;Y_out = pointer to lock RAM data (argument for handler routine?)
+33CB 
+3502 
+;=MBD_LOCKTABLE (!!!)
+8E7F13 
+;B_out = pg of lock table
+C630 
+BD :X=^tableElt[ABX] 
+BD :Y=[XB] 
+;U_out = lock table data (pointer)
+1E23 
+>Y=MBD_lockDataPtr[A]
+3406 
+B1 :_MBD_NUM_LOCKS 
+2505 
+BD :Error 47 
+4F 
+;5 bytes per lock device
+C605 
+3D 
+10 BE :^MBD_LOCK_DATA 
+31AB 
+>3B:MBD_callHandler[AB]
+;call Multiball Device handler; A_in = lock number, B_in handler argument (A_in)
+3476 
+;B := handler pg, Y := ^Lock Data, U=Lock Table Entry (pointer to 4-byte data)
+BD :3B:BYU=MBD_dataRefs[A] 
+;X := U+1 (skip first byte)
+3041 
+;Y := addr of lock handler routine
+BD :Y=[XB]_INXINX 
+;A := PG of lock handler routine
+BD :A=[XB]==1? 
+;X := Y
+30A4 
+;B := A
+1F89 
+;A := B_in (handler argument)
+A661 
+;call lock handler
+BD :longJSR[BX] 
+>3B:MSW_BallTrough_handler
+;_BALLTROUGH_LOCKOUT is set to value != 0 during sys_endOfBall
+9688 
+2703 
+>Balltrough_disabled_thread
+;exit 1s after Balltrough becomes re-enabled
+BD :becomeOnlyThread 780F 
+BD :sleep 0A 
+9688 
+26F8 
+BD :sleep 3C 
+>Balltrough_1s_lockout
+BD :sleep 3C 
+>A=ballsInTrough[A]afterSettling
+;A_in = trough lock number (always 1); called whenever trough switch fires
+3404 
+5F 
+8D02 
+>A=ballsInTrough[A]afterSettling_requireMin[B]balls
+;A_in = lock, B_in = minimum number of balls in the trough [0 or 1]
+3406 
+;VAR tmp_mask (BUG: UNINITIALIZED!)
+327F 
+;B := loop counter
+C608 
+BD :sleep 06 
+;A := trough lock number (always 1)
+A661 
+BD :AB=troughMaskAndStatus_trough[A]_normalState?? 
+;wait for change if trough is in weird state?
+250F 
+4D 
+;continue wait loop if there are balls in trough
+2604 
+;if there are no balls in the trough, continue the wait loop unless B_in == 1...
+6D62 
+;	in which case wait for a change in state instead
+2608 
+;continue the wait loop here 
+A1E4 
+;continue the loop if the mask has not changed
+271A 
+;otherwise, save the new mask...
+A7E4 
+;and restart the wait loop
+20E4 
+;save mask
+A7E4 
+;timeout loop counter (1.7s)
+C618 
+BD :sleep 06 
+;A := trough lock number
+A661 
+BD :AB=troughMaskAndStatus_trough[A]_normalState?? 
+;has the trough mask changed?
+A1E4 
+;branch if it has
+26EB 
+5A 
+26F0 
+;timeout
+2003 
+;decrement loop counter
+5A 
+;not yet timed out
+26CD 
+;timeout
+A661 
+;A_out := number of balls in trough
+BD :A=balls_in_trough[A] 
+A761 
+3261 
+>3B:MBD_Balltrough_ejectBall_thread
+8601 
+;EVT_Balltrough_ballEjected
+BD :MBD_callHandler[A] 16 
+8D03 
+>sys_Balltrough_ejectBall
+3476 
+;VAR _solCmd, _solCmd_next
+327E 
+;LCK_Balltrough
+8601 
+BD :3B:BYU=MBD_dataRefs[A] 
+;_solCmd := table byte #6
+3046 
+BD :A=[XB]==1? 
+A7E4 
+;tmp_2 := table byte #6
+3047 
+BD :A=[XB]==1? 
+A761 
+;loop 5 times
+C605 
+;A := number of balls in trough
+BD :threadRunning? 780F 
+2407 
+8601 
+BD :A=balls_in_trough[A] 
+2005 
+;LOOP
+8601 
+BD :A=ballsInTrough[A]afterSettling 
+;_BALLS_IN_TROUGH := A
+B7 :_BALLS_IN_TROUGH 
+BD :3B:MBD_checkBalls_bookkeeping 
+;RTS unless all balls are in trough
+B1 :RAM_0CC9 
+2527 
+;trough event#23
+8601 
+BD :MBD_callHandler[A] 23 
+;A := _solCmd
+A6E4 
+BD :solCmd[A]_wait 
+;_solCmd := _solCmd_next
+A661 
+2702 
+A7E4 
+BD :killSpawnLowPriorityThread 780F 71043B 
+BD :sleep 2D 
+5A 
+;next LOOP
+26D0 
+;make loop infinite
+5C 
+BD :sleep 40 
+20C9 
+3262 
+>A=balls_in_trough[A]
+;A_in = trough number
+3414 
+;VAR nBalls := 0
+327F 
+6FE4 
+8D63 
+;loop through switch list
+BD :A=[XB]==1?_INX 
+250D 
+1E89 
+BD :switchActive[B]? 
+1F89 
+;open switch found => done
+2504 
+;nBalls++
+6CE4 
+20EE 
+;A_out := nBalls
+A6E4 
+;restore stack
+3261 
+>3B:library_71EB
+3416 
+8D47 
+BD :A=[XB]==1?_INX 
+250B 
+1E89 
+BD :switchActive[B]? 
+2406 
+1F89 
+20F0 
+1A01 
+>AB=troughMaskAndStatus_trough[A]_normalState??
+;A_in = lock number of ball trough
+3414 
+;allocate 3 bytes on stack
+327D 
+;[1,S] := 0 (0: no open switches; number of close switches, otherwise)
+6F61 
+;[2,S] := 0 (number of closed switches)
+6F62 
+;[0,S] := FF
+C6FF 
+E7E4 
+;pointer to 0-terminated list of switches
+8D25 
+;A := next switch in list
+BD :A=[XB]==1?_INX 
+;end of list
+2515 
+;B := switch; A := B_saved
+1E89 
+BD :switchActive[B]? 
+;restore B_saved
+1F89 
+;rotate [0,S] and set sign bit if switch closed
+66E4 
+2B06 
+;if switch is not closed...
+A662 
+;	[1,S] := number of closed switches
+A761 
+;process next switch, without increasing [2,X]
+20EA 
+;increase [2,X] ONLY on closed switch
+6C62 
+20E6 
+;A_out := mask with open slots == 1
+A6E4 
+43 
+;B_out := # of balls in trough minus 1 or FF = trough is full
+E661 
+;CC_out = trough full
+CBFF 
+;restore stack
+3263 
+>X=lock[A]tablePointer
+;A_in = lock
+3460 
+;U := ^lock table data; Y := ^lock RAM data
+BD :3B:BYU=MBD_dataRefs[A] 
+;X := U+4 (pointer)
+3044 
+;X_out := pointee word
+BD :Y=[XB] 
+30A4 
+>3B:MSW_Lock_handler
+;A_in = lock number; B_in switch number
+3406 
+;B_in = switch number
+BD :switchActive[B]? 
+;continue below when ball was just locked
+2445 
+;BALL EJECTING
+BD :MBD_becomeLockThread[A] 
+BD :Y=MBD_lockDataPtr[A] 
+;clear a flag in byte 3
+E623 
+C4FE 
+E723 
+;B := number of locked balls
+E622 
+272F 
+;A := timeout loop counter
+860A 
+;restore B_in (lock switch)
+E661 
+BD :sleep 06 
+BD :switchActive[B]? 
+;BALL RELOCKED
+2419 
+4A 
+26F4 
+;BALL EJECTED
+A6E4 
+BD :MBD_recordBallEjected_Y 
+;lock must now be empty
+6D22 
+2706 
+BD :Error 4D 
+6F22 
+;call handler
+BD :MBD_callHandler[A] 05 
+>3B:MBD_LT02_forceEject[A]
+;Y_in = ^lock table data, U_in = ^RAM lock data
+3416 
+;flags
+A623 
+8501 
+2625 
+;B := switch number
+3044 
+BD :A=[XB]==1? 
+1F89 
+;test switch (which switch??)
+BD :switchActive[B]? 
+240B 
+A622 
+2715 
+A6E4 
+BD :MBD_recordBallEjected_Y 
+200E 
+A621 
+2704 
+A622 
+2606 
+A6E4 
+5F 
+BD :3B:library_6E7B 
+>3B:MBD_LT02_eject[A]
+;eject ball from a scoop
+3436 
+3279 
+A6A4 
+10 2700A1 
+6FA4 
+847F 
+10 260099 
+A623 
+84FB 
+A723 
+6D22 
+2713 
+A667 
+BD :MBD_recordBallEjected_Y 
+BD :MBD_callHandler[A] 05 
+6D22 
+2706 
+BD :Error 4D 
+6F22 
+3044 
+31E4 
+8606 
+BD :memCopy[ABXY] 
+10 AE6B 
+E663 
+E766 
+E6E4 
+BD :switchActive[B]? 
+2565 
+A667 
+;BALL EJECT FAILED??
+BD :MBD_callHandler[A] 0A 
+E661 
+A666 
+A163 
+2702 
+E662 
+A667 
+;BALL EJECT RETRY??
+BD :MBD_callHandler[A] 0D 
+1F98 
+BD :solCmd[A]_wait 
+A665 
+8501 
+2613 
+A664 
+E6E4 
+BD :sleep 04 
+BD :switchActive[B]? 
+2531 
+8004 
+22F3 
+200C 
+A664 
+BD :syscall_9894 
+E6E4 
+BD :switchActive[B]? 
+251F 
+A623 
+8504 
+2709 
+84FB 
+A723 
+A666 
+4C 
+A763 
+6A63 
+26B3 
+A623 
+8A01 
+A723 
+A667 
+BD :MBD_callHandler[A] 0C 
+A667 
+BD :MBD_callHandler[A] 0B 
+3267 
+>3B:MBD_LT03_forceEject[A]
+;
+3406 
+A623 
+8501 
+2619 
+A6E4 
+BD :A=balls_in_trough[A] 
+1F89 
+E122 
+2407 
+A6E4 
+BD :MBD_recordBallEjected_Y 
+20F5 
+A6E4 
+E622 
+BD :3B:library_6E7B 
+>3B:MBD_LT03_eject[A]
+3436 
+3277 
+6F67 
+A6A4 
+10 270107 
+6FA4 
+847F 
+A122 
+2302 
+A622 
+A765 
+A623 
+8402 
+A766 
+A623 
+84F9 
+A723 
+3046 
+31E4 
+8605 
+E66A 
+BD :memCopy[ABXY] 
+10 AE6D 
+A662 
+A768 
+A669 
+BD :A=balls_in_trough[A] 
+A124 
+2705 
+A669 
+BD :3B:library_7571 
+A165 
+2229 
+1F89 
+A666 
+2704 
+A622 
+2708 
+A669 
+BD :3B:.label_7563 
+>3B:library_7571
+BD :A=ballsInTrough[A]afterSettling 
+8D07 
+>3B:MBD_eject_handlers
+;invalid lock number; RTS
+
+;Balltrough (T2 type); RTS
+
+;Scoop (T2 type)
+
+
+
+>3B:MBD_forceEject_handlers
+;RTS
+
+>3B:library_75C3
+3454 
+8601 
+BD :X=lock[A]tablePointer 
+CE0000 
+BD :A=[XB]==1?_INX 
+2504 
+3341 
+20F7 
+1F30 
+1F98 
+B7 :RAM_0CD0 
+>A=ballsAccountedFor
+B6 :RAM_1ED1 
+43 
+270A 
+B1 :_BALLS_ACCOUNTED_FOR 
+2605 
+B1 :RAM_0CD0 
+2305 
+8D04 
+B6 :_BALLS_ACCOUNTED_FOR 
+>3B:library_7625
+3416 
+327F 
+B6 :RAM_0384 
+2651 
+BD :findThread? 0040 01F0 
+2448 
+BD :syssbr_A=MBD_ballsMissing_allFound? 
+2447 
+8101 
+260B 
+E69F :^_UNKNOWN_SYSTEM_BYTE_5 
+2705 
+BD :switchActive[B]? 
+2438 
+BD :DMDanimation 15 
+BD :threadRunning? 0072 
+2429 
+F6 :RAM_17B2 
+C103 
+2408 
+5C 
+F7 :RAM_17B2 
+C103 
+250D 
+B6 :_BALLS_IN_TROUGH 
+2708 
+BB :_BALLS_LOCKED 
+BD :3B:.subroutine_75FE 
+2011 
+BD :spawnLowPriorityThread 0072 768A3B 
+BD :longJSR_indirect :^GameHook#44_event 
+1A01 
+2003 
+7F :RAM_17B2 
+3261 
+>3B:library_768A
+BD :longSleep 01E0 
+>endOfBall_ballAccounting
+3402 
+BD :A=AD_value=? A0 01 
+2408 
+B6 :_BALLS_ACCOUNTED_FOR 
+B1 :RAM_0CD0 
+2403 
+BD :.label_AB98 
+>3B:library_76A8
+3402 
+C101 
+2616 
+B6 :_BALLS_ACCOUNTED_FOR 
+B1 :RAM_0CD0 
+270E 
+BD :syscall_8505 96 
+BD :syscall_89DD 81CA 95 
+1CFE 
+2002 
+1A01 
+>3B:MBD_LT04_forceEject[A]
+3406 
+A623 
+8501 
+2614 
+E624 
+E122 
+2407 
+A6E4 
+BD :MBD_recordBallEjected_Y 
+20F5 
+A6E4 
+E622 
+BD :3B:library_6E7B 
+>3B:MBD_LT04_eject[A]
+3436 
+327D 
+A6A4 
+10 270091 
+6FA4 
+847F 
+A122 
+2302 
+A622 
+A7E4 
+A623 
+84F9 
+A723 
+10 AE67 
+3045 
+BD :A=[XB]==1? 
+A761 
+A762 
+A624 
+A1E4 
+220A 
+1F89 
+A663 
+BD :3B:.label_7563 
+>3B:sys_leftFlipper_handler
+BD :.syssbr_leftFlipper_handler 
+>3B:sys_rightFlipper_handler
+BD :.syssbr_rightFlipper_handler 
+>3B:library_7838
+3402 
+B6 :RAM_1793 
+262B 
+9687 
+2610 
+BD :longJSR 5C0A39 
+2404 
+8D3A 
+201B 
+8D29 
+2017 
+BD :longJSR 5C0A39 
+2407 
+BD :killThreads 0077 
+20E9 
+BD :spawnLowPriorityThreadIfNeeded 0077 786C3B 
+>3B:library_786C
+8D0C 
+BD :sleep 0E 
+8D13 
+BD :sleep 0E 
+20F2 
+3402 
+A69F :^_UNKNOWN_SYSTEM_BYTE_9 
+2703 
+BD :lampOnBlinkOff[A] 

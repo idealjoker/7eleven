@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Mar 25 11:25:50 2025
+#                    dlm: Wed Mar 26 13:40:21 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 420 55 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 73 35 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -56,43 +56,23 @@
 #	Mar 21, 2025: - updated disassemble_MBD_system() to work with scanCode
 #	Mar 23, 2025: - updated disassemble_MBD_system() to work with WPC_MBD.obj
 #	Mar 24, 2025: - adapted to @OI (.obj output)
+#	Mar 25, 2025: - BUG: &skip magic did not work correctly
+#	Mar 26, 2025: - removed extra space after BRA and _ENDLOOP
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
 # WPC Disassembly Routines
 #----------------------------------------------------------------------
 
-sub disassemble_MBD_system_old()											# execute this early on, because it defines syscalls
+sub scan(@)
 {
-	my(@matchObj,$matchHandler);
-	
-	@matchObj = ('3412B1',':_MBD_NUM_LOCKS','2505BD82B6474F3402C6053DFE',	
-				 ':^MBD_LOCK_DATA','33CB35028E',':','C6',		
-				 '.','BD',':X=^tableElt[ABX]','BD',
-				 ':Y=[XB]','1E233592');
-	$matchHandler = sub {
-		my(@matchData) = @_;
-		define_syscall('X=^tableElt[ABX]',$matchData[4]);
-		define_syscall('Y=[XB]',$matchData[5]);
-		my($orpg) = select_WPC_RPG($matchData[3]);
-		$Address = $matchData[2];   
-		def_WPC_lockTable('=MBD_LOCKTABLE','Lock Table / Multiball Device Table',1);
-		select_WPC_RPG($orpg); 
-	};
-	scanCode(0x3B,'BYU=MBD_dafaRefs',@matchObj,$matchHandler);				# =MBD_LOCKTABLE / BYU=MBD_dafaRefs
-
-	@matchObj = ('3402B6',':_BALLS_IN_TROUGH','BB',
-				 ':_BALLS_LOCKED','B1',':_BALLS_ACCOUNTED_FOR',
-				 '2303BD',':','3582');
-	scanCode(0x3B,'MBD_checkBalls_bookkeeping',@matchObj);					# MBD_checkBalls_bookkeeping
-
-	@matchObj = (';call lock handler','3476','BD',':BYU=MBD_dafaRefs','3041BD',
-				 ':Y=[XB]_INXINX','BD',':A=[XB]==1?',
-				 '30A41F89A661BD',':longJSR[BX]','35F6');
-	scanCode(0x3B,'MBD_callHandler[AB]',@matchObj);							# MBD_callHandler[AB]
-
+	if (scanCode(0,@_)) {
+		printf("scanCode($_[1]): perfect match\n");
+	} else {
+		scanCode(5,@_);
+		printf("scanCode($_[1]): imperfect match\n");
+	}
 }
-
 
 sub disassemble_MBD_system()												# execute this early on, because it defines syscalls
 {
@@ -107,8 +87,9 @@ sub disassemble_MBD_system()												# execute this early on, because it defi
 		my($c) = substr($_,0,1);
 		next if ($c eq '#');												# comment
 		if ($c eq '>') {													# new obj
-			scanCode(0x3B,$lbl,@matchObj) if defined($lbl);
+			scan(0x3B,$lbl,@matchObj) if defined($lbl);
 			$lbl = substr($_,1);
+#			print(STDERR "disassemble_MBD_system: scanning for $lbl...\n");
 			undef(@matchObj);
         } elsif ($c eq ';') {												# comment
         	push(@matchObj,$_);
@@ -116,7 +97,7 @@ sub disassemble_MBD_system()												# execute this early on, because it defi
 			push(@matchObj,split);
 		}
 	}
-	scanCode(0x3B,$lbl,@matchObj);
+	scan(0x3B,$lbl,@matchObj);
 	close(OBJ);
 }
 
@@ -309,12 +290,13 @@ sub apply_magic_WPC($$)
 			splice(@{$OPA[$addr]},0,1);
 			undef($LBL[$addr+3])												# 		should probably also undef Lbl!
 				if ($Lbl_refs{$LBL[$addr+3]} == 1);
-			undef(@OI[$addr]);
-			push(@{$OI[$Addr-3]},sprintf('7E%04X',$Addr+3));
+			undef(@{$OI[$addr]});
+			push(@{$OI[$addr-3]},sprintf('7E%04X',$addr+3));
 		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{leep$}) {				# 2) decimalize sleep arguments
 			$OPA[$addr][1] = hex(substr($OPA[$addr][1],1,4));
 		} elsif ($IND[$addr] == $code_base_indent &&							# 3) add extra space after top-level "exit" instructions
-				 (isMember($OP[$addr],'RTS','BRA','LBRA','JMP','_ENDLOOP') ||
+##				 (isMember($OP[$addr],'RTS','BRA','LBRA','JMP','_ENDLOOP') ||
+				 (isMember($OP[$addr],'RTS','LBRA','JMP') ||
 				  ($OP[$addr] eq '!' && $OPA[$addr][0] eq 'exitThread') ||
 				  $REM[$addr] eq 'RTS')) {
 			insert_empty_line($addr);
