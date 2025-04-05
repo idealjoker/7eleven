@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Apr  5 08:48:47 2025
+#                    dlm: Sat Apr  5 17:34:10 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 62 46 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 64 50 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -60,11 +60,176 @@
 #	Mar 26, 2025: - removed extra space after BRA and _ENDLOOP
 #	Apr  3, 2025: - modified scan output
 #	Apr  5, 2025: - modified scan output again
+#				  - added support for -p
+#				  - added produce_object_output() 
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
-# WPC Disassembly Routines
+# Object File Disassembly 
 #----------------------------------------------------------------------
+
+sub produce_object_output($$$)
+{				  
+	my($RPG,$fa,$la) = @_;
+	$fa = 0 unless defined($fa);
+	$la = $#ROM unless defined($la);
+
+	my($objss,$rems) = (0,0);
+
+	print("$RPG\n");														# PG id
+	my($producing) = 0;
+	for (my($addr)=$fa; $addr<=$la; $addr++) {  
+		$producing=0 unless $decoded[$addr];								# stop producing when hitting a gap
+		next unless defined($OP[$addr]);									# skip inter-op addresses
+		$producing=0 if isMember($OP[$addr],'RTS','JMP','LBRA') || 			# stop producing at end of routine
+						 ($OP[$addr] eq '!' && $OPA[$addr][0] eq 'exitThread') ||
+						 ($REM[$addr] eq 'RTS');
+
+		if (defined($LBL[$addr]) && !($LBL[$addr] =~ m{[\.~]})) {			# start next object (no BRA labels)
+			$objs++;
+			$producing = 1;
+			print(">$LBL[$addr]\n")
+        }
+
+		next unless $producing;												# skip local code after gaps
+	    
+		if (defined($REM[$addr])) {											# add comment
+			$rems++;
+			print(";$REM[$addr]\n") 
+        }
+
+		foreach my $oi (@{$OI[$addr]}) {									# loop through all object info elts
+			if ($oi =~ m{^:} && defined($LBL[hex($')])) {					# address with label
+				printf(":%s ",$LBL[hex($')]);
+			} else {														# anything else
+				print("$oi ");
+			}
+		}
+		print("\n");
+	}
+	printf(STDERR "ROM PG#%02X: $objs objects with $rems comments produced\n",$RPG);
+}
+
+
+sub scanCode(@)																# Code Scanner
+{
+##	print(STDERR "scanCode(@_)\n");
+
+	my($allowedMismatches) = shift;											# 1st argument is allowed mismatches
+
+	my($pg) = shift;														# next argument is PGid
+	select_WPC_RPG($pg);
+	my($lbl) = shift;
+	my(@matchInfo) = @_;
+
+	my($saddr) = 0x3FFF;													# start of match
+	$Address = $saddr;
+
+	my($maxMatch,$maxAddr,@matchData,@matchLabel,@matchREM);
+ RESTART_SCAN:
+	my($mismatches); $mismatches = 0;
+	my($mi) = -1;
+## 	printf(STDERR "RESTART_SCAN (len = %d) at %04X\n",$Address - $saddr,$saddr);
+	if (($Address-$saddr) > $maxMatch) {									# record best match so far
+	 	$maxMatch = $Address - $saddr;
+		$maxAddr = $saddr;
+	}
+ 	$saddr++;																# try next
+	if ($saddr > 0x7FFF) {
+#	 	die(sprintf("scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
+##		printf(STDERR "scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr)
+##	 		if ($allowedMismatches == 5);
+		return undef;
+	}
+	undef(@matchData); 
+	undef(@matchLabel);
+	undef(@matchREM);
+	$Address = $saddr;
+
+	while ($mi < $#matchInfo) {
+		$mi++;
+##		print(STDERR "mi = $matchInfo[$mi] (@matchData)\n") if ($mi>5);
+		
+###		if (ref($matchInfo[$mi])) {											# handler called at end (used for development)
+###			die unless ($mi == $#matchInfo);
+###			$matchInfo[$mi]->(@matchData);
+###			next;
+###		}
+
+		if (substr($matchInfo[$mi],0,1) eq ';') {							# comment
+			my($ro) = $Address-$saddr;
+			$matchREM[$ro] = substr($matchInfo[$mi],1)
+				unless defined($matchRem[$ro]);
+			next;
+		}
+
+		if (substr($matchInfo[$mi],0,1) eq ':') {							# WORD
+			my($tlbl) = substr($matchInfo[$mi],1);
+			my($tval) = WORD($Address);
+			push(@matchLabel,$tlbl);
+			push(@matchData,$tval);
+			$Address += 2;
+			if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
+				$mismatches++;
+				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
+			}
+			next;
+		}
+
+		if (substr($matchInfo[$mi],0,1) eq '.') {							# BYTE
+			my($tlbl) = substr($matchInfo[$mi],1);
+			my($tval) = BYTE($Address);
+			push(@matchLabel,$tlbl);
+			push(@matchData,$tval);
+			$Address += 1;
+			if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
+				$mismatches++;
+				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
+			}
+			next;
+		}
+
+		for (my($j)=0; $j<length($matchInfo[$mi])/2; $j++,$Address++) {		# HEX
+			die("scanCode: invalid matchInfo <$matchInfo[$mi]>\n")
+				unless (substr($matchInfo[$mi],2*$j,2) =~ m{^[0-9A-f]{2}});
+##			printf(STDERR "%04X: %02X (<-%s) [$mismatches]\n",$Address,BYTE($Address),substr($matchInfo[$mi],2*$j,2))
+##				if $mi>5;
+			if (hex(substr($matchInfo[$mi],2*$j,2)) != BYTE($Address)) {
+				$mismatches++; 
+				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
+			}
+	    }
+	}
+
+	#-----------------
+	# Successful Match
+	#-----------------
+
+	my($labels_defined,$comments_defined) = (0,0);							
+
+	if (($Address-$saddr)-$mismatches > 15) {								# exclude short code snippets with likely multiple matches
+#		printf(STDERR "setLabel($lbl,%04X); [%d bytes, %d mismatches]\n",$saddr,$Address-$saddr,$mismatches);
+##		setLabel($lbl,$saddr); $labels_defined++;
+		printf("D711::setLabel($lbl,0x%04X,0x%02X); \$D711::Address = 0x%04X; D711::def_code();\n",
+			$saddr,$pg,$saddr);
+		for (my($i)=0; $i<@matchData; $i++) {
+#			print(STDERR "setLabel($matchLabel[$i],$matchData[$i]);\n");
+			next if ($matchLabel[$i] =~ m{^RAM_[0-9A-F]{4}$});				# "anonymous" labels (e.g. RAM_0384) are set automatically (no need to handle here)
+			next if ($LBL[$matchData[$i]] eq $matchLabel[$i]);				# label already defined
+			$labels_defined++;
+##			setLabel($matchLabel[$i],$matchData[$i]);
+			printf("D711::setLabel($lbl,0x%04X,0x%02X);\n",$saddr,$pg);
+		}																	# by the disassembler and cannot migrate over
+		for (my($i)=0; $i<@matchREM; $i++) {
+			next unless defined($matchREM[$i]);
+			$comments_defined++;
+##			$REM[$saddr+$i] = $matchREM[$i];
+			printf("\$D711:REM[0x%04X] = '$matchREM[$i]'\n",$saddr+$i);
+	    }
+	}
+
+	return ($labels_defined,$comments_defined);
+}
 
 sub scan(@)
 {
@@ -87,24 +252,30 @@ sub scan(@)
 	}
 }
 
-sub disassemble_MBD_system()												# execute this early on, because it defines syscalls
+sub process_object_file($)													# execute this early on, because it defines syscalls
 {
-	my(@matchObj,$matchHandler);
-	local($exact,$fuzzy,$failed) = (0,0,0);
+	my($ofn) = @_;
+	
+	my(@matchObj);															# encoded object for scan()
+	local($exact,$fuzzy,$failed) = (0,0,0);									# scan results
 	local($lbldefd,$remdefd) = (0,0);
 
-	open(OBJ,"$PATH/WPC_MBD.obj")
-		|| die("$PATH/WPC_MBD.obj: $!\n");
+	open(OBJF,"$ofn") || die("$ofn: $!\n");									# open file and read PG id
+	$_ = <OBJF>; chomp;
+	die("$ofn: page id missing\n")
+		unless m/[0-9A-F]{2}/;
+	my($RPG) = hex($_);
+	select_WPC_RPG($RPG);
 
 	my($lbl);
-	while (<OBJ>) {
+	while (<OBJF>) {
 		chomp;
 		my($c) = substr($_,0,1);
 		next if ($c eq '#');												# comment
 		if ($c eq '>') {													# new obj
-			scan(0x3B,$lbl,@matchObj) if defined($lbl);
+			scan($RPG,$lbl,@matchObj) if defined($lbl);
 			$lbl = substr($_,1);
-#			print(STDERR "disassemble_MBD_system: scanning for $lbl...\n");
+#			print(STDERR "process_object_file: scanning for $lbl...\n");
 			undef(@matchObj);
         } elsif ($c eq ';') {												# comment
         	push(@matchObj,$_);
@@ -112,12 +283,16 @@ sub disassemble_MBD_system()												# execute this early on, because it defi
 			push(@matchObj,split);
 		}
 	}
-	scan(0x3B,$lbl,@matchObj);
-	close(OBJ);
-	print(STDERR "scanCode($PATH/WPC_MBD.obj):\n\t$exact exact, $fuzzy fuzzy, $failed failed matches\n");
-	print(STDERR "\t$lbldefd labels defined, $remdefd comments inserted\n");
+	scan($RPG,$lbl,@matchObj);
+	close(OBJF);
+	print(STDERR "$ofn: $exact exact, $fuzzy fuzzy, $failed failed matches\n");
+	print(STDERR "$ofn: $lbldefd labels defined, $remdefd comments inserted\n");
 }
 
+
+#----------------------------------------------------------------------
+# WPC Disassembly Routines
+#----------------------------------------------------------------------
 
 sub disassemble_syscalls()													# execute this after all syscalls have been defined
 {
@@ -270,6 +445,20 @@ sub disassemble_switch_tables()
 	        if defined($Address);
 }
 
+
+sub disassemble_lock_table()
+{
+	select_WPC_RPG(0x3B);
+	$Address = $Lbl{'3B:BYU=MBD_dataRefs[A]'};
+	die("disassemble_lock_table: syscall BYU=MBD_dafaRefs[A] not found ($Address)\n")
+		unless ($Address>0 && $Address<0x8000);
+	my($taddr) = WORD($Address+25);
+	my($tpg) = BYTE($Address+28);
+	die unless ($tpg>=0x20 && $tpg<=0x3D);
+	select_WPC_RPG($tpg);
+	$Address = $taddr;
+	def_WPC_lockTable('=LOCKTABLE','Multiball Device Table',1);
+}
 
 sub disassemble_font_table()
 {

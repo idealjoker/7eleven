@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Mar 25 17:18:02 2025
+#                    dlm: Sat Apr  5 11:56:25 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 45 68 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 46 66 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -43,6 +43,7 @@
 #	Mar 15: 2025: - BUG: op_EXT() did not work correctly
 #	Mar 24, 2025: - added support for @OI (.obj output)
 #	Mar 25, 2025: - BUG: pg2/3 opcodes did not output 1st byte in OI
+#	Apr  5, 2025: - BUG: undefined syscall error triggered wrongly
 # HISTORY END
 
 # NOTES:
@@ -654,7 +655,8 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next if op_EXT(0x7C,$addr,$ind,'INC',1); 	next if op_EXT(0x7D,$addr,$ind,'TST',1); 
 		if ($rv = op_EXT(0x7E,$addr,$ind,'JMP')) {												# handle JMP target syscalls
 			for (my($sc)=0; $sc<@SYSCALL; $sc++) {
-				die($SYSCALL[$sc]) unless defined($Lbl{$SYSCALL[$sc]});
+				die("syscall $SYSCALL[$sc] undefined -- replaced by $LBL[$SC_ADDR[$sc]]\n")
+					unless defined($Lbl{$SYSCALL[$sc]}) || ($SC_NOTE[$sc] == 3 && $_cur_RPG != 0x3B);		
 				next unless $SC_NOTE[$sc] == 2;													# NOTE 2: JMP target syscall
 				last if disassemble_syscall($sc,$rv);
 			}
@@ -702,7 +704,8 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			my($oaddr) = $addr - 3;
 			my($sc);
 			for ($sc=0; $sc<@SYSCALL; $sc++) {
-				die("syscall $SYSCALL[$sc] undefined -- replaced by $LBL[$SC_ADDR[$sc]]\n") unless defined($Lbl{$SYSCALL[$sc]});
+				die("syscall $SYSCALL[$sc] undefined -- replaced by $LBL[$SC_ADDR[$sc]]\n")
+					unless defined($Lbl{$SYSCALL[$sc]}) || ($SC_NOTE[$sc] == 3 && $_cur_RPG != 0x3B);		
 				next if $SC_NOTE[$sc] == 2;														# NOTE 2: JMP target syscall
 				if (disassemble_syscall($sc,$rv)) {
 					die(sprintf("syscall $SYSCALL[$sc] can only be called from PG#3B (not PG#%02X)\n",$_cur_RPG))

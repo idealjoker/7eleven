@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Apr  5 08:49:34 2025
+#					 dlm: Sat Apr  5 10:35:15 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 261 40 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 400 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -259,6 +259,7 @@
 #	Mar 26, 2025: - BUG: produce_obj() did not stop at RTS, JMP, LBRA or !exitThread
 #				  - BUG: anonymous/auto labels (e.g. RAM_0384) were not handled correclty
 #	Apr  3, 2025: - modified scan output
+#	Apr  5, 2025: - moved produce_obj and Code Scanner to [D711.WPC]
 # END OF HISTORY
 
 # TO-DO:
@@ -394,121 +395,6 @@ sub load_ROM($$@)
 
     &init_system_11() if ($WMS_System==11 && WORD(0xFFFE)>0);               # this should be moved into a future [disassemble_s11]
 
-}
-
-#----------------------------------------------------------------------
-# Code Scanner
-#----------------------------------------------------------------------
-
-sub scanCode(@)
-{
-##	print(STDERR "scanCode(@_)\n");
-
-	my($allowedMismatches) = shift;											# 1st argument is allowed mismatches
-
-	my($pg) = shift;														# next argument is PGid
-	select_WPC_RPG($pg);
-	my($lbl) = shift;
-	my(@matchInfo) = @_;
-
-	my($saddr) = 0x3FFF;													# start of match
-	$Address = $saddr;
-
-	my($maxMatch,$maxAddr,@matchData,@matchLabel,@matchREM);
- RESTART_SCAN:
-	my($mismatches); $mismatches = 0;
-	my($mi) = -1;
-## 	printf(STDERR "RESTART_SCAN (len = %d) at %04X\n",$Address - $saddr,$saddr);
-	if (($Address-$saddr) > $maxMatch) {									# record best match so far
-	 	$maxMatch = $Address - $saddr;
-		$maxAddr = $saddr;
-	}
- 	$saddr++;																# try next
-	if ($saddr > 0x7FFF) {
-#	 	die(sprintf("scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
-##		printf(STDERR "scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr)
-##	 		if ($allowedMismatches == 5);
-		return undef;
-	}
-	undef(@matchData); 
-	undef(@matchLabel);
-	undef(@matchREM);
-	$Address = $saddr;
-
-	while ($mi < $#matchInfo) {
-		$mi++;
-##		print(STDERR "mi = $matchInfo[$mi] (@matchData)\n") if ($mi>5);
-		
-###		if (ref($matchInfo[$mi])) {											# handler called at end (used for development)
-###			die unless ($mi == $#matchInfo);
-###			$matchInfo[$mi]->(@matchData);
-###			next;
-###		}
-
-		if (substr($matchInfo[$mi],0,1) eq ';') {							# comment
-			my($ro) = $Address-$saddr;
-			$matchREM[$ro] = substr($matchInfo[$mi],1)
-				unless defined($matchRem[$ro]);
-			next;
-		}
-
-		if (substr($matchInfo[$mi],0,1) eq ':') {							# WORD
-			my($tlbl) = substr($matchInfo[$mi],1);
-			my($tval) = WORD($Address);
-			push(@matchLabel,$tlbl);
-			push(@matchData,$tval);
-			$Address += 2;
-			if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
-				$mismatches++;
-				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
-			}
-			next;
-		}
-
-		if (substr($matchInfo[$mi],0,1) eq '.') {							# BYTE
-			my($tlbl) = substr($matchInfo[$mi],1);
-			my($tval) = BYTE($Address);
-			push(@matchLabel,$tlbl);
-			push(@matchData,$tval);
-			$Address += 1;
-			if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
-				$mismatches++;
-				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
-			}
-			next;
-		}
-
-		for (my($j)=0; $j<length($matchInfo[$mi])/2; $j++,$Address++) {		# HEX
-			die("scanCode: invalid matchInfo <$matchInfo[$mi]>\n")
-				unless (substr($matchInfo[$mi],2*$j,2) =~ m{^[0-9A-f]{2}});
-##			printf(STDERR "%04X: %02X (<-%s) [$mismatches]\n",$Address,BYTE($Address),substr($matchInfo[$mi],2*$j,2))
-##				if $mi>5;
-			if (hex(substr($matchInfo[$mi],2*$j,2)) != BYTE($Address)) {
-				$mismatches++; 
-				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
-			}
-	    }
-	}
-
-	my($labels_defined,$comments_defined) = (0,0);
-	if (($Address-$saddr)-$mismatches > 15) {								# exclude short code snippets with likely multiple matches
-#		printf(STDERR "setLabel($lbl,%04X); [%d bytes, %d mismatches]\n",$saddr,$Address-$saddr,$mismatches);
-		setLabel($lbl,$saddr); $labels_defined++;
-		for (my($i)=0; $i<@matchData; $i++) {
-#			print(STDERR "setLabel($matchLabel[$i],$matchData[$i]);\n");
-			unless ($matchLabel[$i] =~ m{^RAM_[0-9A-F]{4}$}) {				# "anonymous" labels (e.g. RAM_0384) are set automatically (no need to handle here)
-				$labels_defined++ unless ($LBL[$matchData[$i]] eq $matchLabel[$i]);
-				setLabel($matchLabel[$i],$matchData[$i]);
-			}
-		}																	# by the disassembler and cannot migrate over
-		for (my($i)=0; $i<@matchREM; $i++) {
-			next unless defined($matchREM[$i]);
-			$comments_defined++;
-			$REM[$saddr+$i] = $matchREM[$i];
-	    }
-	}
-
-	return ($labels_defined,$comments_defined);
 }
 
 #----------------------------------------------------------------------
@@ -3497,39 +3383,4 @@ sub dump_labels($)
 #	}
 }
 		    
-#----------------------------------------------------------------------
-# Produce Obj Output
-#----------------------------------------------------------------------
-
-sub produce_obj($$)
-{                 
-    my($fa,$la) = @_;
-    $fa = 0 unless defined($fa);
-    $la = $#ROM unless defined($la);
-
-	my($assembling) = 0;
-    for (my($addr)=$fa; $addr<=$la; $addr++) {  
-    	$assembling=0 unless $decoded[$addr];								# stop assembling when hitting a gap
-    	next unless defined($OP[$addr]);									# skip inter-op addresses
-    	$assembling=0 if isMember($OP[$addr],'RTS','JMP','LBRA') ||			# stop assembling at end of routine
-    					 ($OP[$addr] eq '!' && $OPA[$addr][0] eq 'exitThread') ||
-    					 ($REM[$addr] eq 'RTS');
-
-		print(">$LBL[$addr]\n"),$assembling=1								# start next object
-			if defined($LBL[$addr]) && !($LBL[$addr] =~ m{[\.~]});			# (no BRA labels)
-
-		next unless $assembling;											# skip local code after gaps
-		
-		print(";$REM[$addr]\n") if defined($REM[$addr]);					# add comment
-		foreach my $oi (@{$OI[$addr]}) {									# loop through all object info elts
-			if ($oi =~ m{^:} && defined($LBL[hex($')])) {					# address with label
-				printf(":%s ",$LBL[hex($')]);
-			} else {														# anything else
-				print("$oi ");
-			}
-		}
-		print("\n");
-	}
-}
-
 1;
