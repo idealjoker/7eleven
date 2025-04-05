@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Apr  5 17:34:10 2025
+#                    dlm: Sat Apr  5 18:08:39 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 64 50 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 291 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -62,6 +62,7 @@
 #	Apr  5, 2025: - modified scan output again
 #				  - added support for -p
 #				  - added produce_object_output() 
+#				  - adapted scanCode() to work with prime area
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -122,7 +123,8 @@ sub scanCode(@)																# Code Scanner
 	my($lbl) = shift;
 	my(@matchInfo) = @_;
 
-	my($saddr) = 0x3FFF;													# start of match
+	my($saddr) = ($pg == 0xFF) ? 0x7FFF : 0x3FFF;							# start of match minus 1
+	my($eaddr) = ($pg == 0xFF) ? 0xFFFF : 0x7FFF;							# end of match area
 	$Address = $saddr;
 
 	my($maxMatch,$maxAddr,@matchData,@matchLabel,@matchREM);
@@ -135,7 +137,7 @@ sub scanCode(@)																# Code Scanner
 		$maxAddr = $saddr;
 	}
  	$saddr++;																# try next
-	if ($saddr > 0x7FFF) {
+	if ($saddr > $eaddr) {
 #	 	die(sprintf("scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
 ##		printf(STDERR "scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr)
 ##	 		if ($allowedMismatches == 5);
@@ -285,8 +287,8 @@ sub process_object_file($)													# execute this early on, because it defin
 	}
 	scan($RPG,$lbl,@matchObj);
 	close(OBJF);
-	print(STDERR "$ofn: $exact exact, $fuzzy fuzzy, $failed failed matches\n");
-	print(STDERR "$ofn: $lbldefd labels defined, $remdefd comments inserted\n");
+		print(STDERR "$ofn: $exact exact, $fuzzy fuzzy, $failed failed matches\n");
+	print(STDERR "$ofn: $lbldefd labels defined, $remdefd comments added\n");
 }
 
 
