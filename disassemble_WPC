@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Tue Mar 25 12:19:23 2025
+#					 dlm: Sat Apr  5 08:46:14 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 56 71 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 18 73 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -15,6 +15,7 @@
 #	Mar 19, 2025: - adapted to free space autodection
 #	Mar 25, 2025: - added -o
 #				  - merged with [disassemble_WPC_DMD] and renamed
+#	Apr  5, 2025: - BUG: start_page was not set correctly for Alpha games
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -53,7 +54,7 @@ $D711::fill_gaps	= !$opt_g;												# -g) exclude gap data
 # Load ROM
 #----------------------------------------------------------------------
 
-$D711::start_page = ($WMS_System eq 'WPC(Alphanumeric)') ? 0x30 : 0x20;
+$D711::start_page = ($D711::WMS_System eq 'WPC(Alphanumeric)') ? 0x30 : 0x20;
 &D711::load_ROM($ARGV[0],0x4000,$D711::start_page,16);						# Load ROM: first game page (256KB ROM)
 &D711::load_ROM($ARGV[0],0x8000,0x3E,32);									# Load ROM: System pages
 

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Mar 26 13:40:21 2025
+#                    dlm: Sat Apr  5 08:48:47 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 73 35 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 62 46 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -58,6 +58,8 @@
 #	Mar 24, 2025: - adapted to @OI (.obj output)
 #	Mar 25, 2025: - BUG: &skip magic did not work correctly
 #	Mar 26, 2025: - removed extra space after BRA and _ENDLOOP
+#	Apr  3, 2025: - modified scan output
+#	Apr  5, 2025: - modified scan output again
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -66,17 +68,30 @@
 
 sub scan(@)
 {
-	if (scanCode(0,@_)) {
-		printf("scanCode($_[1]): perfect match\n");
+	my($ld,$cd) = scanCode(0,@_);
+	if (defined($ld)) {
+##		printf("scanCode($_[1]): exact match\n");
+		$exact++;
+		$lbldefd += $ld;
+		$remdefd += $cd;
 	} else {
-		scanCode(5,@_);
-		printf("scanCode($_[1]): imperfect match\n");
+		($ld,$cd) = scanCode(5,@_);
+		if (defined($ld)) {
+##			printf("scanCode($_[1]): fuzzy match\n");
+			$fuzzy++;
+			$lbldefd += $ld;
+			$remdefd += $cd;
+        } else {
+        	$failed++
+        }
 	}
 }
 
 sub disassemble_MBD_system()												# execute this early on, because it defines syscalls
 {
 	my(@matchObj,$matchHandler);
+	local($exact,$fuzzy,$failed) = (0,0,0);
+	local($lbldefd,$remdefd) = (0,0);
 
 	open(OBJ,"$PATH/WPC_MBD.obj")
 		|| die("$PATH/WPC_MBD.obj: $!\n");
@@ -99,6 +114,8 @@ sub disassemble_MBD_system()												# execute this early on, because it defi
 	}
 	scan(0x3B,$lbl,@matchObj);
 	close(OBJ);
+	print(STDERR "scanCode($PATH/WPC_MBD.obj):\n\t$exact exact, $fuzzy fuzzy, $failed failed matches\n");
+	print(STDERR "\t$lbldefd labels defined, $remdefd comments inserted\n");
 }
 
 

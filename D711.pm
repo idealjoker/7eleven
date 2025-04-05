@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Mar 26 13:45:17 2025
+#					 dlm: Sat Apr  5 08:49:34 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 260 89 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 261 40 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -258,6 +258,7 @@
 #	Mar 24, 2025: - BUG: produce_obj() did not handle gaps correctly
 #	Mar 26, 2025: - BUG: produce_obj() did not stop at RTS, JMP, LBRA or !exitThread
 #				  - BUG: anonymous/auto labels (e.g. RAM_0384) were not handled correclty
+#	Apr  3, 2025: - modified scan output
 # END OF HISTORY
 
 # TO-DO:
@@ -425,23 +426,24 @@ sub scanCode(@)
  	$saddr++;																# try next
 	if ($saddr > 0x7FFF) {
 #	 	die(sprintf("scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
-		printf(STDERR "scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr)
-	 		if ($allowedMismatches == 5);
+##		printf(STDERR "scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr)
+##	 		if ($allowedMismatches == 5);
 		return undef;
 	}
 	undef(@matchData); 
 	undef(@matchLabel);
+	undef(@matchREM);
 	$Address = $saddr;
 
 	while ($mi < $#matchInfo) {
 		$mi++;
 ##		print(STDERR "mi = $matchInfo[$mi] (@matchData)\n") if ($mi>5);
 		
-		if (ref($matchInfo[$mi])) {											# handler called at end
-			die unless ($mi == $#matchInfo);
-			$matchInfo[$mi]->(@matchData);
-			next;
-		}
+###		if (ref($matchInfo[$mi])) {											# handler called at end (used for development)
+###			die unless ($mi == $#matchInfo);
+###			$matchInfo[$mi]->(@matchData);
+###			next;
+###		}
 
 		if (substr($matchInfo[$mi],0,1) eq ';') {							# comment
 			my($ro) = $Address-$saddr;
@@ -488,20 +490,25 @@ sub scanCode(@)
 	    }
 	}
 
+	my($labels_defined,$comments_defined) = (0,0);
 	if (($Address-$saddr)-$mismatches > 15) {								# exclude short code snippets with likely multiple matches
 #		printf(STDERR "setLabel($lbl,%04X); [%d bytes, %d mismatches]\n",$saddr,$Address-$saddr,$mismatches);
-		setLabel($lbl,$saddr);
+		setLabel($lbl,$saddr); $labels_defined++;
 		for (my($i)=0; $i<@matchData; $i++) {
 #			print(STDERR "setLabel($matchLabel[$i],$matchData[$i]);\n");
-			setLabel($matchLabel[$i],$matchData[$i])
-				unless ($matchLabel[$i] =~ m{^RAM_[0-9A-F]{4}$});			# "anonymous" labels (e.g. RAM_0384) are set automatically
+			unless ($matchLabel[$i] =~ m{^RAM_[0-9A-F]{4}$}) {				# "anonymous" labels (e.g. RAM_0384) are set automatically (no need to handle here)
+				$labels_defined++ unless ($LBL[$matchData[$i]] eq $matchLabel[$i]);
+				setLabel($matchLabel[$i],$matchData[$i]);
+			}
 		}																	# by the disassembler and cannot migrate over
 		for (my($i)=0; $i<@matchREM; $i++) {
+			next unless defined($matchREM[$i]);
+			$comments_defined++;
 			$REM[$saddr+$i] = $matchREM[$i];
 	    }
 	}
 
-	return 1;
+	return ($labels_defined,$comments_defined);
 }
 
 #----------------------------------------------------------------------
