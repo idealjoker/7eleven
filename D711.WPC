@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Apr  5 18:08:39 2025
+#                    dlm: Sun Apr  6 10:51:59 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 291 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 455 99 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -63,6 +63,8 @@
 #				  - added support for -p
 #				  - added produce_object_output() 
 #				  - adapted scanCode() to work with prime area
+#	Apr  6, 2025: - BUG: wrong labels set on -p
+#				  - BUG: wrong number of defined labels reported
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -209,24 +211,22 @@ sub scanCode(@)																# Code Scanner
 
 	my($labels_defined,$comments_defined) = (0,0);							
 
-	if (($Address-$saddr)-$mismatches > 15) {								# exclude short code snippets with likely multiple matches
-#		printf(STDERR "setLabel($lbl,%04X); [%d bytes, %d mismatches]\n",$saddr,$Address-$saddr,$mismatches);
-##		setLabel($lbl,$saddr); $labels_defined++;
-		printf("D711::setLabel($lbl,0x%04X,0x%02X); \$D711::Address = 0x%04X; D711::def_code();\n",
+	if ((($Address-$saddr)-$mismatches > 15) && 							# exclude short code snippets with likely multiple matches...
+#			($LBL[$saddr] ne $lbl) &&										# ... already  defined labels ...
+			!($lbl =~ m{^GameHook#[0-9A-F]{2}_event$})) {					# ... and automatically generated labels (GameHook#XX_event)
+		$labels_defined++;
+		printf("D711::setLabel('$lbl',0x%04X,0x%02X); \$D711::Address = 0x%04X; D711::def_code();\n",
 			$saddr,$pg,$saddr);
 		for (my($i)=0; $i<@matchData; $i++) {
-#			print(STDERR "setLabel($matchLabel[$i],$matchData[$i]);\n");
-			next if ($matchLabel[$i] =~ m{^RAM_[0-9A-F]{4}$});				# "anonymous" labels (e.g. RAM_0384) are set automatically (no need to handle here)
+			next if ($matchLabel[$i] =~ m{^RAM_[0-9A-F]{2,4}$});			# "anonymous" labels (e.g. RAM_0384) are set automatically (no need to handle here)
 			next if ($LBL[$matchData[$i]] eq $matchLabel[$i]);				# label already defined
 			$labels_defined++;
-##			setLabel($matchLabel[$i],$matchData[$i]);
-			printf("D711::setLabel($lbl,0x%04X,0x%02X);\n",$saddr,$pg);
+			printf("D711::setLabel('$matchLabel[$i]',0x%04X,0x%02X);\n",$matchData[$i],$pg);
 		}																	# by the disassembler and cannot migrate over
 		for (my($i)=0; $i<@matchREM; $i++) {
 			next unless defined($matchREM[$i]);
 			$comments_defined++;
-##			$REM[$saddr+$i] = $matchREM[$i];
-			printf("\$D711:REM[0x%04X] = '$matchREM[$i]'\n",$saddr+$i);
+			printf("\$D711::REM[0x%04X] = '$matchREM[$i]';\n",$saddr+$i);
 	    }
 	}
 
@@ -452,11 +452,17 @@ sub disassemble_lock_table()
 {
 	select_WPC_RPG(0x3B);
 	$Address = $Lbl{'3B:BYU=MBD_dataRefs[A]'};
-	die("disassemble_lock_table: syscall BYU=MBD_dafaRefs[A] not found ($Address)\n")
-		unless ($Address>0 && $Address<0x8000);
+	$Address = $Lbl{'BYU=MBD_dataRefs[A]'} unless defined($Address);	# needed for labelOverrides
+	if ($Address =~ m{^([0-9A-F]{2}):}) {
+		die("disassemble_lock_table(): wrong page ID $1\n")
+			unless ($1 eq '3B');
+		$Address = hex($');
+    }
+	printf(STDERR "WARNING: disassemble_lock_table: syscall BYU=MBD_dataRefs[A] not found ($Address,$Lbl{'BYU=MBD_dataRefs[A]'})\n"),return
+		unless numberp($Address) && ($Address>0 && $Address<0x8000);
 	my($taddr) = WORD($Address+25);
 	my($tpg) = BYTE($Address+28);
-	die unless ($tpg>=0x20 && $tpg<=0x3D);
+	die("$Address,$taddr,$tpg") unless ($tpg>=0x20 && $tpg<=0x3D);
 	select_WPC_RPG($tpg);
 	$Address = $taddr;
 	def_WPC_lockTable('=LOCKTABLE','Multiball Device Table',1);

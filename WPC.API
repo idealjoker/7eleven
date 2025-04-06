@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Mar 25 12:18:06 2025
+#                    dlm: Sun Apr  6 10:55:24 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 35 59 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 36 81 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -33,6 +33,7 @@
 #	Mar 18, 2025: - updated to work both with T2 (DMD) and FH (Alphanumeric)
 #	Mar 19, 2025: - continued update
 #	Mar 25, 2025: - BUG: duplicated addBonus[A] in WPC(DMD)
+#	Apr  6, 2025: - BUG: a couple of Alpha definitions clashed with obj migration
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -426,7 +427,7 @@ define_syscall('find_thread_in_list',				0x9B55+$ofs);
 define_syscall('setThreadId[Y]',					0x9B83+$ofs);
 define_syscall('Y=threadId',						0x9BC5+$ofs);
 define_syscall('X=^threadData',						0x9BFE+$ofs);
-define_syscall('zeroCrossIRQ_clear',				0x9D00+$ofs);
+##define_syscall('zeroCrossIRQ_clear',				0x9D00+$ofs);	# clashes when using object file migration
 
 if ($WMS_System eq 'WPC(Alphanumeric)') {
 	$ofs = -332;
@@ -552,14 +553,14 @@ if ($WMS_System eq 'WPC(Alphanumeric)') {
 define_syscall('abortDisplayFX[A]??',				0xC6E0+$ofs);	# C5CF -273
 define_syscall('displayFX[A]',						0xC791+$ofs);
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = -248;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
-define_syscall('A=displayFX',						0xCA90+$ofs);	# C998
+#if ($WMS_System eq 'WPC(Alphanumeric)') {							# clashes with obj-based migration
+#	$ofs = -248;
+#} elsif ($WMS_System eq 'WPC(DMD)') {
+#	$ofs = 0;
+#} else {
+#	die("WPC.API: $WMS_System not yet implemented\n");
+#}
+#define_syscall('A=displayFX',						0xCA90+$ofs);	# C998
 
 if ($WMS_System eq 'WPC(Alphanumeric)') {
 	$ofs = -329;
