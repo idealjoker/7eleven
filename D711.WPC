@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Apr  6 10:51:59 2025
+#                    dlm: Sun Apr  6 20:26:30 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 455 99 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 269 81 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -65,20 +65,22 @@
 #				  - adapted scanCode() to work with prime area
 #	Apr  6, 2025: - BUG: wrong labels set on -p
 #				  - BUG: wrong number of defined labels reported
+#				  - added support for obj file tags
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
 # Object File Disassembly 
 #----------------------------------------------------------------------
 
-sub produce_object_output($$$)
+sub produce_object_output($$$$)
 {				  
-	my($RPG,$fa,$la) = @_;
+	my($RPG,$fa,$la,$tag) = @_;
 	$fa = 0 unless defined($fa);
 	$la = $#ROM unless defined($la);
 
 	my($objss,$rems) = (0,0);
 
+	print("$tag\n");
 	print("$RPG\n");														# PG id
 	my($producing) = 0;
 	for (my($addr)=$fa; $addr<=$la; $addr++) {  
@@ -91,14 +93,15 @@ sub produce_object_output($$$)
 		if (defined($LBL[$addr]) && !($LBL[$addr] =~ m{[\.~]})) {			# start next object (no BRA labels)
 			$objs++;
 			$producing = 1;
-			print(">$LBL[$addr]\n")
+			print(">$LBL[$addr]\n");
+			print(";[$tag]\n") unless defined($REM[$addr]);					# add a tag if there is no comment
         }
 
 		next unless $producing;												# skip local code after gaps
 	    
 		if (defined($REM[$addr])) {											# add comment
 			$rems++;
-			print(";$REM[$addr]\n") 
+			print(";[$tag] $REM[$addr]\n") 
         }
 
 		foreach my $oi (@{$OI[$addr]}) {									# loop through all object info elts
@@ -263,6 +266,7 @@ sub process_object_file($)													# execute this early on, because it defin
 	local($lbldefd,$remdefd) = (0,0);
 
 	open(OBJF,"$ofn") || die("$ofn: $!\n");									# open file and read PG id
+	$_ = <OBJF>; chomp;														# tag
 	$_ = <OBJF>; chomp;
 	die("$ofn: page id missing\n")
 		unless m/[0-9A-F]{2}/;

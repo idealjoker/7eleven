@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Sat Apr  5 17:35:41 2025
+#					 dlm: Sun Apr  6 20:14:29 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 20 54 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 21 39 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -18,6 +18,7 @@
 #	Apr  5, 2025: - BUG: start_page was not set correctly for Alpha games
 #				  - added -p support
 #				  - adapted to new obj output handling
+#	Apr  6, 2025: - added -t)ag support
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -33,9 +34,9 @@ die("Usage:\t$0\n\t\t" .
 			"[suppress code-s)tructure analysis (debugging)]\n\t\t" .
 			"[output -L)abel table]\n\t\t" .
 			"[output -l)abel definitions]\n\t\t" .
-			"[output -o)bject data <PG|FF>] [-p)rocess object <file>]\n\t\t" .
+			"[output -o)bject data <PG|FF> [se-t) <tag>]] [-p)rocess object <file>]\n\t\t" .
 			"<Alphanumeric|DMD> <ROM image>\n")
-	unless &getopts('acgi:lLo:p:Qs') && @ARGV==2;
+	unless &getopts('acgi:lLo:p:Qst:') && @ARGV==2;
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 
@@ -113,12 +114,12 @@ if ($opt_l) {																# dump label information
 
 if (defined($opt_o)) {														# dump obj information from single page (or FF for prime real estate)
 	if ($opt_o eq 'FF') {
-		D711::produce_object_output($opt_o,0x8000,0xFFFF);
+		D711::produce_object_output($opt_o,0x8000,0xFFFF,$opt_t);
 	} else {
 		die("$0: invalid page id -o $opt_o\n")
 			unless (hex($opt_o)>=$D711::start_page && hex($opt_o)<=0x3D);
 		D711::select_WPC_RPG(hex($opt_o));
-		D711::produce_object_output($opt_o,0x4000,0x7FFF);
+		D711::produce_object_output($opt_o,0x4000,0x7FFF,$opt_t);
 	}
 	exit(0);
 }
