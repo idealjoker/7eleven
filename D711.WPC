@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Apr  6 20:26:30 2025
+#                    dlm: Tue Apr  8 09:20:39 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 269 81 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 70 49 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -66,6 +66,8 @@
 #	Apr  6, 2025: - BUG: wrong labels set on -p
 #				  - BUG: wrong number of defined labels reported
 #				  - added support for obj file tags
+#	Apr  7, 2025: - added gap info to obj files
+#				  - added duplicate obj detection
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -82,29 +84,38 @@ sub produce_object_output($$$$)
 
 	print("$tag\n");
 	print("$RPG\n");														# PG id
-	my($producing) = 0;
+##	my($producing) = 0;
 	for (my($addr)=$fa; $addr<=$la; $addr++) {  
-		$producing=0 unless $decoded[$addr];								# stop producing when hitting a gap
-		next unless defined($OP[$addr]);									# skip inter-op addresses
-		$producing=0 if isMember($OP[$addr],'RTS','JMP','LBRA') || 			# stop producing at end of routine
-						 ($OP[$addr] eq '!' && $OPA[$addr][0] eq 'exitThread') ||
-						 ($REM[$addr] eq 'RTS');
 
-		if (defined($LBL[$addr]) && !($LBL[$addr] =~ m{[\.~]})) {			# start next object (no BRA labels)
+		my($nGap) = 0;														# handle gaps
+		$nGap++ while !$decoded[$addr+$nGap] && $addr+$nGap<$la;;
+		if ($nGap) {
+			print("G$nGap\n");
+			$addr += $nGap-1;
+			next; 
+        }
+
+##		$producing=0 unless $decoded[$addr];								# stop producing when hitting a gap
+		next unless defined($OP[$addr]);									# skip inter-op addresses
+##		$producing=0 if isMember($OP[$addr],'RTS','JMP','LBRA') || 			# stop producing at end of routine
+##						 ($OP[$addr] eq '!' && $OPA[$addr][0] eq 'exitThread') ||
+##						 ($REM[$addr] eq 'RTS');
+
+		if (defined($LBL[$addr]) && !($LBL[$addr] =~ m{[\.~]})) {			# start next object (not on BRA labels)
 			$objs++;
-			$producing = 1;
+##			$producing = 1;
 			print(">$LBL[$addr]\n");
 			print(";[$tag]\n") unless defined($REM[$addr]);					# add a tag if there is no comment
         }
 
-		next unless $producing;												# skip local code after gaps
+##		next unless $producing;												# skip local code after gaps
 	    
 		if (defined($REM[$addr])) {											# add comment
 			$rems++;
 			print(";[$tag] $REM[$addr]\n") 
         }
 
-		foreach my $oi (@{$OI[$addr]}) {									# loop through all object info elts
+		foreach my $oi (@{$OI[$addr]}) {									# process all object info for this op
 			if ($oi =~ m{^:} && defined($LBL[hex($')])) {					# address with label
 				printf(":%s ",$LBL[hex($')]);
 			} else {														# anything else
@@ -127,12 +138,14 @@ sub scanCode(@)																# Code Scanner
 	select_WPC_RPG($pg);
 	my($lbl) = shift;
 	my(@matchInfo) = @_;
+#	die(@matchInfo) if ($lbl eq 'syscall_83B0');
 
 	my($saddr) = ($pg == 0xFF) ? 0x7FFF : 0x3FFF;							# start of match minus 1
 	my($eaddr) = ($pg == 0xFF) ? 0xFFFF : 0x7FFF;							# end of match area
 	$Address = $saddr;
 
 	my($maxMatch,$maxAddr,@matchData,@matchLabel,@matchREM);
+	my($match_lbl,$match_Address,$match_saddr);								# check for multiple matches
  RESTART_SCAN:
 	my($mismatches); $mismatches = 0;
 	my($mi) = -1;
@@ -143,9 +156,9 @@ sub scanCode(@)																# Code Scanner
 	}
  	$saddr++;																# try next
 	if ($saddr > $eaddr) {
-#	 	die(sprintf("scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr))
 ##		printf(STDERR "scanCode($lbl): no match (best match: $maxMatch bytes starting at \$%04X)\n",$maxAddr)
 ##	 		if ($allowedMismatches == 5);
+		goto SCANCODE_SUCCESS if defined($match_lbl);
 		return undef;
 	}
 	undef(@matchData); 
@@ -154,14 +167,14 @@ sub scanCode(@)																# Code Scanner
 	$Address = $saddr;
 
 	while ($mi < $#matchInfo) {
+		goto RESTART_SCAN if $Address > 0xFFFF;
 		$mi++;
 ##		print(STDERR "mi = $matchInfo[$mi] (@matchData)\n") if ($mi>5);
 		
-###		if (ref($matchInfo[$mi])) {											# handler called at end (used for development)
-###			die unless ($mi == $#matchInfo);
-###			$matchInfo[$mi]->(@matchData);
-###			next;
-###		}
+		if (substr($matchInfo[$mi],0,1) eq 'G') {							# gap
+			$Address += substr($matchInfo[$mi],1);
+			next;
+        }
 
 		if (substr($matchInfo[$mi],0,1) eq ';') {							# comment
 			my($ro) = $Address-$saddr;
@@ -171,28 +184,36 @@ sub scanCode(@)																# Code Scanner
 		}
 
 		if (substr($matchInfo[$mi],0,1) eq ':') {							# WORD
-			my($tlbl) = substr($matchInfo[$mi],1);
-			my($tval) = WORD($Address);
-			push(@matchLabel,$tlbl);
-			push(@matchData,$tval);
-			$Address += 2;
-			if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
-				$mismatches++;
-				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
-			}
+			if (length($matchInfo[$mi]) > 1) {								# with label
+				my($tlbl) = substr($matchInfo[$mi],1);
+				my($tval) = WORD($Address);
+				push(@matchLabel,$tlbl);
+				push(@matchData,$tval);
+				$Address += 2;
+				if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
+					$mismatches++;
+					goto RESTART_SCAN if ($mismatches > $allowedMismatches);
+	            }
+            } else {														# anonymous
+				$Address += 2;
+            }
 			next;
 		}
 
 		if (substr($matchInfo[$mi],0,1) eq '.') {							# BYTE
-			my($tlbl) = substr($matchInfo[$mi],1);
-			my($tval) = BYTE($Address);
-			push(@matchLabel,$tlbl);
-			push(@matchData,$tval);
-			$Address += 1;
-			if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
-				$mismatches++;
-				goto RESTART_SCAN if ($mismatches > $allowedMismatches);
-			}
+			if (length($matchInfo[$mi]) > 1) {
+				my($tlbl) = substr($matchInfo[$mi],1);
+				my($tval) = BYTE($Address);
+				push(@matchLabel,$tlbl);
+				push(@matchData,$tval);
+				$Address += 1;
+				if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
+					$mismatches++;
+					goto RESTART_SCAN if ($mismatches > $allowedMismatches);
+	            }
+            } else {
+				$Address += 1;
+            }
 			next;
 		}
 
@@ -212,10 +233,30 @@ sub scanCode(@)																# Code Scanner
 	# Successful Match
 	#-----------------
 
+	if ($mismatches == 0) {
+		if (defined($match_lbl)) {											# duplicate match
+			printf(STDERR "scanCode: $match_lbl matches multiple addresses (%04X, %04X, ...) -- skipped ...\n",
+				$match_saddr,$saddr)
+					unless $saddr == $match_saddr+1;
+			return undef;
+        }
+		$match_lbl	   = $lbl;
+		$match_Address = $Address;											# record first match
+		$match_saddr   = $saddr;
+		goto RESTART_SCAN;
+    }
+
+SCANCODE_SUCCESS:															# jump target when there is no 2nd match
+	if (defined($match_lbl)) {
+		$lbl 	 = $match_lbl;
+		$Address = $match_Address;
+		$saddr	 = $match_saddr;
+    }
+
 	my($labels_defined,$comments_defined) = (0,0);							
 
-	if ((($Address-$saddr)-$mismatches > 15) && 							# exclude short code snippets with likely multiple matches...
-#			($LBL[$saddr] ne $lbl) &&										# ... already  defined labels ...
+	if ((($Address-$saddr)-$mismatches > 15) && 				# exclude short code snippets with likely multiple matches...
+#			($LBL[$saddr] ne $lbl) &&									# ... already  defined labels ...
 			!($lbl =~ m{^GameHook#[0-9A-F]{2}_event$})) {					# ... and automatically generated labels (GameHook#XX_event)
 		$labels_defined++;
 		printf("D711::setLabel('$lbl',0x%04X,0x%02X); \$D711::Address = 0x%04X; D711::def_code();\n",
