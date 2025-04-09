@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Apr  8 12:06:59 2025
+#                    dlm: Tue Apr  8 22:17:28 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 72 42 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 286 78 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -248,8 +248,8 @@ SCANCODE_SUCCESS:															# jump target when there is no 2nd match
 
 	my($labels_defined,$comments_defined) = (0,0);							
 
-	if ((($Address-$saddr)-$mismatches > 15) && 				# exclude short code snippets with likely multiple matches...
-#			($LBL[$saddr] ne $lbl) &&									# ... already  defined labels ...
+	if ((($Address-$saddr)-$mismatches > 15) && 							# exclude short code snippets with likely multiple matches...
+#			($LBL[$saddr] ne $lbl) &&										# ... already  defined labels ...
 			!($lbl =~ m{^GameHook#[0-9A-F]{2}_event$})) {					# ... and automatically generated labels (GameHook#XX_event)
 		$labels_defined++;
 		printf("D711::setLabel('$lbl',0x%04X,0x%02X); \$D711::Address = 0x%04X; D711::def_code();\n",
@@ -265,15 +265,15 @@ SCANCODE_SUCCESS:															# jump target when there is no 2nd match
 			$comments_defined++;
 			printf("\$D711::REM[0x%04X] = '$matchREM[$i]';\n",$saddr+$i);
 	    }
+		return ($labels_defined,$comments_defined,$saddr);
 	}
-
-	return ($labels_defined,$comments_defined);
+	return undef;															# not multiple matches (don't report)
 }
 
 sub scan(@)
 {
 	my($trace) = 0;
-	my($ld,$cd) = scanCode(0,@_);
+	my($ld,$cd,$addr) = scanCode(0,@_);
 	if (defined($cd)) {
 		printf(STDERR "scanCode($_[1]): exact match\n") if $trace;
 		$exact++;
@@ -281,9 +281,9 @@ sub scan(@)
 		$remdefd += $cd;
 	} elsif ($ld == 0) {
 		printf(STDERR "scanCode($_[1]): exact match failure (not multiple)\n") if $trace;
-		($ld,$cd) = scanCode(5,@_);
+		($ld,$cd,$addr) = scanCode(5,@_);
 		if (defined($cd)) {
-			printf(STDERR "scanCode($_[1]): fuzzy match\n") if $trace;
+			printf(STDERR "scanCode($_[1]): FUZZY match at (%04X)\n",$addr); # if $trace;
 			$fuzzy++;
 			$lbldefd += $ld;
 			$remdefd += $cd;
