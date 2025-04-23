@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Sun Mar  2 08:21:59 2025
+#                    dlm: Wed Apr 23 09:36:16 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 29 38 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 30 33 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -27,6 +27,7 @@
 #	Aug 25, 2024: - generalized support for lexical labels
 #	Feb 22, 2025: - BUG: switch script magic produced garbage in Gorgar
 #	Mar  2, 2025: - changed identifier
+#	Apr 23, 2025: - added divider
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -331,6 +332,7 @@ sub disassemble_System6($)
 		}
 	}
     
+	insert_divider($Address,'Sound Scripts');
 	my($len);
 	for (my($p)=0; $p<4; $p++) {
 		$Address = WORD(0x60E0+2*$p);										# Sound Scripts

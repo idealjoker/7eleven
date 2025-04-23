@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Apr  5 10:35:15 2025
+#					 dlm: Wed Apr 23 09:36:53 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 400 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 263 73 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -260,6 +260,7 @@
 #				  - BUG: anonymous/auto labels (e.g. RAM_0384) were not handled correclty
 #	Apr  3, 2025: - modified scan output
 #	Apr  5, 2025: - moved produce_obj and Code Scanner to [D711.WPC]
+#	Apr 23, 2025: - BUG: gap/free space code did not respect MAX_ROM_ADDR
 # END OF HISTORY
 
 # TO-DO:
@@ -3238,7 +3239,7 @@ sub produce_output(@)                                                       # wi
                 }
 				my($n) = 1;															# count repeat bytes
 				my($GB) = BYTE($addr);
-				while (!$decoded[$addr+$n] && BYTE($addr+$n)==$GB) { $n++; }
+				while ($addr+$n<=$la && !$decoded[$addr+$n] && BYTE($addr+$n)==$GB) { $n++; }
 				
 	FREE_GAP_SPACE:
 				if ($GB==0xFF && $n>20) {											# FREE SPACE
@@ -3264,11 +3265,12 @@ sub produce_output(@)                                                       # wi
 						print("\n");
                     } else {
 						print("\n"); print_addr($addr) if ($print_addrs);
-						print("\n"); print_addr($addr) if ($print_addrs);
+						print("\n");
 					}
+					$addr--;
 					next;
-				} 
-
+				}
+            
 				print_addr($addr) if ($print_addrs);
 				print("\n"); print_addr($addr) if ($print_addrs);					# new gap
 				print(";----------------------------------------------------------------------\n");
@@ -3281,14 +3283,14 @@ sub produce_output(@)                                                       # wi
 				$LBL[$addr] = 'ANALYSIS_GAP' unless defined($LBL[$addr]);
 				printf("$LBL[$addr]:");
 				printf("%s.DB \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
-                print("{${n}x}") if ($n > 1);
+				print("{${n}x}") if ($n > 1);
 				my($col) = 1;
-				$addr += $n;
+                $addr += $n;
 
 				while ($addr<=$MAX_ROM_ADDR && !$decoded[$addr]) {					# continue ANALYSIS_GAP
 					$n = 1;															# count repeat bytes
 					$GB = BYTE($addr);
-					while (!$decoded[$addr+$n] && BYTE($addr+$n)==$GB) { $n++; }
+					while ($addr+$n<=$la && !$decoded[$addr+$n] && BYTE($addr+$n)==$GB) { $n++; }
 					print("\n"),goto FREE_GAP_SPACE if ($GB==0xFF && $n>20);
 					
 					if (defined($LBL[$addr])) {										# pre-existing label in gap

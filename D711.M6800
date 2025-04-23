@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 0 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Fri Aug 23 19:45:21 2024
+#                    dlm: Wed Apr 23 08:34:48 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 86 51 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 76 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # BUGS:
@@ -136,7 +136,8 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 
 	my($start_addr) = $addr;
 	while ($addr-$start_addr < $max_bytes) {
-#		printf("M6800 disassembling opcode %02X at %04X\n",BYTE($addr),$addr);
+##		printf("M6800 disassembling opcode %02X at %04X ($LBL[0x6800])\n",BYTE($addr),$addr)
+##			if ($start_addr == 0x6800);
 		unless (defined(BYTE($addr))) {
 			printf(STDERR "; WARNING: disassembly address %04X outside ROM range\n",$addr)
 				if ($verbose > 0);
