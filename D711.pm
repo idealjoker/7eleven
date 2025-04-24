@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu Apr 24 08:55:17 2025
+#					 dlm: Thu Apr 24 12:34:24 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 3168 2 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2464 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -358,7 +358,6 @@ sub insert_empty_line($)
 {
 	my($addr) = @_;
 	
-##	print(STDERR "insert_empty_line()\n") if ($addr == 0x44B7 && $_cur_RPG == 0x31);
 	push(@{$EXTRA[$addr]},'');
 	push(@{$EXTRA_IND[$addr]},$ind);
 	$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 0;

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 0 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Wed Apr 23 08:34:48 2025
+#                    dlm: Thu Apr 24 12:41:36 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 76 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 22 49 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # BUGS:
@@ -18,7 +18,8 @@
 # 	Jul 16, 2024: - exported from [D711.pm]
 #	Jul 18, 2024: - adapted to M6809 support
 #	Aug 21, 2024: - adapted to updated EXTRA support 
-#	Aug 23: 2024: - debugged
+#	Aug 23, 2024: - debugged
+#	Apr 24, 2025: - removed empty lines after BRA
 # HISTORY END
 
 sub op_IMP(@)													# operation with implied addressing
@@ -162,10 +163,10 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 		next if op_IMP(0x1B,$ind,'ABA'); 
 
 		if (op_REL(0x20,$ind,'BRA',$lbl_root,$follow_code)) {
-		    push(@{$EXTRA[$addr-2]},'');
-	        push(@{$EXTRA_IND[$addr-2]},0);
-			$EXTRA_BEFORE_LABEL[$addr-2][$#{$EXTRA[$addr-2]}] = 0;
-			$EXTRA_AFTER_OP[$addr-2][$#{$EXTRA[$addr-2]}] = 1;
+##		    push(@{$EXTRA[$addr-2]},'');
+##	        push(@{$EXTRA_IND[$addr-2]},0);
+##			$EXTRA_BEFORE_LABEL[$addr-2][$#{$EXTRA[$addr-2]}] = 0;
+##			$EXTRA_AFTER_OP[$addr-2][$#{$EXTRA[$addr-2]}] = 1;
 			return;
 		}
 
