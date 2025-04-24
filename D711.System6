@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Wed Apr 23 09:36:16 2025
+#                    dlm: Thu Apr 24 09:12:04 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 30 33 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 33 30 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -28,6 +28,9 @@
 #	Feb 22, 2025: - BUG: switch script magic produced garbage in Gorgar
 #	Mar  2, 2025: - changed identifier
 #	Apr 23, 2025: - added divider
+#	Apr 24, 2025: - improved SW_outhole handling for Firepower, which
+#					does not use standard outhole handler (because of
+#					multiball)
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -280,7 +283,7 @@ sub disassemble_System6($)
 	for (my($i)=0; $i<$n; $i++) {							
 		my($sn) = defined($Switch[$i]) ? $Switch[$i] : sprintf('Switch%02X',$i);		
 		def_code_ptr($sn,$sn . '_handler','Switch Handler');
-		if ($i == 8) {														# Switch#08 (outhole)
+		if ($i == 8 && WORD($Address) != 0) {								# Switch#08 (outhole)
 			def_ptr_hex('bonusScorePtr');
 			my($saddr) = $Address;
 			$Address = WORD($Address-2);
@@ -296,11 +299,11 @@ sub disassemble_System6($)
 				unless (defined($OP[$Address]));
 			$Address = $saddr;												# return to switch table
 		} else {															# M6800 Switch Handler
-			if (WORD($Address)>=$MIN_ROM_ADDR && WORD($Address)<=$MAX_ROM_ADDR) {
+            if (WORD($Address)>0 && WORD($Address)>=$MIN_ROM_ADDR && WORD($Address)<=$MAX_ROM_ADDR) {
 				push(@switchScriptCandidateAddr,WORD($Address));
 				push(@switchScriptCandidateName,$sn);
 				def_ptr_hex($sn . '_scriptPtr');
-            } else {
+            } else {														# data
 				def_byteblock_hex(2,$sn . '_params');
             }
 		}

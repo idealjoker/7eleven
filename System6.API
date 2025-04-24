@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Sun Mar  2 10:01:55 2025
+#                    dlm: Thu Apr 24 09:31:51 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 19 41 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 21 62 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -17,6 +17,8 @@
 #	Jan 29, 2025: - BUG: Code Meta Data was enabled for disassembler
 #	Feb 22, 2025: - BUG: wrong = prefix for _switchDebounceTimer
 #	Mar  2, 2025: - added code_checksum()
+#	Apr 24, 2025: - removed duplicate label BB_AUDIT_START, which 
+#				    causes warnings when compiling D711 output
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
@@ -211,7 +213,7 @@ define_label('.unknown_system_0106', 				0x0106);
 define_label('.unknown_system_0107', 				0x0107);
 define_label('.unknown_system_0108', 				0x0108);
 define_label('.unknown_system_0109', 				0x0109);
-define_label('=BB_AUDIT_START',						0x010A);
+#define_label('=BB_AUDIT_START',						0x010A);
 define_label('=BB_AU01_leftCoins',					0x010A);	
 define_label('=BB_AU02_centerCoins',				0x0110);	
 define_label('=BB_AU03_rightCoins',					0x0116);	

@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Apr 23 09:36:53 2025
+#					 dlm: Thu Apr 24 08:55:17 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 263 73 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3168 2 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -260,13 +260,17 @@
 #				  - BUG: anonymous/auto labels (e.g. RAM_0384) were not handled correclty
 #	Apr  3, 2025: - modified scan output
 #	Apr  5, 2025: - moved produce_obj and Code Scanner to [D711.WPC]
-#	Apr 23, 2025: - BUG: gap/free space code did not respect MAX_ROM_ADDR
+#	Apr 23, 2025: - modified syntax of repeat bytes in gaps
+#	Apr 24, 2025: - removed .ORG gap info (not well formatted, not useful for first .org)
+#				  - added support for stray labels in .DB blocks
+#				  - added support for stray labels in gaps
 # END OF HISTORY
 
 # TO-DO:
 #   - remove all system specific code from this file
 #   - make all def_ routines return values
 #   - add more consistency checks like for predefined OP as in def_byteblock_hex()
+#	- many, many other things
 
 package D711;
 
@@ -278,7 +282,7 @@ our $unclean;                       # used to report unclean disassembly
 our @Switch2WVMSubroutines;         # list of addresses of M6800 SBRs returning in WMV mode
 our @unstructured;                  # set flag to skip address during code-structure scanning
 our @nolabel;                       # set flag to skip address during label substitution
-our @no_autolabels;                 # set to true to suppress system 7 auto labels
+our @no_autolabels;                 # set to true to suppress system 7 auto labels at specific addresses
 
 our @ROM;
 our $MIN_ROM_ADDR,$MAX_ROM_ADDR;    # set by load_ROM
@@ -3116,6 +3120,11 @@ sub produce_output(@)                                                       # wi
         $decoded++ if $decoded[$addr];
         $ROMbytes++ if defined(BYTE($addr));
         if (defined($OP[$addr])) {                                          # there is code at this address
+
+			#------------------------------------------------------------------------------------------
+			# Pre-Label Pseudo Ops
+			#------------------------------------------------------------------------------------------
+
 			for (my($i)=0; $i<@{$EXTRA[$addr]}; $i++) { 					# first, print the pre-label constructs (ENDIF, ...)
 				next unless ($EXTRA_BEFORE_LABEL[$addr][$i]);
 				$line .= indent($line,$hard_tab*$EXTRA_IND[$addr][$i]) . $EXTRA[$addr][$i];
@@ -3123,6 +3132,11 @@ sub produce_output(@)                                                       # wi
 				printf('			')	   if ($print_code);
 				print("$line\n"); undef($line);
 			}
+
+			#------------------------------------------------------------------------------------------
+			# .ORG
+			#------------------------------------------------------------------------------------------
+
             unless (defined($org)) {                                        # new .ORG after a gap
 				if ($code_started) {
 					print("\n");
@@ -3150,12 +3164,16 @@ sub produce_output(@)                                                       # wi
                 } else {
                     $line .= sprintf('$%04X',$org);
                 }
-                $line .= sprintf("\t\t; %d-byte gap",$gapLen)
-                    if ($gapLen > 0);
+##              $line .= sprintf("\t\t; %d-byte gap",$gapLen)
+##                  if ($gapLen > 0);
                 $line .= "\n";                  
                 print($line); $line = '';
                 $gapLen = 0;
             }
+
+			#------------------------------------------------------------------------------------------
+			# Labels
+			#------------------------------------------------------------------------------------------
 
             my($lbl) = $LBL[$addr];                                                 # then, any labels (NB: multiple possible, required for auto disassembly)
             if (defined($lbl)) {
@@ -3185,6 +3203,10 @@ sub produce_output(@)                                                       # wi
 				}
 			}
 
+			#------------------------------------------------------------------------------------------
+			# Post-Label Pseudo Ops
+			#------------------------------------------------------------------------------------------
+
 			for (my($i)=0; $i<@{$EXTRA[$addr]}; $i++) { 							# then, "extra" OPs (always pseudo ops)
 				next if ($EXTRA_BEFORE_LABEL[$addr][$i] || $EXTRA_AFTER_OP[$addr][$i]);
 				$line .= indent($line,$hard_tab*$EXTRA_IND[$addr][$i]) . $EXTRA[$addr][$i];
@@ -3193,17 +3215,40 @@ sub produce_output(@)                                                       # wi
 				print("$line\n"); undef($line);
 			}
 			 
+			#------------------------------------------------------------------------------------------
+			# Statements (Operators and Op Args)
+			#------------------------------------------------------------------------------------------
+
 			$line .= indent($line,$hard_tab*$IND[$addr]) . $OP[$addr];				# then, the operator
 			$line .= indent($line,$hard_tab*($IND[$addr]+$op_width[$TYPE[$addr]]))	# and any operands
 				unless ($OP[$addr] eq '!');											# don't add whitespace after ! op
-			foreach my $opa (@{$OPA[$addr]}) {
+##			foreach my $opa (@{$OPA[$addr]}) {
+##				$opa = $1.$' if ($opa =~ m{^(#)?([0-9A-F]{2}):}) && (hex($2)==$_cur_RPG);	# remove PG prefix of same-page labels 
+##				$line .= $opa . ' ';
+##			}
+			for (my($i)=0; $i<@{$OPA[$addr]}; $i++) {
+				if ($i>0 && $TYPE[$addr]==$CodeType_data && defined($LBL[$addr+$i])) {			# label inside data block
+					die("stray label <$LBL[$addr+$i]> disallowed outside .DB block (implementation restricton)\n")
+						unless ($OP[$addr] eq '.DB');
+					$OP[$addr+$i] = '.DB'; $IND[$addr+$i] = $data_indent; $TYPE[$addr+$i] =  $CodeType_data;
+					@{$OPA[$addr+$i]} = @{$OPA[$addr]}[$i..$#{$OPA[$addr]}];
+					last;
+				}
+				my($opa) = $OPA[$addr][$i];
 				$opa = $1.$' if ($opa =~ m{^(#)?([0-9A-F]{2}):}) && (hex($2)==$_cur_RPG);	# remove PG prefix of same-page labels 
 				$line .= $opa . ' ';
 			}
 
-																					# comments
+			#------------------------------------------------------------------------------------------
+			# Comments
+			#------------------------------------------------------------------------------------------
+
 			$line .= indent($line,$hard_tab*$rem_indent)."\t; ".$REM[$addr],undef($REM[$addr])
 				if defined($REM[$addr]);
+
+			#------------------------------------------------------------------------------------------
+			# Address (optional), Code (optional) and Source (mandatory) Output
+			#------------------------------------------------------------------------------------------
 
 			print_addr($addr) if ($print_addrs);
 			if ($print_code) {
@@ -3220,6 +3265,10 @@ sub produce_output(@)                                                       # wi
 
 			print("$line\n"); undef($line);
 
+			#------------------------------------------------------------------------------------------
+			# Post-Operation Pseudo Ops
+			#------------------------------------------------------------------------------------------
+
 			for (my($i)=0; $i<@{$EXTRA[$addr]}; $i++) { 							# then, "extra" OPs (always pseudo ops)
 				next unless ($EXTRA_AFTER_OP[$addr][$i]);
 				$line .= indent($line,$hard_tab*$EXTRA_IND[$addr][$i]) . $EXTRA[$addr][$i];
@@ -3229,6 +3278,11 @@ sub produce_output(@)                                                       # wi
 			}
 			 
 		} elsif (!$decoded[$addr]) {												# this address was not decoded -> gap
+
+			#------------------------------------------------------------------------------------------
+			# Analysis Gap
+			#------------------------------------------------------------------------------------------
+
 			if ($fill_gaps && defined($org)) {										# output gaps as byte blocks
 				if ($print_code) {
 					for (my($a)=$addr+1; $a<=$MAX_ROM_ADDR; $a++) {
@@ -3241,6 +3295,10 @@ sub produce_output(@)                                                       # wi
 				my($GB) = BYTE($addr);
 				while ($addr+$n<=$la && !$decoded[$addr+$n] && BYTE($addr+$n)==$GB) { $n++; }
 				
+				#------------------------------------------------------------------------------------------
+				# Free Space
+				#------------------------------------------------------------------------------------------
+
 	FREE_GAP_SPACE:
 				if ($GB==0xFF && $n>20) {											# FREE SPACE
 					$freeBytes += $n;
@@ -3255,7 +3313,7 @@ sub produce_output(@)                                                       # wi
 					print("\n"); print_addr($addr) if ($print_addrs);
 					$LBL[$addr] = 'FREE_SPACE' unless defined($LBL[$addr]);
 					print("$LBL[$addr]:");
-					printf("%s.DB \$%02X{${n}x}",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
+					printf("%s.DB \$%02X[${n}x]",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
 					$addr += $n;
 					if (defined($_cur_RPG) && $_cur_RPG<=0x3D && $addr>=0x8000) {	# free space extends exactly to end of ROM page
 						die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr > 0x8000);
@@ -3271,6 +3329,10 @@ sub produce_output(@)                                                       # wi
 					next;
 				}
             
+				#------------------------------------------------------------------------------------------
+				# Not Free Space
+				#------------------------------------------------------------------------------------------
+
 				print_addr($addr) if ($print_addrs);
 				print("\n"); print_addr($addr) if ($print_addrs);					# new gap
 				print(";----------------------------------------------------------------------\n");
@@ -3283,7 +3345,7 @@ sub produce_output(@)                                                       # wi
 				$LBL[$addr] = 'ANALYSIS_GAP' unless defined($LBL[$addr]);
 				printf("$LBL[$addr]:");
 				printf("%s.DB \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
-				print("{${n}x}") if ($n > 1);
+				print("[${n}x]") if ($n > 1);
 				my($col) = 1;
                 $addr += $n;
 
@@ -3297,25 +3359,25 @@ sub produce_output(@)                                                       # wi
 						printf("\n");
 						print_addr($addr) if ($print_addrs);
 						printf("$LBL[$addr]:%s.DB  \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),$GB);
-						print("{${n}x}") if ($n > 1);
+						print("[${n}x]") if ($n > 1);
 						$col = 1;
 					} elsif ($col >= 8) {											# continue gap on new line
 						printf("\n");
 						print_addr($addr) if ($print_addrs);
 						printf("ANALYSIS_GAP:");
 						printf("%s.DB \$%02X",indent("ANALYSIS_GAP:",$hard_tab*$data_indent),$GB);
-						print("{${n}x}") if ($n > 1);
+						print("[${n}x]") if ($n > 1);
 						$col = 1;
 					} else {														# continue gap on current line
 						printf(" \$%02X",$GB);
-						print("{${n}x}"),$col++ if ($n > 1);
+						print("[${n}x]"),$col++ if ($n > 1);
 						$col++;
 					}
 					$addr += $n;
 				}
 				$addr--;
 				print("\n");
-				if (defined($_cur_RPG) && $addr> 0x8000) {
+				if (defined($_cur_RPG) && $addr> 0x8000) {							# this looks wrong, why only for WPC?
 					print_addr($addr) if ($print_addrs);
 					printf("\n");
 				}

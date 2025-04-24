@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Tue Mar 11 12:12:50 2025
+#                    dlm: Thu Apr 24 09:28:03 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 341 79 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 343 78 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -339,6 +339,8 @@
 #	Mar 11, 2025: - updated assertions for new defined alias string (DEFINED_ALIAS)
 #				  - extended -D to allow assignment of values
 #				  - BUG: Cannot decode number error message did not list number
+#	Apr 23, 2025: - added &expand_repeatBytes
+#	Apr 24, 2025: - &expand_repeatBytes only looked at least significant digit
 # HISTORY END
 
 # RELEASE NOTES:
@@ -770,7 +772,8 @@ while (<>) {                                                # assemble source li
             next if (@_ == 0);                              # label-only line => nothing to assemble
         }
     
-        &expand_aliases;                                    # expand aliases (except for .IFDEF, .IFNDEF, etc. which are handled in assemble_pragma())	
+        &expand_aliases;                                    # expand aliases (except for .IFDEF, .IFNDEF, etc. which are handled in assemble_pragma())
+		&expand_repeatBytes;								# expand $FF[512x] 255[2x]        
         &decimalize;                                        # convert all numbers to decimal (e.g. for .ORG); NB: does not deal with #$numbers
         ($OP,@OP_ARG) = @_;                                 # make available to all subroutines (local)
         $OP[$ADDR] = $OP;                                   # make available to OPTIMIZER
@@ -1347,7 +1350,7 @@ sub resolve_labels($)
 
         if (numberp($LBL{$ROM[$a]})) {                                                  # if entire remaining string exists in list of labels, substitute its value
 #           print(STDERR "$ROM[$a] -> ");       
-            $ROM[$a] = labelValue(11,$ROM[$a]);                                             # [ this allows re-defining apparent label arithmetic 
+            $ROM[$a] = labelValue(11,$ROM[$a]);                                         # [ this allows re-defining apparent label arithmetic 
 #           print(STDERR "$ROM[$a]\n");     
             next;                                                                       # (e.g. .LBL RAM_var $FF; .LBL RAM_var+1 $C000)]
         }
@@ -1550,6 +1553,21 @@ sub expand_aliases()
 		}
 #		print(STDERR "$_[$i]\n");
 	}
+}
+
+#----------------------------------------------------------------------
+# Expand Repeat Bytes 
+#----------------------------------------------------------------------
+
+sub expand_repeatBytes()
+{
+    for (my($i)=0; $i<@_; $i++) {
+        next unless ($_[$i] =~ m{\[(\d+)x\]$});
+        $_[$i] = $`;
+        for(my($j)=$1; $j>1; $j--,$i++) {
+        	splice(@_,$i+1,0,$_[$i]);
+        }
+    }
 }
 
 #----------------------------------------------------------------------
