@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Thu Apr 24 13:14:59 2025
+#                    dlm: Fri Apr 25 17:38:28 2025
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 45 2 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 26 57 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -22,6 +22,8 @@
 #	Mar 11, 2025: - fiddled
 #	Apr 24, 2025: - BUG: JMP/BRA exit from blocks was not tested
 #				  - BUG: !$var =~ without parens!
+#	Apr 25, 2025: - BUG: lexical labels (>RTS) were wrongly assigned on branches
+#						 not to the nearest of the target
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -420,8 +422,7 @@ sub process_code_structure($$)
 		my($trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});	# skip branch ops that do not target an RTS
 		$trg = hex($trg);
 		die unless numberp($trg);
-		next unless ($trg > $addr);
-		next unless ($OP[$trg] eq 'RTS');
+		next unless ($trg == $RTSa);
 
 		if (substr($OP[$addr],0,1) eq 'L') {								# skip branch ops that are too far away
 			next if ($trg > $addr+32768);
@@ -443,8 +444,7 @@ sub process_code_structure($$)
 		my($trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});	# skip branch ops that do not target an !exitThread
 		$trg = hex($trg);
 		die unless numberp($trg);
-		next unless ($trg > $addr);
-		next unless ($OP[$trg] eq '!') && (hex(substr($OPA[$trg][0],1,4)) == $Lbl{exitThread});
+		next unless ($trg == $ETa);
 
 		if (substr($OP[$addr],0,1) eq 'L') {								# skip branch ops that are too far away
 			next if ($trg > $addr+32768);
@@ -467,8 +467,7 @@ sub process_code_structure($$)
 		my($trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});	# skip branch ops that do not target an RTS
 		$trg = hex($trg);
 		die unless numberp($trg);
-		next unless ($trg < $addr);
-		next unless ($OP[$trg] eq 'RTS');
+		next unless ($trg == $RTSa);
 
 		if (substr($OP[$addr],0,1) eq 'L') {								# skip branch ops that are too far away
 			next if ($trg < $addr-32767);

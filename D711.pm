@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu Apr 24 12:34:24 2025
+#					 dlm: Fri Apr 25 18:23:53 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 2464 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 268 56 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -264,6 +264,8 @@
 #	Apr 24, 2025: - removed .ORG gap info (not well formatted, not useful for first .org)
 #				  - added support for stray labels in .DB blocks
 #				  - added support for stray labels in gaps
+#	Apr 25, 2025: - removed dump multiple labels flag from produce_output()
+#				  - added -f support to produce_output()
 # END OF HISTORY
 
 # TO-DO:
@@ -3085,9 +3087,9 @@ sub print_addr($)
 }
 
 
-sub produce_output(@)                                                       # with a filename arg, writes structure-hints into file
-{                                                                           # with empty string arg, API labels are suppressed
-    my($fa,$la,$hdr,$dump_duplicate_lbls) = @_;
+sub produce_output(@)                                               
+{                                                                   
+    my($opt_f,$fa,$la,$hdr) = @_;
     $fa = 0 unless defined($fa);
     $la = $#ROM unless defined($la);
     $hdr = 1 unless defined($hdr);
@@ -3176,19 +3178,6 @@ sub produce_output(@)                                                       # wi
 
             my($lbl) = $LBL[$addr];                                                 # then, any labels (NB: multiple possible, required for auto disassembly)
             if (defined($lbl)) {
-            	if ($dump_duplicate_lbls) {
-					foreach my $l (keys(%Lbl)) {									# dump duplicate labels (TAKES TIME!!!)
-						next if ($l eq $lbl);										# WPC page prefix not removed
-						if (numberp($Lbl{$l})) {
-							print("$l:\n") if ($Lbl{$l} == $addr);
-							next;
-						}
-						my($pg,$ad) = split(':',$Lbl{$l});
-						$pg = hex($pg); $ad = hex($ad);
-						next unless ($ad == $addr && $pg == $_cur_RPG);
-						print("$l:\n");
-	                }
-	            }
 	            $lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:}); 							# strip WPC page prefix
                 $line = "$lbl:";
                 my($ind) = ($EXTRA_IND[$addr][$#{$EXTRA_IND[$addr]}] > 0)           # indent to use
@@ -3310,21 +3299,26 @@ sub produce_output(@)                                                       # wi
 					print(";----------------------------------------------------------------------\n");
 					print_addr($addr) if ($print_addrs);
 					print("\n"); print_addr($addr) if ($print_addrs);
-					$LBL[$addr] = 'FREE_SPACE' unless defined($LBL[$addr]);
-					print("$LBL[$addr]:");
-					printf("%s.DB \$%02X[${n}x]",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
-					$addr += $n;
-					if (defined($_cur_RPG) && $_cur_RPG<=0x3D && $addr>=0x8000) {	# free space extends exactly to end of ROM page
-						die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr > 0x8000);
-						print("\n");
-					} elsif ($_cur_RPG == 0xFF) {									# free space in system ROM
-						die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr < 0x8000);
-						print("\n");
-                    } else {
-						print("\n"); print_addr($addr) if ($print_addrs);
-						print("\n");
-					}
-					$addr--;
+					if ($opt_f) {
+						undef($org);
+						$addr --;
+					} else {
+						$LBL[$addr] = 'FREE_SPACE' unless defined($LBL[$addr]);
+						print("$LBL[$addr]:");
+						printf("%s.DB \$%02X[${n}x]",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
+						$addr += $n;
+						if (defined($_cur_RPG) && $_cur_RPG<=0x3D && $addr>=0x8000) {	# free space extends exactly to end of ROM page
+							die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr > 0x8000);
+							print("\n");
+						} elsif ($_cur_RPG == 0xFF) {									# free space in system ROM
+							die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr < 0x8000);
+							print("\n");
+						} else {
+							print("\n"); print_addr($addr) if ($print_addrs);
+							print("\n");
+	                    }
+						$addr--;
+	                }
 					next;
 				}
             

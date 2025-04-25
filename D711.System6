@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Thu Apr 24 09:12:04 2025
+#                    dlm: Fri Apr 25 17:30:50 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 33 30 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 34 76 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -31,6 +31,7 @@
 #	Apr 24, 2025: - improved SW_outhole handling for Firepower, which
 #					does not use standard outhole handler (because of
 #					multiball)
+#	Apr 25, 2025: - tightened score magic so it works also with the GreenROM
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -486,9 +487,10 @@ sub direct_code_path($$)
 	my(@jump_ops) 	= ('JMP');
 	my(@sbr_ops) 	= ('JSR','BSR');
 
-	return 0 unless isMember($OP[$addr],@branch_ops,@jump_ops,@sbr_ops);
-	return 1 if ($OPA[$addr][0] =~ m{$target_re});
-	return 0 if ($OPA[$addr][0] =~ m{^[\<\>]});
+	return 0 unless isMember($OP[$addr],@branch_ops,@jump_ops,@sbr_ops);		# no path unless jump op
+	return 1 if ($OPA[$addr][0] =~ m{$target_re});								# path if reached target
+	return 0 if ($OPA[$addr][0] =~ m{^[\<\>]});									# no path on lexical branches
+	return 0 if ($OPA[$addr][0] =~ m{^\d+,X$});									# no path on indexed jmps
 
 	die($OPA[$addr][0]) unless defined($Lbl{$OPA[$addr][0]});
 	return direct_code_path($Lbl{$OPA[$addr][0]},$target_re);
@@ -500,12 +502,13 @@ sub apply_magic_System6($)
 	my($opt_A) = @_;
 
 	for (my($addr)=$MIN_ROM_ADDR+2; $addr<=$MAX_ROM_ADDR; $addr++) {			# loop through addresses
-		if (direct_code_path($addr,'^sys_score\[A\]')) {
-			if ($OP[$addr-2] eq 'LDAA') {
+		if (direct_code_path($addr,'^sys_score\[A\]$') ||
+			direct_code_path($addr,'^sys_score\[A\]_now$')) {
+			if ($OP[$addr-2] eq 'LDAA' && $OPA[$addr-2][0] =~ m{^#}) {
 				$OPA[$addr-2][0] =~ m{\$(..)};
 				$OPA[$addr-2][0] = '#' . score_str(hex($1),$addr,$opt_A);
             } else {
-				printf(STDERR "WARNING: unknown score value (A) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+				printf(STDERR "WARNING: unknown score value (register A) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
             }
         }
 		if (direct_code_path($addr,'^sys_switch_script$')) {
