@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Fri Apr 25 17:30:50 2025
+#                    dlm: Sat Apr 26 10:48:44 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 34 76 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 35 68 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -32,6 +32,7 @@
 #					does not use standard outhole handler (because of
 #					multiball)
 #	Apr 25, 2025: - tightened score magic so it works also with the GreenROM
+#	Apr 26, 2025: - renamed labels for conistency with [System6.API]
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -199,7 +200,7 @@ sub disassemble_System6($)
 	def_byte_hex('DEFAULT_COINS4CREDIT');
 	def_byte_hex('DEFAULT_COINS4BONUSCREDIT');
 	def_byte_hex('DEFAULT_HIGHSCORE_CREDITS');
-	def_byte_hex('DEFAULT_MATCHAWARDS');
+	def_byte_hex('DEFAULT_MATCHAWARD');
 	def_byte_hex('DEFAULT_SPECIALAWARD');
 	def_byte_hex('DEFAULT_REPLAYAWARD');
 	def_byte_hex('DEFAULT_TILTWARNINGS');
@@ -215,15 +216,15 @@ sub disassemble_System6($)
 	def_byte_hex('BALLSERVE_SOLCMD_AND_1EB_FLAG');
 	def_byte_LampOrFlag('EXTRABALL_LAMP');
 	def_byte_hex('MAX_PLAYER');
-	def_byte_hex('CYCLECOUNTER_1');
-	def_byte_hex('CYCLECOUNTER_2');
-	def_byte_hex('CYCLECOUNTER_3');
-	def_byte_hex('CYCLECOUNTER_4');
+	def_byte_hex('INTERVALTRIGGER_1');
+	def_byte_hex('INTERVALTRIGGER_2');
+	def_byte_hex('INTERVALTRIGGER_3');
+	def_byte_hex('INTERVALTRIGGER_4');
 	def_byte_hex('BLINK_DELAY');
-	def_byte_hex('CYCLECOUNTER_PINOPP_1');
-	def_byte_hex('CYCLECOUNTER_PINOPP_2');
-	def_byte_hex('CYCLECOUNTER_PINOPP_3');
-	def_byte_hex('CYCLECOUNTER_PINOPP_4');
+	def_byte_hex('INTERVALTRIGGER_PINOPP_1');
+	def_byte_hex('INTERVALTRIGGER_PINOPP_2');
+	def_byte_hex('INTERVALTRIGGER_PINOPP_3');
+	def_byte_hex('INTERVALTRIGGER_PINOPP_4');
 	def_byte_LampOrFlag('SCRIPT_LAMPS');
 		def_byte_LampOrFlag('');
 		def_byte_LampOrFlag('');
@@ -240,8 +241,8 @@ sub disassemble_System6($)
 	def_byteblock_hex(2,'FLAGS_MEMDATA');
 	def_byteblock_hex(8,'BLINK_MEMDATA');
 	def_byteblock_hex_cols(32,2,'SOUND_TABLE','Sound Table');
-	def_byteblock_hex(8,'PBPINOPP_SOLCMD_TABLE_1','PinOp Solenoid Tables');
-	def_byteblock_hex(8,'PBPINOPP_SOLCMD_TABLE_2');
+	def_byteblock_hex(8,'PINOP_SOLCMD_TABLE','PinOp Solenoid Tables');
+	def_byteblock_hex(8,'PINOP_SOLOP_TABLE');
 	def_byte_hex('BONUSCOUNT_BONUSX_DELAY','Outhole Bonus Data');
 	def_byte_hex('BONUSCOUNT_SOUND');
 	def_byte_hex('BONUSCOUNT_DELAY');
@@ -255,17 +256,17 @@ sub disassemble_System6($)
 		def_byte_LampOrFlag('');
 	def_byteblock_hex(4,'BONUSX_VALUE_TABLE');
 	def_byte_hex('SPECIAL_SCORE','Misc Game Data');
-	def_byte_hex('SND_CREDIT','System Sounds');
-	def_byte_hex('SND_CREDIT_DELAY');
-	def_byte_hex('SND_TILT');
-	def_ptr_hex('STATUSUPDATE_TABLE','System Pointers');
-	def_ptr_hex('STATUSUPDATE_TABLE_END');
-	def_ptr_hex('GAMEEVENTS_HANDLER_TABLE');
-	def_ptr_hex('GAMEEVENTS_HANDLER_TABLE_END');
+	def_byte_hex('SYSSND_CREDIT','System Sounds');
+	def_byte_hex('SYSSND_CREDIT_DELAY');
+	def_byte_hex('SYSSND_TILTWARNING');
+	def_ptr_hex('GAMELOGIC_TABLE','System Pointers');
+	def_ptr_hex('GAMELOGIC_TABLE_END');
+	def_ptr_hex('GAMEEVENTS_TABLE');
+	def_ptr_hex('GAMEEVENTS_TABLE_END');
 	def_code_ptr('GAME_BACKGROUND_HANDLER','game_background_handler','Game Background Event Handler');
 	def_code_ptr('BALLSTART_EVENT','ballstart_event_handler','Ball Start Event Handler');
 	def_code_ptr('BONUSX_COUNTDOWN_EVENT','bonusX_countdown_event_handler','BonusX Countdown Event Handler');
-	def_code_ptr('BALLDRAIN_EVENT','balldrain_event_handler','End of Ball Event Handler');
+	def_code_ptr('END_OF_BALL_EVENT','endOfBall_event_handler','End of Ball Event Handler');
 	def_ptr_hex('SOUNDSCRIPT_P1','System Soundscripts');
 	def_ptr_hex('SOUNDSCRIPT_P2');
 	def_ptr_hex('SOUNDSCRIPT_P3');
@@ -314,10 +315,10 @@ sub disassemble_System6($)
 	my($n) = (WORD(0x60D2) - $Address) / 9;
 	if ($n > 0) {
 		die unless ($n==int($n));
-		insert_divider($Address,'Status Update Table');
-		def_byteblock_hex_cols(9,9,'statusUpdate_1');			 
+		insert_divider($Address,'Game Logic Table');
+		def_byteblock_hex_cols(9,9,'gameLogic_1');			 
 		for (my($i)=2; $i<=$n; $i++) {
-			def_byteblock_hex_cols(9,9,"statusUpdate_$i");
+			def_byteblock_hex_cols(9,9,"gameLogic_$i");
 		}
 	}
     
@@ -412,7 +413,7 @@ sub disassemble_greenROM()
 	$Address = 0x79BF; def_code('sys_exitOnGameOverOrTilt');
 	$Address = 0x79C6; def_code('sys_exit');
 	$Address = 0x79CB; def_code('sys_play_soundScript');
-	$Address = 0x7744; def_code('sys_execStatusupdate[X]');
+	$Address = 0x7744; def_code('sys_execGameLogicUpdate[X]');
 	$Address = 0x777C; def_code('sys_testBit');
 	$Address = 0x77A8; def_code('sys_run_timedScripts');
 	$Address = 0x77F0; def_code('sys_play_sound');
