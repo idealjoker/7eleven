@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Fri Apr 25 18:01:33 2025
+#					 dlm: Sat Apr 26 08:34:37 2025
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 39 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 96 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -21,6 +21,7 @@
 #	Aug 25, 2024: - updated
 #	Apr 25, 2025: - added -G)reenROM
 #				  - added -f
+#	Apr 26, 2026: - removed -f (made default)
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 (6);		
@@ -35,11 +36,10 @@ die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[list -a)ddressse in output] [list -c)ode bytes]\n\t\t" . 
 			"[suppress -g)ap data]\n\t\t" . 
-			"[create -f)ree space from FF blocks]\n\t\t" . 
 			"[disable code-s)tructure analysis]\n\t\t" .
 			"[System 6-A) binary] [-G)reenROM binary]\n\t\t" .
 			"<ROM image>\n")
-	unless &getopts('AacfGgi:ls') && @ARGV==1;
+	unless &getopts('AacGgi:ls') && @ARGV==1;
 
 $D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
@@ -93,7 +93,7 @@ if ($opt_l) {																# dump label information
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 
-&D711::produce_output($opt_f); 												# include API in output (has to be for compilation)
+&D711::produce_output(); 													# include API in output (has to be for compilation)
 
 exit(0);
 

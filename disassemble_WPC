@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Fri Apr 25 18:00:13 2025
+#					 dlm: Sat Apr 26 08:35:15 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 35 48 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 134 37 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -20,6 +20,7 @@
 #				  - adapted to new obj output handling
 #	Apr  6, 2025: - added -t)ag support
 #	Apr 25, 2025: - added -f
+#	Apr 26, 2025: - removed -f (made default)
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -32,7 +33,6 @@ die("Usage:\t$0\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[include -a)ddressses in output] [include -c)ode bytes]\n\t\t" . 
 			"[suppress -g)ap data (readability)]\n\t\t" . 
-			"[create -f)ree space from FF blocks]\n\t\t" . 
 			"[disable code-s)tructure analysis (debugging)]\n\t\t" .
 			"[output -L)abel table]\n\t\t" .
 			"[output -l)abel definitions]\n\t\t" .
@@ -131,7 +131,7 @@ if (defined($opt_o)) {														# dump obj information from single page (or 
 #------------------------------
 
 &D711::select_WPC_RPG($D711::start_page,21);								# 1st game pg with headers
-my($decoded) = &D711::produce_output($opt_f,0x4000,0x7FFF,1);
+my($decoded) = &D711::produce_output(0x4000,0x7FFF,1);
 for (my($rpg)=$D711::start_page+1; $rpg<0x3E; $rpg++) {						# remaining game pages without headers
 	&D711::select_WPC_RPG($rpg,22);		
 	$decoded += &D711::produce_output($opt_f,0x4000,0x7FFF,0);

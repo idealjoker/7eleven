@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri Apr 25 18:23:53 2025
+#					 dlm: Sat Apr 26 08:37:56 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 268 56 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3306 83 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -266,6 +266,7 @@
 #				  - added support for stray labels in gaps
 #	Apr 25, 2025: - removed dump multiple labels flag from produce_output()
 #				  - added -f support to produce_output()
+#	Apr 26, 2026: - removed -f (made default)
 # END OF HISTORY
 
 # TO-DO:
@@ -3089,7 +3090,7 @@ sub print_addr($)
 
 sub produce_output(@)                                               
 {                                                                   
-    my($opt_f,$fa,$la,$hdr) = @_;
+    my($fa,$la,$hdr) = @_;
     $fa = 0 unless defined($fa);
     $la = $#ROM unless defined($la);
     $hdr = 1 unless defined($hdr);
@@ -3299,26 +3300,25 @@ sub produce_output(@)
 					print(";----------------------------------------------------------------------\n");
 					print_addr($addr) if ($print_addrs);
 					print("\n"); print_addr($addr) if ($print_addrs);
-					if ($opt_f) {
-						undef($org);
-						$addr --;
-					} else {
-						$LBL[$addr] = 'FREE_SPACE' unless defined($LBL[$addr]);
-						print("$LBL[$addr]:");
-						printf("%s.DB \$%02X[${n}x]",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
-						$addr += $n;
-						if (defined($_cur_RPG) && $_cur_RPG<=0x3D && $addr>=0x8000) {	# free space extends exactly to end of ROM page
-							die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr > 0x8000);
-							print("\n");
-						} elsif ($_cur_RPG == 0xFF) {									# free space in system ROM
-							die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr < 0x8000);
-							print("\n");
-						} else {
-							print("\n"); print_addr($addr) if ($print_addrs);
-							print("\n");
-	                    }
-						$addr--;
-	                }
+					undef($org);
+					$addr --;
+
+#					FOLLOWING CODE INSTEAD OF undef($org) FILLS EMPTY SPACE WITH FF
+#					$LBL[$addr] = 'FREE_SPACE' unless defined($LBL[$addr]);
+#					print("$LBL[$addr]:");
+#					printf("%s.DB \$%02X[${n}x]",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
+#					$addr += $n;
+#					if (defined($_cur_RPG) && $_cur_RPG<=0x3D && $addr>=0x8000) {	# free space extends exactly to end of ROM page
+#						die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr > 0x8000);
+#						print("\n");
+#					} elsif ($_cur_RPG == 0xFF) {									# free space in system ROM
+#						die(sprintf("%02X,%04X",$_cur_RPG,$addr)) if ($addr < 0x8000);
+#						print("\n");
+#					} else {
+#						print("\n"); print_addr($addr) if ($print_addrs);
+#						print("\n");
+#                   }
+
 					next;
 				}
             
