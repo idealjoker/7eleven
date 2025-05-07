@@ -2,19 +2,21 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 1 1 
 #					 doc: Wed May  7 09:51:43 2025
-#					 dlm: Wed May  7 09:51:50 2025
+#					 dlm: Wed May  7 19:33:21 2025
 #					 (c) 2019 A.M. Thurnherr
-#					 uE-Info: 5 50 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 35 13 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May  7, 2025: - created
+#				  - BUG: use lib had path hard-coded
+#				  - changed usage for consistency with disassemble_s6
 
 #----------------------------------------------------------------------
 # Load Prerequisites
 #----------------------------------------------------------------------
 
-use lib '../../bin';
+use lib ($0 =~ m@/[^/]*$@,$`);
 use D711 (11);																# WMS System 11
 
 use lib '.';
@@ -26,12 +28,12 @@ use lib '.';
 use Getopt::Std;
 
 die("Usage:\n\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
-			"[write code-structuring -h)ints to <file>]\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
-			"[no -a)ddresses in output] [-c)ode in output]\n\t\t" . 
-			"[output -g)ap data]\n\t\t" . 
-			"[suppress code-s)tructure analysis]\n")
-	unless &getopts('acgh:i:ls');
+			"[suppress code-s)tructure analysis]\n\t\t" .
+			"[suppress -a)ddresses in output] [include -c)ode in output]\n\t\t" . 
+			"[include -g)ap data in output]\n\t\t" .
+			"<U26 ROM image> <U27 ROM image>\n")
+	unless &getopts('acgh:i:ls') && @ARGV==2;
 
 $D711::print_addrs	= !$opt_a;												# -a) suppress hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
@@ -48,9 +50,9 @@ if (defined($opt_i)) {														# include files with perl code
 # Load Code
 #----------------------------------------------------------------------
 
-&D711::load_ROM('ic26.128',0x4000); 										# load ROM images
+&D711::load_ROM($ARGV[0],0x4000); 										# load ROM images
 die("ic26.128: invalid size\n") unless ($D711::MAX_ROM_ADDR == 0x7FFF);
-&D711::load_ROM('ic27.256',0x8000);
+&D711::load_ROM($ARGV[1],0x8000);
 die("ic27.256: invalid size\n") unless ($D711::MAX_ROM_ADDR == 0xFFFF);
 
 #----------------------------------------------------------------------
