@@ -1,0 +1,297 @@
+#======================================================================
+#                    D 7 1 1 . O B J E C T S C A N N E R 
+#                    doc: Tue Apr 29 10:01:31 2025
+#                    dlm: Mon May  5 19:02:18 2025
+#                    (c) 2025 A.M. Thurnherr
+#                    uE-Info: 213 69 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Apr 29, 2025: - created
+#	May  2, 2005: - BUG: did not return true
+
+#----------------------------------------------------------------------
+# Object File Disassembly 
+#----------------------------------------------------------------------
+
+our($trace) = 0;
+
+sub produce_object_output($$$$)
+{				  
+	my($RPG,$fa,$la,$tag) = @_;
+	$fa = 0 unless defined($fa);
+	$la = $#ROM unless defined($la);
+
+	my($objss,$rems) = (0,0);
+
+	print("$tag\n");
+	print("$RPG\n");														# PG id
+	for (my($addr)=$fa; $addr<=$la; $addr++) {  
+
+		my($nGap) = 0;														# handle gaps
+		$nGap++ while !$decoded[$addr+$nGap] && $addr+$nGap<$la;;
+		if ($nGap) {
+			print("G$nGap\n");
+			$addr += $nGap-1;
+			next; 
+        }
+
+		next unless defined($OP[$addr]);									# skip inter-op addresses
+
+		if (defined($LBL[$addr]) && !($LBL[$addr] =~ m{[\.~]})) {			# start next object (not on BRA labels)
+			$objs++;
+			print(">$LBL[$addr]\n");
+			print(";[$tag]\n") unless defined($REM[$addr]);					# add a tag if there is no comment
+        }
+
+		if (defined($REM[$addr])) {											# add comment
+			$rems++;
+			print(";[$tag] $REM[$addr]\n") 
+        }
+
+		foreach my $oi (@{$OI[$addr]}) {									# process all object info for this op
+			if ($oi =~ m{^:} && defined($LBL[hex($')])) {					# address with label
+				printf(":%s ",$LBL[hex($')]);
+			} else {														# anything else
+				print("$oi ");
+			}
+		}
+		print("\n");
+	}
+	printf(STDERR "ROM PG#%02X: $objs objects with $rems comments produced\n",$RPG);
+}
+
+
+sub scanCode(@)																# Code Scanner
+{
+	print(STDERR "scanCode(@_)\n") if $trace;
+	my($allowedMismatches,$pg,$lbl,$fi,$li) = @_;
+
+	my($saddr,$eaddr);
+	if ($WMS_System =~ m{^WPC\((.*)\)$}) {
+		select_WPC_RPG($pg);
+		$saddr = ($pg == 0xFF) ? 0x7FFF : 0x3FFF;							 # start of match minus 1
+		$eaddr = ($pg == 0xFF) ? 0xFFFF : 0x7FFF;							 # end of match area
+    } else {
+		$saddr = $MIN_ROM_ADDR - 1;
+		$eaddr = $MAX_ROM_ADDR; 
+    }
+	$Address = $saddr;
+
+	my(@matchData,@matchLabel,@matchREM);									# data from successful match
+	my($match_lbl,$match_Address,$match_saddr);								# multiple matches check
+	my(@match_matchData,@match_matchLabel,@match_matchREM);
+
+ RESTART_SCAN:																# jump target for failed matches and checking for multiple matches
+ 	printf(STDERR "RESTART_SCAN (len = %d) at %04X\n",$Address - $saddr,$saddr) if $trace;
+	my($mismatches,$mi); 
+
+ 	$saddr++;																# try next
+	if ($saddr > $eaddr) {													# MATCH FAILED
+		goto SCANCODE_SUCCESS if defined($match_lbl);
+		return 0;															# never matched
+	}
+
+	$mismatches = 0; $mi = $fi;												# reset scanner data
+	undef(@matchData); 
+	undef(@matchLabel);
+	undef(@matchREM);
+
+	for ($Address=$saddr; $mi<$li; ) {
+		goto RESTART_SCAN if $Address > 0xFFFF;
+		$mi++;
+##		printf(STDERR "od = $objData[$mi] (@matchData) addr = %04X\n",$Address) if $trace;
+
+		if (substr($objData[$mi],0,1) eq 'G') {							# gap
+			$Address += substr($objData[$mi],1);
+			next;
+        }
+
+		if (substr($objData[$mi],0,1) eq ';') {							# comment
+			my($ro) = $Address-$saddr;
+			$matchREM[$ro] = substr($objData[$mi],1)
+				unless defined($matchRem[$ro]);
+			next;
+		}
+
+		foreach my $ode (split(/ /,$objData[$mi])) {
+		
+			if (substr($ode,0,1) eq ':') { 								# WORD
+				if (length($ode) > 1) {									# with label
+					my($tlbl) = substr($ode,1);
+					my($tval) = WORD($Address);
+					push(@matchLabel,$tlbl);
+					push(@matchData,$tval);
+					$Address += 2;
+					if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
+						$mismatches++;
+						goto RESTART_SCAN if ($mismatches > $allowedMismatches);
+					}
+				} else {												# anonymous
+					$Address += 2;
+				}
+				next;
+			}
+	
+			if (substr($ode,0,1) eq '.') { 								# BYTE
+				if (length($ode) > 1) {
+					my($tlbl) = substr($ode,1);
+					my($tval) = BYTE($Address);
+					push(@matchLabel,$tlbl);
+					push(@matchData,$tval);
+					$Address += 1;
+					if (defined($Lbl{$tlbl}) && ($Lbl{$tlbl} != $tval)) {
+						$mismatches++;
+						goto RESTART_SCAN if ($mismatches > $allowedMismatches);
+					}
+				} else {
+					$Address += 1;
+				}
+				next;
+			}
+	
+			for (my($j)=0; $j<int(length($ode)/2); $j++,$Address++) {		# HEX
+				die("scanCode: invalid objData #$j <$ode>\n")
+					unless (substr($ode,2*$j,2) =~ m{^[0-9A-f]{2}});
+##				printf(STDERR "%04X: %02X (<-%s) [$mismatches]\n",$Address,BYTE($Address),substr($ode,2*$j,2))
+##					if $mi>5;
+##				printf(STDERR "%s vs %02X\n",substr($ode,2*$j,2),BYTE($Address));
+				if (hex(substr($ode,2*$j,2)) != BYTE($Address)) {
+					$mismatches++; 
+					goto RESTART_SCAN if ($mismatches > $allowedMismatches);
+				}
+	        }
+        }
+	}
+
+	#-----------------
+	# Successful Match
+	#-----------------
+
+	print(STDERR "MATCH ($mismatches)\n") if $trace;
+	if ($mismatches == 0) {
+		if (defined($match_lbl)) {											# duplicate match
+			printf(STDERR "scanCode: $match_lbl matches multiple addresses (%04X, %04X, ...) -- skipped\n",
+				$match_saddr,$saddr)
+					unless $saddr == $match_saddr+1;
+			return -1;														# multiple matches
+        }
+		$match_lbl	   = $lbl;
+		$match_Address = $Address;											# record first match
+		$match_saddr   = $saddr;
+		@match_matchData  = @matchData;
+		@match_matchLabel = @matchLabel;
+		@match_matchREM   = @matchREM;
+		goto RESTART_SCAN;													# try again
+    }
+
+SCANCODE_SUCCESS:															# jump target when there is no 2nd match
+	if (defined($match_lbl)) {
+		$lbl 	 = $match_lbl;
+		$Address = $match_Address;
+		$saddr	 = $match_saddr;
+		$mismatches = 0;
+    }
+	printf(STDERR "scanCode: $lbl found at %04X ($mismatches)\n",$saddr) if $trace;
+
+	my($labels_defined,$comments_defined) = (0,0);							
+
+	if ((($Address-$saddr)-$mismatches > 15) && 							# exclude short code snippets with likely multiple matches...
+#			($LBL[$saddr] ne $lbl) &&										# ... already  defined labels ...
+			!($lbl =~ m{^GameHook#[0-9A-F]{2}_event$})) {					# ... and automatically generated labels (GameHook#XX_event)
+		$labels_defined++;
+		printf("D711::setLabel('$lbl',0x%04X,0x%02X); \$D711::Address = 0x%04X; D711::def_code();\n",
+			$saddr,$pg,$saddr);
+
+		for (my($i)=0; $i<@match_matchData; $i++) {
+			next if ($match_matchLabel[$i] =~ m{^RAM_[0-9A-F]{2,4}$});			# "anonymous" labels (e.g. RAM_0384) are set automatically (no need to handle here)
+			next if ($LBL[$match_matchData[$i]] eq $match_matchLabel[$i]);				# label already defined
+			$labels_defined++;
+			if ($WMS_System =~ m{^WPC\((.*)\)$}) {
+				printf("D711::setLabel('$match_matchLabel[$i]',0x%04X,0x%02X);\n",$match_matchData[$i],$pg);
+            } else {
+				printf("D711::setLabel('$match_matchLabel[$i]',0x%04X);\n",$match_matchData[$i]);
+            }
+		}																	# by the disassembler and cannot migrate over
+		for (my($i)=0; $i<@match_matchREM; $i++) {
+			next unless defined($match_matchREM[$i]);
+			$comments_defined++;
+			printf("\$D711::REM[0x%04X] = '$match_matchREM[$i]';\n",$saddr+$i);
+	    }
+		return ($labels_defined,$comments_defined,$saddr);
+	}
+	return undef;															# not multiple matches (don't report)
+}
+
+sub scan(@)
+{
+	my($ld,$cd,$addr) = scanCode(0,@_);
+	if (defined($cd)) {
+		printf(STDERR "scanCode($_[1]): exact match\n") if $trace;
+		$exact++;
+		$lbldefd += $ld;
+		$remdefd += $cd;
+	} elsif ($ld == 0) {
+		printf(STDERR "scanCode($_[1]): exact match failure (not multiple)\n") if $trace;
+		($ld,$cd,$addr) = scanCode(5,@_);
+		if (defined($cd)) {
+			printf(STDERR "scanCode($_[1]): FUZZY match at (%04X)\n",$addr); # if $trace;
+			$fuzzy++;
+			$lbldefd += $ld;
+			$remdefd += $cd;
+        } else {
+			printf(STDERR "scanCode($_[1]): fuzzy match failure\n") if $trace;
+        	$failed++;
+        }
+	} else {
+		printf(STDERR "scanCode($_[1]): multiple match failure\n") if $trace;
+		$failed++;
+    }
+}
+
+sub process_object_file($)													# execute this early on, because it defines syscalls
+{
+	my($ofn) = @_;
+	
+	local(@objData);														# object file contents
+	local($exact,$fuzzy,$failed) = (0,0,0);									# scan results
+	local($lbldefd,$remdefd) = (0,0);
+
+	open(OBJF,"$ofn") || die("$ofn: $!\n");									# open file and read PG id
+	$_ = <OBJF>; chomp;														# tag
+	$_ = <OBJF>; chomp;
+
+	if ($WMS_System =~ m{^WPC\((.*)\)$}) {	
+		die("$ofn: page id missing\n")
+			unless m/[0-9A-F]{2}/;
+		my($RPG) = hex($_);
+		select_WPC_RPG($RPG);
+    } else {
+		$RPG = NaN;
+    }
+
+	while (<OBJF>) {														# read object data
+		chop;
+		next if /^#/;														# skip comments
+		push(@objData,$_);
+    }
+	close(OBJF);
+
+	my($s) = 0;																# starting index
+	die($objData[$s]) unless substr($objData[$s],0,1) eq '>';
+	my($lbl) = substr($objData[$i],1);
+	my($e);
+	for ($e=1; $e<@objData; $e++) {
+		if (substr($objData[$e],0,1) eq '>') {								# next label
+			scan($RPG,$lbl,$s,$e-1);
+			$s = $e;
+			$lbl = substr($objData[$s],1);
+			print(STDERR "process_object_file: scanning for $lbl...\n") if $trace;
+        } 
+	}
+	scan($RPG,$lbl,$s,$e-1);
+	print(STDERR "$ofn: $exact exact, $fuzzy fuzzy, $failed failed matches\n");
+	print(STDERR "$ofn: $lbldefd labels defined, $remdefd comments added\n");
+}
+
+1;

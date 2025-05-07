@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Apr 26 08:37:56 2025
+#					 dlm: Wed May  7 12:40:39 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 3306 83 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3337 12 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -266,7 +266,14 @@
 #				  - added support for stray labels in gaps
 #	Apr 25, 2025: - removed dump multiple labels flag from produce_output()
 #				  - added -f support to produce_output()
-#	Apr 26, 2026: - removed -f (made default)
+#	Apr 26, 2025: - removed -f (made default)
+#	May  2, 2025: - BUG: disassemble_unfollowed_labels() wrongly assumed code
+#	May  5, 2025: - disabled debug output accidentally left on
+#	May  6, 2025: - added def_switchtable
+#	May  7, 2025: - replaced all ABORT: by WARNING:
+#				  - BUG: solenoid arguments were -tic instead of -tictoc
+#				  - BUG: code could not start with ANALYSIS_GAP
+#				  - BUG: divider could not be immediately after free space
 # END OF HISTORY
 
 # TO-DO:
@@ -326,22 +333,24 @@ my($unrealistic_score_limit) = 1e6;
 sub import($@)
 {
 	my($pkg,$sys,$opts) = @_;
-##	print(STDERR "import($pkg,$sys,$opts)\n");
+##	print(STDERR "import($pkg,$sys,$opts) [PATH=$PATH]\n");
     
 	eval($opts) if defined($opts);
 
 	$WMS_System = $sys;
 
-	unless ($opt_Q) {
+	unless ($opt_Q) {														# splash screen
 		print(STDERR "\nDisassembler for WVM System $WMS_System\n");
 		print(STDERR "(c) 2019 idealjoker\@mailbox.org\n");
 	}
 
-	require "$PATH/D711.CodeStructureAnalysis";
-	if ($WMS_System == 6 || $WMS_System == 7 || $WMS_System == 11) {
+	require "$PATH/D711.CodeStructureAnalysis";								# _IF, _LOOP, etc.
+	require "$PATH/D711.ObjectScanner";										# scan for code and RAM labels
+
+	if ($WMS_System == 6 || $WMS_System == 7 || $WMS_System == 11) {		# system-specific libraries Sys 6, 7, 11
 		require "$PATH/D711.M6800";
 		require "$PATH/D711.System$WMS_System";
-	} elsif ($WMS_System =~ m{^WPC\((.*)\)$}) {
+	} elsif ($WMS_System =~ m{^WPC\((.*)\)$}) {								# 3 system-specific libraries, WPC
 		require "$PATH/D711.M6809";
 		require "$PATH/D711.WPC";
 	} else {
@@ -670,11 +679,13 @@ sub disassemble_unfollowed_labels()                             # from begin/end
         def_code() unless (defined($OP[$Address]));
     }
 
-    foreach my $l (keys(%Lbl)) {
-        next if ($l =~ m/[-+]/);
-        $Address = $Lbl{$l};
-        def_code() if defined($Address) && !defined($OP[$Address]);
-    }
+##  DISABLED 05/02/2025 BECAUSE DEFINED LABELS DON'T HAVE TO BE CODE
+##	foreach my $l (keys(%Lbl)) {
+##		next if ($l =~ m/[-+]/);
+##		$Address = $Lbl{$l};
+##		next unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
+##		def_code() if defined($Address) && !defined($OP[$Address]);
+##	}
 }
 
 #----------------------------------------------------------------------
@@ -989,7 +1000,7 @@ sub wvm_parse_expr(@)                                                       # re
         push(@{$OPA[$base_addr]},'%bitAnd:');
         wvm_parse_expr(1); wvm_parse_expr(1);
     } else {
-        printf("ABORT: Unknown WVM expression opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
+        printf("WARNING: Unknown WVM expression opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
             if ($verbose > 0);
         $unclean = 1;
         return;
@@ -1066,7 +1077,7 @@ sub disassemble_wvm(@)
         return;
     }
     if ($decoded[$addr] && !defined($OP[$addr])) {                                  # not at start of instruction
-        printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code\n",$addr)
+        printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code\n",$addr)
             if ($verbose > 0);
         $unclean = 1;
         return;
@@ -1100,7 +1111,7 @@ sub disassemble_wvm(@)
         if ($WMS_System == 11) {                                                        # System 11 additional opcodes (info from Scott Charles)
             if (BYTE($addr) == 0x07) {
                 if ($decoded[$addr+1] || $decoded[$addr+2] || $decoded[$addr+3]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1117,7 +1128,7 @@ sub disassemble_wvm(@)
 
             if (BYTE($addr) == 0x08) {                                                  
                 if ($decoded[$addr+1] || $decoded[$addr+2]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1133,7 +1144,7 @@ sub disassemble_wvm(@)
             
             if (BYTE($addr) == 0x09) {
                 if ($decoded[$addr+1] || $decoded[$addr+2] || $decoded[$addr+3]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1150,7 +1161,7 @@ sub disassemble_wvm(@)
 
             if (BYTE($addr) == 0x0A) {
                 if ($decoded[$addr+1] || $decoded[$addr+1]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1166,7 +1177,7 @@ sub disassemble_wvm(@)
 
             if (BYTE($addr) == 0x0B) {
                 if ($decoded[$addr+1]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1185,7 +1196,7 @@ sub disassemble_wvm(@)
 
             if (BYTE($addr) == 0x0C) {
                 if ($decoded[$addr+1]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1199,7 +1210,7 @@ sub disassemble_wvm(@)
 
             if (BYTE($addr) == 0x0D) {
                 if ($decoded[$addr+1]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1213,7 +1224,7 @@ sub disassemble_wvm(@)
                 
             if (BYTE($addr) == 0x0E) {
                 if ($decoded[$addr+1]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1227,7 +1238,7 @@ sub disassemble_wvm(@)
                                 
             if (BYTE($addr) == 0x0F) {
                 if ($decoded[$addr+1]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1276,7 +1287,7 @@ sub disassemble_wvm(@)
         
         if ((BYTE($addr)&0xF0) == 0x30) {                                               # solControl ($30-$3F)
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1288,12 +1299,12 @@ sub disassemble_wvm(@)
                 my($sol)   = BYTE($addr)&0x1F;
                 my($flags) = BYTE($addr)&0xE0;
                 if    ($flags == 0x00) { $op = 'off'; }
-                elsif ($flags == 0x20) { $op = '1-tic'; }
-                elsif ($flags == 0x40) { $op = '2-tics'; }
-                elsif ($flags == 0x60) { $op = '3-tics'; }
-                elsif ($flags == 0x80) { $op = '4-tics'; }
-                elsif ($flags == 0xA0) { $op = '5-tics'; }
-                elsif ($flags == 0xC0) { $op = '6-tics'; }
+                elsif ($flags == 0x20) { $op = '1-tictoc'; }
+                elsif ($flags == 0x40) { $op = '2-tictocs'; }
+                elsif ($flags == 0x60) { $op = '3-tictocs'; }
+                elsif ($flags == 0x80) { $op = '4-tictocs'; }
+                elsif ($flags == 0xA0) { $op = '5-tictocs'; }
+                elsif ($flags == 0xC0) { $op = '6-tictocs'; }
                 elsif ($flags == 0xE0) { $op = 'on'; }
                 else { die(sprintf("solControl flags = \$%02X at addr \$%04X",$flags,$addr)); }
                 push(@{$OPA[$base_addr]},sprintf('Sol#%02X:%s',$sol,$op));
@@ -1304,7 +1315,7 @@ sub disassemble_wvm(@)
 
         if (BYTE($addr) == 0x40) {                                                      # playSound_score
             if ($decoded[$addr+1] || $decoded[$addr+2]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1315,7 +1326,7 @@ sub disassemble_wvm(@)
             $decoded[$addr] = $decoded[$addr+1] = $decoded[$addr+2] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+2)&0xF8)>>3) * (10**(BYTE($addr+2)&0x07)) > $unrealistic_score_limit) {
-                printf("ABORT: unrealistic score %d at addr \$%04X\n",
+                printf("WARNING: unrealistic score %d at addr \$%04X\n",
                         ((BYTE($addr+2)&0xF8)>>3) * (10**(BYTE($addr+2)&0x07)),$addr)
                             if ($verbose > 0);
                 $unclean = 1;
@@ -1326,7 +1337,7 @@ sub disassemble_wvm(@)
         }
         if (BYTE($addr) == 0x41) {                                                        # queueScore
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1336,7 +1347,7 @@ sub disassemble_wvm(@)
             $decoded[$addr] = $decoded[$addr+1] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)) > $unrealistic_score_limit) {
-                printf("ABORT: unrealistic score %d at addr \$%04X\n",
+                printf("WARNING: unrealistic score %d at addr \$%04X\n",
                         ((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)),$addr)
                             if ($verbose > 0);
                 $unclean = 1;
@@ -1347,7 +1358,7 @@ sub disassemble_wvm(@)
         }
         if (BYTE($addr) == 0x42) {                                                        # score
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1357,7 +1368,7 @@ sub disassemble_wvm(@)
             $decoded[$addr] = $decoded[$addr+1] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)) > $unrealistic_score_limit) {
-                printf("ABORT: unrealistic score %d at addr \$%04X\n",
+                printf("WARNING: unrealistic score %d at addr \$%04X\n",
                         ((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)),$addr)
                             if ($verbose > 0);
                 $unclean = 1;
@@ -1368,7 +1379,7 @@ sub disassemble_wvm(@)
         }
         if (BYTE($addr) == 0x43) {                                                        # score_digitSound
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1378,7 +1389,7 @@ sub disassemble_wvm(@)
             $decoded[$addr] = $decoded[$addr+1] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)) > $unrealistic_score_limit) {
-                printf("ABORT: unrealistic score %d at addr \$%04X\n",
+                printf("WARNING: unrealistic score %d at addr \$%04X\n",
                         ((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)),$addr)
                             if ($verbose > 0);
                 $unclean = 1;
@@ -1403,7 +1414,7 @@ sub disassemble_wvm(@)
 
         if  (BYTE($addr) == 0x50) {                                                     # add two registers 
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1416,7 +1427,7 @@ sub disassemble_wvm(@)
         }
         if  (BYTE($addr) == 0x51) {                                                     # copy value from one register to other
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1430,7 +1441,7 @@ sub disassemble_wvm(@)
 
         if  (BYTE($addr) == 0x52) {                                                     # setThreadFlags
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1443,7 +1454,7 @@ sub disassemble_wvm(@)
         }
         if (BYTE($addr) == 0x53) {                                                        # sleep / lSleep (the latter is only used when sleep would be better)
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1456,7 +1467,7 @@ sub disassemble_wvm(@)
         }
         if (BYTE($addr) == 0x54) {                                                        # killThread
             if ($decoded[$addr+1] || $decoded[$addr+2] ) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1469,7 +1480,7 @@ sub disassemble_wvm(@)
         }
         if (BYTE($addr) == 0x55) {                                                        # killThreads
             if ($decoded[$addr+1] || $decoded[$addr+2] ) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1482,7 +1493,7 @@ sub disassemble_wvm(@)
         }
         if (BYTE($addr) == 0x56) {                                                        # jumpSubroutine
             if ($decoded[$addr+1] || $decoded[$addr+2] ) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1496,7 +1507,7 @@ sub disassemble_wvm(@)
         }
         if (BYTE($addr) == 0x57) {                                                        # jumpSubroutine6800
             if ($decoded[$addr+1] || $decoded[$addr+2] ) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1514,7 +1525,7 @@ sub disassemble_wvm(@)
         next if wvm_branchOp(0x5B,$ind,'branchUnless');
         if (BYTE($addr) == 0x5C) {                                                        # jump6800
             if ($decoded[$addr+1] || $decoded[$addr+2] ) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1531,7 +1542,7 @@ sub disassemble_wvm(@)
              $decoded[$addr++] = 1;
              while (BYTE($addr)&0x80) {
                 if ($decoded[$addr]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1540,7 +1551,7 @@ sub disassemble_wvm(@)
                 $decoded[$addr++] = 1;
             }
             if ($decoded[$addr]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1554,7 +1565,7 @@ sub disassemble_wvm(@)
             $decoded[$addr++] = 1;
             while (BYTE($addr)&0x80) {
                 if ($decoded[$addr]) {
-                    printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                    printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                         if ($verbose > 0);
                     $unclean = 1;
                     return;
@@ -1563,7 +1574,7 @@ sub disassemble_wvm(@)
                 $decoded[$addr++] = 1;
             }
             if ($decoded[$addr]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1574,7 +1585,7 @@ sub disassemble_wvm(@)
         }
         if (BYTE($addr) == 0x5F) {                                                        # jump
             if ($decoded[$addr+1] || $decoded[$addr+2] ) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1603,7 +1614,7 @@ sub disassemble_wvm(@)
 
         if ((BYTE($addr)&0xF0) == 0x80) {                                               # branch
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1620,7 +1631,7 @@ sub disassemble_wvm(@)
 
         if ((BYTE($addr)&0xF0) == 0x90) {                                               # branchSubroutine
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1637,7 +1648,7 @@ sub disassemble_wvm(@)
 
         if ((BYTE($addr)&0xF0) == 0xA0) {                                               # branchSubroutine6800
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1654,7 +1665,7 @@ sub disassemble_wvm(@)
 
         if ((BYTE($addr)&0xF0) == 0xB0) {                                               # add immediate signed byte value to register
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1670,7 +1681,7 @@ sub disassemble_wvm(@)
 
         if ((BYTE($addr)&0xF0) == 0xC0) {                                               # loadRegister
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1686,7 +1697,7 @@ sub disassemble_wvm(@)
 
         if ((BYTE($addr)&0xF0) == 0xD0) {                                               # playSound n-times
             if ($decoded[$addr+1]) {
-                printf(STDERR "ABORT: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
+                printf(STDERR "WARNING: WVM disassembly at %04X within already disassembled instruction code ($OP[$addr+1] @{$OPA[$addr+1]})\n",$addr)
                     if ($verbose > 0);
                 $unclean = 1;
                 return;
@@ -1704,7 +1715,7 @@ sub disassemble_wvm(@)
             next;
         }
 
-        printf("ABORT: Unknown WVM$WMS_System opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
+        printf("WARNING: Unknown WVM$WMS_System opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
             if ($verbose > 0);
         $unclean = 1;
         return;
@@ -2250,17 +2261,27 @@ my($switchtable_lbl);
 sub def_switchtable_ptr(@)
 {
     my($nentries,$lbl,$swtbl_lbl,$rem) = @_;
+
     die unless defined($Address);
     setLabel($lbl,$Address);
     $Address+=2,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
     $OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
     $OPA[$Address][0] = $swtbl_lbl; $REM[$Address] = $rem unless defined($REM[$Address]); 
-    $decoded[$Address] = $decoded[$Address+1] = 1; 
+    $decoded[$Address] = $decoded[$Address+1] = 1;
     $switchtable_lbl = $swtbl_lbl;
 
     my($svAddress) = $Address;
     $Address = WORD($Address);
-    setLabel($swtbl_lbl,$Address);
+    def_switchtable($nentries,$swtbl_lbl);
+    $Address = $svAddress + 2;
+}
+
+sub def_switchtable(@)
+{
+	my($nentries,$lbl) = @_;
+
+    die unless defined($Address);
+    setLabel($lbl,$Address);
     insert_divider($Address,'Switch Table');
     for (my($sw)=0; $sw<$nentries; $sw++) {
         $REM[$Address] = defined($Switch[$sw]) ? sprintf("switch # %d ($Switch[$sw])",$sw+1)
@@ -2270,17 +2291,23 @@ sub def_switchtable_ptr(@)
         $decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
         my($swn) = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('sw_%02X',$sw);
         if (WORD($Address+1) > 0) {
-            $OPA[$Address][1] = label_address(WORD($Address+1),$swn.'_handler',1);      # suppress address suffix in label
-            setLabel($swn.'_handler',WORD($Address+1));
-            disassemble_wvm($code_base_indent,WORD($Address+1),$swn.'_handler',"Switch Handler ($swn)"); 
+        	my($magic_bits) = BYTE($Address) & 0x07;
+        	if ($magic_bits==0 && BYTE($Address)!=0x80) {
+	            $OPA[$Address][1] = label_address(WORD($Address+1),$swn.'_handler_ptr',1);      # suppress address suffix in label
+    	        setLabel($swn.'_handler_ptr',WORD($Address+1));
+##        	    disassemble_wvm($code_base_indent,WORD($Address+1),$swn.'_handler',"Switch Handler ($swn)");
+        		
+        	} else {
+	            $OPA[$Address][1] = label_address(WORD($Address+1),$swn.'_handler',1);      # suppress address suffix in label
+    	        setLabel($swn.'_handler',WORD($Address+1));
+        	    disassemble_wvm($code_base_indent,WORD($Address+1),$swn.'_handler',"Switch Handler ($swn)");
+        	}
         } else {
             $OPA[$Address][1] = 'NULL';
         }
         $Address += 3;
     }
-    $Address = $svAddress + 2;
 }
-
 
 #----------------------------------------------------------------------
 # Sound Table Pointer
@@ -3127,9 +3154,14 @@ sub produce_output(@)
 			# Pre-Label Pseudo Ops
 			#------------------------------------------------------------------------------------------
 
+			my($lineEnded);
 			for (my($i)=0; $i<@{$EXTRA[$addr]}; $i++) { 					# first, print the pre-label constructs (ENDIF, ...)
 				next unless ($EXTRA_BEFORE_LABEL[$addr][$i]);
 				$line .= indent($line,$hard_tab*$EXTRA_IND[$addr][$i]) . $EXTRA[$addr][$i];
+				if ($code_started && !defined($org) && !$lineEnded) {		# code required to allow divider immediately after free space
+					print("\n");
+					$lineEnded = 1;
+				}
 				print_addr($addr) if ($print_addrs);
 				printf('			')	   if ($print_code);
 				print("$line\n"); undef($line);
@@ -3272,7 +3304,42 @@ sub produce_output(@)
 			# Analysis Gap
 			#------------------------------------------------------------------------------------------
 
-			if ($fill_gaps && defined($org)) {										# output gaps as byte blocks
+			if ($fill_gaps) {														# output gaps as byte blocks
+
+				unless (defined($org)) {											# first .ORG (ROM starts with gap)
+					if ($code_started) {
+						print("\n");
+					} elsif (!($WMS_System =~ m{^WPC})) {
+						print_addr($addr) if ($print_addrs);
+						printf('			')	if ($print_code);
+						print(";----------------------------------------------------------------------\n");
+						print_addr($addr) if ($print_addrs);
+						printf('			')	if ($print_code);
+						print("; GAME ROM START\n");
+						print_addr($addr) if ($print_addrs);
+						printf('			')	if ($print_code);
+						print(";----------------------------------------------------------------------\n");
+						print_addr($addr) if ($print_addrs);
+						print("\n");
+						$code_started = 1;
+					}
+					print_addr($addr) if ($print_addrs);
+					printf('			')	if ($print_code);
+					$line = indent('',$hard_tab*$data_indent) . '.ORG';
+					$line .= indent($line,$hard_tab*($code_base_indent+$op_width[3]));
+					$org = $addr;
+					if ($WMS_System =~ m{^WPC} && $org < 0x8000) {
+						$line .= sprintf("\$%02X:%04X",$_cur_RPG,$org);
+					} else {
+						$line .= sprintf('$%04X',$org);
+					}
+##					$line .= sprintf("\t\t; %d-byte gap",$gapLen)
+##						if ($gapLen > 0);
+					$line .= "\n";				    
+					print($line); $line = '';
+					$gapLen = 0;
+	            }
+				
 				if ($print_code) {
 					for (my($a)=$addr+1; $a<=$MAX_ROM_ADDR; $a++) {
 						die(sprintf("$0: cannot print code at address %04X with gap auto filling enabled (implementation restriction)\n",$addr))
@@ -3299,11 +3366,10 @@ sub produce_output(@)
 					print_addr($addr) if ($print_addrs);
 					print(";----------------------------------------------------------------------\n");
 					print_addr($addr) if ($print_addrs);
-					print("\n"); print_addr($addr) if ($print_addrs);
 					undef($org);
-					$addr --;
 
 #					FOLLOWING CODE INSTEAD OF undef($org) FILLS EMPTY SPACE WITH FF
+#					print("\n"); print_addr($addr) if ($print_addrs);
 #					$LBL[$addr] = 'FREE_SPACE' unless defined($LBL[$addr]);
 #					print("$LBL[$addr]:");
 #					printf("%s.DB \$%02X[${n}x]",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
@@ -3319,6 +3385,7 @@ sub produce_output(@)
 #						print("\n");
 #                   }
 
+					$addr += $n - 1;
 					next;
 				}
             

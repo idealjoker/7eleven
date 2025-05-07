@@ -1,16 +1,19 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 1 1 
 #                    doc: Mon May 27 16:52:24 2024
-#                    dlm: Tue May 28 19:44:08 2024
+#                    dlm: Wed May  7 11:41:35 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 13 74 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 94 57 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May 27, 2024: - created
 #	May 28, 2024: - disabled
+#	May  7, 2025: - debugged and enabled
 
-die("\n\n\nSYSTEM 11 DISASSEMBLER NOT IMPLEMENTED YET. CONTACT IDEALJOKER\@MAILBOX.ORG FOR INFORMATION.\n\n\n");
+#----------------------------------------------------------------------
+# RAM 
+#----------------------------------------------------------------------
 
 setLabel('_Reg-A',0x00);			 # non-volatile registers
 setLabel('_Reg-B',0x01);
@@ -29,13 +32,66 @@ setLabel('_Reg-N',0x0D);
 setLabel('_Reg-O',0x0E);
 setLabel('_Reg-P',0x0F);
 
-setLabel('_bufSel_p1',			0x3A);				# 0: main buffer, FF: alt buffer
+setLabel('_bufSel_p1',			0x3A);									# 0: main buffer, FF: alt buffer
 setLabel('_bufSel_p2',			0x3B);
 setLabel('_bufSel_p3',			0x3C);
 setLabel('_bufSel_p4',			0x3D);
 
-sub init_system_11() {				# system 11 magic (done after reading ROM)
+#----------------------------------------------------------------------
+# PIAs
+#----------------------------------------------------------------------
+
+&D711::setLabel('PIA_2100',0x2100); 									# internal sound card and solenoids
+&D711::setLabel('PIA_2100(sound_data)',0x2100); 						# internal sound card
+&D711::setLabel('PIA_2100(sound_ctrl)',0x2101); 											    
+&D711::setLabel('PIA_2100(solenoid_data)',0x2102);						# solenoids
+&D711::setLabel('PIA_2100(solenoid_ctrl)',0x2103);													    
+
+&D711::setLabel('Latch_2200(solenoid_data)',0x2200);					# single byte
+
+&D711::setLabel('PIA_2400',0x2400); 									# lamp matrix
+&D711::setLabel('PIA_2400(lamp_row_data)',0x2400);													    
+&D711::setLabel('PIA_2400(lamp_row_ctrl)',0x2401);													    
+&D711::setLabel('PIA_2400(lamp_col_data)',0x2402);													    
+&D711::setLabel('PIA_2400(lamp_column_ctrl)',0x2403);												    
+
+&D711::setLabel('PIA_2800(diagnosticIO_data)',0x2800);					# out: b0-2: display digit, b4-6: diagnostic LEDs; in: b7: German jumper
+&D711::setLabel('PIA_2800(diagnosticIO_ctrl)',0x2801);					# CA1: advance button
+&D711::setLabel('PIA_2800(unknown_data)',0x2802);						# out:
+&D711::setLabel('PIA_2800(unknown_ctrl)',0x2803);						# CB1: up/down button
+
+&D711::setLabel('PIA_2C00(ext_segments_data)',0x2C00);					# ext segments
+&D711::setLabel('PIA_2C00(ext_segments_ctrl)',0x2C01);												    
+&D711::setLabel('PIA_2C00(7seg_segments_data)',0x2C02); 				# main segments
+&D711::setLabel('PIA_2C00(7seg_segments_ctrl)',0x2C03); 											    
+
+&D711::setLabel('PIA_3000(switch_row_data)',0x3000);					# switch matrix
+&D711::setLabel('PIA_3000(switch_row_ctrl)',0x3001);												    
+&D711::setLabel('PIA_3000(switch_col_data)',0x3002);												    
+&D711::setLabel('PIA_3000(switch_col_ctrl)',0x3003);												    
+
+&D711::setLabel('PIA_3400',0x3400); 												    
+&D711::setLabel('PIA_3400(coinLockout_data)',0x3400);												    
+&D711::setLabel('PIA_3400(coinLockout_ctrl)',0x3401);												    
+&D711::setLabel('PIA_3400(music_data)',0x3402); 						# external sound card
+&D711::setLabel('PIA_3400(music_ctrl)',0x3403); 				    
+
+#----------------------------------------------------------------------
+# ROM Disassembly
+#----------------------------------------------------------------------
+
+sub init_system_11() {													# system 11 magic (done after reading ROM)
+
+    D711::insert_divider(0xFFF8,'CPU Vectors');	
+    $D711::Address = 0xFFF8; D711::def_code_ptr('IRQ_vector','IRQ_handler','CPU Vector Handler');
+    $D711::Address = 0xFFFA; D711::def_code_ptr('SWI_vector','^SWI_event','CPU Vector Handler');
+    $D711::Address = 0xFFFC; D711::def_code_ptr('NMI_vector','NMI_handler','CPU Vector Handler');
+    $D711::Address = 0xFFFE; D711::def_code_ptr('RST_vector','RST_handler','CPU Vector Handler');
+    D711::insert_divider(0xFFF8,'End of ROM');
+
+
 	$Address = 0xFFC6;
+	    D711::insert_divider($Address,'WMS Debugger Hooks');	
 		for (my($o)=1; $o<8; $o++) { setLabel("=Lamps+$o",WORD($Address)+$o); }
 		def_ptr_hex_alt('^=Lamps','=Lamps','Debugger Pointers');
 		for (my($o)=1; $o<8; $o++) { setLabel("=Flags+$o",WORD($Address)+$o); }
@@ -68,28 +124,33 @@ sub init_system_11() {				# system 11 magic (done after reading ROM)
 		def_byteblock_code(3,'WVM_halt_loop_debugger_hook');
 		def_byteblock_code(2,'debug_macro_hook');
 
-	$Address = $Lbl{'WVM_exitThread'}+0x11; 					# derived magic
-		$lbl = 'spawn_thread_WVM_id06'; def_code($lbl);
-	$Address = $Lbl{$lbl}+0x06;     
-		$lbl = 'spawn_thread_WVM'; def_code($lbl);
-	$Address = $Lbl{$lbl}+0x07;     
-		$lbl = 'spawn_thread_6800_[A]'; def_code($lbl);
-	$Address = $Lbl{$lbl}+0x02;     
-		$lbl = 'spawn_thread_6800'; def_code($lbl);
-	$Address = $Lbl{$lbl}+0x4C;     
-		$lbl = 'spawn_thread_6800_id06';
-		if (&BYTE($Address-1) == 0x39) {						# RTS, PinBot
-			# do nothing
-		} elsif (&BYTE($Address-1) == 0x01) {					# NOP, BadCats
-			$Address += 2;
-		} else {
-			die(sprintf("cannot find spawn_thread_6800_id06 routine (%02X)",&BYTE($Address-1)));
-		}
-		def_code($lbl);
-		$Address = $Lbl{$lbl}+0x08;
-		$lbl = 'kill_this_thread'; def_code($lbl);
-	$Address = $Lbl{$lbl}+0x2A;     
-		$lbl = 'kill_thread'; def_code($lbl);
+	if (BYTE($Lbl{'WVM_exitThread'}+15) == 0x20) {				# Sys 11(?), 11A, 11B
+		$Address = $Lbl{'WVM_exitThread'}+0x11; 				    
+			$lbl = 'spawn_thread_WVM_id06'; def_code($lbl);
+		$Address = $Lbl{'WVM_exitThread'}+0x17;
+			$lbl = 'spawn_thread_WVM'; def_code($lbl);
+		$Address = $Lbl{'WVM_exitThread'}+0x1E;
+			$lbl = 'spawn_thread_6800_[A]'; def_code($lbl);
+		$Address = $Lbl{'WVM_exitThread'}+0x20;
+			$lbl = 'spawn_thread_6800'; def_code($lbl);
+		$Address = $Lbl{'WVM_exitThread'}+0x6C;
+			$lbl = 'spawn_thread_6800_id06';
+			if (&BYTE($Address-1) == 0x39) {					# RTS, PinBot
+				# do nothing
+			} elsif (&BYTE($Address-1) == 0x01) {				# NOP, BadCats
+				$Address += 2;
+			} else {
+				print(STDERR sprintf("cannot find spawn_thread_6800_id06 routine (%02X)",&BYTE($Address-1)));
+			}
+			def_code($lbl);
+			$Address = $Lbl{$lbl}+0x08;
+			$lbl = 'kill_this_thread'; def_code($lbl);
+		$Address = $Lbl{$lbl}+0x2A;     
+	        $lbl = 'kill_thread'; def_code($lbl);
+    } elsif (BYTE($Lbl{'WVM_exitThread'}+15) == 0x9C) {			# Rollergames
+		print(STDERR "WARNING: unsupported System 11C code detected!\n");
+    }
+
 }
 
 1;

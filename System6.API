@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Sat Apr 26 10:49:27 2025
+#                    dlm: Wed May  7 13:05:58 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 22 42 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 23 43 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -20,6 +20,7 @@
 #	Apr 24, 2025: - removed duplicate label BB_AUDIT_START, which 
 #				    causes warnings when compiling D711 output
 #	Apr 26, 2025: - added Game Data labels
+#	May  7, 2025: - BUG: 2 trash characters
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
@@ -402,7 +403,7 @@ define_label('sys_reset_game', 							 	0x7000);
 define_label('sys_gameOver',								0x7045);
 define_label('sys_background_loop',						 	0x7062);
 define_label('sys_enter_audits_and_adjustments',			0x719A);
-define_label('sys_solCmdOrPlaySoundOB[A]',					0x71CB);
+define_label('sys_solCmdOrPlaySound[A]',					0x71CB);
 define_label('sys_solCmd[A]',								0x71EC);
 define_label('sys_exec_switchSolCmd',						0x71C9);
 define_label('B=RAM[X,B]', 								 	0x721F);

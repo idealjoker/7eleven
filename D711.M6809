@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sat Apr  5 11:56:25 2025
+#                    dlm: Wed May  7 08:47:32 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 46 66 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 47 51 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -44,6 +44,7 @@
 #	Mar 24, 2025: - added support for @OI (.obj output)
 #	Mar 25, 2025: - BUG: pg2/3 opcodes did not output 1st byte in OI
 #	Apr  5, 2025: - BUG: undefined syscall error triggered wrongly
+#	May  7, 2027: - replaced all ABORT: by WARNING:
 # HISTORY END
 
 # NOTES:
@@ -98,7 +99,7 @@ sub op_EXT($$$$@)																	# operation with extended addressing (similar 
 	my($opc,$opa,$ind,$op,$data_bytes) = @_;
 	return undef unless (BYTE($addr) == $opc);
 	my($trg_addr) = WORD($addr+1);
-	if ($trg_addr >= 0x4000) {														# ROM address
+	if ($trg_addr >= 0x4000) {														# WPC ROM address
 		if (!$decoded[$trg_addr]) {													# not yet decoded
 			if ($data_bytes == 2) {													# data word (not code)
 				label_address($trg_addr,'!data');									
@@ -115,9 +116,9 @@ sub op_EXT($$$$@)																	# operation with extended addressing (similar 
 				push(@{$OI[$trg_addr]},sprintf('%02X',BYTE($trg_addr)));
 				$decoded[$trg_addr] = 1;
 	        } else {																# code
-	        	if ($trg_addr >= 0x8000) {
+	        	if ($trg_addr >= 0x8000) {											# WPC prime realestate
 	        		label_address($trg_addr,'syscall')
-	        	} else {
+	        	} else {															# WPC non-prime
 	        		label_address($trg_addr,'library')
 	        	}
 	        }
@@ -543,7 +544,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		return;
 	}
 	if ($decoded[$addr] && !defined($OP[$addr])) {								   # not at start of instruction
-		printf("ABORT: disassembly M6809 code at %02X:%04X within already disassembled instruction code ($OP[$addr-1],$OP[$addr-2],$OP[$addr-3])\n" .
+		printf("WARNING: disassembly M6809 code at %02X:%04X within already disassembled instruction code ($OP[$addr-1],$OP[$addr-2],$OP[$addr-3])\n" .
 			   "\t[$lbl_root]\n",$_cur_RPG,$addr)
 			if ($verbose > 0);
 		$unclean = 1;
@@ -794,7 +795,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			next if op_IDX(0xEE,$addr-1,$ind,'LDS'); 	next if op_IDX(0xEF,$addr-1,$ind,'STS');
 	        next if op_EXT(0xFE,$addr-1,$ind,'LDS',2);	next if op_EXT(0xFF,$addr-1,$ind,'STS',2);
 
-			printf("ABORT: Unknown M6809 opcode \$%04X at addr \$%02X:%04X\n",WORD($addr),$_cur_RPG,$addr)
+			printf("WARNING: Unknown M6809 opcode \$%04X at addr \$%02X:%04X\n",WORD($addr),$_cur_RPG,$addr)
 				if ($verbose > 0);
 			$OP[$addr-1] = '.DW'; $IND[$addr-1] = $ind;
 			$OPA[$addr-1][0] = sprintf('$%04X!',WORD($addr-1));
@@ -817,7 +818,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			next if op_IDX(0xA3,$addr-1,$ind,'CMPU');	next if op_IDX(0xAC,$addr-1,$ind,'CMPS');
 	        next if op_EXT(0xB3,$addr-1,$ind,'CMPU',2);	next if op_EXT(0xBC,$addr-1,$ind,'CMPS',2);
 
-			printf("ABORT: Unknown M6809 opcode \$%04X at addr \$%02X:%04X\n",WORD($addr),$_cur_RPG,$addr)
+			printf("WARNING: Unknown M6809 opcode \$%04X at addr \$%02X:%04X\n",WORD($addr),$_cur_RPG,$addr)
 				if ($verbose > 0);
 			$OP[$addr-1] = '.DW'; $IND[$addr-1] = $ind;
 			$OPA[$addr-1][0] = sprintf('$%04X!',WORD($addr-1));
@@ -828,7 +829,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 	        return;
         }
 
-        printf("ABORT: Unknown M6809 opcode \$%02X at addr %02X:%04X (start addr = %04X)\n",BYTE($addr),$_cur_RPG,$addr,$start_addr)
+        printf("WARNING: Unknown M6809 opcode \$%02X at addr %02X:%04X (start addr = %04X)\n",BYTE($addr),$_cur_RPG,$addr,$start_addr)
         	if ($verbose > 0);
 		$OP[$addr] = '.DB'; $IND[$addr] = $ind;
 		$OPA[$addr][0] = sprintf('$%02X!',BYTE($addr));

@@ -1,0 +1,122 @@
+#!/usr/bin/perl
+#======================================================================
+#					 D I S A S S E M B L E _ S 1 1 
+#					 doc: Wed May  7 09:51:43 2025
+#					 dlm: Wed May  7 09:51:50 2025
+#					 (c) 2019 A.M. Thurnherr
+#					 uE-Info: 5 50 NIL 0 0 72 2 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	May  7, 2025: - created
+
+#----------------------------------------------------------------------
+# Load Prerequisites
+#----------------------------------------------------------------------
+
+use lib '../../bin';
+use D711 (11);																# WMS System 11
+
+use lib '.';
+
+#----------------------------------------------------------------------
+# Usage
+#----------------------------------------------------------------------
+
+use Getopt::Std;
+
+die("Usage:\n\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
+			"[write code-structuring -h)ints to <file>]\n\t\t" .
+			"[-i)nclude <file[,...]>\n\t\t" .
+			"[no -a)ddresses in output] [-c)ode in output]\n\t\t" . 
+			"[output -g)ap data]\n\t\t" . 
+			"[suppress code-s)tructure analysis]\n")
+	unless &getopts('acgh:i:ls');
+
+$D711::print_addrs	= !$opt_a;												# -a) suppress hex addresses in output
+$D711::print_code	=  $opt_c;												# -c) include code bytes in output
+$D711::fill_gaps	=  $opt_g;
+
+if (defined($opt_i)) {														# include files with perl code
+	my(@linc) = split(',',$opt_i);
+	while (@linc) {
+		require './' . shift(@linc);
+	}	
+}
+
+#----------------------------------------------------------------------
+# Load Code
+#----------------------------------------------------------------------
+
+&D711::load_ROM('ic26.128',0x4000); 										# load ROM images
+die("ic26.128: invalid size\n") unless ($D711::MAX_ROM_ADDR == 0x7FFF);
+&D711::load_ROM('ic27.256',0x8000);
+die("ic27.256: invalid size\n") unless ($D711::MAX_ROM_ADDR == 0xFFFF);
+
+#----------------------------------------------------------------------
+# Find Switch Table
+#----------------------------------------------------------------------
+
+my($nFound,$switch_table_addr);
+for (my($addr)=$D711::MIN_ROM_ADDR; $addr<$D711::MAX_ROM_ADDR; $addr++) {
+	next unless (D711::BYTE($addr)==3 &&
+		 		 D711::BYTE($addr-1)>=48 && D711::BYTE($addr-1)<=64 &&
+		 		 D711::WORD($addr+1)>=$D711::MIN_ROM_ADDR && D711::WORD($addr+1)<$D711::MAX_ROM_ADDR &&
+		 		 D711::WORD($addr+3)>=$D711::MIN_ROM_ADDR && D711::WORD($addr+3)<$D711::MAX_ROM_ADDR &&
+		 		 D711::WORD($addr+5)>=$D711::MIN_ROM_ADDR && D711::WORD($addr+5)<$D711::MAX_ROM_ADDR);
+##	printf(STDERR "Switch Table candidate at %04X\n",D711::WORD($addr+3));
+	my($len);
+	for ($len=0; D711::WORD(D711::WORD($addr+3)+1+3*$len)>=$D711::MIN_ROM_ADDR &&
+				 D711::WORD(D711::WORD($addr+3)+1+3*$len)!=0xFFFF && 
+				 D711::WORD(D711::WORD($addr+3)+1+3*$len)<=$D711::MAX_ROM_ADDR; $len++) {}
+	unless ($nFound > $len) {
+		$nFound = $len;
+		$switch_table_addr = D711::WORD($addr+3);
+	}
+}
+
+if ($nFound > 42) {
+##	printf(STDERR "Switch Table found at %04X ($nFound entires)\n",$switch_table_addr);
+} else {
+	die(sprintf("Switch Table not found (best candidate at %04X ($nFound entires)\n",$switch_table_addr));
+}
+
+
+#----------------------------------------------------------------------
+# Code Disassembly
+#----------------------------------------------------------------------
+
+$D711::Address = $switch_table_addr;
+D711::def_switchtable($nFound,'switch_table');
+
+#----------------------------------------------------------------------
+# Fix String Tables
+#----------------------------------------------------------------------
+
+&D711::trim_overlapping_strings();
+&D711::grow_strings(16);
+
+#----------------------------------------------------------------------
+# Make Human Readable
+#----------------------------------------------------------------------
+
+&D711::disassemble_unfollowed_labels();										# left overs
+&D711::process_code_structure(0x0800,0xFFFF) unless ($opt_s);				# if, while, ...
+&D711::substitute_labels(); 												# resolve labels
+&D711::substitute_identifiers();											# rename game-specific ids
+
+#----------------------------------------------------------------------
+# Produce Output
+#----------------------------------------------------------------------
+
+if ($opt_l) {																# dump label information
+	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
+	exit(0);																# to make a disassembled file with all labels defined up-front
+}
+
+unless (-t 1) { 															# produce code output on STDOUT
+	&D711::produce_output(0x4000,0xFFFF);
+}
+
+exit(0);
+

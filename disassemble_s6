@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Sat Apr 26 08:34:37 2025
+#					 dlm: Wed May  7 13:05:21 2025
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 96 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 25 58 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -21,7 +21,8 @@
 #	Aug 25, 2024: - updated
 #	Apr 25, 2025: - added -G)reenROM
 #				  - added -f
-#	Apr 26, 2026: - removed -f (made default)
+#	Apr 26, 2025: - removed -f (made default)
+#	May  7, 2025: - BUG: produce_output() needed addresses
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 (6);		
@@ -93,7 +94,7 @@ if ($opt_l) {																# dump label information
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 
-&D711::produce_output(); 													# include API in output (has to be for compilation)
+&D711::produce_output($D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR); 			# include API in output (has to be for compilation)
 
 exit(0);
 

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Fri Apr 25 17:38:28 2025
+#                    dlm: Wed May  7 12:57:00 2025
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 26 57 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 600 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -24,6 +24,7 @@
 #				  - BUG: !$var =~ without parens!
 #	Apr 25, 2025: - BUG: lexical labels (>RTS) were wrongly assigned on branches
 #						 not to the nearest of the target
+#	May  7, 2025: - BUG: lexical labels did not work correctly for Bad Cats
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -419,7 +420,7 @@ sub process_code_structure($$)
 		next if ($OP[$addr] =~ m{L?BSR}) ||									# skip non-branch/jump operations
 					!($OP[$addr] =~ m{L?B..$} || $OP[$addr] eq 'JMP');
 
-		my($trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});	# skip branch ops that do not target an RTS
+		my($trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});	# skip branch ops that do not target closest RTS
 		$trg = hex($trg);
 		die unless numberp($trg);
 		next unless ($trg == $RTSa);
@@ -429,6 +430,7 @@ sub process_code_structure($$)
 		} else {
 			next if ($trg > $addr+128);
 		}
+##		if ($addr == 0x629A && $trg == 0x62BA) { die; }
 			     
 		$LEX_LABEL[$trg] = '>RTS';											# otherwise, we have a valid lexical label
 		$nLex++;
@@ -584,6 +586,10 @@ sub process_code_structure($$)
 
 	#------------------------------------------------------------
 	# STEP 3: Substitute Lexical Labels
+	# 	This code may not work correctly if there is a branch to
+	#   an RTS which happens to be the target of a different lexical
+	#   branch. The two checks marked with (*) are there to minimize
+	#   this probability but it does not completely avoid it.
 	#------------------------------------------------------------
 
 	for (my($addr)=$saddr; $addr<=$eaddr; $addr++) {
@@ -593,9 +599,9 @@ sub process_code_structure($$)
 		die unless numberp($trg);
 
 		next unless $LEX_LABEL[$trg];
-		$OPA[$addr][0] = ($trg > $addr)
-					   ? '>' . substr($LEX_LABEL[$trg],1)
-					   : '<' . substr($LEX_LABEL[$trg],1);
+		next if ($trg>$addr && substr($LEX_LABEL[$trg],0,1) ne '>');
+		next if ($trg<$addr && substr($LEX_LABEL[$trg],0,1) ne '<');
+		$OPA[$addr][0] = $LEX_LABEL[$trg];
     }
 }
 

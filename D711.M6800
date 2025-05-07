@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 0 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Thu Apr 24 12:41:36 2025
+#                    dlm: Wed May  7 11:27:31 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 22 49 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 359 54 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # BUGS:
@@ -20,6 +20,10 @@
 #	Aug 21, 2024: - adapted to updated EXTRA support 
 #	Aug 23, 2024: - debugged
 #	Apr 24, 2025: - removed empty lines after BRA
+#	Apr 29, 2025: - added @OI support
+#	May  5, 2025: - made @OI work
+#	May  7, 2025: - replaced all ABORT: by WARNING:
+#				  - enabled data definitions in op_EXT
 # HISTORY END
 
 sub op_IMP(@)													# operation with implied addressing
@@ -28,6 +32,7 @@ sub op_IMP(@)													# operation with implied addressing
 	return undef unless (BYTE($addr) == $opc);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
 	@{$OPA[$addr]} = @args;
+	push(@{$OI[$addr]},sprintf('%02X',$opc));
 	$decoded[$addr++] = 1;
 	return 1;
 }
@@ -39,6 +44,7 @@ sub op_IMM(@)													# operation with immediate addressing
 	$OP[$addr] = $op; $IND[$addr] = $ind;
 	push(@{$OPA[$addr]},@args);
 	push(@{$OPA[$addr]},sprintf('#$%02X',BYTE($addr+1)));
+	push(@{$OI[$addr]},sprintf('%02X%02X',BYTE($addr),BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;
 }
@@ -50,32 +56,65 @@ sub op_IMM2(@)													# operation with immediate 2-byte addressing
 	$OP[$addr] = $op; $IND[$addr] = $ind;
 	push(@{$OPA[$addr]},@args);
 	push(@{$OPA[$addr]},sprintf('#$%04X',WORD($addr+1)));
+	push(@{$OI[$addr]},sprintf('%02X%04X',BYTE($addr),WORD($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;
 }
 
-sub op_DIR(@)													# operation with direct addressing
+sub op_DIR($$$)													# operation with direct addressing
 {
-	my($opc,$ind,$op,@args) = @_;
+	my($opc,$ind,$op) = @_;
 	return undef unless (BYTE($addr) == $opc);
 	my($op_DIR) = BYTE($addr+1);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
-	push(@{$OPA[$addr]},@args);
-	push(@{$OPA[$addr]},label_address($op_DIR,$lbl_root));
+	my($trg_addr) = label_address($op_DIR,$lbl_root);
+	push(@{$OPA[$addr]},$trg_addr);
+	push(@{$OI[$addr]},sprintf('%02X',$opc));
+	push(@{$OI[$addr]},sprintf(':%s',substr($trg_addr,1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;
 }
 
 sub op_EXT(@)													# operation with extended addressing
 {
-	my($opc,$ind,$op,@args) = @_;
+	my($opc,$ind,$op,$data_bytes) = @_;
 	return undef unless (BYTE($addr) == $opc);
-	my($op_EXT) = WORD($addr+1);
+	my($trg_addr) = WORD($addr+1);
+	if ($trg_addr>=$MIN_ROM_ADDR && $trg_addr<=$MAX_ROM_ADDR) {
+		if (!$decoded[$trg_addr]) {													# not yet decoded
+			if ($data_bytes == 2) {													# data word (not code)
+				label_address($trg_addr,'!data');									
+				$IND[$trg_addr] = $data_indent; $TYPE[$trg_addr] =	$CodeType_data;
+				$OP[$trg_addr] = '.DW';
+				$OPA[$trg_addr][0] = sprintf('$%04X',WORD($trg_addr));
+				push(@{$OI[$trg_addr]},sprintf('%04X',WORD($trg_addr)));
+				$decoded[$trg_addr] = $decoded[$trg_addr+1] = 1;
+			} elsif ($data_bytes == 1) {											# data byte (not code)
+				label_address($trg_addr,'!data');									
+				$IND[$trg_addr] = $data_indent; $TYPE[$trg_addr] =	$CodeType_data;
+				$OP[$trg_addr] = '.DB';
+				$OPA[$trg_addr][0] = sprintf('$%02X',BYTE($trg_addr));
+				push(@{$OI[$trg_addr]},sprintf('%02X',BYTE($trg_addr)));
+				$decoded[$trg_addr] = 1;
+	        } else {																# code
+	        	if (($WMS_System==6 && $trg_addr >= 0x7000) ||						# system code
+					($WMS_System==7 && $trg_addr >= 0xE800) ||						
+					($WMS_System==11 && $trg_addr >= 0x9000)) {
+	        		label_address($trg_addr,'syscall');
+	        	} else {															# game code
+	        		label_address($trg_addr,'library');
+	        	}
+	        }
+	    } else {
+			label_address($trg_addr,'');
+        }
+    }
 	$OP[$addr] = $op; $IND[$addr] = $ind;
-	push(@{$OPA[$addr]},@args);
-	push(@{$OPA[$addr]},label_address($op_EXT,$lbl_root));
+	push(@{$OPA[$addr]},label_address($trg_addr,$lbl_root));
+	push(@{$OI[$addr]},sprintf('%02X',$opc));
+	push(@{$OI[$addr]},sprintf(':%04X',$trg_addr));
 	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
-	return $op_EXT;												# return address!!
+	return $trg_addr ? $trg_addr : '0 but true';									# return address!!
 }
 
 sub op_REL($$$$$)												# operation with relative addressing
@@ -85,6 +124,7 @@ sub op_REL($$$$$)												# operation with relative addressing
 	my($trg_addr) = $addr + 2 + ((BYTE($addr+1) < 128) ? BYTE($addr+1) : BYTE($addr+1)-256);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
 	$OPA[$addr][0] = label_address($trg_addr,'.' . $lbl_root);
+	push(@{$OI[$addr]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	if ($follow_code) {
 		disassemble_asm($ind,$trg_addr,$lbl_root);
@@ -102,6 +142,7 @@ sub op_IND(@)													# operation with indirect addressing
 	$OP[$addr] = $op; $IND[$addr] = $ind;
 	push(@{$OPA[$addr]},@args);
 	push(@{$OPA[$addr]},sprintf('%d,X',BYTE($addr+1)));
+	push(@{$OI[$addr]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;
 }
@@ -126,7 +167,7 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 		return;
 	}
 	if ($decoded[$addr] && !defined($OP[$addr])) {								   # not at start of instruction
-		printf("ABORT: disassembly M6800 code at \$%04X within already disassembled instruction code\n" .
+		printf("WARNING: disassembly M6800 code at \$%04X within already disassembled instruction code\n" .
 			   "\t[$lbl_root]\n",$addr)
 			if ($verbose > 0);
 		$unclean = 1;
@@ -240,13 +281,13 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 
 		next if op_IND(0x6F,$ind,'CLR');
 
-		next if op_EXT(0x70,$ind,'NEG');
-		next if op_EXT(0x73,$ind,'COM');
-		next if op_EXT(0x74,$ind,'LSR');
-		next if op_EXT(0x76,$ind,'ROR'); next if op_EXT(0x77,$ind,'ASR');
-		next if op_EXT(0x78,$ind,'ASL'); next if op_EXT(0x79,$ind,'ROL');
-		next if op_EXT(0x7A,$ind,'DEC');
-		next if op_EXT(0x7C,$ind,'INC'); next if op_EXT(0x7D,$ind,'TST');
+		next if op_EXT(0x70,$ind,'NEG',1);
+		next if op_EXT(0x73,$ind,'COM',1);
+		next if op_EXT(0x74,$ind,'LSR',1);
+		next if op_EXT(0x76,$ind,'ROR',1); next if op_EXT(0x77,$ind,'ASR',1);
+		next if op_EXT(0x78,$ind,'ASL',1); next if op_EXT(0x79,$ind,'ROL',1);
+		next if op_EXT(0x7A,$ind,'DEC',1);
+		next if op_EXT(0x7C,$ind,'INC',1); next if op_EXT(0x7D,$ind,'TST',1);
 		my($jmp_addr);
 		if ($jmp_addr=op_EXT(0x7E,$ind,'JMP')) {
 			if (hex(substr($OPA[$addr-3][0],1,4)) == $Lbl{'WVM_exitThread'}) {						# needs adaptation to system 7 !!!!!
@@ -269,7 +310,7 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 			}
 			return;
 		}
-		next if op_EXT(0x7F,$ind,'CLR');
+		next if op_EXT(0x7F,$ind,'CLR',1);
 
 		next if op_IMM(0x80,$ind,'SUBA'); next if op_IMM(0x81,$ind,'CMPA');
 		next if op_IMM(0x82,$ind,'SBCA');
@@ -301,6 +342,8 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 					$OP[$addr] = 'BSR'; $IND[$addr] = $ind;
 					my($jump_to) = $trg_addr;
 					$OPA[$addr][0] = label_address($jump_to,$lbl_root);
+					push(@{$OI[$addr]},sprintf('%02X',0x8D));
+					push(@{$OI[$addr]},sprintf(':%04X',$trg_addr));
 					$decoded[$addr] = $decoded[$addr+1] = 1;
 					if ($follow_code) {
 						disassemble_asm($code_base_indent,$jump_to,$lbl_root);
@@ -312,6 +355,10 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 	
 					foreach my $sraddr (@Switch2WVMSubroutines) {					# M6800 subroutines returning in WVM mode
 						next unless ($jump_to == $sraddr);
+						push(@{$EXTRA[$addr]},'.WVM_MODE');
+						push(@{$EXTRA_IND[$addr]},$ind);
+						$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 0;    
+		                $EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
 						disassemble_wvm($ind,$addr,$lbl_root);
 						return;
 					}
@@ -354,14 +401,14 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 		next if op_IND(0xAC,$ind,'CPX'); next if op_IND(0xAD,$ind,'JSR');		# JSR 0,X
 		next if op_IND(0xAE,$ind,'LDS'); next if op_IND(0xAF,$ind,'STS');
 	    
-		next if op_EXT(0xB0,$ind,'SUBA'); next if op_EXT(0xB1,$ind,'CMPA');
-		next if op_EXT(0xB2,$ind,'SBCA');
-		next if op_EXT(0xB4,$ind,'ANDA'); next if op_EXT(0xB5,$ind,'BITA');
-		next if op_EXT(0xB6,$ind,'LDAA'); next if op_EXT(0xB7,$ind,'STAA');
-		next if op_EXT(0xB8,$ind,'EORA'); next if op_EXT(0xB9,$ind,'ADCA');
-		next if op_EXT(0xBA,$ind,'ORAA'); next if op_EXT(0xBB,$ind,'ADDA');
-		next if op_EXT(0xBC,$ind,'CPX');
-		next if op_EXT(0xBE,$ind,'LDS'); next if op_EXT(0xBF,$ind,'STS');
+		next if op_EXT(0xB0,$ind,'SUBA',1); next if op_EXT(0xB1,$ind,'CMPA',1);
+		next if op_EXT(0xB2,$ind,'SBCA',1);
+		next if op_EXT(0xB4,$ind,'ANDA',1); next if op_EXT(0xB5,$ind,'BITA',1);
+		next if op_EXT(0xB6,$ind,'LDAA',1); next if op_EXT(0xB7,$ind,'STAA',1);
+		next if op_EXT(0xB8,$ind,'EORA',1); next if op_EXT(0xB9,$ind,'ADCA',1);
+		next if op_EXT(0xBA,$ind,'ORAA',1); next if op_EXT(0xBB,$ind,'ADDA',1);
+		next if op_EXT(0xBC,$ind,'CPX',2);
+		next if op_EXT(0xBE,$ind,'LDS',2); next if op_EXT(0xBF,$ind,'STS',2);
 
 		#
 		# Special Handling for JSR with extended addressing (EXT)
@@ -384,6 +431,8 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 					$OP[$addr] = 'JSR'; $IND[$addr] = $ind;
 					my($jump_to) = WORD($addr+1);
 					$OPA[$addr][0] = label_address($jump_to,$lbl_root);
+					push(@{$OI[$addr]},sprintf('%02X',0xBD));
+					push(@{$OI[$addr]},sprintf(':%04X',$jump_to));
 					$decoded[$addr] = $decoded[$addr+1] = $decoded[$addr+2] = 1;
 					if ($follow_code) {
 						disassemble_asm($code_base_indent,$jump_to,$lbl_root);
@@ -394,6 +443,10 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 	
 					foreach my $sraddr (@Switch2WVMSubroutines) {					# M6800 subroutines returning in WVM mode
 						next unless ($jump_to == $sraddr);
+						push(@{$EXTRA[$addr]},'.WVM_MODE');
+						push(@{$EXTRA_IND[$addr]},$ind);
+						$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 0;    
+		                $EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
 						disassemble_wvm($ind,$addr,$lbl_root);
 						return;
 					}
@@ -439,15 +492,15 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 		next if op_IND(0xEA,$ind,'ORAB'); next if op_IND(0xEB,$ind,'ADDB');
 		next if op_IND(0xEE,$ind,'LDX'); next if op_IND(0xEF,$ind,'STX');
 	    
-		next if op_EXT(0xF0,$ind,'SUBB'); next if op_EXT(0xF1,$ind,'CMPB');
-		next if op_EXT(0xF2,$ind,'SBCB');
-		next if op_EXT(0xF4,$ind,'ANDB'); next if op_EXT(0xF5,$ind,'BITB');
-		next if op_EXT(0xF6,$ind,'LDAB'); next if op_EXT(0xF7,$ind,'STAB');
-		next if op_EXT(0xF8,$ind,'EORB'); next if op_EXT(0xF9,$ind,'ADCB');
-		next if op_EXT(0xFA,$ind,'ORAB'); next if op_EXT(0xFB,$ind,'ADDB');
-		next if op_EXT(0xFE,$ind,'LDX'); next if op_EXT(0xFF,$ind,'STX');
+		next if op_EXT(0xF0,$ind,'SUBB',1); next if op_EXT(0xF1,$ind,'CMPB',1);
+		next if op_EXT(0xF2,$ind,'SBCB',1);
+		next if op_EXT(0xF4,$ind,'ANDB',1); next if op_EXT(0xF5,$ind,'BITB',1);
+		next if op_EXT(0xF6,$ind,'LDAB',1); next if op_EXT(0xF7,$ind,'STAB',1);
+		next if op_EXT(0xF8,$ind,'EORB',1); next if op_EXT(0xF9,$ind,'ADCB',1);
+		next if op_EXT(0xFA,$ind,'ORAB',1); next if op_EXT(0xFB,$ind,'ADDB',1);
+		next if op_EXT(0xFE,$ind,'LDX',2); next if op_EXT(0xFF,$ind,'STX',2);
 	    
-        printf("ABORT: Unknown M6800 opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
+        printf("WARNING: Unknown M6800 opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
         	if ($verbose > 0);
 		$OP[$addr] = '.DB'; $IND[$addr] = $ind;
 		$OPA[$addr][0] = sprintf('$%02X!',BYTE($addr));

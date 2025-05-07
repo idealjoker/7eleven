@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri Apr 25 18:31:16 2025
+#                    dlm: Wed May  7 12:30:49 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 593 7 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 346 43 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -343,6 +343,7 @@
 #	Apr 24, 2025: - &expand_repeatBytes only looked at least significant digit
 #	Apr 25, 2025: - disabled checksum verification for System 6 System ROMs (GreenROM)
 #				  - suppress hg not found error message on systems w/o Mercurial
+#	May  7, 2025: - RTI returned wrong mode
 # HISTORY END
 
 # RELEASE NOTES:
@@ -515,7 +516,7 @@ my(@AUTO_LABEL_DEF);											# line numbers of auto label definitions for erro
 
 my(@IF_STACK) = (0);                                            # 0: sentinel: outside any if; 1: then/else assembling; -1: then/else not assembling; -2: nested if, not assembling
 my($EXEC6800_BLOCK_ID) = 0;                                    	# for making sure JSR/JMP statements are not optimized in begin6800/end6800 blocks
-my($MODE) = 0;													# 0: undefined; 1: M6800; 2: WVM/IVM
+my($MODE) = 0;													# 0: undefined; 1: M6800; 2: WVM/IVM; 3: data
 
 #----------------------------------------------------------------------
 # Command-Line Options
@@ -962,9 +963,10 @@ sub set_label_type($@)
 
 	print(STDERR "\tset_label_type($lt) [@newly_defined_label]\n") if $opt_T;
 	foreach my $l (@newly_defined_label) {
+##		next if ($l eq 'ANALYSIS_GAP');									# XXX
     	die("attempting to re-define mode-$LBL_TYPE{$l} label <$l> to mode-$lt at input line $.\n")
-    		if ($LBL_TYPE{$l}>0 && $LBL_TYPE{$l} != $lt);
-        $LBL_TYPE{$l} = $lt;
+			if ($LBL_TYPE{$l}>0 && $LBL_TYPE{$l}!=$lt);
+   		$LBL_TYPE{$l} = $lt;
     }
     undef(@newly_defined_label);
 }
@@ -2211,7 +2213,7 @@ sub assemble_pragma()
     # Data
     #--------
 
-	if ($MODE == 0) {
+	if ($MODE == 0) {		
 		if ($OP eq '.DB') { 																# .DB (define bytes)
 			die("Syntax: .DB byte-val[...] (<@_> at input line $.)\n")
 				unless (@OP_ARG >= 1);
@@ -3244,7 +3246,7 @@ sub assemble_6800()
 		$MODE = 0;
 		return 1;
 	}
-	$MODE=1,return 1 if asm_6800_op('RTI','',0x3B);
+	$MODE=0,return 1 if asm_6800_op('RTI','',0x3B);
 	$MODE=1,return 1 if asm_6800_op('WAI','',0x3E);
 	$MODE=0,return 1 if asm_6800_op('SWI','',0x3F);
 
