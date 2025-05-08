@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed May  7 12:40:39 2025
+#					 dlm: Thu May  8 11:25:13 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 3337 12 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 279 74 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -274,6 +274,9 @@
 #				  - BUG: solenoid arguments were -tic instead of -tictoc
 #				  - BUG: code could not start with ANALYSIS_GAP
 #				  - BUG: divider could not be immediately after free space
+#	May  8, 2025: - replaced sleep_subOptimal by longSleep
+#				  - replaced copyTo by load
+#				  - replaced decAndBranchUnless0 by decAndBranchUnlessZero
 # END OF HISTORY
 
 # TO-DO:
@@ -1183,7 +1186,7 @@ sub disassemble_wvm(@)
                     return;
                 }
                 # decrement counter in MSN, branch
-                $OP[$base_addr] = 'decAndBranchUnless0'; $IND[$base_addr] = $ind;
+                $OP[$base_addr] = 'decAndBranchUnlessZero'; $IND[$base_addr] = $ind;
                 $decoded[$addr++] = 1;
                 push(@{$OPA[$base_addr]},sprintf('Reg-%c',65+((BYTE($addr)&0xF0)>>4)));
                 my($bra_offset) = WORD($addr) & 0x0FFF;
@@ -1276,14 +1279,14 @@ sub disassemble_wvm(@)
         next if wvm_indOp(0x25,$ind,'clearAltbuf');
         next if wvm_indOp(0x26,$ind,'toggleAltbuf');
 #       next if wvm_indOp(0x27,$ind,'INVALID');                                        # this opcode does not exist
-        next if wvm_bitgroupOp(0x28,$ind,'setBitgroupsAltbuf');
-        next if wvm_bitgroupOp(0x29,$ind,'clearBitgroupsAltbuf');
-        next if wvm_bitgroupOp(0x2A,$ind,'fillBitgroupsAltbuf');
-        next if wvm_bitgroupOp(0x2B,$ind,'fillWrapBitgroupsAltbuf');
-        next if wvm_bitgroupOp(0x2C,$ind,'drainBitgroupsAltbuf');
-        next if wvm_bitgroupOp(0x2D,$ind,'rotLeftBitgroupsAltbuf');
-        next if wvm_bitgroupOp(0x2E,$ind,'rotRightLGroupsAltbuf');
-        next if wvm_bitgroupOp(0x2F,$ind,'toggleLGroupsAltbuf');
+        next if wvm_bitgroupOp(0x28,$ind,'setLampgroupsAltbuf');
+        next if wvm_bitgroupOp(0x29,$ind,'clearLampgroupsAltbuf');
+        next if wvm_bitgroupOp(0x2A,$ind,'fillLampgroupsAltbuf');
+        next if wvm_bitgroupOp(0x2B,$ind,'fillWrapLampgroupsAltbuf');
+        next if wvm_bitgroupOp(0x2C,$ind,'drainLampgroupsAltbuf');
+        next if wvm_bitgroupOp(0x2D,$ind,'rotLeftLampgroupsAltbuf');
+        next if wvm_bitgroupOp(0x2E,$ind,'rotRightLampgroupsAltbuf');
+        next if wvm_bitgroupOp(0x2F,$ind,'toggleLampgroupsAltbuf');
         
         if ((BYTE($addr)&0xF0) == 0x30) {                                               # solControl ($30-$3F)
             if ($decoded[$addr+1]) {
@@ -1432,7 +1435,7 @@ sub disassemble_wvm(@)
                 $unclean = 1;
                 return;
             }
-            $OP[$base_addr] = 'copyTo'; $IND[$base_addr] = $ind;
+            $OP[$base_addr] = 'load'; $IND[$base_addr] = $ind;
             $OPA[$base_addr][0] = sprintf('Reg-%c',65+((BYTE($addr+1)&0xF0)>>4));
             $OPA[$base_addr][1] = sprintf('Reg-%c',65+(BYTE($addr+1)&0x0F));
             $decoded[$addr++] = $decoded[$addr++] = 1;
@@ -1459,7 +1462,7 @@ sub disassemble_wvm(@)
                 $unclean = 1;
                 return;
             }
-            $OP[$base_addr] = BYTE($addr+1) <= 0x0F ? 'sleep_subOptimal' : 'sleep'; $IND[$base_addr] = $ind;
+            $OP[$base_addr] = BYTE($addr+1) <= 0x0F ? 'longSleep' : 'sleep'; $IND[$base_addr] = $ind;
             $OPA[$base_addr][0] = sprintf('%d',BYTE($addr+1));
             $decoded[$addr] = $decoded[$addr+1] = 1; 
             $addr += 2;

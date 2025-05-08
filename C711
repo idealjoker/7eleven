@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed May  7 12:30:49 2025
+#                    dlm: Thu May  8 11:33:53 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 346 43 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 4328 66 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -344,6 +344,10 @@
 #	Apr 25, 2025: - disabled checksum verification for System 6 System ROMs (GreenROM)
 #				  - suppress hg not found error message on systems w/o Mercurial
 #	May  7, 2025: - RTI returned wrong mode
+#	May  8, 2025: - replaced sleep_subOptimal by longSleep
+#				  - replaced copyTo by load
+#				  - replaced decAndBranchUnless0 by decAndBranchUnlessZero
+#				  - renamed many alternate Lampgroup ops
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1804,7 +1808,7 @@ sub unroll_structure()
 	
 		if ($WMS_System == 11) {									# end for-next loop
 			if ($OP eq '_Next') {
-				$OP = 'decAndBranchUnless0';						# decrement register and branch unless 0
+				$OP = 'decAndBranchUnlessZero';						# decrement register and branch unless 0
 				push(@OP_ARG,pop(@LOOP_LBL));
 				define_label(pop(@LOOP_DONE_LBL),$ADDR+3);
 				$MODE=2,return;
@@ -4201,9 +4205,13 @@ sub asm_wvm_load($)																		# load Reg-A/B <zero-page address> | Reg #v
 	if ($OP_ARG[1] =~ m{^#}) {															# Reg #val
 		$ROM[$ADDR++] = 0xC0 + $reg;
 		$ROM[$ADDR++] = $';
+	} elsif ($OP_ARG[1] =~ m{^Reg-}) {													# Reg Reg
+		my($sReg) = wvm_register_arg(1);
+		$ROM[$ADDR++] = 0x51;
+		$ROM[$ADDR++] = $reg<<4 | $sReg;
 	} else {																			# Reg-A/B <zero page address>
 		die("Syntax: load <Reg-A|Reg-B> <Zero-Page Address> at input line $.\n")
-			unless ($reg==0 || $reg == 1);
+			unless ($reg==0 || $reg==1);
 		die("Operation <$OP @OP_ARG> not available in System 7 at input line $.\n")
 			if ($WMS_System == 7);
 		$ROM[$ADDR++] = $reg ? 0x0E : 0x0C;
@@ -4274,7 +4282,8 @@ sub assemble_wvm($)
 		$MODE=$current_mode,return 1 if asm_wvm_op('spawnThread6800_id06','A'	,0x08);
 		$MODE=$current_mode,return 1 if asm_wvm_op('spawnThread'		,'TA'	,0x09);
 		$MODE=$current_mode,return 1 if asm_wvm_op('spawnThread_id06'	,'A'	,0x0A);
-		$MODE=$current_mode,return 1 if asm_wvm_dRABop('decAndBranchUnless0'	,0x0B);
+		$MODE=$current_mode,return 1 if asm_wvm_dRABop('decAndBranchUnlessZero'	,0x0B);	
+		$MODE=$current_mode,return 1 if asm_wvm_dRABop('decAndBranchUnless0'	,0x0B);	# alt
 		$MODE=$current_mode,return 1 if asm_wvm_store('store');					#  0D, 0F
 	}
 
@@ -4308,21 +4317,21 @@ sub assemble_wvm($)
 		$MODE=$current_mode,return 1 if asm_wvm_indOp('toggleAltbuf'	  ,0x22 ,0x26); # alt
     }
 	$MODE=$current_mode,return 1 if asm_wvm_grpOp('setBitgroupsAltbuf'			,0x28);
-	$MODE=$current_mode,return 1 if asm_wvm_grpOp('lGroupsSetAltbuf'			,0x28); # alt
+	$MODE=$current_mode,return 1 if asm_wvm_grpOp('setLampgroupsAltbuf'			,0x28); # alt
 	$MODE=$current_mode,return 1 if asm_wvm_grpOp('clearBitgroupsAltbuf'		,0x29);
-	$MODE=$current_mode,return 1 if asm_wvm_grpOp('lGroupsClearAltbuf'			,0x29); # alt
+	$MODE=$current_mode,return 1 if asm_wvm_grpOp('clearLampgroupsAltbuf'		,0x29); # alt
 	$MODE=$current_mode,return 1 if asm_wvm_grpOp('fillBitgroupsAltbuf' 		,0x2A);
-	$MODE=$current_mode,return 1 if asm_wvm_grpOp('fillLGroupsAltbuf'			,0x2A); # alt
+	$MODE=$current_mode,return 1 if asm_wvm_grpOp('fillLampgroupsAltbuf'		,0x2A); # alt
 	$MODE=$current_mode,return 1 if asm_wvm_grpOp('fillWrapBitgroupsAltbuf' 	,0x2B);
-	$MODE=$current_mode,return 1 if asm_wvm_grpOp('fillWrapLGroupsAltbuf'		,0x2B); # alt
+	$MODE=$current_mode,return 1 if asm_wvm_grpOp('fillWrapLampgroupsAltbuf'	,0x2B); # alt
 	$MODE=$current_mode,return 1 if asm_wvm_grpOp('drainBitgroupsAltbuf'		,0x2C);
-	$MODE=$current_mode,return 1 if asm_wvm_grpOp('drainLGroupsAltbuf'			,0x2C); # alt
+	$MODE=$current_mode,return 1 if asm_wvm_grpOp('drainLampgroupsAltbuf'		,0x2C); # alt
 	$MODE=$current_mode,return 1 if asm_wvm_grpOp('rotLeftBitgroupsAltbuf'		,0x2D);
-	$MODE=$current_mode,return 1 if asm_wvm_grpOp('rotLeftLGroupsAltbuf'		,0x2D); # alt
+	$MODE=$current_mode,return 1 if asm_wvm_grpOp('rotLeftLampgroupsAltbuf'		,0x2D); # alt
 	$MODE=$current_mode,return 1 if asm_wvm_grpOp('rotRightBitgroupsAltbuf' 	,0x2E);
-	$MODE=$current_mode,return 1 if asm_wvm_grpOp('rotRightLGroupsAltbuf'		,0x2E); # alt
+	$MODE=$current_mode,return 1 if asm_wvm_grpOp('rotRightLampgroupsAltbuf'	,0x2E); # alt
     $MODE=$current_mode,return 1 if asm_wvm_grpOp('toggleBitgroupsAltbuf'       ,0x2F);
-	$MODE=$current_mode,return 1 if asm_wvm_grpOp('toggleLGroupsAltbuf' 		,0x2F); # alt
+	$MODE=$current_mode,return 1 if asm_wvm_grpOp('toggleLampgroupsAltbuf' 		,0x2F); # alt
     
 	$MODE=$current_mode,return 1 if asm_wvm_solControl('solControl'				,0x30); # to 3F
 
@@ -4333,11 +4342,12 @@ sub assemble_wvm($)
 	$MODE=1,return 1 			 if asm_wvm_exec6800op('begin6800'				,0x44); # to 4F
 	
 	$MODE=$current_mode,return 1 if asm_wvm_addTo('addTo');					   # 0x50	# and  B0-BF
-	$MODE=$current_mode,return 1 if asm_wvm_copyTo('copyTo'						,0x51);
+	$MODE=$current_mode,return 1 if asm_wvm_copyTo('copyTo'						,0x51);	# alt (canonical handled by load below)
 	$MODE=$current_mode,return 1 if asm_wvm_op('setThreadId'			,'T'	,0x52);
 	$MODE=$current_mode,return 1 if asm_wvm_op('setThreadFlags'			,'T'	,0x52);	# duplicate mnemonic
 	$MODE=$current_mode,return 1 if asm_wvm_sleep('sleep'); 			       # 0x53	# and 60-6F 70-7F (chose opcode based on argument)
-	$MODE=$current_mode,return 1 if asm_wvm_sleep('sleep_subOptimal',1); 	   # 0x53	# should be used only by [D711.pm]
+	$MODE=$current_mode,return 1 if asm_wvm_sleep('longSleep',1); 			   # 0x53	# should be used only by [D711.pm]
+	$MODE=$current_mode,return 1 if asm_wvm_sleep('sleep_subOptimal',1); 	   # 0x53	# alt
 	$MODE=$current_mode,return 1 if asm_wvm_op('killThread'				,'BT'	,0x54);
 	$MODE=$current_mode,return 1 if asm_wvm_op('killThreads'			,'BT'	,0x55);
 	$MODE=$current_mode,return 1 if asm_wvm_jumpOp('jumpSubroutine'				,0x56,2);
@@ -4357,7 +4367,7 @@ sub assemble_wvm($)
 	$MODE=$current_mode,return 1 if asm_wvm_branchOp('branchSubroutine'			,0x90,2);	# to 9F
 	$MODE=$current_mode,return 1 if asm_wvm_branchOp('branchSubroutine6800'		,0xA0,1);	# to AF
 
-	$MODE=$current_mode,return 1 if asm_wvm_load('load');						#0xC0 to CF, 0C, 0E
+	$MODE=$current_mode,return 1 if asm_wvm_load('load');						#0xC0 to CF, 0C, 0E, 51
 	
 	$MODE=$current_mode,return 1 if asm_wvm_playSound('playSound',				,0xD0); # to FF
 	return undef;
