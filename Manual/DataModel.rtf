@@ -1,0 +1,130 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica-Oblique;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fswiss\fcharset0 Helvetica;
+\f3\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\csgray\c0;}
+\margl1440\margr1440\vieww20000\viewh12820\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\i\fs24 \cf0 This document describes the data model of the 7eleven language.
+\f1\i0\b \
+\
+\
+Primitive Data Types (Bytes, Words and Strings) \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f2\b0 \cf0 The 7eleven language supports byte- and word-sized numerical values as labels, aliases, as well as numbers in decimal (no prefix), binary (% prefix) and hexadecimal ($ prefix) notation. The operation is used to determine the size of the operand; if the operation supports arguments of different sizes (e.g. sleep) the compiler chooses the one with the shortest code. When labels are used, basic arithmetic expressions \'97 adding or subtracting a constant, bit masking with | or & \'97 are supported. \
+\
+System 11 and WPC have support for string data types. Strings are only allowed in string definition statements (e.g. .STR, .STR16). They are delimited with single quote (\'91) characters. A single quote or backslash character in a string can be escaped with a backslash prefix (\\). The backslash is also used to supply a hexadecimal code (e.g. \\7D is an arrow pointing to the upper right in System 11). \
+\
+System 11 supports 2 types of strings: those displayed on alphanumeric displays and those displayed on 7-segment (numeric) displays. Sys 11 alphanumeric strings are defined with the .STR compiler pragmas and can contain most printable ASCII characters. For characters with decimal codes of 47 or higher, setting bit 7 adds a period after the character. System 11 alphanumeric character set:\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f3\fs22 \cf2 \CocoaLigature0 \'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+Hex Encod.  Dec. Encoding   Character                   Comments\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+$00-$2F     0-47            <space>                     NB: includes ASCII space and tab, both used in Pinbot \
+$30-$39     48-57           <0>-<9>                     7-segment font; ASCII compatible encoding    \
+$3A-$40     58-64           <space>\
+$41-$5A     65-90           <A>-<Z>                     ASCII compatible encoding\
+$5B-$62     91-98           <0>-<3>,<5>-<7>,<9>         14-segment font (fancy)\
+$63         99              <all segments lit>\
+$64-$68     100-104         <<>,<=>,<>>,<?>,<@>         ASCII block; @ is 7-segment font\
+$69-$6B     105-107         <$>,<%>,<&>                 ASCII block\
+$6C-$71     108-113         <,>,<.>,<+>,<->,</>,<\\>\
+$72-$74     114-116         <]>,<^>,<_>                 ASCII block\
+$75-$77     117-119         <\{>,<*>,<\}>\
+$78         120             <">                         quotation start (right-aligned)\
+$79         121             <[>\
+$7A         122             <">                         quotation end (left-aligned)\
+$7B         123             <@>                         14-segment font\
+$7C         124             <8+|>\
+$7D         125             <NE arrow>\
+$7E         126             <SE arrow>\
+$7F         127             <SW arrow>\
+$80         128             <NW arrow>\
+$81         129             <overline>\
+$82         130             <'>\
+$83-$AF     131-175         <space>\
+$B0-$FF     176-255         <0.>,<1.>,...,<SW arrow.>   period added after base symbol\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97
+\f2\fs24 \cf0 \CocoaLigature1 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+System 11 also supports a character set that can be displayed on 7-segment (numerical) displays. 7-segment strings are defined with the .S7R compiler pragma. Similar to alphanumeric strings many ASCII characters are supported, as is the \\ escape mechanism. (Only M, W and X are not available.) The 7-display segments plus period are encoded directly in this font, which supports the following ASCII characters:\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f3\fs22 \cf2 \CocoaLigature0 \'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97-\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\tx7215\pardirnatural\partightenfactor0
+Characters 											Notes\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97-\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \CocoaLigature1 0-9					     					digits\
+A-C E-L N P R S U V Y Z		     				upper-case letters\
+b-d g-i n o q r t u				   			lower-case letters\
+<space> - _ ] ~ = \'93 ` \'91 / | ( ) * & ^ % \{ \} ? < >	special characters\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf2 \CocoaLigature0 \'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97-\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \CocoaLigature1 \
+
+\f2\fs24 \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf0 Built-In Pinball Data Types\
+
+\f2\b0 \
+The Williams Virtual Machine used for System 7 - 11 supports a number of pinball-specific built-in data types for lamps, switches, solenoids, etc. Since these types are equally useful for the system-call arguments in System 6 and WPC they are also available in 7eleven assembly mode. They can be used wherever byte values are allowed, e.g. CMPB #Switch#01. Of course, in practice aliases are used to provide more useful names, e.g. CMPB #SW_ballTilt  \
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx7465\tx9807\tx11869\pardirnatural\partightenfactor0
+
+\f3\fs22 \cf2 \CocoaLigature0 \'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx7465\tx9807\tx11869\pardirnatural\partightenfactor0
+Variable Name	Sys 6		Sys 7		Sys 11 	WPC	Notes\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+Lamp#XX			00-3F		00-3F		00-3F	00-3F\
+Flag#XX			00-0F		00-3F		00-3F		encoded as lamps with bit $40 set\
+Switch#XX		00-3F		00-3F		00-3F\
+Sol#XX			00-15					00-1F\
+Thread#XX		n/a			00-FF		00-FF	0000-FFFF	not all thread ids used\
+Bitgroup#XX		0-F			00-FF		00-FF		limited by bitgroup table size\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx7465\tx9807\tx11869\pardirnatural\partightenfactor0
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f2\fs24 \cf0 \CocoaLigature1 \
+\
+
+\f1\b Interpreted Data Types\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f2\b0 \cf0 \
+Numerical values (bytes and words) can also be supplied as different data types, by appending the \{TYPE\} specifier to a token. For example, in all WMS systems supported by 7eleven, score values are encoded as single bytes with some encoding differences between different systems. For convenience, therefore, the type ScoreByte is supported by the compiler. Instead of writing LDAA #$13, which encodes a score of 2,000 in System 11 and a score of 20,000 in System 6A, the programmer can write LDAA #2K\{ScoreByte\}. The following table lists the interpreted data types available for all systems.\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f3\fs22 \cf2 \CocoaLigature0 \'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+Example						Notes\
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+2K\{ScoreByte\}				2,0000 points\
+10x100\{ScoreByte\}			1,0000 points, possibly handled by the 100-queue\
+\
+Lamp#15\{ByteOffset\}			evaluates to 2 (lamp-buffer offset; each lamp buffer byte holds 8 lamps)\
+Lamp#15\{BitMask\}				evaluates to %00100000 (bit mask used to turn on lamp) \
+Lamp#15\{InvBitMask\}			evaluates to %11011111 (bit mask used to turn off lamp)\
+\
+Sol#12:on\{SolCmd\}			turn on solenoid permanently\
+Sol#2:3-tictocs\{SolCmd\}		energize solenoid for 3/32th of a second\
+\
+$8032\{LSB\}					evaluates to $32 (least-significant byte)\
+reset_game\{MSB\}				evaluates to the upper byte of the address of the label reset_game\
+\
+$80\{InvertByte\}				evaluates to $7F (all bits flipped)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\'97\
+}

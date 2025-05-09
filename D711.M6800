@@ -1,14 +1,10 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 0 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Wed May  7 11:27:31 2025
+#                    dlm: Fri May  9 11:44:45 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 359 54 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 24 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
-
-# BUGS:
-#	- op_IND assumes unsigned offsets
-#	- op_IND supports unused(?) extra args
 
 #----------------------------------------------------------------------
 # Motorola 6800 Disassembler
@@ -24,14 +20,16 @@
 #	May  5, 2025: - made @OI work
 #	May  7, 2025: - replaced all ABORT: by WARNING:
 #				  - enabled data definitions in op_EXT
+#	May  9, 2025: - BUG: op_EXT data were labeled
+#				  - removed all unused @args arguments
+#				  - BUG: op_IND offset was unsigned
 # HISTORY END
 
 sub op_IMP(@)													# operation with implied addressing
 {
-	my($opc,$ind,$op,@args) = @_;
+	my($opc,$ind,$op) = @_;
 	return undef unless (BYTE($addr) == $opc);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
-	@{$OPA[$addr]} = @args;
 	push(@{$OI[$addr]},sprintf('%02X',$opc));
 	$decoded[$addr++] = 1;
 	return 1;
@@ -39,10 +37,9 @@ sub op_IMP(@)													# operation with implied addressing
 
 sub op_IMM(@)													# operation with immediate addressing
 {
-	my($opc,$ind,$op,@args) = @_;
+	my($opc,$ind,$op) = @_;
 	return undef unless (BYTE($addr) == $opc);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
-	push(@{$OPA[$addr]},@args);
 	push(@{$OPA[$addr]},sprintf('#$%02X',BYTE($addr+1)));
 	push(@{$OI[$addr]},sprintf('%02X%02X',BYTE($addr),BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
@@ -51,10 +48,9 @@ sub op_IMM(@)													# operation with immediate addressing
 
 sub op_IMM2(@)													# operation with immediate 2-byte addressing
 {
-	my($opc,$ind,$op,@args) = @_;
+	my($opc,$ind,$op) = @_;
 	return undef unless (BYTE($addr) == $opc);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
-	push(@{$OPA[$addr]},@args);
 	push(@{$OPA[$addr]},sprintf('#$%04X',WORD($addr+1)));
 	push(@{$OI[$addr]},sprintf('%02X%04X',BYTE($addr),WORD($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
@@ -86,14 +82,14 @@ sub op_EXT(@)													# operation with extended addressing
 				label_address($trg_addr,'!data');									
 				$IND[$trg_addr] = $data_indent; $TYPE[$trg_addr] =	$CodeType_data;
 				$OP[$trg_addr] = '.DW';
-				$OPA[$trg_addr][0] = sprintf('$%04X',WORD($trg_addr));
+				$OPA[$trg_addr][0] = sprintf('$%04X!',WORD($trg_addr));				# don't label
 				push(@{$OI[$trg_addr]},sprintf('%04X',WORD($trg_addr)));
 				$decoded[$trg_addr] = $decoded[$trg_addr+1] = 1;
 			} elsif ($data_bytes == 1) {											# data byte (not code)
 				label_address($trg_addr,'!data');									
 				$IND[$trg_addr] = $data_indent; $TYPE[$trg_addr] =	$CodeType_data;
 				$OP[$trg_addr] = '.DB';
-				$OPA[$trg_addr][0] = sprintf('$%02X',BYTE($trg_addr));
+				$OPA[$trg_addr][0] = sprintf('$%02X!',BYTE($trg_addr));				# don't label
 				push(@{$OI[$trg_addr]},sprintf('%02X',BYTE($trg_addr)));
 				$decoded[$trg_addr] = 1;
 	        } else {																# code
@@ -106,7 +102,7 @@ sub op_EXT(@)													# operation with extended addressing
 	        	}
 	        }
 	    } else {
-			label_address($trg_addr,'');
+			label_address($trg_addr,'');											# not sure what this does
         }
     }
 	$OP[$addr] = $op; $IND[$addr] = $ind;
@@ -137,11 +133,13 @@ sub op_REL($$$$$)												# operation with relative addressing
 
 sub op_IND(@)													# operation with indirect addressing
 {
-	my($opc,$ind,$op,@args) = @_;
+	my($opc,$ind,$op) = @_;
 	return undef unless (BYTE($addr) == $opc);
+	
+	my($ofs) = BYTE($addr+1);
+	$ofs = $ofs - 256 if ($ofs >= 128);
 	$OP[$addr] = $op; $IND[$addr] = $ind;
-	push(@{$OPA[$addr]},@args);
-	push(@{$OPA[$addr]},sprintf('%d,X',BYTE($addr+1)));
+	push(@{$OPA[$addr]},sprintf('%d,X',$ofs));
 	push(@{$OI[$addr]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;

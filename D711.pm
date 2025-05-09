@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu May  8 11:25:13 2025
+#					 dlm: Fri May  9 11:35:59 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 279 74 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 283 41 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -277,6 +277,10 @@
 #	May  8, 2025: - replaced sleep_subOptimal by longSleep
 #				  - replaced copyTo by load
 #				  - replaced decAndBranchUnless0 by decAndBranchUnlessZero
+#	May  9, 2025: - adapted to new score syntax
+#				  - removed argument indentation from WVM code
+#				  - prevent label_address() to overwrite existing AUTO_LBL so that it
+#				    respects !data labels
 # END OF HISTORY
 
 # TO-DO:
@@ -314,7 +318,7 @@ our($data_indent)       = 8;                            # indent for data tables
 our($rem_indent)        = 17;                           # indent for comments
 our($def_name_indent)   = 3;                            # indent for .DEFINE .LBL statement args
 our($def_val_indent)    = 13;
-our(@op_width)          = (undef,2,5,1);                # typical operator width (tab stops) for (nil,6800,WVM7,Data)
+our(@op_width)          = (undef,2,undef,1);                # typical operator width (tab stops) for (nil,6800,WVM7,Data)
 
 our($CodeType_asm)      = 1;                            # different types of code in ROM
 our($CodeType_wvm)      = 2;                            # for @TYPE[@addr]
@@ -540,10 +544,14 @@ sub label_address($$@)                                          # save auto lbl 
 	my($addr,$auto_lbl,$nosuffix) = @_;
 ##	die("label_address($addr,$auto_lbl,$nosuffix)") if ($addr == 0xB1ED);
 
-	if ($auto_lbl =~ m{^!}) {
+	return ($addr > 255) ? sprintf('$%04X',$addr)
+						 : sprintf('$%02X',$addr)
+		if defined($AUTO_LBL[$addr]);
+
+	if ($auto_lbl =~ m{^!}) {									# !-prefix => force specific label
 		$auto_lbl = $';
-    } else {													# force label prefix with !
-		if (($AUTO_LBL[$addr] =~ m{_[0-9A-F]{4}$} ||
+    } else {													# labels without prefix
+		if (($AUTO_LBL[$addr] =~ m{_[0-9A-F]{4}$} ||			# name-less labels
 			 $AUTO_LBL[$addr] =~ m{_[0-9A-F]{4}\[[0-9A-F]{2}\]$})) {
 			## when the following if is disabled, local labels will be named after the
 			## branch op that calls it first (or last?) 		    
@@ -553,7 +561,7 @@ sub label_address($$@)                                          # save auto lbl 
 				$auto_lbl = (defined($_cur_RPG) && $addr >= 0x8000)
 						  ? 'syscall' : 'library';				# @@@
 			}
-		} elsif ($auto_lbl =~ m{^\.}) {
+		} elsif ($auto_lbl =~ m{^\.}) {							# local labels
 			$auto_lbl = ($auto_lbl =~ m{BSR}) ? '.subroutine' : '.label';
 	    }
 	}
@@ -1325,7 +1333,8 @@ sub disassemble_wvm(@)
             }
             $OP[$base_addr] = 'playSound_score'; $IND[$base_addr] = $ind;
             $OPA[$base_addr][0] = sprintf('Sound#%02X',BYTE($addr+1));
-            $OPA[$base_addr][1] = sprintf('%dx%d PTS',(BYTE($addr+2)&0xF8)>>3,10**(BYTE($addr+2)&0x07));
+##          $OPA[$base_addr][1] = sprintf('%dx%d PTS',(BYTE($addr+2)&0xF8)>>3,10**(BYTE($addr+2)&0x07));	# old syntax
+            $OPA[$base_addr][1] = decode_score_byte(BYTE($addr+2));
             $decoded[$addr] = $decoded[$addr+1] = $decoded[$addr+2] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+2)&0xF8)>>3) * (10**(BYTE($addr+2)&0x07)) > $unrealistic_score_limit) {
@@ -1346,7 +1355,8 @@ sub disassemble_wvm(@)
                 return;
             }
             $OP[$base_addr] = 'queueScore'; $IND[$base_addr] = $ind;
-            $OPA[$base_addr][0] = sprintf('%dx%d PTS',(BYTE($addr+1)&0xF8)>>3,10**(BYTE($addr+1)&0x07));
+##          $OPA[$base_addr][0] = sprintf('%dx%d PTS',(BYTE($addr+1)&0xF8)>>3,10**(BYTE($addr+1)&0x07));
+            $OPA[$base_addr][0] = decode_score_byte(BYTE($addr+1));
             $decoded[$addr] = $decoded[$addr+1] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)) > $unrealistic_score_limit) {
@@ -1367,7 +1377,8 @@ sub disassemble_wvm(@)
                 return;
             }
             $OP[$base_addr] = 'score'; $IND[$base_addr] = $ind;
-            $OPA[$base_addr][0] = sprintf('%dx%d PTS',(BYTE($addr+1)&0xF8)>>3,10**(BYTE($addr+1)&0x07));
+##          $OPA[$base_addr][0] = sprintf('%dx%d PTS',(BYTE($addr+1)&0xF8)>>3,10**(BYTE($addr+1)&0x07));
+            $OPA[$base_addr][0] = decode_score_byte(BYTE($addr+1));
             $decoded[$addr] = $decoded[$addr+1] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)) > $unrealistic_score_limit) {
@@ -1388,7 +1399,8 @@ sub disassemble_wvm(@)
                 return;
             }
             $OP[$base_addr] = 'score_digitSound'; $IND[$base_addr] = $ind;
-            $OPA[$base_addr][0] = sprintf('%dx%d PTS',(BYTE($addr+1)&0xF8)>>3,10**(BYTE($addr+1)&0x07));
+##          $OPA[$base_addr][0] = sprintf('%dx%d PTS',(BYTE($addr+1)&0xF8)>>3,10**(BYTE($addr+1)&0x07));
+            $OPA[$base_addr][0] = decode_score_byte(BYTE($addr+1));
             $decoded[$addr] = $decoded[$addr+1] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)) > $unrealistic_score_limit) {
@@ -1819,7 +1831,7 @@ sub def_byte_hex(@)
     $Address++,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
     
     $OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-    $OPA[$Address][0] = sprintf('$%02X!',BYTE($Address));
+    $OPA[$Address][0] = sprintf('$%02X!',BYTE($Address));							# don't labelize
     $REM[$Address] = $rem unless defined($REM[$Address]); 
     insert_divider($Address,$divider_label);
     $decoded[$Address] = 1; $Address++;
@@ -1882,6 +1894,26 @@ sub def_checksum_byte(@)
     $REM[$Address] = $rem unless defined($REM[$Address]); 
     insert_divider($Address,sprintf("Checksum Byte for Code Block \$%04X",$Address&0xF000));
     $decoded[$Address] = 1; $Address++;
+}
+
+#----------------------------------------------------------------------
+# Score Bytes
+#----------------------------------------------------------------------
+
+sub decode_score_byte($)
+{
+	my($sb) = @_;
+
+
+	my($mult,$pwr) = (($sb&0xF8)>>3,10**($sb&0x07));
+
+	return sprintf('%dx%d PTS',$mult,$pwr)								# old, fully explicit syntax
+		if ($mult%10 == 0);												# e.g. score 10x1000 PTS
+		
+	my($ns) = sprintf('%d',(($sb&0xF8)>>3)*10**($sb&0x07));				# new syntax
+	$ns =~ s/000000$/M/;
+	$ns =~ s/000$/K/;
+	return $ns; #  . ' Pts';
 }
 
 #----------------------------------------------------------------------
@@ -2287,6 +2319,7 @@ sub def_switchtable(@)
     setLabel($lbl,$Address);
     insert_divider($Address,'Switch Table');
     for (my($sw)=0; $sw<$nentries; $sw++) {
+
         $REM[$Address] = defined($Switch[$sw]) ? sprintf("switch # %d ($Switch[$sw])",$sw+1)
                                                : sprintf('switch # %d',$sw+1);
         $OP[$Address] = '.DBW'; $IND[$Address] = $data_indent; $TYPE[$Address] = $CodeType_data;

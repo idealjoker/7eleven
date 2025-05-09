@@ -2,24 +2,26 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 1 1 
 #					 doc: Wed May  7 09:51:43 2025
-#					 dlm: Wed May  7 19:33:21 2025
+#					 dlm: Fri May  9 11:12:00 2025
 #					 (c) 2019 A.M. Thurnherr
-#					 uE-Info: 35 13 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 15 41 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May  7, 2025: - created
 #				  - BUG: use lib had path hard-coded
 #				  - changed usage for consistency with disassemble_s6
+#	May  9, 2025: - added MAX_SWITCH, MAX_PLAYER and table pointers
+#				  - added ROM_TEST_BLOCKS
+# HISTORY END
 
 #----------------------------------------------------------------------
 # Load Prerequisites
 #----------------------------------------------------------------------
 
-use lib ($0 =~ m@/[^/]*$@,$`);
-use D711 (11);																# WMS System 11
-
-use lib '.';
+use lib '.';																# add current directory to path
+use lib ($0 =~ m@/[^/]*$@,$`);												# add 7eleven installation dir to path
+use D711 (11);																# load WMS System 11 disassembler
 
 #----------------------------------------------------------------------
 # Usage
@@ -59,7 +61,7 @@ die("ic27.256: invalid size\n") unless ($D711::MAX_ROM_ADDR == 0xFFFF);
 # Find Switch Table
 #----------------------------------------------------------------------
 
-my($nFound,$switch_table_addr);
+my($nFound,$switch_table_addr,$table_ptr_addr);
 for (my($addr)=$D711::MIN_ROM_ADDR; $addr<$D711::MAX_ROM_ADDR; $addr++) {
 	next unless (D711::BYTE($addr)==3 &&
 		 		 D711::BYTE($addr-1)>=48 && D711::BYTE($addr-1)<=64 &&
@@ -74,6 +76,7 @@ for (my($addr)=$D711::MIN_ROM_ADDR; $addr<$D711::MAX_ROM_ADDR; $addr++) {
 	unless ($nFound > $len) {
 		$nFound = $len;
 		$switch_table_addr = D711::WORD($addr+3);
+		$table_ptr_addr = $addr+3;
 	}
 }
 
@@ -88,9 +91,25 @@ if ($nFound > 42) {
 # Code Disassembly
 #----------------------------------------------------------------------
 
-$D711::Address = $switch_table_addr;
-D711::def_switchtable($nFound,'switch_table');
+$D711::Address = $table_ptr_addr - 4;
+	D711::def_byte_dec('MAX_SWITCH');
+	D711::def_byte_dec('MAX_PLAYER');
+	D711::def_word_hex('^BITGROUP_TABLE');
+	D711::def_switchtable_ptr($nFound,'^SWITCH_TABLE','switch_table');
+	D711::def_word_hex('^SOUND_TABLE');
 
+$D711::Address = $table_ptr_addr - 5;
+if (D711::BYTE($D711::Address)==0x00	||									# DISPLAY_TYPE (Sys 11BC)
+	D711::BYTE($D711::Address)==0xAA) {
+		D711::def_byte_hex('DISPLAY_TYPE');
+		$D711::Address = $table_ptr_addr - 6;
+}
+if (D711::BYTE($D711::Address) == 12) {										# ROM_TEST_BLOCKS
+	D711::def_byte_dec('ROM_TEST_BLOCKS');									# all sys 11 games have 48KB ROM
+} else {
+	print(STDERR "WARNING: location of ROM_TEST_BLOCKS unknown\n");
+}
+	
 #----------------------------------------------------------------------
 # Fix String Tables
 #----------------------------------------------------------------------

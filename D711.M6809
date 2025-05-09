@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Wed May  7 08:47:32 2025
+#                    dlm: Fri May  9 11:39:23 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 47 51 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 48 59 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -44,7 +44,8 @@
 #	Mar 24, 2025: - added support for @OI (.obj output)
 #	Mar 25, 2025: - BUG: pg2/3 opcodes did not output 1st byte in OI
 #	Apr  5, 2025: - BUG: undefined syscall error triggered wrongly
-#	May  7, 2027: - replaced all ABORT: by WARNING:
+#	May  7, 2025: - replaced all ABORT: by WARNING:
+#	May  9, 2025: - BUG: op_EXT data arguments were labeled
 # HISTORY END
 
 # NOTES:
@@ -105,14 +106,14 @@ sub op_EXT($$$$@)																	# operation with extended addressing (similar 
 				label_address($trg_addr,'!data');									
 				$IND[$trg_addr] = $data_indent; $TYPE[$trg_addr] =	$CodeType_data;
 				$OP[$trg_addr] = '.DW';
-				$OPA[$trg_addr][0] = sprintf('$%04X',WORD($trg_addr));
+				$OPA[$trg_addr][0] = sprintf('$%04X!',WORD($trg_addr));				# don't label
 				push(@{$OI[$trg_addr]},sprintf('%04X',WORD($trg_addr)));
 				$decoded[$trg_addr] = $decoded[$trg_addr+1] = 1;
 			} elsif ($data_bytes == 1) {											# data byte (not code)
 				label_address($trg_addr,'!data');									
 				$IND[$trg_addr] = $data_indent; $TYPE[$trg_addr] =	$CodeType_data;
 				$OP[$trg_addr] = '.DB';
-				$OPA[$trg_addr][0] = sprintf('$%02X',BYTE($trg_addr));
+				$OPA[$trg_addr][0] = sprintf('$%02X!',BYTE($trg_addr));				# don't label
 				push(@{$OI[$trg_addr]},sprintf('%02X',BYTE($trg_addr)));
 				$decoded[$trg_addr] = 1;
 	        } else {																# code

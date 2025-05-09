@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu May  8 11:33:53 2025
+#                    dlm: Fri May  9 09:53:24 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 4328 66 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 351 66 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -348,6 +348,7 @@
 #				  - replaced copyTo by load
 #				  - replaced decAndBranchUnless0 by decAndBranchUnlessZero
 #				  - renamed many alternate Lampgroup ops
+#	May  9, 2025: - BUG: encode_scoreByte() could not handle 25000
 # HISTORY END
 
 # RELEASE NOTES:
@@ -4029,7 +4030,7 @@ sub asm_wvm_dRABop($$)																	# decAndBranchUnless0
 sub encode_scoreByte($$)
 {
 	my($str,$err_loc) = @_;
-	my($sm,$sz,$sl) = ($str =~ m{^([1-9])(0*)([KM]?)$});
+	my($sm,$sz,$sl) = ($str =~ m{^([1-9]+)(0*)([KM]?)$});
 	die("Invalid score value <$str> at $err_loc\n")
 		unless ($sm > 0);
 	my($exp) = length($sz);

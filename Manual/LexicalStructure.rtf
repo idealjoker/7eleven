@@ -1,0 +1,48 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica-Oblique;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fswiss\fcharset0 Helvetica;
+}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww20000\viewh12820\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\i\fs24 \cf0 This document describes the lexical structure of the 7eleven language.
+\f1\i0\b \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 Source Files \
+\
+
+\f2\b0 The 7eleven compiler takes single ASCII files as input with the file extension indicating the Williams System for which the source is for (.s6, .s7, .s11, .WPC).  Line termination can either follow Windows or UNIX convention. In order to compile code that is split between multiple source files a linker must be used.
+\f1\b \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+\
+Statement Lines and Comments
+\f2\b0          \
+\
+Every 7eleven statement consists of one or more lines in the source file. (There cannot be multiple statements on a single line.) If more than one line is required, a backslash character (\\) can be inserted anywhere between the last code character on the line and either the end of the line or the start of any comment on the same line.  Except in strings (see below), a semicolon character (;) starts a comment which extends to the end of the line. \
+\
+Every source line can additionally have an optional hex address in triangular brackets, e.g. <7F02>, before the first statement token. This address is completely ignored by the compiler. \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf0 \
+Statements (Labels, Operations and Arguments)
+\f2\b0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+After removing comments and splicing together all source lines that make up a 7eleven statement, the line is split into tokens. Unless the statement is a string definition (.STR, \'85) white space is used to separate the tokens. If the first token ends with a colon character (:), it is interpreted as a label definition. The next token is the operation, and all following ones are operation arguments. \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 With string definitions, single quote characters (\'91) are used as delimiters. There can be an optional label definition, followed by a string-definition pragma (e.g. .STR), followed by a single string, followed by optional whitespace and a comment.\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+Statement tokens are allowed to contain most printable ASCII characters except for white space. In order to avoid confusion the following characters either must or should be avoided: ; + - & | : # ! \'91 \{ \}  \\  < > \
+\
+\
+\
+\
+\
+\
+}
