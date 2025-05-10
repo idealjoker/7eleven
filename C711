@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri May  9 09:53:24 2025
+#                    dlm: Sat May 10 09:14:12 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 351 66 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3148 48 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -349,6 +349,7 @@
 #				  - replaced decAndBranchUnless0 by decAndBranchUnlessZero
 #				  - renamed many alternate Lampgroup ops
 #	May  9, 2025: - BUG: encode_scoreByte() could not handle 25000
+#	May 10, 2025: - renamed two pseudo label alternate names
 # HISTORY END
 
 # RELEASE NOTES:
@@ -3141,10 +3142,10 @@ sub asm_6800_op($$@)
 			$ROM[$ADDR++] = $opc[$i];
 			$OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]						# _EXITLOOP pseudo label
 		        if ($OP_ARG[0] eq '_EXITLOOP' ||
-					$OP_ARG[0] eq '>_EXITLOOP');
+					$OP_ARG[0] eq '>EXITLOOP');
 			$OP_ARG[0] = $LOOP_LBL[$#LOOP_LBL]      									# _NEXTLOOP pseudo label
 			        if ($OP_ARG[0] eq '_NEXTLOOP' ||
-					    $OP_ARG[0] eq '<_LOOP');
+					    $OP_ARG[0] eq '<NEXTLOOP');
 
 			if ($OP_ARG[0] eq '<RTS') {													# lexical labels
 				$OP_ARG[0] = $last_RTS_addr;
