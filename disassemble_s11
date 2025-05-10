@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 1 1 
 #					 doc: Wed May  7 09:51:43 2025
-#					 dlm: Fri May  9 11:12:00 2025
+#					 dlm: Fri May  9 14:25:37 2025
 #					 (c) 2019 A.M. Thurnherr
-#					 uE-Info: 15 41 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 16 51 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -13,6 +13,7 @@
 #				  - changed usage for consistency with disassemble_s6
 #	May  9, 2025: - added MAX_SWITCH, MAX_PLAYER and table pointers
 #				  - added ROM_TEST_BLOCKS
+#				  - added defSwitch() and defLamp()
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -140,4 +141,28 @@ unless (-t 1) { 															# produce code output on STDOUT
 }
 
 exit(0);
+
+#======================================================================
+# Utilities
+#======================================================================
+
+sub defSwitch($$)
+{
+	my($no,$name) = @_;
+
+	die("defSwitch: invalid switch number $no\n")
+		unless ($no>=1 && $no<65);
+	$D711::Switch[$no-1] = $name;
+}
+
+sub defLamp($$)
+{
+	my($no,$name) = @_;
+
+	die("defLamp: invalid lamp number $no\n")
+		unless ($no>=1 && $no<65);
+	$D711::Lamp[$no-1] = $name;
+}
+
+
 

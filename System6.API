@@ -1,9 +1,9 @@
 #======================================================================
 #                    S Y S T E M 6 . A P I 
 #                    doc: Mon May 27 20:34:35 2024
-#                    dlm: Wed May  7 13:05:58 2025
+#                    dlm: Wed May  7 19:51:40 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 23 43 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 357 36 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -21,6 +21,8 @@
 #				    causes warnings when compiling D711 output
 #	Apr 26, 2025: - added Game Data labels
 #	May  7, 2025: - BUG: 2 trash characters
+#	May  7, 2025: - updated labels for consistency with IGR
+# END OF HISTORY
 
 # NOTES:
 #	- file is read by both [C711] and [D711.pm]
@@ -344,15 +346,15 @@ define_label('MAX_SWITCH',									0x6044);
 define_label('BALLSERVE_SOLCMD_AND_1EB_FLAG',				0x6045);
 define_label('EXTRABALL_LAMP',								0x6046);
 define_label('MAX_PLAYER',									0x6047);
-define_label('INTERVALTRIGGER_1',							0x6048);
-define_label('INTERVALTRIGGER_2',							0x6049);
-define_label('INTERVALTRIGGER_3',							0x604A);
-define_label('INTERVALTRIGGER_4',							0x604B);
+define_label('INTERVAL_TRIGGER_1',							0x6048);
+define_label('INTERVAL_TRIGGER_2',							0x6049);
+define_label('INTERVAL_TRIGGER_3',							0x604A);
+define_label('INTERVAL_TRIGGER_4',							0x604B);
 define_label('BLINK_DELAY',									0x604C);
-define_label('INTERVALTRIGGER_PINOPP_1',					0x604D);
-define_label('INTERVALTRIGGER_PINOPP_2',					0x604E);
-define_label('INTERVALTRIGGER_PINOPP_3',					0x604F);
-define_label('INTERVALTRIGGER_PINOPP_4',					0x6050);
+define_label('INTERVAL_TRIGGER_PINOP_1',					0x604D);
+define_label('INTERVAL_TRIGGER_PINOP_2',					0x604E);
+define_label('INTERVAL_TRIGGER_PINOP_3',					0x604F);
+define_label('INTERVAL_TRIGGER_PINOP_4',					0x6050);
 define_label('SCRIPT_LAMPS',								0x6055-4);
 define_label('BITGROUP_TABLE',								0x605D-4);
 define_label('LAMPS_INITDATA',								0x606D-4);

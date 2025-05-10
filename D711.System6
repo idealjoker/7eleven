@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Sat Apr 26 10:48:44 2025
+#                    dlm: Wed May  7 19:51:05 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 35 68 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 37 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -33,6 +33,7 @@
 #					multiball)
 #	Apr 25, 2025: - tightened score magic so it works also with the GreenROM
 #	Apr 26, 2025: - renamed labels for conistency with [System6.API]
+#	May  7, 2025: - updated labels for consistency with IGR
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -216,15 +217,15 @@ sub disassemble_System6($)
 	def_byte_hex('BALLSERVE_SOLCMD_AND_1EB_FLAG');
 	def_byte_LampOrFlag('EXTRABALL_LAMP');
 	def_byte_hex('MAX_PLAYER');
-	def_byte_hex('INTERVALTRIGGER_1');
-	def_byte_hex('INTERVALTRIGGER_2');
-	def_byte_hex('INTERVALTRIGGER_3');
-	def_byte_hex('INTERVALTRIGGER_4');
+	def_byte_hex('INTERVAL_TRIGGER_1');
+	def_byte_hex('INTERVAL_TRIGGER_2');
+	def_byte_hex('INTERVAL_TRIGGER_3');
+	def_byte_hex('INTERVAL_TRIGGER_4');
 	def_byte_hex('BLINK_DELAY');
-	def_byte_hex('INTERVALTRIGGER_PINOPP_1');
-	def_byte_hex('INTERVALTRIGGER_PINOPP_2');
-	def_byte_hex('INTERVALTRIGGER_PINOPP_3');
-	def_byte_hex('INTERVALTRIGGER_PINOPP_4');
+	def_byte_hex('INTERVAL_TRIGGER_PINOP_1');
+	def_byte_hex('INTERVAL_TRIGGER_PINOP_2');
+	def_byte_hex('INTERVAL_TRIGGER_PINOP_3');
+	def_byte_hex('INTERVAL_TRIGGER_PINOP_4');
 	def_byte_LampOrFlag('SCRIPT_LAMPS');
 		def_byte_LampOrFlag('');
 		def_byte_LampOrFlag('');
