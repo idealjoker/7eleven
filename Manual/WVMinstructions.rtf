@@ -1,17 +1,22 @@
 {\rtf1\ansi\ansicpg1252\cocoartf2822
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica-Oblique;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fswiss\fcharset0 Helvetica;
-}
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica-Oblique;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fswiss\fcharset0 Helvetica-BoldOblique;
+\f3\fswiss\fcharset0 Helvetica;}
 {\colortbl;\red255\green255\blue255;}
 {\*\expandedcolortbl;;}
-\margl1440\margr1440\vieww18140\viewh12820\viewkind0
+\margl1440\margr1440\vieww19420\viewh12820\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f0\i\fs24 \cf0 This document contains a (mostly) alphabetically ordered list of all operations of the Williams Virtual Machine. Note that some of the operations have alternate names. Unless otherwise noted, the operations behave identically in System 7, 9 and 11. 
+\f0\i\fs24 \cf0 This document contains a (mostly) alphabetically ordered list of all operations, as well as the boolean expression syntax of the Williams Virtual Machine. Note that some of the operations have alternate names. Unless otherwise noted, the operations behave identically in System 7, 9 and 11. 
 \f1\i0\b \
 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f2\i\fs28 \cf0 1. List of Instructions
+\f1\i0\fs24 \
 \
-M6800_mode 
-\f2\b0           \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 M6800_mode 
+\f3\b0           \
 \
 Change execution mode from WVM to Motorola 6800 assembler.\
 \
@@ -20,227 +25,230 @@ Change execution mode from WVM to Motorola 6800 assembler.\
 \f1\b addTo <Reg-X> #<signed byte> \
 addTo <Reg-X> <Reg-Y>\
 
-\f2\b0 \
+\f3\b0 \
 Add to register. \
 \
 \
 
 \f1\b awardExtraball
-\f2\b0  \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\f3\b0  \
 
-\f1\b \cf0 awardSpecial
-\f2\b0                 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f1\b awardSpecial
+\f3\b0                 \
+\
 Award extra ball or Special.\
 \
 \
 
 \f1\b begin6800/end6800
-\f2\b0    \
+\f3\b0    \
 \
 Execute 2-14 bytes of code between begin6800 and end6800 statements in assembler mode. Subroutine calls are allowed but mode transitions to WVM cause game resets. Since the code is relocated before execution no exit branches are allowed.\
 \
                                  \
 
 \f1\b blinkLamps 	      <Lamp#XX> \'85
-\f2\b0   \
+\f3\b0   \
 
 \f1\b setBitsBlinkbuf
-\f2\b0  
+\f3\b0  
 \f1\b <Lamp#XX> \'85
-\f2\b0   (alternative name)                                                \
+\f3\b0   (alternative name)                                                \
 \
 Set blink flag for one or more lamps. \
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf0 branch  <branch-label>
+\f3\b0 \
+\
+Branch to label. 12-bit signed branch offset. \
 \
 \
 
 \f1\b branchIf           <WVM expression> \'85. <branch-label>\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 branchUnless <WVM expression> \'85. <branch-label>
-\f2\b0 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f3\b0 \
+\
 Branch to label if WVM expression evaluates to true or false, respectively. 12-bit signed branch offset. \
 \
 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b clearBitgroups <bitgroup#XX> \'85
-\f2\b0       \
+\f1\b \cf0 branchISubroutine        <branch-label>\
+branchSubroutine6800 <branch-label>
+\f3\b0 \
+\
+Call to WVM or assembler subroutine, respectively. 12-bit signed branch offset. 
+\f1\b \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+\
+clearBitgroups <bitgroup#XX> \'85
+\f3\b0       \
 \
 Turn off all lamps (main buffer) or flags of one or more bit groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) affect the blink buffer instead.\
 \
 
 \f1\b \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 clearLampgroupsAltbuf <bitgroup#XX> \'85\
+clearLampgroupsAltbuf <bitgroup#XX> \'85\
 clearBitgroupsAltbuf      <bitgroup#XX> \'85
-\f2\b0  (alternative name)  
+\f3\b0  (alternative name)  
 \f1\b \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f2\b0 \cf0                         \
+\f3\b0                         \
 Lamp group arguments only! Reset all lamps of one or more lamp groups from alternate to main buffer. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) clear the flag in the alternate buffer instead (turn of lamps in alternate buffer). \
 \
         \
 
 \f1\b clearBits <Lamp#XX> or <Flag#XX> \'85
-\f2\b0            \
+\f3\b0            \
 \
 Turn off (reset to zero) one or more lamps or flags. When lamps are turned off, both the flags in the main and blink buffers are cleared. \
 \
 
 \f1\b \
 clearBitsAltbuf
-\f2\b0   
+\f3\b0   
 \f1\b <Lamp#XX>  \'85.
-\f2\b0  \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\f3\b0  \
 
-\f1\b \cf0 clearAltbuf
-\f2\b0          
+\f1\b clearAltbuf
+\f3\b0          
 \f1\b <Lamp#XX>  \'85.
-\f2\b0   (alternative name)  \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f3\b0   (alternative name)  \
+\
 Lamp arguments only! Reset one or more lamps from alternate to main buffer. Lamps with with bit $40 set (e.g. Lamp#02|$40) clear the flag in the alternate buffer instead (turn off lamp in alternate buffer). In System 7 this operation only takes a single argument and the canonical version is called clearBitAltbuf. Unsure about System 9.\
                             \
 \
 
 \f1\b clearSwitches <Switch#XX> \'85
-\f2\b0 \
+\f3\b0 \
 \
 Signal to the system that a switch has just been opened. If the switch is actually closed, this will cause a new switch handler thread to be spawned. This is used in some System 7 multiball games for trough handling and can also be useful to simplify the handling of ejects (locks). \
 \
 \
 
 \f1\b decAndBranchUnlessZero <Reg-X> <branch-label>
-\f2\b0      \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\f3\b0      \
 
-\f1\b \cf0 decAndBranchUnless0       <Reg-X> <branch-label>
-\f2\b0   (alternative name)  \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f1\b decAndBranchUnless0       <Reg-X> <branch-label>
+\f3\b0   (alternative name)  \
+\
 Decrement Reg-X and branch to label if value is not equal to zero. 12-bit signed branch offset. Not available in System 7, unsure if available in System 9!\
 \
 \
 
 \f1\b drainBitgroups <bitgroup#XX> \'85
-\f2\b0       \
+\f3\b0       \
 \
 Turn off highest bit or lamp in one or more flag or lamp groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) affect the blink buffer instead.\
 \
 \
 
 \f1\b drainLampgroupsAltbuf
-\f2\b0  
+\f3\b0  
 \f1\b <bitgroup#XX> \'85
-\f2\b0  \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\f3\b0  \
 
-\f1\b \cf0 drainBitgroupsAltbuf
-\f2\b0       
+\f1\b drainBitgroupsAltbuf
+\f3\b0       
 \f1\b <bitgroup#XX> \'85
-\f2\b0  (alternative name)             \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0   \
+\f3\b0  (alternative name)             \
+  \
 Lamp group arguments only! Reset highest lamp in one or more lamp groups from alternate to main buffer. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) turn off the lamp in the alternate buffer instead.\
 \
 \
 
 \f1\b exitThread
-\f2\b0               \
+\f3\b0               \
 \
 Terminate current thread. \
 \
 \
 
 \f1\b fillBitgroups
-\f2\b0  
+\f3\b0  
 \f1\b <bitgroup#XX> \'85
-\f2\b0          \
+\f3\b0          \
 \
 Turn on next higher bit or lamp in one or more flag or lamp groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) affect the blink buffer instead. Don\'92t do anything if all bits already set.\
 \
 \
 
 \f1\b fillLampgroupsAltbuf
-\f2\b0  
+\f3\b0  
 \f1\b <bitgroup#XX> \'85\
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 fillBitgroupsAltbuf      <bitgroup#XX> \'85
-\f2\b0  (alternative name)                         \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+fillBitgroupsAltbuf      <bitgroup#XX> \'85
+\f3\b0  (alternative name)                         \
+\
 Lamp group arguments only! Switch next higher lamp in one or more lamp groups from main to alternate buffer. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) turn on the lamp in the alternate buffer instead. Don\'92t do anything if all bits are already set. \
 \
 \
 
 \f1\b fillWrapBitgroups <bitgroup#XX> \'85
-\f2\b0          \
+\f3\b0          \
 \
 Turn on next higher bit or lamp in one or more flag or lamp groups, turning off all when all bits are initially set. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) affect the blink buffer instead.   \
 \
 \
 
 \f1\b fillWrapLampgroupsAltbuf <bitgroup#XX> \'85
-\f2\b0  \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\f3\b0  \
 
-\f1\b \cf0 fillWrapBitgroupsAltbuf      <bitgroup#XX> \'85
-\f2\b0  (alternative name)                           \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f1\b fillWrapBitgroupsAltbuf      <bitgroup#XX> \'85
+\f3\b0  (alternative name)                           \
+\
 Lamp group arguments only! Switch next higher lamp in one or more lamp groups from main to alternate buffer, switching them all back to the main buffer if all are initially set to the alternate. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) turn on/off the lamps in the alternate buffer instead.                     \
 \
 
 \f1\b \
 halt
-\f2\b0 \
+\f3\b0 \
 \
 Halt code execution (freeze system). This is only used in case of fatal errors. \
 \
 \
 
 \f1\b jump <jump-label>
-\f2\b0 \
+\f3\b0 \
 \
 Continue code execution at the label.\
 \
 \
 
 \f1\b jump6800 <jump-label>
-\f2\b0 \
+\f3\b0 \
 \
 Switch to assembler mode and continue code execution at the label.\
 \
 \
 
 \f1\b jumpIf <WVM expression> \'85. <jump-label>
-\f2\b0 \
+\f3\b0 \
 \
 Continue code execution at the label if the WVM expression evaluates to true. \
 \
 \
 
 \f1\b jumpSubroutine <subroutine-label>
-\f2\b0 \
+\f3\b0 \
 \
 Execute WVM mode subroutine at the label. \
 \
 \
 
 \f1\b jumpSubroutine6800 <subroutine-label>
-\f2\b0 \
+\f3\b0 \
 \
 Execute assembly subroutine at the label. On return, execution continues in WVM mode.\
 \
 \
 
 \f1\b jumpUnless <WVM expression> \'85. <jump-label>
-\f2\b0 \
+\f3\b0 \
 \
 Continue code execution at the label if the WVM expression evaluates to false. \
 \
@@ -248,198 +256,182 @@ Continue code execution at the label if the WVM expression evaluates to false. \
 
 \f1\b killThread <thread-mask> <thread-id>\
 
-\f2\b0 \
+\f3\b0 \
 Kill first thread (remove from list of running threads) with an id that matches those bits of <thread-id> that are set in <thread-mask>.\
 \
 \
 
 \f1\b killThreads  <thread-mask> <thread-id>
-\f2\b0 \
+\f3\b0 \
 \
 Kill all threads (remove from list of running threads) with ids that matche those bits of <thread-id> that are set in <thread-mask>.\
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 \
+\f1\b \
 load      <Reg-X> <Reg-Y>\
 copyTo <Reg-X> <Reg-Y> 
-\f2\b0 (alternative name)\
+\f3\b0 (alternative name)\
 \
 Load Reg-X with value of Reg-Y.\
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 \
+\f1\b \
 \
 load Reg-A <zero page address>
-\f2\b0  \
+\f3\b0  \
 
 \f1\b load Reg-B <zero page address>
-\f2\b0     \
+\f3\b0     \
 \
 Load register A or B with value from zero page RAM address ($0000-$00FF). These operations are not available in System 7, unsure if available in System 9! \
 \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 load Reg-X #<byte value>
-\f2\b0         \
+\f1\b load Reg-X #<byte value>
+\f3\b0         \
 \
 Load register with immediate byte value.\
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\
          \
 
 \f1\b noOperation
-\f2\b0              \
+\f3\b0              \
 \
 Don\'92t do anything. (Continue execution at next operation.)\
 \
 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf0 playSound_score <Sound#XX> 
+\f3\b0 \
+\
+Play sound. \
+\
+\
 
 \f1\b playSound_score <Sound#XX> <score-byte>
-\f2\b0 \
-\
+\f3\b0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
 Play sound and add score, such as \'931x10 PTS\'94. \
 \
 \
 
 \f1\b queueScore <score-byte>
-\f2\b0           \
+\f3\b0           \
 \
 Add score (e.g. 5x10K PTS) to queue. Score queues are handled by the system in the background; each score queue (the 10K queue in the example) plays a default sound (Sound#04 for the 10K queue) for each queue element handled. \
 \
 \
 
 \f1\b return
-\f2\b0                   \
+\f3\b0                   \
 \
 Return to caller from WVM subroutine. The final return from a thread causes the thread to exit (IIRC). \
 \
 \
 
 \f1\b rotLeftBitgroups
-\f2\b0  
+\f3\b0  
 \f1\b <bitgroup#XX> \'85
-\f2\b0          \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f3\b0          \
+\
 Rotate left all bits or lamps in one or more flag or lamp groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) affect the blink buffer instead. \
    \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 \
+\f1\b \
 rotLeftLampgroupsAltbuf
-\f2\b0  
+\f3\b0  
 \f1\b <bitgroup#XX> \'85
-\f2\b0        \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\f3\b0        \
 
-\f1\b \cf0 rotLeftBitgroupsAltbuf
-\f2\b0       
+\f1\b rotLeftBitgroupsAltbuf
+\f3\b0       
 \f1\b <bitgroup#XX> \'85
-\f2\b0   (alternative name)  \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0                \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 Lamp group arguments only! Rotate left alternate-buffer selection bits for all lamps in one or more lamp groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) rotate the lamps in the alternate buffer instead.  \
+\f3\b0   (alternative name)  \
+               \
+Lamp group arguments only! Rotate left alternate-buffer selection bits for all lamps in one or more lamp groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) rotate the lamps in the alternate buffer instead.  \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\
 
 \f1\b rotRightBitgroups
-\f2\b0    
+\f3\b0    
 \f1\b <bitgroup#XX> \'85
-\f2\b0  \
+\f3\b0  \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 Rotate right all bits or lamps in one or more flag or lamp groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) affect the blink buffer instead. \
+Rotate right all bits or lamps in one or more flag or lamp groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) affect the blink buffer instead. \
 \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 rotRightLampgroupsAltbuf <bitgroup#XX> \'85
-\f2\b0  \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\f1\b rotRightLampgroupsAltbuf <bitgroup#XX> \'85
+\f3\b0  \
 
-\f1\b \cf0 rotRightBitgroupsAltbuf      <bitgroup#XX> \'85
-\f2\b0  (alternative name)  \
+\f1\b rotRightBitgroupsAltbuf      <bitgroup#XX> \'85
+\f3\b0  (alternative name)  \
                \
 Lamp group arguments only! Rotate right alternate-buffer selection bits for all lamps in one or more lamp groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) rotate the lamps in the alternate buffer instead. \
 
 \f1\b  
-\f2\b0                      \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f3\b0                      \
+\
 
 \f1\b score <score-byte>
-\f2\b0           \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f3\b0           \
+\
 Add score (e.g. 5x10K PTS) without making any sound.\
  \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0                \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+               \
 
-\f1\b \cf0 score_digitSound
-\f2\b0  
+\f1\b score_digitSound
+\f3\b0  
 \f1\b <score-byte>
-\f2\b0  \
+\f3\b0  \
 \
 Add score (e.g. 4x1K PTS) and play the sound of the corresponding score queue once. In the example 4000 points are added to the score and Sound#03, the sound of the 1K sound queue, is played once. \
 \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 setBitgroups
-\f2\b0  
+\f1\b setBitgroups
+\f3\b0  
 \f1\b  <bitgroup#XX> \'85
-\f2\b0       \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f3\b0       \
+\
 Turn on all lamps (main buffer) or flags of one or more bit groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) affect the blink buffer instead.\
 \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 setLampgroupsAltbuf <bitgroup#XX> \'85\
+\f1\b setLampgroupsAltbuf <bitgroup#XX> \'85\
 setBitgroupsAltbuf      <bitgroup#XX> \'85
-\f2\b0  (alternative name)  
+\f3\b0  (alternative name)  
 \f1\b \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f2\b0 \cf0                         \
+\f3\b0                         \
 Lamp group arguments only! Select alternate buffer for all lamps of one or more lamp groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) turns on all lamps in the alternate buffer instead. \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0        \
+       \
                          \
 
 \f1\b setBits <Lamp#XX> or <Flag#XX> \'85
-\f2\b0            \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f3\b0            \
+\
 Turn on (set to one) one or more lamps or flags. When lamps are turned on, the blink buffer flag is cleared. \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 \
+\f1\b \
 setBitsAltbuf
-\f2\b0   
+\f3\b0   
 \f1\b <Lamp#XX>  \'85\
 setAltbuf
-\f2\b0          
+\f3\b0          
 \f1\b <Lamp#XX>  \'85
-\f2\b0  (alternative name)   \
+\f3\b0  (alternative name)   \
 \
 Lamp arguments only! Select alternate buffer for one or more lamps. Lamps with with bit $40 set (e.g. Lamp#02|$40) set the flag in the alternate buffer instead (turn on lamp in alternate buffer). In System 7 this operation only takes a single argument and the canonical version is called setBitAltbuf. Unsure about System 9.\
 
 \f1\b  
-\f2\b0              \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0           \
+\f3\b0              \
+          \
 
 \f1\b setThreadFlags <threadflag-byte>
-\f2\b0 \
+\f3\b0 \
 \
 Change flags/id of currently executing thread.\
 \
@@ -447,105 +439,191 @@ Change flags/id of currently executing thread.\
 
 \f1\b sleep         #<delay-byte>\
 longSleep #<delay-byte>
-\f2\b0 \
+\f3\b0 \
 \
 Suspend currently running thread for delay-byte tics, where each tic is approximately 1/64th of a second. For delays greater than 15 tics, sleep and longSleep are identical. For delays up to 15 tics, longSleep should not be used as it takes an additional byte of code. \
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\b \cf0 \
+solControl <solenoid-control> [\'85]
+\f3\b0 \
+\
+Schedule one or more solenoid commands. \
 \
 \
 
 \f1\b spawnThread
-\f2\b0  
+\f3\b0  
 \f1\b          <threadflag-byte> <WVM-thread label> \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 spawnThread6800
-\f2\b0  
+\f3\b0  
 \f1\b  <threadflag-byte> <M6800-thread label>         
-\f2\b0   \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f3\b0   \
+\
 Add new thread with WVM or M6800 assembly code to list of running threads, setting the thread flags/id. spawnThread6800 is not available in System 7, unsure if available in System 9! The first newly spawned thread is inserted to run immediately after the currently running thread; additional spawned threads are inserted in order. Spawning a new thread does  not interrupt the currently running thread. \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\
         \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 spawnThread_id06          <WVM-thread label>     \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 spawnThread6800_id06  <M6800-thread label>       
-\f2\b0 \
+\f1\b spawnThread_id06          <WVM-thread label>     \
+spawnThread6800_id06  <M6800-thread label>       
+\f3\b0 \
  \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 Add new \'93temporary\'94 thread with WVM or M6800 assembly code to list of running threads, setting the thread flags/id to 06 (killed on game start, but not on tilt or ball drain). The first newly spawned thread is inserted to run immediately after the currently running thread; additional spawned threads are inserted in order. Spawning a new thread does  not interrupt the currently running thread. These operations are not available in System 7, unsure if available in System 9! \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+Add new \'93temporary\'94 thread with WVM or M6800 assembly code to list of running threads, setting the thread flags/id to 06 (killed on game start, but not on tilt or ball drain). The first newly spawned thread is inserted to run immediately after the currently running thread; additional spawned threads are inserted in order. Spawning a new thread does  not interrupt the currently running thread. These operations are not available in System 7, unsure if available in System 9! \
+\
 \
 
 \f1\b store Reg-A <zero-page label>
-\f2\b0              \
+\f3\b0              \
 
 \f1\b store Reg-B <zero-page label> 
-\f2\b0 \
+\f3\b0 \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 Copy the values of registers A or B to a RAM location on the zero page ($0000 - $00FF).  These operations are not available in System 7, unsure if available in System 9! \
+Copy the values of registers A or B to a RAM location on the zero page ($0000 - $00FF).  These operations are not available in System 7, unsure if available in System 9! \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\
 
 \f1\b toggleBitgroups <bitgroup#XX> \'85
-\f2\b0       \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f3\b0       \
+\
 Toggle all lamps (main buffer) or flags of one or more bit groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) affect the blink buffer instead.  \
 \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 toggleLampgroupsAltbuf 
-\f2\b0  
+\f1\b toggleLampgroupsAltbuf 
+\f3\b0  
 \f1\b <bitgroup#XX> \'85
-\f2\b0    \
+\f3\b0    \
 
 \f1\b toggleBitgroupsAltbuf 
-\f2\b0       
+\f3\b0       
 \f1\b <bitgroup#XX> \'85
-\f2\b0   (alternative name)  \
+\f3\b0   (alternative name)  \
 \
 Lamp group arguments only! Toggle alternate buffer selection bit for all lamps of one or more lamp groups. Lamp groups with bit $40 set (e.g. Bitgroup#02|$40) toggle all lamps in the alternate buffer instead.      \
 \
        \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 toggleBits
-\f2\b0  
+\f1\b toggleBits
+\f3\b0  
 \f1\b <Lamp#XX> or <Flag#XX> \'85
-\f2\b0            \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\f3\b0            \
+\
 Toggle (on <-> off)  one or more lamps or flags. Does not touch the blink flag, i.e. do not use with blinking lamps. \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0          \
+         \
 
 \f1\b toggleBitsAltbuf
-\f2\b0   
+\f3\b0   
 \f1\b <Lamp#XX>  \'85.
-\f2\b0         \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\f3\b0         \
 
-\f1\b \cf0 toggleAltbuf
-\f2\b0          
+\f1\b toggleAltbuf
+\f3\b0          
 \f1\b <Lamp#XX>  \'85.
-\f2\b0  (alternative name)  \
+\f3\b0  (alternative name)  \
 \
 Lamp arguments only! Toggle alternate buffer selection bit for one or more lamps. Lamps with bit $40 set (e.g. Lamp#02|$40) toggle the flag in the alternate buffer instead (turn on/off lamp in alternate buffer). In System 7 this operation only takes a single argument and the canonical version is called toggleBitAltbuf. Unsure about System 9.\
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\
 
 \f1\b \
 triggerSwitches <Switch#XX> \'85
-\f2\b0 \
+\f3\b0 \
+\
+Signal to the system that a switch has just been closed. If the switch is open, this will cause a new switch handler thread to be spawned. This  can be useful for example for simplifying the handling of ejects (locks). \
+\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f2\i\b\fs28 \cf0 2. Boolean Expressions\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f3\i0\b0\fs24 \cf0 \
+The branchIf/Unless and jumpIf/Unless WVM instructions evaluate boolean (true-false) expressions to determine where to continue execution. The end result of an expression must be a boolean value.\
+\
+\
+
+\f1\b Boolean Primitives
+\f3\b0 \
+\
+	Lamp#XX						return status of bit in main buffer; inconsistent result with blinking lamps\
+	Flag#XX						return status of flag bit\
+	[Reg-X]						return status of lamp or flag stored in register X (indirect argument)\
+	\
+	%ballTilted						return true if titled\
+	%gameTilted						ditto\
+	%gameOver						return true unless game is in progress\
+\
+
+\f1\b \
+Number Primitives
+\f3\b0 \
+\
+	[#]<number>						decimal, hex or binary byte value (immediate argument)\
+\
+	Adj#XX						adjustment value (BCD byte)\
+	Reg-X							register value (singed byte)\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 \
-Signal to the system that a switch has just been closed. If the switch is open, this will cause a new switch handler thread to be spawned. This  can be useful for example for simplifying the handling of ejects (locks). \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+
+\f1\b Boolean Operations
+\f3\b0 \
+\
+	%allFlagsClear Bitgroup#XX			return true if all bits/lamps are off\
+	%allClear: Bitgroup#XX\
+	%allLampsOff: Bitgroup#XX\
+	%allOff: Bitgroup#XX\
+\
+	%allFlagsSet: Bitgroup#XX			return true if all bits/lamps are on\
+	%allSet: Bitgroup#XX\
+	%allLampsOn: Bitgroup#XX	\
+	%allOn: Bitgroup#XX\
+	%allLampsLit: Bitgroup#XX\
+\
+	%equalTo: <num-expr> <num-expr>		return true if both number expressions evaluate to the same number\
+	%equal: <num-expr> <num-expr>\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 	%greaterThan: <num-expr> <num-expr>		return true if first number expression evaluate to greater number than the second\
+	%greater: <num-expr> <num-expr>\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+	%lampBlinking: Lamp#XX	or [Reg-X]		return status of lamp bit in blink buffer (System 11)\
+	%blinking: Lamp#XX		\
+\
+	%lampLitOrBlinking: Lamp#XX or [Reg-X]	return true if lamp is lit or blinking (System 7)\
+	%litOrBlinking: Lamp#XX		\
+\
+	%lampAltbuf: Lamp#XX or [Reg-X]		return true if lamp bit set in alt buffer\
+	%altBuf: Lamp#XX\
+\
+	%logicAnd: <expr> <expr>				return true if both expressions evaluate to true\
+	%and: <expr> <expr>	\
+\
+	%logicOr: <expr> <expr>:				return true if either of the expressions evaluates to true\
+	%or: <expr> <expr>	\
+\
+	%not: <expr>						negate boolean result of <expr>\
+	%logicNot: <expr>			\
+\
+	%switchClosed: Switch#XX			return true if switch is closed\
+	%switch: Switch#XX\
+	%closed: Switch#XX\
+	\
+\
+
+\f1\b Number Operations\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f3\b0 \cf0 \
+	%bitAnd: <num-expr> <num-expr>		evaluates to bitwise-and result of number expressions (bit masking)\
+	\
+	%bitOr: <num-expr> <num-expr>			evaluates to bitwise-or result of number expressions (bit masking)\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 	\
+	%number: <number>				interpret <number> as a number; required for unsigned byte values >= $F0\
+\
 }

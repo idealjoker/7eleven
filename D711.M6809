@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Fri May  9 11:39:23 2025
+#                    dlm: Sun May 11 10:15:11 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 48 59 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 50 0 NIL 0 0 72 74 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -46,6 +46,7 @@
 #	Apr  5, 2025: - BUG: undefined syscall error triggered wrongly
 #	May  7, 2025: - replaced all ABORT: by WARNING:
 #	May  9, 2025: - BUG: op_EXT data arguments were labeled
+#	May 11, 2025: - put all warnings on STDERR and removed ;
 # HISTORY END
 
 # NOTES:
@@ -344,7 +345,7 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		return $addr-4;
     }
 		
-	printf(STDERR "; WARNING: invalid postbyte %02X for $op indexed mode at address %04X\n",BYTE($addr+1),$addr)
+	printf(STDERR "WARNING: invalid postbyte %02X for $op indexed mode at address %04X\n",BYTE($addr+1),$addr)
 		if ($verbose > 0);
 	return undef;
 }
@@ -368,7 +369,7 @@ sub op_PP($$$)																		# PUSH/PULL op (page 1 only)
 	$regs .= 'S,'  if ($PB & 0x40) && ($op =~ m{U$});
 	$regs .= 'PC,',$rv = 0 if ($PB & 0x80);											# implied RTS
 	if (length($regs) == 0) {
-		printf(STDERR "; WARNING: $op with empty register list at address %04X\n",$addr)
+		printf(STDERR "WARNING: $op with empty register list at address %04X\n",$addr)
 			if ($verbose > 0);
 		push(@{$OPA[$addr]},'NO_REGS');
     } else {
@@ -391,7 +392,7 @@ sub op_2REGS($$$)																	# EXG/TFR
 	my($R2) = $R[BYTE($addr+1) & 0x0F];
 
 	unless (defined($R1) && defined($R2)) {
-		printf(STDERR "; WARNING: invalid postbyte %02X for $op indexed mode at address %04X\n",BYTE($addr+1),$addr)
+		printf(STDERR "WARNING: invalid postbyte %02X for $op indexed mode at address %04X\n",BYTE($addr+1),$addr)
 			if ($verbose > 0);
 		return undef;
     }
@@ -539,13 +540,13 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 
 	unless (defined(BYTE($addr))) { 												# outside loaded ROM range
 		return if ($WMS_System==6 || $WMS_System==7);								# okay for Sys 6 & Sys 7 (OS separate)
-		printf(STDERR "; WARNING: disassembly address %04X outside ROM range\n",$addr)
+		printf(STDERR "WARNING: disassembly address %04X outside ROM range\n",$addr)
 			if ($verbose > 0);
 		$unclean = 1;
 		return;
 	}
 	if ($decoded[$addr] && !defined($OP[$addr])) {								   # not at start of instruction
-		printf("WARNING: disassembly M6809 code at %02X:%04X within already disassembled instruction code ($OP[$addr-1],$OP[$addr-2],$OP[$addr-3])\n" .
+		printf(STDERR "WARNING: disassembly M6809 code at %02X:%04X within already disassembled instruction code ($OP[$addr-1],$OP[$addr-2],$OP[$addr-3])\n" .
 			   "\t[$lbl_root]\n",$_cur_RPG,$addr)
 			if ($verbose > 0);
 		$unclean = 1;
@@ -561,7 +562,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 ##		printf(STDERR "M6809 disassembling opcode %02X at %02X:%04X (decoded = $decoded[$addr])\n",BYTE($addr),$_cur_RPG,$addr)
 ##			if ($addr>=0xD0BB && $addr<0xD0E3);
 		unless (defined(BYTE($addr))) {
-			printf(STDERR "; WARNING: disassembly address %04X outside ROM range\n",$addr)
+			printf(STDERR "WARNING: disassembly address %04X outside ROM range\n",$addr)
 				if ($verbose > 0);
 			$unclean = 1;
 			return;
@@ -796,7 +797,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			next if op_IDX(0xEE,$addr-1,$ind,'LDS'); 	next if op_IDX(0xEF,$addr-1,$ind,'STS');
 	        next if op_EXT(0xFE,$addr-1,$ind,'LDS',2);	next if op_EXT(0xFF,$addr-1,$ind,'STS',2);
 
-			printf("WARNING: Unknown M6809 opcode \$%04X at addr \$%02X:%04X\n",WORD($addr),$_cur_RPG,$addr)
+			printf(STDERR "WARNING: Unknown M6809 opcode \$%04X at addr \$%02X:%04X\n",WORD($addr),$_cur_RPG,$addr)
 				if ($verbose > 0);
 			$OP[$addr-1] = '.DW'; $IND[$addr-1] = $ind;
 			$OPA[$addr-1][0] = sprintf('$%04X!',WORD($addr-1));
@@ -819,7 +820,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			next if op_IDX(0xA3,$addr-1,$ind,'CMPU');	next if op_IDX(0xAC,$addr-1,$ind,'CMPS');
 	        next if op_EXT(0xB3,$addr-1,$ind,'CMPU',2);	next if op_EXT(0xBC,$addr-1,$ind,'CMPS',2);
 
-			printf("WARNING: Unknown M6809 opcode \$%04X at addr \$%02X:%04X\n",WORD($addr),$_cur_RPG,$addr)
+			printf(STDERR "WARNING: Unknown M6809 opcode \$%04X at addr \$%02X:%04X\n",WORD($addr),$_cur_RPG,$addr)
 				if ($verbose > 0);
 			$OP[$addr-1] = '.DW'; $IND[$addr-1] = $ind;
 			$OPA[$addr-1][0] = sprintf('$%04X!',WORD($addr-1));
@@ -830,7 +831,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 	        return;
         }
 
-        printf("WARNING: Unknown M6809 opcode \$%02X at addr %02X:%04X (start addr = %04X)\n",BYTE($addr),$_cur_RPG,$addr,$start_addr)
+        printf(STDERR "WARNING: Unknown M6809 opcode \$%02X at addr %02X:%04X (start addr = %04X)\n",BYTE($addr),$_cur_RPG,$addr,$start_addr)
         	if ($verbose > 0);
 		$OP[$addr] = '.DB'; $IND[$addr] = $ind;
 		$OPA[$addr][0] = sprintf('$%02X!',BYTE($addr));

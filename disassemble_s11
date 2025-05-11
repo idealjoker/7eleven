@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 1 1 
 #					 doc: Wed May  7 09:51:43 2025
-#					 dlm: Fri May  9 14:25:37 2025
+#					 dlm: Sun May 11 10:57:20 2025
 #					 (c) 2019 A.M. Thurnherr
-#					 uE-Info: 16 51 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 17 27 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -14,6 +14,7 @@
 #	May  9, 2025: - added MAX_SWITCH, MAX_PLAYER and table pointers
 #				  - added ROM_TEST_BLOCKS
 #				  - added defSwitch() and defLamp()
+#	May 11, 2025: - fiddled
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -62,7 +63,7 @@ die("ic27.256: invalid size\n") unless ($D711::MAX_ROM_ADDR == 0xFFFF);
 # Find Switch Table
 #----------------------------------------------------------------------
 
-my($nFound,$switch_table_addr,$table_ptr_addr);
+my($nSwFound,$switch_table_addr,$table_ptr_addr);
 for (my($addr)=$D711::MIN_ROM_ADDR; $addr<$D711::MAX_ROM_ADDR; $addr++) {
 	next unless (D711::BYTE($addr)==3 &&
 		 		 D711::BYTE($addr-1)>=48 && D711::BYTE($addr-1)<=64 &&
@@ -74,19 +75,47 @@ for (my($addr)=$D711::MIN_ROM_ADDR; $addr<$D711::MAX_ROM_ADDR; $addr++) {
 	for ($len=0; D711::WORD(D711::WORD($addr+3)+1+3*$len)>=$D711::MIN_ROM_ADDR &&
 				 D711::WORD(D711::WORD($addr+3)+1+3*$len)!=0xFFFF && 
 				 D711::WORD(D711::WORD($addr+3)+1+3*$len)<=$D711::MAX_ROM_ADDR; $len++) {}
-	unless ($nFound > $len) {
-		$nFound = $len;
+	unless ($nSwFound > $len) {
+		$nSwFound = $len;
 		$switch_table_addr = D711::WORD($addr+3);
 		$table_ptr_addr = $addr+3;
 	}
 }
 
-if ($nFound > 42) {
-##	printf(STDERR "Switch Table found at %04X ($nFound entires)\n",$switch_table_addr);
+if ($nSwFound > 42) {
+##	printf(STDERR "Switch Table found at %04X ($nSwFound entires)\n",$switch_table_addr);
 } else {
-	die(sprintf("Switch Table not found (best candidate at %04X ($nFound entires)\n",$switch_table_addr));
+	die(sprintf("Switch Table not found (best candidate at %04X ($nSwFound entires)\n",$switch_table_addr));
 }
 
+
+#----------------------------------------------------------------------
+# Find ROM_checksum_test
+#----------------------------------------------------------------------
+
+if (0) {
+my($nFound,$RTB_addr);
+for (my($addr)=$D711::MIN_ROM_ADDR; $addr<$D711::MAX_ROM_ADDR; $addr++) {
+##	next unless (D711::BYTE($addr)==0xC6 &&
+##				 D711::BYTE($addr+1)==0x0A && D711::BYTE($addr+2)==0x40 &&
+##				 D711::BYTE($addr+3)==0xBB);
+#	next unless (D711::BYTE($addr)==0xD6 &&
+#				 D711::BYTE($addr+2)==0xC0 && D711::BYTE($addr+3)==0x10 &&
+#				 D711::BYTE($addr+4)==0xD7);				 
+###	next unless (D711::BYTE($addr)==0xB6 &&										# LDAA ROM_TEST_BLOCKS
+###		 		 D711::BYTE($addr+3)==0xCE && D711::WORD($addr+4)==0xFFFF); # &&	# LDX #$FFFF
+##		 		 D711::BYTE($addr+6)==0xDF &&									# STX __tmp1
+##		 		 D711::BYTE($addr+8)==0x4A); # &&								# DECA
+##		 		 D711::BYTE($addr+9)==0x2B && D711::BYTE($addr+10)==0x21);		# IF_PL
+	$nFound++;
+	$RTB_addr = D711::WORD($addr+1);
+}
+		 		 
+if ($nFound != 1) {
+	printf(STDERR "WARNING: cannot find ROM_TEST_BLOCKS (nFound = $nFound)\n");
+	undef($RTB_addr);
+}
+}
 
 #----------------------------------------------------------------------
 # Code Disassembly
@@ -96,12 +125,19 @@ $D711::Address = $table_ptr_addr - 4;
 	D711::def_byte_dec('MAX_SWITCH');
 	D711::def_byte_dec('MAX_PLAYER');
 	D711::def_word_hex('^BITGROUP_TABLE');
-	D711::def_switchtable_ptr($nFound,'^SWITCH_TABLE','switch_table');
+	D711::def_switchtable_ptr($nSwFound,'^SWITCH_TABLE','switch_table');
 	D711::def_word_hex('^SOUND_TABLE');
 
+#if (defined($RTB_addr)) {
+#	$D711::Address = $RTB_addr;
+#	D711::def_byte_dec('ROM_TEST_BLOCKS');
+#}
+
+# The following works with Pinbot, Bad Cats and Rollergames, but not Radical
 $D711::Address = $table_ptr_addr - 5;
-if (D711::BYTE($D711::Address)==0x00	||									# DISPLAY_TYPE (Sys 11BC)
-	D711::BYTE($D711::Address)==0xAA) {
+#if (D711::BYTE($D711::Address)==0x00	||									# DISPLAY_TYPE (Sys 11BC)
+#	D711::BYTE($D711::Address)==0xAA) {
+if (D711::BYTE($D711::Address) != 12)	{									# DISPLAY_TYPE (Sys 11BC)
 		D711::def_byte_hex('DISPLAY_TYPE');
 		$D711::Address = $table_ptr_addr - 6;
 }
@@ -111,6 +147,21 @@ if (D711::BYTE($D711::Address) == 12) {										# ROM_TEST_BLOCKS
 	print(STDERR "WARNING: location of ROM_TEST_BLOCKS unknown\n");
 }
 	
+##my($nFound,$RTB_addr);
+##for (my($addr)=$D711::MIN_ROM_ADDR; $addr<$D711::MAX_ROM_ADDR; $addr++) {
+##	next unless (D711::BYTE($addr)==0xB6 &&
+##				 D711::WORD($addr+1)==
+##				 D711::BYTE($addr+3)==0xBB);
+##
+##	$nFound++;
+##	$RTB_addr = D711::WORD($addr+1);
+##}
+##		 		 
+##if ($nFound != 1) {
+##	printf(STDERR "WARNING: cannot find ROM_TEST_BLOCKS (nFound = $nFound)\n");
+##	undef($RTB_addr);
+##}
+
 #----------------------------------------------------------------------
 # Fix String Tables
 #----------------------------------------------------------------------

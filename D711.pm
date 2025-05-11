@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri May  9 11:35:59 2025
+#					 dlm: Sun May 11 10:15:25 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 283 41 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 285 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -281,6 +281,7 @@
 #				  - removed argument indentation from WVM code
 #				  - prevent label_address() to overwrite existing AUTO_LBL so that it
 #				    respects !data labels
+#	May 11, 2025: - put all warnings on STDERR and removed ;
 # END OF HISTORY
 
 # TO-DO:
@@ -1011,7 +1012,7 @@ sub wvm_parse_expr(@)                                                       # re
         push(@{$OPA[$base_addr]},'%bitAnd:');
         wvm_parse_expr(1); wvm_parse_expr(1);
     } else {
-        printf("WARNING: Unknown WVM expression opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
+        printf(STDERR "WARNING: Unknown WVM expression opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
             if ($verbose > 0);
         $unclean = 1;
         return;
@@ -1082,7 +1083,7 @@ sub disassemble_wvm(@)
 
     unless (defined(BYTE($addr))) {                                                 # outside loaded ROM range
         return if ($WMS_System == 7);                                               # okay for Sys 7
-        printf(STDERR "; WARNING: WVM disassembly address %04X outside ROM range\n",$addr)
+        printf(STDERR "WARNING: WVM disassembly address %04X outside ROM range\n",$addr)
             if ($verbose > 0);
         $unclean = 1;
         return;
@@ -1103,7 +1104,7 @@ sub disassemble_wvm(@)
         $TYPE[$base_addr] = $CodeType_wvm;
 
         if (wvm_nargOp(0x00,$ind,'halt')) {                                             # miscellaneous operations
-            printf(STDERR "; WARNING: halt WVM instruction at address \$%04X\n",$addr)
+            printf(STDERR "WARNING: halt WVM instruction at address \$%04X\n",$addr)
                 if ($verbose > 0);
             next;
 #           $unclean = 1;
@@ -1338,7 +1339,7 @@ sub disassemble_wvm(@)
             $decoded[$addr] = $decoded[$addr+1] = $decoded[$addr+2] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+2)&0xF8)>>3) * (10**(BYTE($addr+2)&0x07)) > $unrealistic_score_limit) {
-                printf("WARNING: unrealistic score %d at addr \$%04X\n",
+                printf(STDERR "WARNING: unrealistic score %d at addr \$%04X\n",
                         ((BYTE($addr+2)&0xF8)>>3) * (10**(BYTE($addr+2)&0x07)),$addr)
                             if ($verbose > 0);
                 $unclean = 1;
@@ -1360,7 +1361,7 @@ sub disassemble_wvm(@)
             $decoded[$addr] = $decoded[$addr+1] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)) > $unrealistic_score_limit) {
-                printf("WARNING: unrealistic score %d at addr \$%04X\n",
+                printf(STDERR "WARNING: unrealistic score %d at addr \$%04X\n",
                         ((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)),$addr)
                             if ($verbose > 0);
                 $unclean = 1;
@@ -1382,7 +1383,7 @@ sub disassemble_wvm(@)
             $decoded[$addr] = $decoded[$addr+1] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)) > $unrealistic_score_limit) {
-                printf("WARNING: unrealistic score %d at addr \$%04X\n",
+                printf(STDERR "WARNING: unrealistic score %d at addr \$%04X\n",
                         ((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)),$addr)
                             if ($verbose > 0);
                 $unclean = 1;
@@ -1404,7 +1405,7 @@ sub disassemble_wvm(@)
             $decoded[$addr] = $decoded[$addr+1] = 1;
             push(@SCORE,$base_addr);
             if (((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)) > $unrealistic_score_limit) {
-                printf("WARNING: unrealistic score %d at addr \$%04X\n",
+                printf(STDERR "WARNING: unrealistic score %d at addr \$%04X\n",
                         ((BYTE($addr+1)&0xF8)>>3) * (10**(BYTE($addr+1)&0x07)),$addr)
                             if ($verbose > 0);
                 $unclean = 1;
@@ -1730,7 +1731,7 @@ sub disassemble_wvm(@)
             next;
         }
 
-        printf("WARNING: Unknown WVM$WMS_System opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
+        printf(STDERR "WARNING: Unknown WVM$WMS_System opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
             if ($verbose > 0);
         $unclean = 1;
         return;
