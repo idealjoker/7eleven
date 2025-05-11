@@ -2151,8 +2151,8 @@ sub assemble_pragma()
         return 1;
     }
 
-    if ($OP eq '.IFNDEF') {                                                             # .IFNDEF
-        die("Syntax: .IFNDEF id (<@_> at input line $.)\n")
+    if ($OP eq '.IFNDEF' || $OP eq '.IFUNDEF') {                                        # .IFUNDEF
+        die("Syntax: .IFUNDEF id (<@_> at input line $.)\n")
             unless (@OP_ARG == 1);
         $ALIAS_REFD{$OP_ARG[0]}++;
         if ($IF_STACK[$#IF_STACK] >= 0) {
