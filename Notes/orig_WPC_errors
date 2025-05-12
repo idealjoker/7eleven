@@ -1,9 +1,9 @@
 ======================================================================
-                    O R I G _ W P C _ E R R O R S 
+                    . / N O T E S / O R I G _ W P C _ E R R O R S 
                     doc: Fri Aug 30 18:04:27 2024
-                    dlm: Fri Aug 30 18:04:29 2024
-                    (c) 2024 A.M. Thurnherr
-                    uE-Info: 133 0 NIL 0 0 72 0 2 4 NIL ofnI
+                    dlm: Mon May 12 17:44:40 2025
+                    (c) 2024 idealjoker@mailbox.org
+                    uE-Info: 5 51 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
 
 $Error[0x01] = 'ERR_User_break_requested_by_key_press';
