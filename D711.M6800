@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 0 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Fri May  9 11:44:45 2025
+#                    dlm: Sun May 11 10:57:03 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 24 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 27 51 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -23,6 +23,8 @@
 #	May  9, 2025: - BUG: op_EXT data were labeled
 #				  - removed all unused @args arguments
 #				  - BUG: op_IND offset was unsigned
+#	May 11, 2025: - put all warnings on STDERR and removed ;
+#				  - added .DATA mode after warnings
 # HISTORY END
 
 sub op_IMP(@)													# operation with implied addressing
@@ -159,13 +161,13 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 
 	unless (defined(BYTE($addr))) { 												# outside loaded ROM range
 		return unless ($WMS_System == 11);											# okay for Sys 7 and M6800 assembly
-		printf(STDERR "; WARNING: disassembly address %04X outside ROM range\n",$addr)
+		printf(STDERR "WARNING: disassembly address %04X outside ROM range\n",$addr)
 			if ($verbose > 0);
 		$unclean = 1;
 		return;
 	}
 	if ($decoded[$addr] && !defined($OP[$addr])) {								   # not at start of instruction
-		printf("WARNING: disassembly M6800 code at \$%04X within already disassembled instruction code\n" .
+		printf(STDERR "WARNING: disassembly M6800 code at \$%04X within already disassembled instruction code\n" .
 			   "\t[$lbl_root]\n",$addr)
 			if ($verbose > 0);
 		$unclean = 1;
@@ -179,7 +181,7 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 ##		printf("M6800 disassembling opcode %02X at %04X ($LBL[0x6800])\n",BYTE($addr),$addr)
 ##			if ($start_addr == 0x6800);
 		unless (defined(BYTE($addr))) {
-			printf(STDERR "; WARNING: disassembly address %04X outside ROM range\n",$addr)
+			printf(STDERR "WARNING: disassembly address %04X outside ROM range\n",$addr)
 				if ($verbose > 0);
 			$unclean = 1;
 			return;
@@ -498,11 +500,17 @@ sub disassemble_asm_nbytes(@)									# disassemble 6800 CPU code with byte limi
 		next if op_EXT(0xFA,$ind,'ORAB',1); next if op_EXT(0xFB,$ind,'ADDB',1);
 		next if op_EXT(0xFE,$ind,'LDX',2); next if op_EXT(0xFF,$ind,'STX',2);
 	    
-        printf("WARNING: Unknown M6800 opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
+        printf(STDERR "WARNING: Unknown M6800 opcode \$%02X at addr \$%04X\n",BYTE($addr),$addr)
         	if ($verbose > 0);
 		$OP[$addr] = '.DB'; $IND[$addr] = $ind;
 		$OPA[$addr][0] = sprintf('$%02X!',BYTE($addr));
 		$REM[$addr] = 'WARNING: Unknown M6800 opcode';
+
+		push(@{$EXTRA[$addr]},'.DATA_MODE');
+		push(@{$EXTRA_IND[$addr]},$ind);
+        $EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+        $EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
+
 		$decoded[$addr++] = 1;
 		$unclean = 1;
 		return;

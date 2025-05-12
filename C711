@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri May  9 09:53:24 2025
+#                    dlm: Mon May 12 13:34:56 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 351 66 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 355 51 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -349,6 +349,10 @@
 #				  - replaced decAndBranchUnless0 by decAndBranchUnlessZero
 #				  - renamed many alternate Lampgroup ops
 #	May  9, 2025: - BUG: encode_scoreByte() could not handle 25000
+#	May 10, 2025: - renamed two pseudo label alternate names
+#				  - added .DATA_MODE, .M6800_MODE, .M6809_MODE
+#				  - added -f
+#	May 12, 2025: - BUG: data pragmas set mode to 3
 # HISTORY END
 
 # RELEASE NOTES:
@@ -463,15 +467,16 @@ die("Usage: $0 \n\t[system -6/-7 source] [sys11 I-V)M <stage>]" .
 			  "\n\t[-o)utput <file> (s6)] [prepend image with -g)ap of <x> KB of FF bytes (s6)]" .		# linker output control
               "\n\t[ROM -a)ddress range <min hex addr,max hex addr>]".									# compilation/output address range
               "\n\t[ROM output -s <suffix>] [create -e)qual-sized (32K) ROM images (s11)]" .			# ROM image output control
-              "\n\t[suppres -w)arnings] [-v)erbose (show warnings)]" .									# general compilation options
+              "\n\t[suppress -w)arnings] [-v)erbose (show warnings)]" .									# general compilation options
 			  "\n\t[suppress chec-k)sum verification]" .
+			  "\n\t[-f)orce (no mode checking)]" .
 			  "\n\t[alt. output code -L)isting] [-x) alt. output D711 .dasm file]" .					# alternative output options
               "\n\t[-d)ump labels] [dump -J)SR targets] [dump -R)OM before resolving labels]" .			
               "\n\t[-c)hecksum info] [report free -m)emory blocks]" .
               "\n\t[-t)rust_but_verify <ROM_image[,...]> [check already during label -r)esolution]]" .	# ouput checking
               "\n\t[-T)race assembly (debug)] [trace -C)onditional assembly (debug)]" .					# debugging
               "\n\t<asm file>\n")
-    unless &getopts('1267a:cCD:edF:g:i:IJkLl:mO:o:Rrs:Tt:V:vwx') && (@ARGV == 1);
+    unless &getopts('1267a:cCD:edfF:g:i:IJkLl:mO:o:Rrs:Tt:V:vwx') && (@ARGV == 1);
 
 my($dummy,$basename,$ext) = ($ARGV[0] =~ m{([^/]+/)?([^\.]+)\.(.*)}); 
 $basename = 'out' unless defined($basename);
@@ -768,14 +773,16 @@ while (<>) {                                                # assemble source li
     @_ = split;                                             # separate into operator and operands                                    
     next unless (@_ > 0);                                   # empty line => nothing to assemble
 
-	print(STDERR "$.\[$MODE]: @_ (@newly_defined_label)\n")							# trace assembly
+    $MODE = 0 if $opt_f;									# froce compilation
+
+	print(STDERR "$.\[$MODE]: @_ (@newly_defined_label)\n")	# trace compilation
 		if $opt_T;
 
     if ($IF_STACK[$#IF_STACK] >= 0) {                       # currently assembling code
         if ($_[0] =~ m{:$}) {                               # define label
             define_label($`);
             push(@newly_defined_label,$`);
-            set_label_type($MODE) if ($MODE > 0);
+			set_label_type($MODE) if ($MODE > 0);
             shift(@_);
             next if (@_ == 0);                              # label-only line => nothing to assemble
         }
@@ -968,10 +975,13 @@ sub set_label_type($@)
 
 	print(STDERR "\tset_label_type($lt) [@newly_defined_label]\n") if $opt_T;
 	foreach my $l (@newly_defined_label) {
-##		next if ($l eq 'ANALYSIS_GAP');									# XXX
-    	die("attempting to re-define mode-$LBL_TYPE{$l} label <$l> to mode-$lt at input line $.\n")
-			if ($LBL_TYPE{$l}>0 && $LBL_TYPE{$l}!=$lt);
-   		$LBL_TYPE{$l} = $lt;
+		if ($opt_f) {
+	  		$LBL_TYPE{$l} = 0;
+	  	} else {
+	    	die("attempting to re-define mode-$LBL_TYPE{$l} label <$l> to mode-$lt at input line $.\n")
+				if ($LBL_TYPE{$l}>0 && $LBL_TYPE{$l}!=$lt);
+  			$LBL_TYPE{$l} = $lt;
+        }
     }
     undef(@newly_defined_label);
 }
@@ -1135,9 +1145,19 @@ sub labelValue($$)
     $lbl = eval('0b' . $1) if ($lbl =~ m{^%([01]+)$});
     return $lbl if numberp($lbl);
     
-    die("Undefined label <$lbl> (cid $caller_id)\n")
-		unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
-    return $LBL{$lbl};
+	if ($opt_f) {
+		if (numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$}) {
+			return $LBL{$lbl};
+		} elsif ($lbl =~ m{_([0-9A-Fa-f]{4})$}) {
+			return hex($1);
+		} else {
+		    die("Undefined label <$lbl> (cid $caller_id)\n");
+		}
+	} else {
+	    die("Undefined label <$lbl> (cid $caller_id)\n")
+			unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
+	    return $LBL{$lbl};
+	}
 }
 
 
@@ -2013,6 +2033,20 @@ sub assemble_pragma()
         return 1;
     }
 
+    if (($MODE==0 || $MODE==2) && ($OP eq '.M6800_MODE' || $OP eq '.M6809_MODE')) {    
+        die("Syntax: .M6800_MODE|.M680X_MODE (<@_> at input line $.)\n")
+            unless (@OP_ARG == 0);
+        $MODE = 1;
+        return 1;
+    }
+
+    if ($OP eq '.DATA_MODE') {    
+        die("Syntax: .DATA_MODE (<@_> at input line $.)\n")
+            unless (@OP_ARG == 0);
+        $MODE = 0;																			# don't set to mode 3, because after any data mode byte, there can be any mode
+        return 1;
+    }
+
     #------------------------------
     # IVM: Enabling and Disabling
     #------------------------------
@@ -2118,8 +2152,8 @@ sub assemble_pragma()
         return 1;
     }
 
-    if ($OP eq '.IFNDEF') {                                                             # .IFNDEF
-        die("Syntax: .IFNDEF id (<@_> at input line $.)\n")
+    if ($OP eq '.IFNDEF' || $OP eq '.IFUNDEF') {                                        # .IFUNDEF
+        die("Syntax: .IFUNDEF id (<@_> at input line $.)\n")
             unless (@OP_ARG == 1);
         $ALIAS_REFD{$OP_ARG[0]}++;
         if ($IF_STACK[$#IF_STACK] >= 0) {
@@ -2218,7 +2252,7 @@ sub assemble_pragma()
     # Data
     #--------
 
-	if ($MODE == 0) {		
+	if (($MODE == 0) || ($MODE == 3)) {		
 		if ($OP eq '.DB') { 																# .DB (define bytes)
 			die("Syntax: .DB byte-val[...] (<@_> at input line $.)\n")
 				unless (@OP_ARG >= 1);
@@ -3141,10 +3175,10 @@ sub asm_6800_op($$@)
 			$ROM[$ADDR++] = $opc[$i];
 			$OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]						# _EXITLOOP pseudo label
 		        if ($OP_ARG[0] eq '_EXITLOOP' ||
-					$OP_ARG[0] eq '>_EXITLOOP');
+					$OP_ARG[0] eq '>EXITLOOP');
 			$OP_ARG[0] = $LOOP_LBL[$#LOOP_LBL]      									# _NEXTLOOP pseudo label
 			        if ($OP_ARG[0] eq '_NEXTLOOP' ||
-					    $OP_ARG[0] eq '<_LOOP');
+					    $OP_ARG[0] eq '<NEXTLOOP');
 
 			if ($OP_ARG[0] eq '<RTS') {													# lexical labels
 				$OP_ARG[0] = $last_RTS_addr;
@@ -4031,7 +4065,7 @@ sub encode_scoreByte($$)
 {
 	my($str,$err_loc) = @_;
 	my($sm,$sz,$sl) = ($str =~ m{^([1-9]+)(0*)([KM]?)$});
-	die("Invalid score value <$str> at $err_loc\n")
+    print(STDERR "WARNING: Zero score value <$str> at $err_loc\n")
 		unless ($sm > 0);
 	my($exp) = length($sz);
 	$exp += 3 if ($sl eq 'K');

@@ -1,6 +1,6 @@
 {\rtf1\ansi\ansicpg1252\cocoartf2822
 \cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica-Oblique;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fswiss\fcharset0 Helvetica;
-\f3\fnil\fcharset0 Menlo-Regular;}
+\f3\fnil\fcharset0 Menlo-Regular;\f4\fnil\fcharset0 Monaco;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
 {\*\expandedcolortbl;;\csgray\c0;}
 {\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
@@ -32,9 +32,8 @@ The WVM is not a real-time operating system. Threads cannot be interrupted and t
 The WVM supports Pinball game devices \'97 switches, lamps and solenoids \'97 as primitive data types, allowing compile-time type checking and improving readability of the programs. In addition to the two CPU registers A and B, the WVM supports 14 additional registers, also as primitive data types. There are additional types for flags (lamps without bulbs), bit groups (lamp strings and flag groups), adjustments and sounds. Lamps have multiple uses in solid state pinball games: in addition to indicating the state of the game (how many bonus earned, which features enabled, \'85) they are also used for effects (FX). In order to make this \'93easy\'94 each lamp in WVM is controlled by bits in 4 different buffers. In addition to FX this also allows simple coding of grace-periods, for example. \
 \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f1\b \cf0 Thread Ids/Flags\
+\f1\b Thread Ids/Flags\
 \
 
 \f2\b0 Each thread has an id byte, which does not have to be unique. At game start, the system kills all threads except those with an id with bit $08 set. Similarly, the system kills all threads except those with bit $02 set on end-of-ball conditions and all except those with bit $04 set on tilts. On a ball drain, the system does not start end-of-ball processing until all threads with b it $01 set have disappeared. Thread id $06 is used for most temporary threads; these threads are protected from being killed at the end of a ball and on tilts, but they are killed when a new game is started, perhaps interrupting a running game. The lower nibble of the thread id indicates how protected the thread is from being killed by the system:\
@@ -59,8 +58,7 @@ The thread killing operations (system calls in M6800 mode and primary operations
 \f3\fs22 \cf2 \CocoaLigature0 killThreads #$08 Thread#00 
 \f2\fs24 \cf0 \CocoaLigature1 kills all threads with ids with bit $08 (1st argument, which is the mask) equal to zero (second argument, which is the thread id). This is the operation that is executed by the system whenever a new game is started. 
 \f1\b \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\
 \
 CPU Mode Switching\
 \
@@ -69,8 +67,8 @@ CPU Mode Switching\
 \f2\b0 \cf0 {\listtext	\uc0\u8226 	}switch from M6800 to WVM mode with the M6800 macro  
 \f0\i _WVM_MODE\
 {\listtext	\uc0\u8226 	}
-\f2\i0 switch from WVM to M6800 mode with the WVM macro 
-\f0\i _M6800_mode\
+\f2\i0 switch from WVM to M6800 mode with the WVM instruction 
+\f0\i M6800_mode\
 \ls1\ilvl0
 \f2\i0 {\listtext	\uc0\u8226 	}force compiler into WVM mode with the compiler pragma 
 \f0\i .WVM_MODE\
@@ -127,14 +125,16 @@ Flags (Data Type)\
 \ls4\ilvl0\cf0 {\listtext	\uc0\u8226 	}
 \f2\b0 flags are invisible single-bit game-state variables (lamps without bulbs)
 \f1\b \
+\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
 \ls4\ilvl0
-\f2\b0 {\listtext	\uc0\u8226 	}
+\f2\b0 \cf0 {\listtext	\uc0\u8226 	}
 \f3\fs22 Flag#00
 \f2\fs24   to 
 \f3\fs22 Flag#1F
 \f2\fs24 : \'93permanent\'94 flags that keep their value from ball to ball\
+\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
 \ls4\ilvl0
-\f1\b {\listtext	\uc0\u8226 	}
+\f1\b \cf0 {\listtext	\uc0\u8226 	}
 \f3\b0\fs22 Flag#20 
 \f2\fs24 to 
 \f3\fs22 Flag#3F
@@ -181,16 +181,16 @@ Game Adjustments (Data Type)\
 \pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
 \ls7\ilvl0
 \f2\b0 \cf0 {\listtext	\uc0\u8226 	}Adj#00 - Adj#16\
+\pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
 \ls7\ilvl0
-\f1\b {\listtext	\uc0\u8226 	}
+\f1\b \cf0 {\listtext	\uc0\u8226 	}
 \f2\b0 adjustments are defined at label 
 \f3\fs22 \cf2 \CocoaLigature0 game_adjustments_table
 \f1\b\fs24 \cf0 \CocoaLigature1 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 \
 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 Solenoids (Data Type)\
+Solenoids (Data Type)\
 
 \f2\b0 \
 \pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
@@ -214,8 +214,7 @@ Game Adjustments (Data Type)\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f1\b \cf0 \
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 \
+\
 Switches (Data Type)\
 \
 \pard\tx220\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\li720\fi-720\pardirnatural\partightenfactor0
@@ -230,12 +229,22 @@ Switches (Data Type)\
 \ls9\ilvl2\cf0 {\listtext	\uc0\u8259 	}
 \f3\fs22 \cf2 \CocoaLigature0 $08     spawn handler when switch opens \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
-\ls9\ilvl2\CocoaLigature1 {\listtext	\uc0\u8259 	}\CocoaLigature0 $10     spawn handler when switch closes\
-\ls9\ilvl2\CocoaLigature1 {\listtext	\uc0\u8259 	}\CocoaLigature0 $20     ignore switch when _gameOver is true\
-\ls9\ilvl2\CocoaLigature1 {\listtext	\uc0\u8259 	}\CocoaLigature0 $40     ignore switch when _ballTilted or _Ball_has_drained is true \
-\ls9\ilvl2\CocoaLigature1 {\listtext	\uc0\u8259 	}\CocoaLigature0 $80     exclude from switch health monitoring / disable switch(?)\
+\ls9\ilvl2\CocoaLigature1 {\listtext	
+\f4 \uc0\u8259 
+\f3 	}\CocoaLigature0 $10     spawn handler when switch closes\
+\ls9\ilvl2\CocoaLigature1 {\listtext	
+\f4 \uc0\u8259 
+\f3 	}\CocoaLigature0 $20     ignore switch when _gameOver is true\
+\ls9\ilvl2\CocoaLigature1 {\listtext	
+\f4 \uc0\u8259 
+\f3 	}\CocoaLigature0 $40     ignore switch when _ballTilted or _Ball_has_drained is true \
+\ls9\ilvl2\CocoaLigature1 {\listtext	
+\f4 \uc0\u8259 
+\f3 	}\CocoaLigature0 $80     exclude from switch health monitoring / disable switch(?)\
 \pard\tx940\tx1440\tx2160\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\li1440\fi-1440\pardirnatural\partightenfactor0
-\ls9\ilvl1\CocoaLigature1 {\listtext	\uc0\u8259 	}
+\ls9\ilvl1\CocoaLigature1 {\listtext	
+\f4 \uc0\u8259 
+\f3 	}
 \f2\fs24 \cf0 handler pointer (except when flag bits $01, $02 and $04 are all zero)\
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 

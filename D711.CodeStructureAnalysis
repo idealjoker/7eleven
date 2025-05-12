@@ -25,6 +25,9 @@
 #	Apr 25, 2025: - BUG: lexical labels (>RTS) were wrongly assigned on branches
 #						 not to the nearest of the target
 #	May  7, 2025: - BUG: lexical labels did not work correctly for Bad Cats
+#	May 11, 2025: - adapted to new loop lexial labels
+#	May 12, 2025: - BUG: same_block could return true even when there were
+#						 gaps in the code
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -63,7 +66,12 @@ sub same_block($$@)
 	}
 	return 0 unless $good;		
 
-	print(STDERR "yes\nexit from block?\n") if $trace;
+	print(STDERR "yes\nanalysis gap in block?\n") if $trace;	# can happen with disassembler warnings
+	for (my($a)=$la; $a<$ha; $a++) {
+		return 0 unless $decoded[$addr];
+	}
+
+	print(STDERR "no\nexit from block?\n") if $trace;
 	return 0 if exit_from_block($la,$ha,$if_block);
 
 	print(STDERR "no\nbranch into block?\n") if $trace;
@@ -197,8 +205,8 @@ sub exit_from_block($$$)
 					if $trace;
 				return 1;
 			} else {
-				push(@LOOPSTART,$a),next if ($trg == $la);							# <_LOOP
-				push(@EXITLOOP,$a),next if ($trg == $ha+2); 						# >_EXITLOOP
+				push(@LOOPSTART,$a),next if ($trg == $la);							# <NEXTLOOP
+				push(@EXITLOOP,$a),next if ($trg == $ha+2); 						# >EXITLOOP
 				if ($trg<$la || $trg>$ha) {
 					printf(STDERR "\t%04X: $OP[$a] $OPA[$a][0] (%04X,%04X) -- trg = %04X, allowed = %04X (indentation ok)\n",$a,$la,$ha,$trg,$allowed)
 						if $trace;
@@ -220,7 +228,7 @@ sub branch_into_block($$@)
 	while ($la-(--$addr) <= 128) {
 		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^B..$};					# only consider regular (short) branches
 		my($trg) = $OPA[$addr][0];
-		next if isMember($trg,'<_LOOP','>_EXITLOOP');
+		next if isMember($trg,'<NEXTLOOP','>EXITLOOP');
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
 		die("$OP[$addr] $OPA[$addr][0]") unless numberp($trg);
 		next if hex(substr($OPA[$trg][0],1,4)) == $Lbl{exitThread};
@@ -239,7 +247,7 @@ sub branch_into_block($$@)
 		next unless defined($OP[$addr]) && $OP[$addr] =~ m{^B..$};
 		my($trg) = $OPA[$addr][0];
 		$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
-		next if isMember($trg,'<_LOOP','>_EXITLOOP');
+		next if isMember($trg,'<NEXTLOOP','>EXITLOOP');
 		next if $trg =~ m{^[<>]};													# allow lexical branches
 		if ($trg >= $la && $trg <= $ha) {
 			printf(STDERR "\t<%04X> %04X:%04X:%04X $allowed_branch\n",$addr,$la,$trg,$ha)
@@ -279,8 +287,8 @@ sub cs_loop_while($$$$$)
 			}
 			push(@BEGIN_BLOCK,$trg);
 			push(@END_BLOCK,$addr);
-			foreach my $a (@LOOPSTART) { $OPA[$a][0] = '<_LOOP' if defined($OPA[$a][0]); }
-			foreach my $a (@EXITLOOP) { $OPA[$a][0] = '>_EXITLOOP' if defined($OPA[$a][0]); }
+			foreach my $a (@LOOPSTART) { $OPA[$a][0] = '<NEXTLOOP' if defined($OPA[$a][0]); }
+			foreach my $a (@EXITLOOP) { $OPA[$a][0] = '>EXITLOOP' if defined($OPA[$a][0]); }
 			return 1;
 		}
 	}
@@ -320,8 +328,8 @@ sub cs_while_loop($$$$$$)
 					} # indent loop
 					push(@BEGIN_BLOCK,$addr);
 					push(@END_BLOCK,$endloop_trg);
-					foreach my $a (@LOOPSTART) { $OPA[$a][0] = '<_LOOP' if defined($OPA[$a][0]); }
-					foreach my $a (@EXITLOOP) { $OPA[$a][0] = '>_EXITLOOP' if defined($OPA[$a][0]); }
+					foreach my $a (@LOOPSTART) { $OPA[$a][0] = '<NEXTLOOP' if defined($OPA[$a][0]); }
+					foreach my $a (@EXITLOOP) { $OPA[$a][0] = '>EXITLOOP' if defined($OPA[$a][0]); }
 					return 1;
 				 } # found a loop
 			} # found a BRA statement at end of loop body
@@ -485,7 +493,7 @@ sub process_code_structure($$)
 
 	#------------------------------------------------------------
 	# STEP 1: Loops
-	#	- done next to ensure that >_EXITLOOP and <_LOOP branches
+	#	- done next to ensure that >EXITLOOP and <NEXTLOOP branches
 	#	  are defined for if-then-else processing
 	#	- local variables @BEGIN_BLOCK and @END_BLOCK required
 	#------------------------------------------------------------

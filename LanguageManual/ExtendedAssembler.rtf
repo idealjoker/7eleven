@@ -1,0 +1,180 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica-Oblique;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fswiss\fcharset0 Helvetica;
+\f3\fnil\fcharset0 Menlo-Regular;\f4\fnil\fcharset0 Menlo-Bold;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\csgray\c0;}
+\margl1440\margr1440\vieww22980\viewh15700\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\i\fs24 \cf0 This document describes the extended assembler language (M680x_mode) supported by the 7eleven compiler. \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f1\i0\b \cf0 \
+\
+Overview 
+\f2\b0           \
+\
+The extended assembler language of 7eleven is based on a fairly standard Motorola M6800/6809 assembler, extended with control structures (if-then-else, loops), \'93macro\'94 instructions, as well as pinball-specific data types. \
+\
+\
+
+\f1\b Notation
+\f2\b0 \
+\
+In order to distinguish the assembler language from the virtual machine byte code, all assembler constructs use capital letters. This includes assembler instructions (such as LDAA), macro instructions (such as _SLEEP) and control structures (such as _LOOP). The latter two are marked with an underscore prefix to indicate that those are not simple assembler instructions, but either macro instructions or control structures. The assembler notation is mostly standard Motorola, i.e. DECA (not DEC A), CMPA -3,X, etc. \
+\
+The 7eleven disassembler uses the following RAM label prefix convention:\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f3\fs22 \cf2 \CocoaLigature0 	_IRQ_tics_counter			single byte variable
+\f2\fs24 \cf0 \CocoaLigature1 \
+
+\f3\fs22 \cf2 \CocoaLigature0 	__threads_running_ptr			two-byte (16-bit) variable\
+	=Lamps						multi-byte buffer\
+	.AD26_multipleEB				nibble-RAM variable (System 6 & 7 only; upper nibble always F)\
+
+\f2\fs24 \cf0 \CocoaLigature1 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+
+\f1\b \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 Label Arithmetic\
+\
+
+\f2\b0 Only a very restrictive set of label arithmetic expressions is supported: 
+\f3\fs22 \cf2 \CocoaLigature0 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\
+	=Lamps+3						constant offset\
+	=FX_table-4					constant offset\
+	_gameStatusFlags|$40			use mask to set bits\
+	_gameStatusFlags&$FF			use mask to clear bits\
+	(=table_label&$FF)+2			mask with constant offset\
+	=table_label>>8				shift right\
+	=table_label<<8				shift left
+\f1\b\fs24 \cf0 \CocoaLigature1 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+
+\f2\b0 Importantly, there is no whitespace allowed in any of these expressions. Additional label arithmetic is implemented as interpreted types. Most relevantly,\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f3\fs22 \cf2 \CocoaLigature0 	=table_label(MSB\}			most significant byte (upper byte of label address)\
+	=table_label\{LSB\}			least significant byte (lower byte of label address)
+\f1\b\fs24 \cf0 \CocoaLigature1 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+\
+Pseudo Labels for Branch Operations
+\f2\b0 \
+\
+There is a number of labels that are locally defined (i.e. not unique) that can be used in branch instructions.\
+\
+	>RTS				next RTS instruction in code\
+	<RTS				previous RTS instruction in code\
+\
+	_EXITLOOP			first instruction outside this loop\
+	>EXITLOOP			same\
+\
+	_NEXTLOOP		first instruction inside this loop\
+	<NEXTOOP			same\
+\
+\
+
+\f1\b Macro Instructions
+\f2\b0 \
+\
+7eleven implements a set of macro instructions, which are instructions that are not standard Motorola CPU instructions:\
+\
+	_SLEEP #<duration>	suspend thread for a minimum of <duration> tics\
+	_WVM_MODE		enter Williams Virtual Machine mode (System 7 - 11)\
+	_EXIT_THREAD		end running thread (commit suicide)\
+\
+	_SETFLAG[A] <flag>	set flag without system call; clobbers A\
+	_SETFLAG[B] <flag>	set flag without system call; clobbers B\
+\
+	_CLEARFLAG[A] <flag>	clear flag without system call; clobbers A\
+	_CLEARFLAG[B] <flag>	clear flag without system call; clobbers B\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 	_TESTFLAG[A] <flag>	test flag without system call, set EQ flag; clobbers A\
+	_TESTFLAG[B] <flag>	test flag without system call; set EQ flag; clobbers B\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+	_LAMPON[A] <lamp>	turn on lamp without system call; clobbers A\
+	_LAMPOFF[A] <lamp>	turn off lamp without system call; clobbers A\
+\
+\
+
+\f1\b Control Structures
+\f2\b0 \
+\
+- IF-THEN-ELSE\
+	- syntax:\
+		_IF_xx\
+			<assembly instructions>\
+		_ELSE\
+			<assembly instructions>\
+		_ENDIF\
+	- xx conditions and corresponding branch operations:\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f3\fs22 \cf2 \CocoaLigature0 			_IF_EQ  BNE    \
+			_IF_NE  BEQ    \
+			_IF_GE  BLT    \
+			_IF_LE  BGT    \
+			_IF_GT  BLE    \
+			_IF_LT  BGE    \
+			_IF_LS  BHI    \
+			_IF_HI  BLS    \
+			_IF_CS  BCC    \
+			_IF_CC  BCS    \
+			_IF_VS  BVC    \
+			_IF_VC  BVS    \
+			_IF_MI  BPL    \
+			_IF_PL  BMI    \
+\
+- LOOP-ENDLOOP\
+	- syntax\
+		_LOOP\
+			<assembly instructions>\
+		_ENDLOOP\
+	- use pseudo labels to exit loop \
+	- use _ENDLOOOP for long loops\
+\
+\
+- LOOP-WHILE\
+	- syntax\
+		_LOOP\
+			<assembly instructions>\
+		_WHILE_xx\
+	- xx conditions as in if-then-else\
+\
+- UNTIL-ENDLOOP\
+	- syntax\
+		_UNTIL_xx\
+			<assembly instructions>\
+		_ENDLOOP\
+	- xx conditions as in if-then-else\
+\
+
+\f4\b \
+
+\f1\fs24 Pinball Data Types\
+
+\f3\b0\fs22 \
+
+\f2\fs24 The pinball data types described in [DataModel.rtf] can be used wherever a number is expected, e.g. LDAA #Lamp#01, where the first \'91#\'92 character indicates immediate addressing mode and the second is part of the lamp identifier. 
+\f3\fs22 \
+\
+			\
+	\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f2\fs24 \cf0 \CocoaLigature1 		\
+		}
