@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun May 11 11:10:16 2025
+#                    dlm: Mon May 12 13:34:56 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1150 21 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 355 51 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -352,6 +352,7 @@
 #	May 10, 2025: - renamed two pseudo label alternate names
 #				  - added .DATA_MODE, .M6800_MODE, .M6809_MODE
 #				  - added -f
+#	May 12, 2025: - BUG: data pragmas set mode to 3
 # HISTORY END
 
 # RELEASE NOTES:
@@ -772,7 +773,7 @@ while (<>) {                                                # assemble source li
     @_ = split;                                             # separate into operator and operands                                    
     next unless (@_ > 0);                                   # empty line => nothing to assemble
 
-    $MODE = 0 if $opt_f;									# froce compilationl
+    $MODE = 0 if $opt_f;									# froce compilation
 
 	print(STDERR "$.\[$MODE]: @_ (@newly_defined_label)\n")	# trace compilation
 		if $opt_T;
@@ -781,7 +782,7 @@ while (<>) {                                                # assemble source li
         if ($_[0] =~ m{:$}) {                               # define label
             define_label($`);
             push(@newly_defined_label,$`);
-            set_label_type($MODE) if ($MODE > 0);
+			set_label_type($MODE) if ($MODE > 0);
             shift(@_);
             next if (@_ == 0);                              # label-only line => nothing to assemble
         }
@@ -2042,7 +2043,7 @@ sub assemble_pragma()
     if ($OP eq '.DATA_MODE') {    
         die("Syntax: .DATA_MODE (<@_> at input line $.)\n")
             unless (@OP_ARG == 0);
-        $MODE = 3;
+        $MODE = 0;																			# don't set to mode 3, because after any data mode byte, there can be any mode
         return 1;
     }
 

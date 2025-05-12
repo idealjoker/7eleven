@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Sun May 11 09:36:14 2025
+#                    dlm: Mon May 12 13:35:53 2025
 #                    (c) 2024 A.M. Thurnherr
-#                    uE-Info: 489 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 30 41 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -26,6 +26,8 @@
 #						 not to the nearest of the target
 #	May  7, 2025: - BUG: lexical labels did not work correctly for Bad Cats
 #	May 11, 2025: - adapted to new loop lexial labels
+#	May 12, 2025: - BUG: same_block could return true even when there were
+#						 gaps in the code
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -64,7 +66,12 @@ sub same_block($$@)
 	}
 	return 0 unless $good;		
 
-	print(STDERR "yes\nexit from block?\n") if $trace;
+	print(STDERR "yes\nanalysis gap in block?\n") if $trace;	# can happen with disassembler warnings
+	for (my($a)=$la; $a<$ha; $a++) {
+		return 0 unless $decoded[$addr];
+	}
+
+	print(STDERR "no\nexit from block?\n") if $trace;
 	return 0 if exit_from_block($la,$ha,$if_block);
 
 	print(STDERR "no\nbranch into block?\n") if $trace;
