@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Tue May 13 13:43:43 2025
+#                    dlm: Tue May 13 15:53:02 2025
 #                    (c) idealjoker@mailbox.org
-#                    uE-Info: 31 72 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 32 54 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -29,6 +29,7 @@
 #	May 12, 2025: - BUG: same_block could return true even when there were
 #						 gaps in the code
 #	May 13, 2025: - BUG: optimizable jump to lexical labels was produced
+#				  - BUG: gap check used wrong variable
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -69,7 +70,7 @@ sub same_block($$@)
 
 	print(STDERR "yes\nanalysis gap in block?\n") if $trace;	# can happen with disassembler warnings
 	for (my($a)=$la; $a<$ha; $a++) {
-		return 0 unless $decoded[$addr];
+		return 0 unless $decoded[$a];
 	}
 
 	print(STDERR "no\nexit from block?\n") if $trace;
