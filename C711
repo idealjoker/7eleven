@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon May 12 13:34:56 2025
+#                    dlm: Tue May 13 14:40:06 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 355 51 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 357 41 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -353,6 +353,8 @@
 #				  - added .DATA_MODE, .M6800_MODE, .M6809_MODE
 #				  - added -f
 #	May 12, 2025: - BUG: data pragmas set mode to 3
+#	May 13: 2025: - added better error message for lexical labels erroneously used
+#				    with JMP instructions
 # HISTORY END
 
 # RELEASE NOTES:
@@ -3157,6 +3159,9 @@ sub asm_6800_op($$@)
 			return 1;
 		}
 		if ($am eq 'O') {																# potentially optimizable 2-byte absolute address
+			die("No lexical label allowed for $OP instruction at input line $.\n")
+				if ($OP_ARG[0] =~ m{^[<>]});
+			                    
 			$JSR_TRG{$OP_ARG[0]}++ if ($OP eq 'JSR');			
 			$ROM[$ADDR++] = $opc[$i];
 			$ROM[$ADDR++] = ($EXEC6800_BLOCK_ID > 0)									# don't optimize inside begin6800/end6800

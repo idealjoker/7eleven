@@ -1,9 +1,9 @@
 #======================================================================
-#                    . / D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
+#                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Mon May 12 17:45:09 2025
+#                    dlm: Tue May 13 13:43:43 2025
 #                    (c) idealjoker@mailbox.org
-#                    uE-Info: 5 47 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 31 72 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -28,6 +28,7 @@
 #	May 11, 2025: - adapted to new loop lexial labels
 #	May 12, 2025: - BUG: same_block could return true even when there were
 #						 gaps in the code
+#	May 13, 2025: - BUG: optimizable jump to lexical labels was produced
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -426,7 +427,8 @@ sub process_code_structure($$)
 		$RTSa=$addr,next if ($OP[$addr] eq 'RTS');
 		next unless defined($RTSa);											# do not continue unless there is an address
 		next if ($OP[$addr] =~ m{L?BSR}) ||									# skip non-branch/jump operations
-					!($OP[$addr] =~ m{L?B..$} || $OP[$addr] eq 'JMP');
+					!($OP[$addr] =~ m{L?B..$});
+##					!($OP[$addr] =~ m{L?B..$} || $OP[$addr] eq 'JMP');
 
 		my($trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});	# skip branch ops that do not target closest RTS
 		$trg = hex($trg);
@@ -443,13 +445,14 @@ sub process_code_structure($$)
 		$LEX_LABEL[$trg] = '>RTS';											# otherwise, we have a valid lexical label
 		$nLex++;
 	}
-	for (my($addr)=$eaddr; $addr>=$saddr; $addr--) {						# >!exitThread
+	for (my($addr)=$eaddr; $addr>=$saddr; $addr--) {						# >!exitThread (LEXICAL BRANCH)
 		next unless defined($OP[$addr]);									# skip addresses w/o operations
 
 		$ETa=$addr,next if ($OP[$addr] eq '!') && hex(substr($OPA[$addr][0],1,4)) == $Lbl{exitThread};
 		next unless defined($ETa);											# do not continue unless there is an address
 		next if ($OP[$addr] =~ m{L?BSR}) ||									# skip non-branch/jump operations
-					!($OP[$addr] =~ m{L?B..$} || $OP[$addr] eq 'JMP');
+					!($OP[$addr] =~ m{L?B..$});
+##					!($OP[$addr] =~ m{L?B..$} || $OP[$addr] eq 'JMP');
 
 		my($trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});	# skip branch ops that do not target an !exitThread
 		$trg = hex($trg);
@@ -601,7 +604,8 @@ sub process_code_structure($$)
 	#------------------------------------------------------------
 
 	for (my($addr)=$saddr; $addr<=$eaddr; $addr++) {
-		next unless (($OP[$addr] eq 'JMP' || $OP[$addr] =~ m{^L?B..$}) && !($OP[$addr] =~ m{^L?BSR$}));
+##		next unless (($OP[$addr] eq 'JMP' || $OP[$addr] =~ m{^L?B..$}) && !($OP[$addr] =~ m{^L?BSR$}));
+		next unless ($OP[$addr] =~ m{^L?B..$}) && !($OP[$addr] =~ m{^L?BSR$});
 		my($trg) = ($OPA[$addr][0] =~ m{\$([0-9A-Fa-f]+)$});	
 		$trg = hex($trg);
 		die unless numberp($trg);
