@@ -1,9 +1,9 @@
 <!---======================================================================
-                    R E A D M E . S U P P O R T E D _ G A M E S . M D 
+                    N O T E S / R E A D M E . S U P P O R T E D _ G A M E S . M D 
                     doc: Wed May 14 08:47:17 2025
-                    dlm: Wed May 14 08:47:33 2025
-                    (c) 2025 A.M. Thurnherr
-                    uE-Info: 7 73 NIL 0 0 72 3 2 4 NIL ofnI
+                    dlm: Wed May 14 08:52:29 2025
+                    (c) 2025 idealjoker@mailbox.org
+                    uE-Info: 5 51 NIL 0 0 72 3 2 4 NIL ofnI
 ======================================================================--->
 
 # Current Game Support
@@ -22,14 +22,14 @@ games, with no or very few analysis gaps.
 ### Game Notes
 
 - Firepower
-	- Sys 6
+	- System 6
 	- C711 requires '-a 6000,6FFF -o <output file>' because of the
 	  larger game ROM size of this game
 - Algar
-	- Sys 6A
+	- System 6A
 	- disassemble_s6 requires -A option
 - Alien Poker
-	- Sys 6A
+	- System 6A
 	- disassemble_s6 requires -A option
 
 
@@ -66,7 +66,7 @@ System 11, 11A, 11B and 11C games are supported. Some games use game
 library routines that either change the execution mode or use inline
 arguments. Current support for these routines is incomplete with only
 routines that change the mode to WVM supported. Routines that change
-the mode to assembly can easily be added. Furthermore, the sycall
+the mode to assembly can easily be added. Furthermore, the syscall
 mechanism from WPC can be ported to Sys 11 to deal with inline
 arguments. 
 
@@ -78,12 +78,12 @@ for Threads
 
 - thread scanning requires the location of some syscalls known for
 Pinbot and Bad Cats provided by Pinsider for Radical! (both stock and
-prototype code) is not the same for RollerGames (?)
+prototype code) is not the same for Rollergames (?)
 
 	- need to figure out how fixed routines are
 	
 	- Radical! has additional WVM-entry routine with 4
-	  bytes of in-line arguments; RollerGames has multiple
+	  bytes of in-line arguments; Rollergames has multiple
 	  routines with inline arguments
 
 	- WPC syscall mechanism should be generalized
@@ -110,3 +110,16 @@ prototype code) is not the same for RollerGames (?)
 	- C711 with -f bombs, likely because of confusion related to WARNINGs
 	- (at least some) WARNINGs related routines have inline arguments
 
+
+## WPC
+
+WPC support is under development.
+
+### Compiler
+
+There is no compiler support for WPC yet.
+
+### Disassembler
+
+WPC support is under development. There is a disassemble_WPC script that
+may work. Best supported game is Terminator 2 (WPC DMD). 
