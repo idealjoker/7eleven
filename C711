@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Tue May 13 14:40:06 2025
+#                    dlm: Wed May 14 09:40:48 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 357 41 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 358 36 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -353,8 +353,9 @@
 #				  - added .DATA_MODE, .M6800_MODE, .M6809_MODE
 #				  - added -f
 #	May 12, 2025: - BUG: data pragmas set mode to 3
-#	May 13: 2025: - added better error message for lexical labels erroneously used
+#	May 13, 2025: - added better error message for lexical labels erroneously used
 #				    with JMP instructions
+#	May 14, 2025: - added implicit .DECLARE to .ASSUME_UNDEFINED 
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2185,6 +2186,7 @@ sub assemble_pragma()
 		for my $sym (@OP_ARG) {
 			die("Defined alias <$sym> assumed undefined at input line $.\n")
 				if defined($ALIAS{$sym});
+			$ALIAS_REFD{$sym} = -99;
 		}
 		return 1;
 	}
