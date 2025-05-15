@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 7 
 #					 doc: Mon May 27 21:21:01 2024
-#					 dlm: Sat Aug 10 11:02:20 2024
+#					 dlm: Thu May 15 13:46:54 2025
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 14 42 NIL 0 0 72 0 2 4 NIL ofnI
+#					 uE-Info: 53 0 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 7 Game Disassembly Instructions
@@ -12,6 +12,8 @@
 # HISTORY:
 #	May 27, 2024: - created from [disassemble_s6]
 #	Aug 10, 2024: - removed support for -h
+#	May 15, 2025: - moved -i after loadROM() to allow disassembly instructions
+# HISTORY END
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 use D711 (7);		
@@ -35,13 +37,6 @@ $D711::print_addrs	= !$opt_a;												# -a) suppress hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
 $D711::fill_gaps	= !$opt_g;
 
-if (defined($opt_i)) {														# include files with perl code
-	my(@linc) = split(',',$opt_i);
-	while (@linc) {
-		require shift(@linc);
-	}	
-}
-
 #----------------------------------------------------------------------
 # Load ROM Images
 #----------------------------------------------------------------------
@@ -54,6 +49,19 @@ if (-f $ARGV[0]) {
 	&D711::load_ROM("$ARGV[0]_U14.bin",0x6000); 									
 }
 printf(STDERR "[Address range = %04X-%04X]\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR);
+
+
+#----------------------------------------------------------------------
+# Load User-Supplied Information
+#	- must be done after ROM loading to allow disassebly instructions
+#----------------------------------------------------------------------
+
+if (defined($opt_i)) {														# include files with perl code
+	my(@linc) = split(',',$opt_i);
+	while (@linc) {
+		require shift(@linc);
+	}	
+}
 
 #----------------------------------------------------------------------
 # Code Disassembly

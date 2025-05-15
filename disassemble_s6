@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Tue May 13 15:55:24 2025
+#					 dlm: Thu May 15 13:46:24 2025
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 28 13 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 29 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -25,6 +25,7 @@
 #	May  7, 2025: - BUG: produce_output() needed addresses
 #	May  9. 2025: - changed defLamp() to conform to manual
 # 	May 13, 2025: - re-enabled old defLamp() for consistency with Pinside thread
+#	May 15, 2025: - moved -i after loadROM() to allow disassembly instructions
 # HISTORY END
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
@@ -49,13 +50,6 @@ $D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
 $D711::fill_gaps	= !$opt_g;
 
-if (defined($opt_i)) {														# include files with perl code
-	my(@linc) = split(',',$opt_i);
-	while (@linc) {
-		require './' . shift(@linc);
-	}	
-}
-
 #----------------------------------------------------------------------
 # Load ROM Image
 #----------------------------------------------------------------------
@@ -67,6 +61,18 @@ elsif (-f "$ARGV[0].bin") { &D711::load_ROM("$ARGV[0].bin",$start_addr); }
 else 					  { &D711::load_ROM("$ARGV[0]_U14.bin",$start_addr); }
 
 printf(STDERR "[Address range = %04X-%04X]\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR);
+
+#----------------------------------------------------------------------
+# Load User-Supplied Information
+#	- must be done after ROM loading to allow disassebly instructions
+#----------------------------------------------------------------------
+
+if (defined($opt_i)) {														# include files with perl code
+	my(@linc) = split(',',$opt_i);
+	while (@linc) {
+		require './' . shift(@linc);
+	}	
+}
 
 #----------------------------------------------------------------------
 # Code Disassembly
