@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed May 14 09:40:48 2025
+#                    dlm: Thu May 15 17:43:28 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 358 36 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 360 68 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -355,7 +355,9 @@
 #	May 12, 2025: - BUG: data pragmas set mode to 3
 #	May 13, 2025: - added better error message for lexical labels erroneously used
 #				    with JMP instructions
-#	May 14, 2025: - added implicit .DECLARE to .ASSUME_UNDEFINED 
+#	May 14, 2025: - added implicit .DECLARE to .ASSUME_UNDEFINED
+#	May 15: 2025: - BUG: page locking was checked during phase 1
+#				  - BUG: page locking considered 1 byte beyond block
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2091,6 +2093,7 @@ sub assemble_pragma()
     if ($OP eq '.LOCK_ROM_PAGE') {                                              
         die("Syntax: .LOCK_ROM_PAGE (<@_> at input line $.)\n")
             unless (@OP_ARG == 0);
+##        printf(STDERR "page locked at %04X\n",$ADDR) unless $opt_1;
 		$locked_page = ($ADDR >> 8);
         return 1;
     }
@@ -2099,9 +2102,12 @@ sub assemble_pragma()
         die("Syntax: .UNLOCK_ROM_PAGE (<@_> at input line $.)\n")
             unless (@OP_ARG == 0);
 		die("unexpected .UNLOCK_ROM_PAGE at input line $.\n")
-			unless defined($locked_page);            
-		die("page-lock violation at input line $.\n")
-			unless $locked_page == ($ADDR >> 8);
+			unless defined($locked_page);
+		unless ($opt_1) {			
+##	        printf(STDERR "page unlocked at %04X\n",$ADDR-1);
+			die(sprintf("page-lock violation (%02X -> %04X) at input line $.\n",$locked_page,$ADDR-1))
+				unless $locked_page == (($ADDR-1) >> 8);
+		}
 		undef($locked_page);
         return 1;
     }
