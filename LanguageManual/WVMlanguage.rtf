@@ -1,4 +1,4 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2822
+{\rtf1\ansi\ansicpg1252\cocoartf2639
 \cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica-Oblique;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fswiss\fcharset0 Helvetica;
 \f3\fnil\fcharset0 Menlo-Regular;\f4\fnil\fcharset0 Menlo-Bold;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
@@ -27,10 +27,11 @@ In order to distinguish the WVM from the assembler code the WVM language uses mi
 Pseudo Labels for Branch Operations
 \f2\b0 \
 \
-There is a number of labels that are locally defined (i.e. not unique) that can be used in branch instructions.\
+The following labels are locally defined (i.e. not unique) and can be used in branch instructions.\
 \
 	_ExitLoop			first instruction outside this loop\
 	_NextLoop			first instruction inside this loop\
+	>!exitThread			next IVM single-shot exitThread\
 \
 \
 
@@ -49,8 +50,7 @@ There is a number of labels that are locally defined (i.e. not unique) that can 
 \f2\fs24 \
 \
 - UNLESS-ELSE-ENDULESS\
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-\cf0 	- syntax:\
+	- syntax:\
 
 \f3\fs22 		_Unless <WVM conditional expression>\
 			<WVM instructions>\
@@ -79,7 +79,6 @@ There is a number of labels that are locally defined (i.e. not unique) that can 
 			<WVM instructions>\
 		_While <WVM conditional expression>\
 	\
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f2\fs24 - LOOP-UNTIL\
 	- syntax
@@ -88,9 +87,7 @@ There is a number of labels that are locally defined (i.e. not unique) that can 
 			<WVM instructions>\
 		_Until <WVM conditional expression>
 \f2\fs24 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 - LOOP-NEXT\
 	- syntax
 \f3\fs22 \
@@ -98,22 +95,22 @@ There is a number of labels that are locally defined (i.e. not unique) that can 
 			<WVM instructions>\
 		_Next <Reg-X>
 \f2\fs24 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 	- decrement register and loop while not zero\
 \
  
 \f3\fs22 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f4\b \
 
 \f1\fs24 WVM Conditional Expressions\
 \
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f2\b0 WVM conditional expressions are byte streams of arbitrary length that evaluate to true or false. 
 \f1\b \
 \
 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 Pinball Data Types\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 

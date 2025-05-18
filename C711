@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu May 15 17:43:28 2025
+#                    dlm: Sat May 17 09:43:39 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 360 68 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1119 108 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -1116,7 +1116,7 @@ sub define_label($@)
     die("ERROR: undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
         unless defined($addr);
 
-    my($lofs) = ($addr =~ m{^\.\+(\d+)$}); 												# handle .+1
+    my($lofs) = ($addr =~ m{^\.\+(\d+)$}); 												# handle .+1 '.' dot
     $addr = $last_label_addr + $lofs if defined($lofs);
         
     die("ERROR: Unmatched END on line $.\n") unless (length($lbl) > 0);
