@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat May 17 09:43:39 2025
+#                    dlm: Mon May 19 08:24:19 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1119 108 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 361 46 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -358,6 +358,7 @@
 #	May 14, 2025: - added implicit .DECLARE to .ASSUME_UNDEFINED
 #	May 15: 2025: - BUG: page locking was checked during phase 1
 #				  - BUG: page locking considered 1 byte beyond block
+#	May 19, 2025: - BUG: .IFUNDEF did not work
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1564,6 +1565,7 @@ sub expand_aliases()
 		next if ($i == 1 && match_pragma($_[0],'.DECL','ARE'));
 		next if match_pragma($_[0],'.IFDEF','');
 		next if match_pragma($_[0],'.IFNDEF','');
+		next if match_pragma($_[0],'.IFUNDEF','');
 		next if match_pragma($_[0],'.ASSUME_DEFINED','');
 		next if match_pragma($_[0],'.ASSUME_UNDEFINED','');
 		while (1) {
