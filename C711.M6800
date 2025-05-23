@@ -1,0 +1,827 @@
+#======================================================================
+#                    C 7 1 1 . M 6 8 0 0 
+#                    doc: Wed May 21 21:53:39 2025
+#                    dlm: Fri May 23 10:03:51 2025
+#                    (c) 2025 A.M. Thurnherr
+#                    uE-Info: 667 2 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	May 21, 2025: - exported from [C711]
+#	May 22, 2025: - BUG: wvm compilation routines called with Sys 6
+#				  - started adapting to use stric vars
+
+use strict vars;
+
+our($OP,@OP_ARG,$MODE,%JSR_TRG,@ROM,$ADDR,%LBL,@IF_CONT_LBL,@LOOP_LBL,@LOOP_DONE_LBL,
+	$opt_V,$EXEC6800_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
+	@newly_defined_label,$WMS_System,$IVM_DISABLED);
+
+my($last_RTS_addr,@forward_lexical_RTS_branch);
+
+#======================================================================
+# Macros
+#======================================================================
+
+sub asm_6800_macros()																			# _SLEEP, _WVM_MODE, ...
+{
+	if ($MODE==0 || $MODE==1) {
+		if ($OP eq '_SLEEP') {
+			die("Syntax: _SLEEP #time at input line $.\n")
+				unless (@OP_ARG == 1 && $OP_ARG[0] =~ m{^#});
+			die("invalid _SLEEP time ($') at input line $.\n")
+				unless numberp($') && $'>=0 && $'<=255; 
+			set_label_type(1);
+			$JSR_TRG{WVM_sleepI}++; 	    
+			$ROM[$ADDR++] = 0xBD;																# JSR WVM_sleepI
+			$ROM[$ADDR++] = 'WVM_sleepI';
+			$ROM[$ADDR++] = '16-BIT VALUE';
+			$ROM[$ADDR++] = $'; 																# .DB xx
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_WVM_MODE') {
+			die("_WVM_MODE requires 0 arguments at input line $.\n")
+				unless (@OP_ARG == 0);
+			set_label_type(1);
+			$JSR_TRG{WVM_start}++;		    
+			$ROM[$ADDR++] = 0xBD;																# JSR WVM_start
+			$ROM[$ADDR++] = 'WVM_start';
+			$ROM[$ADDR++] = '16-BIT VALUE';
+			$MODE=2,return 1;
+		}
+	
+		if ($OP eq '_EXIT_THREAD') {
+			die("_EXIT_THREAD does not accept any arguments at input line $.\n")
+				unless (@OP_ARG == 0);
+			set_label_type(1);
+			$ROM[$ADDR++] = 0x7E;																# JMP WVM_exitThread
+			$ROM[$ADDR++] = 'WVM_exitThread';
+			$ROM[$ADDR++] = '16-BIT VALUE';
+			$MODE=0,return 1;
+		}
+	
+		if ($OP eq '_PSHX') {
+			die("_PSHX does not accept any arguments at input line $.\n")
+				unless (@OP_ARG == 0);
+			set_label_type(1);
+			$JSR_TRG{WVM_cpX2stack}++;		    
+			$ROM[$ADDR++] = 0x34;																# DES
+			$ROM[$ADDR++] = 0x34;																# DES
+			$ROM[$ADDR++] = 0xBD;																# JSR WVM_cpX2stack
+			$ROM[$ADDR++] = 'WVM_cpX2stack'; $ROM[$ADDR++] = '16-BIT VALUE';
+			$MODE=1,return 1;
+		}
+	    
+		if ($OP eq '_PULX') {
+			die("_PULX does not accept any arguments at input line $.\n")
+				unless (@OP_ARG == 0);
+			set_label_type(1);
+			$ROM[$ADDR++] = 0x30;																# TSX
+			$ROM[$ADDR++] = 0xEE; $ROM[$ADDR++] = 0;											# LDX 0,X
+			$ROM[$ADDR++] = 0x31;																# INS
+			$ROM[$ADDR++] = 0x31;																# INS
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_AAX') {
+			die("_AAX does not accept any arguments at input line $.\n")
+				unless (@OP_ARG == 0);
+			set_label_type(1);
+			$JSR_TRG{'X=X+A'}++;		    
+			$ROM[$ADDR++] = 0xBD;																# JSR X=X+A
+			$ROM[$ADDR++] = 'X=X+A';
+			$ROM[$ADDR++] = '16-BIT VALUE';
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_ABX') {
+			die("_ABX does not accept any arguments at input line $.\n")
+				unless (@OP_ARG == 0);
+			set_label_type(1);
+			$JSR_TRG{'X=X+B'}++;		    
+			$ROM[$ADDR++] = 0xBD;																# JSR X=X+B
+			$ROM[$ADDR++] = 'X=X+B';
+			$ROM[$ADDR++] = '16-BIT VALUE';
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_BOOT_JSR') {
+			die("_BOOT_JSR requires 1 argument at input line $.\n")
+				unless (@OP_ARG == 1);
+			set_label_type(1);
+			$ROM[$ADDR+0] = 0x8E;																# LDS
+			$ROM[$ADDR+1] = (($ADDR+5)&0xFF00) >> 8;
+			$ROM[$ADDR+2] = (($ADDR+5)&0xFF);
+			$ROM[$ADDR+3] = 0x7E;																# JMP
+			$ROM[$ADDR+4] = $OP_ARG[0]; $ROM[$ADDR+5] = '16-BIT VALUE';
+			$ADDR += 6;
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_SETFLAG[A]') {
+			die("Syntax: _SETFLAG[A] <byte> at input line $.\n")
+				unless (@OP_ARG==1);
+			set_label_type(1);
+	
+			my($argval);																	# determine numeric argument value if possible in order
+			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
+				$argval = $OP_ARG[0];
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
+				$argval = hex($1);
+			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+				$argval = hex($1);
+			} elsif (numberp($LBL{$OP_ARG[0]})) {
+				$argval = $LBL{$OP_ARG[0]};
+			} else {
+				$argval = eval_label($OP_ARG[0],undef,1);									# returns undef if not a numerical result; no errors on undefined labels
+			}
+			die("_SETFLAG[A]: cannot determine value of argument <$OP_ARG[0]>\n")
+				unless numberp($argval);
+			die("_SETFLAG[A]: value of argument <$OP_ARG[0]> is out of range\n")
+				unless ($argval>=0 && $argval<=0x3F);
+	
+			my($byte_offset) = int($argval/8);
+			my($bit_number) = $argval % 8;
+			my($bit_mask) = 1 << $bit_number;
+			    
+			$ROM[$ADDR++] = 0x96;															# LDAA <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Flags'} + $byte_offset;
+			$ROM[$ADDR++] = 0x8A;															# ORAA <bit mask>
+			$ROM[$ADDR++] = $bit_mask;
+			$ROM[$ADDR++] = 0x97;															# STAA <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Flags'} + $byte_offset;
+	
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_SETFLAG[B]') {
+			die("Syntax: _SETFLAG[B] <byte> at input line $.\n")
+				unless (@OP_ARG==1);
+			set_label_type(1);
+	
+			my($argval);																	# determine numeric argument value if possible in order
+			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
+				$argval = $OP_ARG[0];
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
+				$argval = hex($1);
+			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+				$argval = hex($1);
+			} elsif (numberp($LBL{$OP_ARG[0]})) {
+				$argval = $LBL{$OP_ARG[0]};
+			} else {
+				$argval = eval_label($OP_ARG[0],undef,1);									# returns undef if not a numerical result; no errors on undefined labels
+			}
+			die("_SETFLAG[B]: cannot determine value of argument <$OP_ARG[0]>\n")
+				unless numberp($argval);
+			die("_SETFLAG[B]: value of argument <$OP_ARG[0]> is out of range\n")
+				unless ($argval>=0 && $argval<=0x3F);
+	
+			my($byte_offset) = int($argval/8);
+			my($bit_number) = $argval % 8;
+			my($bit_mask) = 1 << $bit_number;
+			    
+			$ROM[$ADDR++] = 0xD6;															# LDAB <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Flags'} + $byte_offset;
+			$ROM[$ADDR++] = 0xCA;															# ORAB <bit mask>
+			$ROM[$ADDR++] = $bit_mask;
+			$ROM[$ADDR++] = 0xD7;															# STAB <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Flags'} + $byte_offset;
+	
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_LAMPON[A]') {
+			die("Syntax: _LAMPON[A] <byte> at input line $.\n")
+				unless (@OP_ARG==1);
+			set_label_type(1);
+	
+			my($argval);																	# determine numeric argument value if possible in order
+			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
+				$argval = $OP_ARG[0];
+			} elsif ($OP_ARG[0] =~ m{^Lamp#([0-9A-Fa-f]{2})$}) {
+				$argval = hex($1);
+			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+				$argval = hex($1);
+			} elsif (numberp($LBL{$OP_ARG[0]})) {
+				$argval = $LBL{$OP_ARG[0]};
+			} else {
+				$argval = eval_label($OP_ARG[0],undef,1);									# returns undef if not a numerical result; no errors on undefined labels
+			}
+			die("_LAMPON[A]: cannot determine value of argument <$OP_ARG[0]>\n")
+				unless numberp($argval);
+			die("_LAMPON[A]: value of argument <$OP_ARG[0]> is out of range\n")
+				unless ($argval>=0 && $argval<=0x3F);
+	
+			my($byte_offset) = int($argval/8);
+			my($bit_number) = $argval % 8;
+			my($bit_mask) = 1 << $bit_number;
+			    
+			$ROM[$ADDR++] = 0x96;															# LDAA <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Lamps'} + $byte_offset;
+			$ROM[$ADDR++] = 0x8A;															# ORAA <bit mask>
+			$ROM[$ADDR++] = $bit_mask;
+			$ROM[$ADDR++] = 0x97;															# STAA <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Lamps'} + $byte_offset;
+	
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_CLEARFLAG[A]') {
+			die("Syntax: _CLEARFLAG[A]	<byte> at input line $.\n")
+				unless (@OP_ARG==1);
+			set_label_type(1);
+	
+			my($argval);																	# determine numeric argument value if possible in order
+			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
+				$argval = $OP_ARG[0];
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
+				$argval = hex($1);
+			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+				$argval = hex($1);
+			} elsif (numberp($LBL{$OP_ARG[0]})) {
+				$argval = $LBL{$OP_ARG[0]};
+			} else {
+				$argval = eval_label($OP_ARG[0],undef,1);									# returns undef if not a numerical result; no errors on undefined labels
+			}
+			die("_CLEARFLAG[A]: cannot determine value of argument <$OP_ARG[0]>\n")
+				unless numberp($argval);
+			die("_CLEARFLAG[A]: value of argument <$OP_ARG[0]> is out of range\n")
+				unless ($argval>=0 && $argval<=0x3F);
+	
+			my($byte_offset) = int($argval/8);
+			my($bit_number) = $argval % 8;
+			my($bit_mask) = 1 << $bit_number;
+			    
+			$ROM[$ADDR++] = 0x96;															# LDAA <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Flags'} + $byte_offset;
+			$ROM[$ADDR++] = 0x84;															# ANDA <bit mask>
+			$ROM[$ADDR++] = ~$bit_mask&0xFF;
+			$ROM[$ADDR++] = 0x97;															# STAA <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Flags'} + $byte_offset;
+	
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_CLEARFLAG[B]') {
+			die("Syntax: _CLEARFLAG[B] <byte> at input line $.\n")
+				unless (@OP_ARG==1);
+			set_label_type(1);
+	
+			my($argval);																	# determine numeric argument value if possible in order
+			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
+				$argval = $OP_ARG[0];
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
+				$argval = hex($1);
+			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+				$argval = hex($1);
+			} elsif (numberp($LBL{$OP_ARG[0]})) {
+				$argval = $LBL{$OP_ARG[0]};
+			} else {
+				$argval = eval_label($OP_ARG[0],undef,1);									# returns undef if not a numerical result; no errors on undefined labels
+			}
+			die("_CLEARFLAG[B]: cannot determine value of argument <$OP_ARG[0]>\n")
+				unless numberp($argval);
+			die("_CLEARFLAG[B]: value of argument <$OP_ARG[0]> is out of range\n")
+				unless ($argval>=0 && $argval<=0x3F);
+	
+			my($byte_offset) = int($argval/8);
+			my($bit_number) = $argval % 8;
+			my($bit_mask) = 1 << $bit_number;
+			    
+			$ROM[$ADDR++] = 0xD6;															# LDAB <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Flags'} + $byte_offset;
+			$ROM[$ADDR++] = 0xC4;															# ANDB !<bit mask>
+			$ROM[$ADDR++] = ~$bit_mask&0xFF;
+			$ROM[$ADDR++] = 0xD7;															# STAB <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Flags'} + $byte_offset;
+	
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_LAMPOFF[A]') {
+			die("Syntax: _LAMPOFF[A]  <byte> at input line $.\n")
+				unless (@OP_ARG==1);
+			set_label_type(1);
+	
+			my($argval);																	# determine numeric argument value if possible in order
+			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
+				$argval = $OP_ARG[0];
+			} elsif ($OP_ARG[0] =~ m{^Lamp#([0-9A-Fa-f]{2})$}) {
+				$argval = hex($1);
+			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+				$argval = hex($1);
+			} elsif (numberp($LBL{$OP_ARG[0]})) {
+				$argval = $LBL{$OP_ARG[0]};
+			} else {
+				$argval = eval_label($OP_ARG[0],undef,1);									# returns undef if not a numerical result; no errors on undefined labels
+			}
+			die("_LAMPOFF[A]: cannot determine value of argument <$OP_ARG[0]>\n")
+				unless numberp($argval);
+			die("_LAMPOFF[A]: value of argument <$OP_ARG[0]> is out of range\n")
+				unless ($argval>=0 && $argval<=0x3F);
+	
+			my($byte_offset) = int($argval/8);
+			my($bit_number) = $argval % 8;
+			my($bit_mask) = 1 << $bit_number;
+			    
+			$ROM[$ADDR++] = 0x96;															# LDAA <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Lamps'} + $byte_offset;
+			$ROM[$ADDR++] = 0x84;															# ANDA <bit mask>
+			$ROM[$ADDR++] = ~$bit_mask&0xFF;
+			$ROM[$ADDR++] = 0x97;															# STAA <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Lamps'} + $byte_offset;
+	
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_TESTFLAG[A]') {
+			die("Syntax: _TESTFLAG[A] <byte> at input line $.\n")
+				unless (@OP_ARG==1);
+			set_label_type(1);
+	
+			my($argval);																	# determine numeric argument value if possible in order
+			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
+				$argval = $OP_ARG[0];
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
+				$argval = hex($1);
+			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+				$argval = hex($1);
+			} elsif (numberp($LBL{$OP_ARG[0]})) {
+				$argval = $LBL{$OP_ARG[0]};
+			} else {
+				$argval = eval_label($OP_ARG[0],undef,1);									# returns undef if not a numerical result; no errors on undefined labels
+			}
+			die("_TESTFLAG[A]: cannot determine value of argument <$OP_ARG[0]>\n")
+				unless numberp($argval);
+			die("_TESTFLAG[A]: value of argument <$OP_ARG[0]> is out of range\n")
+				unless ($argval>=0 && $argval<=0x3F);
+	
+			my($byte_offset) = int($argval/8);
+			my($bit_number) = $argval % 8;
+			my($bit_mask) = 1 << $bit_number;
+			    
+			$ROM[$ADDR++] = 0x96;															# LDAA <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Flags'} + $byte_offset;
+			$ROM[$ADDR++] = 0x85;															# BITB <bit mask>
+			$ROM[$ADDR++] = $bit_mask;
+	
+			$MODE=1,return 1;
+		}
+	
+		if ($OP eq '_TESTFLAG[B]') {
+			die("Syntax: _TESTFLAG[B] <byte> at input line $.\n")
+				unless (@OP_ARG==1);
+			set_label_type(1);
+	
+			my($argval);																	# determine numeric argument value if possible in order
+			if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
+				$argval = $OP_ARG[0];
+			} elsif ($OP_ARG[0] =~ m{^Flag#([0-9A-Fa-f]{2})$}) {
+				$argval = hex($1);
+			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+				$argval = hex($1);
+			} elsif (numberp($LBL{$OP_ARG[0]})) {
+				$argval = $LBL{$OP_ARG[0]};
+			} else {
+				$argval = eval_label($OP_ARG[0],undef,1);									# returns undef if not a numerical result; no errors on undefined labels
+			}
+			die("_TESTFLAG[B]: cannot determine value of argument <$OP_ARG[0]>\n")
+				unless numberp($argval);
+			die("_TESTFLAG[B]: value of argument <$OP_ARG[0]> is out of range\n")
+				unless ($argval>=0 && $argval<=0x3F);
+	
+			my($byte_offset) = int($argval/8);
+			my($bit_number) = $argval % 8;
+			my($bit_mask) = 1 << $bit_number;
+			    
+			$ROM[$ADDR++] = 0xD6;															# LDAB <flag byte>
+			$ROM[$ADDR++] = $LBL{'=Flags'} + $byte_offset;
+			$ROM[$ADDR++] = 0xC5;															# BITB <bit mask>
+			$ROM[$ADDR++] = $bit_mask;
+	
+			$MODE=1,return 1;
+	    }
+	} # mode check
+
+	return undef;
+}
+
+#======================================================================
+# Structured Programming
+#======================================================================
+
+sub macro_IF_6800($$)
+{
+    my($mac,$cop) = @_;
+    if ($OP eq $mac) {
+        $OP = $cop; push(@OP_ARG,auto_label(1));
+        push(@IF_CONT_LBL,$OP_ARG[$#OP_ARG]);
+        return 1;
+    }
+    return undef;
+}
+
+sub macro_until_6800($$)                                        # _UNTIL_EQ ... _ENDLOOP
+{
+    my($mac,$cop) = @_;
+    if ($OP eq $mac) {
+        my($loop_lbl) = auto_label(1);
+        define_label($loop_lbl);
+        push(@LOOP_LBL,$loop_lbl);
+        $OP = $cop; @OP_ARG = (auto_label(1));
+        push(@LOOP_DONE_LBL,$OP_ARG[0]);
+        return 1;
+    }
+    return undef;
+}
+
+sub macro_while_6800($$)										# _LOOP ... _WHILE_EQ
+{
+    my($mac,$cop) = @_;
+    if ($OP eq $mac) {
+        $OP = $cop; @OP_ARG = (pop(@LOOP_LBL));
+        define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
+        return 1;
+    }
+    return undef;
+}
+
+sub unroll_6800_structure()
+{
+#	print(STDERR "unroll_6800_structure(MODE=$MODE): $OP @OP_ARG\n");
+	
+    #----------------------------------------
+    # M6800 If Statements
+    #----------------------------------------
+
+	if ($MODE==0 || $MODE==1) {
+		$MODE=1,return if macro_IF_6800('_IF_EQ','BNE');
+		$MODE=1,return if macro_IF_6800('_IF_NE','BEQ');
+		$MODE=1,return if macro_IF_6800('_IF_GE','BLT');
+		$MODE=1,return if macro_IF_6800('_IF_LE','BGT');
+		$MODE=1,return if macro_IF_6800('_IF_GT','BLE');
+		$MODE=1,return if macro_IF_6800('_IF_LT','BGE');
+		$MODE=1,return if macro_IF_6800('_IF_LS','BHI');
+		$MODE=1,return if macro_IF_6800('_IF_HI','BLS');
+		$MODE=1,return if macro_IF_6800('_IF_CS','BCC');
+		$MODE=1,return if macro_IF_6800('_IF_CC','BCS');
+		$MODE=1,return if macro_IF_6800('_IF_VS','BVC');
+		$MODE=1,return if macro_IF_6800('_IF_VC','BVS');
+		$MODE=1,return if macro_IF_6800('_IF_MI','BPL');
+	    $MODE=1,return if macro_IF_6800('_IF_PL','BMI');
+
+		if ($opt_V > 0) {
+			$MODE=1,return if macro_IF_6800('_!IF','!branchUnless');
+			$MODE=1,return if macro_IF_6800('_!UNLESS','!branchIf');
+		}
+	
+		if ($OP eq '_ELSE') {
+			$OP = 'BRA';
+			@OP_ARG = (auto_label(1));
+			define_label(pop(@IF_CONT_LBL),$ADDR+2);
+			push(@IF_CONT_LBL,$OP_ARG[0]);
+			$MODE=1,return;
+		}
+	
+		if (($OP eq '_ENDIF') || ($OP eq '_ENDUNLESS')) {
+			undef($OP);
+			define_label(pop(@IF_CONT_LBL));
+			$MODE=1,return;
+	    }
+	}
+
+    #----------------------------------------
+    # M6800 Loop Statements
+    #----------------------------------------
+
+	if ($MODE==0 || $MODE==1) {
+		if ($OP eq '_LOOP') {
+			undef($OP);
+			my($lbl) = auto_label(1);
+			define_label($lbl);
+			push(@LOOP_LBL,$lbl);
+			push(@LOOP_DONE_LBL,auto_label(0));								# don't set type yet, because label is only used with _EXITLOOP
+			$MODE=1,return;
+		}
+	
+		$MODE=1,return if macro_while_6800('_WHILE_NE','BNE');
+		$MODE=1,return if macro_while_6800('_WHILE_EQ','BEQ');
+		$MODE=1,return if macro_while_6800('_WHILE_LE','BLE');
+		$MODE=1,return if macro_while_6800('_WHILE_GE','BGE');
+		$MODE=1,return if macro_while_6800('_WHILE_LT','BLT');
+		$MODE=1,return if macro_while_6800('_WHILE_GT','BGT');
+		$MODE=1,return if macro_while_6800('_WHILE_HI','BHI');
+		$MODE=1,return if macro_while_6800('_WHILE_LS','BLS');
+		$MODE=1,return if macro_while_6800('_WHILE_CC','BCC');		    
+		$MODE=1,return if macro_while_6800('_WHILE_CS','BCS');
+		$MODE=1,return if macro_while_6800('_WHILE_VC','BVC');
+		$MODE=1,return if macro_while_6800('_WHILE_VS','BVS');
+		$MODE=1,return if macro_while_6800('_WHILE_MI','BMI');
+		$MODE=1,return if macro_while_6800('_WHILE_PL','BPL');
+	
+		$MODE=1,return if macro_until_6800('_UNTIL_NE','BNE');
+		$MODE=1,return if macro_until_6800('_UNTIL_EQ','BEQ');
+		$MODE=1,return if macro_until_6800('_UNTIL_LE','BLE');
+		$MODE=1,return if macro_until_6800('_UNTIL_GE','BGE');
+		$MODE=1,return if macro_until_6800('_UNTIL_LT','BLT');
+		$MODE=1,return if macro_until_6800('_UNTIL_GT','BGT');
+		$MODE=1,return if macro_until_6800('_UNTIL_HI','BHI');
+		$MODE=1,return if macro_until_6800('_UNTIL_LS','BLS');
+		$MODE=1,return if macro_until_6800('_UNTIL_CC','BCC');		    
+		$MODE=1,return if macro_until_6800('_UNTIL_CS','BCS');
+		$MODE=1,return if macro_until_6800('_UNTIL_VC','BVC');
+		$MODE=1,return if macro_until_6800('_UNTIL_VS','BVS');
+		$MODE=1,return if macro_until_6800('_UNTIL_MI','BMI');
+		$MODE=1,return if macro_until_6800('_UNTIL_PL','BPL');
+	
+		if ($OP eq '_ENDLOOP') {
+			$OP = 'BRA';
+			@OP_ARG = (pop(@LOOP_LBL));
+			define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
+			$MODE=1,return;
+	    }
+
+		if ($OP eq '_ENDLOOOP') {									# long loop
+			$OP = 'JMP';
+			@OP_ARG = (pop(@LOOP_LBL));
+			define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
+			$MODE=1,return;
+	    }
+	}
+}
+
+#======================================================================
+# Motorola 6800 Assembler
+#======================================================================
+
+sub asm_6800_op($$@)
+{
+	my($trg,$aModes,@opc) = @_;	# also local($OP,@OP_ARG)
+	return undef unless (CORE::fc($OP) eq CORE::fc($trg));								# don't do anything unless operation is a match
+
+	if ($aModes eq '') {																# implied and accumulator addressing (no other modes possible)
+		die("Usage error: $OP (implied/acc mode) does not allow an argument (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$ROM[$ADDR++] = $opc[0];
+		return 1;
+	}
+
+	die("Usage error: $OP (addressing modes $aModes) at input line $. requires an argument\n")
+		if (@OP_ARG == 0);
+	    
+	for (my($i)=0; $i<@opc; $i++) { 													# remaining addressing modes
+		my($am) = substr($aModes,$i,1);
+
+		if ($am eq 'X') {																# indexed mode
+			next unless ($OP_ARG[0] =~ m{,\s*X$});
+			$ROM[$ADDR++] = $opc[$i];
+			$ROM[$ADDR++] = $`;
+			return 1;
+		}
+		if ($am eq 'I') {																# immediate mode
+			next unless ($OP_ARG[0] =~ m{^#});
+			$ROM[$ADDR++] = $opc[$i];
+			$ROM[$ADDR++] = $';
+			$ROM[$ADDR++] = '16-BIT VALUE'
+					if (CORE::fc($OP) eq CORE::fc('LDS') ||								# 2-byte operand
+						CORE::fc($OP) eq CORE::fc('LDX') ||
+						CORE::fc($OP) eq CORE::fc('CPX'));	
+			return 1;
+		}
+
+		my($argval);																	# determine numeric argument value if possible in order
+		if (numberp($OP_ARG[0])) {														# ... to determine whether direct mode can be used
+			$argval = $OP_ARG[0];
+		} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+			$argval = hex($1);
+		} elsif (numberp($LBL{$OP_ARG[0]})) {
+			$argval = $LBL{$OP_ARG[0]};
+		} else {
+			$argval = eval_label($OP_ARG[0],undef,1);									# returns undef if not a numerical result; no errors on undefined labels
+		}
+			
+		
+		if ($am eq 'D' && defined($argval) && $argval<=0xFF) {							# direct mode (1-byte absolute address, i.e zero page)
+			$ROM[$ADDR++] = $opc[$i];													# external label => guaranteed to be defined here
+			$ROM[$ADDR++] = $OP_ARG[0];
+			return 1;
+		}
+
+		if ($am eq 'E') {																# extended mode (2-byte absolute address)
+			$ROM[$ADDR++] = $opc[$i];
+			$ROM[$ADDR++] = $OP_ARG[0];
+			$ROM[$ADDR++] = '16-BIT VALUE';
+			return 1;
+		}
+		if ($am eq 'O') {																# potentially optimizable 2-byte absolute address
+			die("No lexical label allowed for $OP instruction at input line $.\n")
+				if ($OP_ARG[0] =~ m{^[<>]});
+			                    
+			$JSR_TRG{$OP_ARG[0]}++ if ($OP eq 'JSR');			
+			$ROM[$ADDR++] = $opc[$i];
+			$ROM[$ADDR++] = ($EXEC6800_BLOCK_ID > 0)									# don't optimize inside begin6800/end6800
+						  ? $OP_ARG[0] 
+						  : "1${OPTIMIZABLE_LABEL_PREFIX}${EIGHT_BIT_LABEL_PREFIX}$OP_ARG[0]";	# NB: 1 is byte offset
+
+			unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {								# set type of branch target
+				push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
+				set_label_type(1);
+            }			        
+						        
+			$ROM[$ADDR++] = '16-BIT VALUE';
+			return 1;
+		}
+		if ($am eq 'R') {																# relative mode (1-byte relative address)
+			$ROM[$ADDR++] = $opc[$i];
+			$OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]						# _EXITLOOP pseudo label
+		        if ($OP_ARG[0] eq '_EXITLOOP' ||
+					$OP_ARG[0] eq '>EXITLOOP');
+			$OP_ARG[0] = $LOOP_LBL[$#LOOP_LBL]      									# _NEXTLOOP pseudo label
+			        if ($OP_ARG[0] eq '_NEXTLOOP' ||
+					    $OP_ARG[0] eq '<NEXTLOOP');
+
+			if ($OP_ARG[0] eq '<RTS') {													# lexical labels
+				$OP_ARG[0] = $last_RTS_addr;
+            } elsif ($OP_ARG[0] eq '>RTS') {
+            	push(@forward_lexical_RTS_branch,$ADDR);
+            	$OP_ARG[0] = 'no RTS found after branch to >RTS';
+            } else {
+				unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {									# set type of branch target
+					push(@newly_defined_label,($OP_ARG[0]));
+					set_label_type(1);
+            	}
+            }
+						        
+			$ROM[$ADDR++] = $EIGHT_BIT_LABEL_PREFIX . $OP_ARG[0];
+			return 1;
+		}
+		die("Unknown addressing mode <$am> while assembling <@_> at input line $.\n")
+			unless ($am eq 'D');
+	}
+	die("Syntax error in statement <@_> at input line $.\n");
+}
+
+sub assemble_6800()
+{
+##	print(STDERR "assemble_6800(ADDR=$ADDR MODE=$MODE): $OP @OP_ARG\n");
+
+	if ($WMS_System >= 7 && $WMS_System <= 11) {										# WVM instructions in assembler code
+
+		if ($OP =~ /^!/) {																	# !oneShot IVM support
+			die("IVM: Illegal !oneShot while IVM is not enabled at input line $.\n")
+				unless ($opt_V > 0);
+			die("IVM: Illegal !oneShot (perhaps due to optimization) while .IVM_DISABLED is active at input line $.\n")
+				if $IVM_DISABLED;
+			die("IVM: Illegal !oneShot in begin6800/end6800[$EXEC6800_BLOCK_ID] at input line $.\n")
+				if ($EXEC6800_BLOCK_ID > 0);		    
+	
+			$OP = $';
+			$ROM[$ADDR++] = 0x3F; # SWI
+	
+			$MODE=2,return 1 if asm_wvm_op('IVM_mode'		,'' 	,0x00);
+	
+			if ($opt_V >= 2) {
+				$MODE=1,return 1 if asm_wvm_op('displayStr' 	,'WB'	,0x3F);
+				$MODE=1,return 1 if asm_wvm_op('incAudit'		,'W'	,0x23);
+				$MODE=1,return 1 if asm_wvm_op('soundcardCmd'	,'B'	,0x27);
+			} else {
+				die("IVM: Invalid stage-2 opCode at input line $.\n")
+					if asm_wvm_op('soundcardCmd'	,'' 	,0x00) ||
+					   asm_wvm_op('displayStr'		,'' 	,0x23) ||
+					   asm_wvm_op('incAudit'		,'' 	,0x27);
+			}
+	
+			if ($opt_V >= 4) {
+				$MODE=1,return 1 if asm_wvm_op('PSHX'		,'' 	,0x02);
+				$MODE=1,return 1 if asm_wvm_op('PULX'		,'' 	,0x04);
+				$MODE=1,return 1 if asm_wvm_op('AAX'		,'' 	,0x0C);
+				$MODE=1,return 1 if asm_wvm_op('ABX'		,'' 	,0x0D);
+			} else {
+				die("IVM: Invalid !oneShot stage-4 opCode at input line $.\n")
+					if asm_wvm_op('PSHX'			,'' 	,0x02) ||
+					   asm_wvm_op('PULX'			,'' 	,0x04) ||
+					   asm_wvm_op('AAX' 			,'' 	,0x0C) ||
+					   asm_wvm_op('ABX' 			,'' 	,0x0D);
+			}
+	
+			die("IVM: Invalid !oneShot WVM opCode $OP at input line $.\n")
+				if asm_wvm_op('halt'				,'' 	,0x00) ||
+				   asm_wvm_op('return'				,'' 	,0x02) ||
+				   asm_wvm_op('M6800_mode'			,'' 	,0x04) ||
+				   asm_wvm_store('store')						   || #  0D, 0F
+				   asm_wvm_load('load') 						   || #  0C, 0E
+				   asm_wvm_exec6800op('begin6800'			,0x44) || # to 4F
+				   asm_wvm_exec6800op('end6800')				   ||
+				   asm_wvm_jumpOp('jumpSubroutine'			,0x56,2) ||
+				   asm_wvm_jumpOp('jumpSubroutine6800'		,0x57,1) ||
+				   asm_wvm_jumpOp('jump'					,0x5F,2) ||
+				   asm_wvm_branchOp('branch'				,0x80,2) || # to 8F
+				   asm_wvm_branchOp('branchSubroutine'		,0x90,2) || # to 9F
+				   asm_wvm_branchOp('branchSubroutine6800'	,0xA0,1); # to AF
+	
+			return &assemble_wvm(1);			   
+	    } # !oneShot
+	
+		$MODE=2,return 1 if asm_wvm_exec6800op('end6800');									# this is an anomaly, handled by asm_wvm_exec6800
+
+    } # if System 7-11 (WVM/IVM)
+
+	$MODE=1,return 1 if asm_6800_op('NOP','',0x01);
+	$MODE=1,return 1 if asm_6800_op('TAP','',0x06) || asm_6800_op('TPA','',0x07);
+	$MODE=1,return 1 if asm_6800_op('INX','',0x08) || asm_6800_op('DEX','',0x09);
+	$MODE=1,return 1 if asm_6800_op('CLV','',0x0A) || asm_6800_op('SEV','',0x0B);
+	$MODE=1,return 1 if asm_6800_op('CLC','',0x0C) || asm_6800_op('SEC','',0x0D);
+	$MODE=1,return 1 if asm_6800_op('CLI','',0x0E) || asm_6800_op('SEI','',0x0F);
+	$MODE=1,return 1 if asm_6800_op('SBA','',0x10) || asm_6800_op('CBA','',0x11);
+	$MODE=1,return 1 if asm_6800_op('TAB','',0x16) || asm_6800_op('TBA','',0x17);
+	$MODE=1,return 1 if asm_6800_op('DAA','',0x19);
+	$MODE=1,return 1 if asm_6800_op('ABA','',0x1B);
+	$MODE=1,return 1 if asm_6800_op('TSX','',0x30);
+	$MODE=1,return 1 if asm_6800_op('INS','',0x31);
+	$MODE=1,return 1 if asm_6800_op('PULA','',0x32) || asm_6800_op('PULB','',0x33);
+	$MODE=1,return 1 if asm_6800_op('DES','',0x34);
+	$MODE=1,return 1 if asm_6800_op('TXS','',0x35);
+	$MODE=1,return 1 if asm_6800_op('PSHA','',0x36) || asm_6800_op('PSHB','',0x37);
+	if (asm_6800_op('RTS','',0x39)) {
+		$last_RTS_addr = $ADDR - 1;
+		while (@forward_lexical_RTS_branch) {
+			$ROM[pop(@forward_lexical_RTS_branch)] = $EIGHT_BIT_LABEL_PREFIX . ($ADDR - 1);
+		}
+		$MODE = 0;
+		return 1;
+	}
+	$MODE=0,return 1 if asm_6800_op('RTI','',0x3B);
+	$MODE=1,return 1 if asm_6800_op('WAI','',0x3E);
+	$MODE=0,return 1 if asm_6800_op('SWI','',0x3F);
+
+	$MODE=1,return 1 if asm_6800_op('SUBA','IXDE',0x80,0xA0,0x90,0xB0);
+	$MODE=1,return 1 if asm_6800_op('SUBB','IXDE',0xC0,0xE0,0xD0,0xF0);
+	$MODE=1,return 1 if asm_6800_op('CMPA','IXDE',0x81,0xA1,0x91,0xB1);
+	$MODE=1,return 1 if asm_6800_op('CMPB','IXDE',0xC1,0xE1,0xD1,0xF1);
+	$MODE=1,return 1 if asm_6800_op('SBCA','IXDE',0x82,0xA2,0x92,0xB2);
+	$MODE=1,return 1 if asm_6800_op('SBCB','IXDE',0xC2,0xE2,0xD2,0xF2);
+	$MODE=1,return 1 if asm_6800_op('ANDA','IXDE',0x84,0xA4,0x94,0xB4);
+	$MODE=1,return 1 if asm_6800_op('ANDB','IXDE',0xC4,0xE4,0xD4,0xF4);
+	$MODE=1,return 1 if asm_6800_op('BITA','IXDE',0x85,0xA5,0x95,0xB5);
+	$MODE=1,return 1 if asm_6800_op('BITB','IXDE',0xC5,0xE5,0xD5,0xF5);
+	$MODE=1,return 1 if asm_6800_op('LDAA','IXDE',0x86,0xA6,0x96,0xB6);
+	$MODE=1,return 1 if asm_6800_op('LDAB','IXDE',0xC6,0xE6,0xD6,0xF6);
+	$MODE=1,return 1 if asm_6800_op('EORA','IXDE',0x88,0xA8,0x98,0xB8);
+	$MODE=1,return 1 if asm_6800_op('EORB','IXDE',0xC8,0xE8,0xD8,0xF8);
+	$MODE=1,return 1 if asm_6800_op('ADCA','IXDE',0x89,0xA9,0x99,0xB9);
+	$MODE=1,return 1 if asm_6800_op('ADCB','IXDE',0xC9,0xE9,0xD9,0xF9);
+	$MODE=1,return 1 if asm_6800_op('ORAA','IXDE',0x8A,0xAA,0x9A,0xBA);
+	$MODE=1,return 1 if asm_6800_op('ORAB','IXDE',0xCA,0xEA,0xDA,0xFA);
+	$MODE=1,return 1 if asm_6800_op('ADDA','IXDE',0x8B,0xAB,0x9B,0xBB);
+	$MODE=1,return 1 if asm_6800_op('ADDB','IXDE',0xCB,0xEB,0xDB,0xFB);
+
+	$MODE=1,return 1 if asm_6800_op('STAA','XDE',0xA7,0x97,0xB7);
+	$MODE=1,return 1 if asm_6800_op('STAB','XDE',0xE7,0xD7,0xF7);
+	$MODE=1,return 1 if asm_6800_op('STS' ,'XDE',0xAF,0x9F,0xBF);
+	$MODE=1,return 1 if asm_6800_op('STX' ,'XDE',0xEF,0xDF,0xFF);
+	
+	$MODE=1,return 1 if asm_6800_op('NEGA','',0x40) || asm_6800_op('NEGB','',0x50);
+	$MODE=1,return 1 if asm_6800_op('NEG','XE',0x60,0x70);
+	$MODE=1,return 1 if asm_6800_op('COMA','',0x43) || asm_6800_op('COMB','',0x53);
+	$MODE=1,return 1 if asm_6800_op('COM','XE',0x63,0x73);
+	$MODE=1,return 1 if asm_6800_op('LSRA','',0x44) || asm_6800_op('LSRB','',0x54);
+	$MODE=1,return 1 if asm_6800_op('LSR','XE',0x64,0x74);
+	$MODE=1,return 1 if asm_6800_op('RORA','',0x46) || asm_6800_op('RORB','',0x56);
+	$MODE=1,return 1 if asm_6800_op('ROR','XE',0x66,0x76);
+	$MODE=1,return 1 if asm_6800_op('ASRA','',0x47) || asm_6800_op('ASRB','',0x57);
+	$MODE=1,return 1 if asm_6800_op('ASR','XE',0x67,0x77);
+	$MODE=1,return 1 if asm_6800_op('ASLA','',0x48) || asm_6800_op('ASLB','',0x58);
+	$MODE=1,return 1 if asm_6800_op('ASL','XE',0x68,0x78);
+	$MODE=1,return 1 if asm_6800_op('ROLA','',0x49) || asm_6800_op('ROLB','',0x59);
+	$MODE=1,return 1 if asm_6800_op('ROL','XE',0x69,0x79);
+	$MODE=1,return 1 if asm_6800_op('DECA','',0x4A) || asm_6800_op('DECB','',0x5A);
+	$MODE=1,return 1 if asm_6800_op('DEC','XE',0x6A,0x7A);
+	$MODE=1,return 1 if asm_6800_op('INCA','',0x4C) || asm_6800_op('INCB','',0x5C);
+	$MODE=1,return 1 if asm_6800_op('INC','XE',0x6C,0x7C);
+	$MODE=1,return 1 if asm_6800_op('TSTA','',0x4D) || asm_6800_op('TSTB','',0x5D);
+	$MODE=1,return 1 if asm_6800_op('TST','XE',0x6D,0x7D);
+	$MODE=1,return 1 if asm_6800_op('CLRA','',0x4F) || asm_6800_op('CLRB','',0x5F);
+	$MODE=1,return 1 if asm_6800_op('CLR','XE',0x6F,0x7F);
+
+	$MODE=1,return 1 if asm_6800_op('CPX','IXDE',0x8C,0xAC,0x9C,0xBC);
+	$MODE=1,return 1 if asm_6800_op('LDS','IXDE',0x8E,0xAE,0x9E,0xBE);
+	$MODE=1,return 1 if asm_6800_op('LDX','IXDE',0xCE,0xEE,0xDE,0xFE);
+
+	$MODE=0,return 1 if asm_6800_op('BRA','R',0x20);
+	$MODE=1,return 1 if asm_6800_op('BHI','R',0x22) || asm_6800_op('BLS','R',0x23);
+	$MODE=1,return 1 if asm_6800_op('BCC','R',0x24) || asm_6800_op('BCS','R',0x25);
+	$MODE=1,return 1 if asm_6800_op('BNE','R',0x26) || asm_6800_op('BEQ','R',0x27);
+	$MODE=1,return 1 if asm_6800_op('BVC','R',0x28) || asm_6800_op('BVS','R',0x29);
+	$MODE=1,return 1 if asm_6800_op('BPL','R',0x2A) || asm_6800_op('BMI','R',0x2B);
+	$MODE=1,return 1 if asm_6800_op('BGE','R',0x2C) || asm_6800_op('BLT','R',0x2D);
+	$MODE=1,return 1 if asm_6800_op('BGT','R',0x2E) || asm_6800_op('BLE','R',0x2F);
+	$MODE=1,return 1 if asm_6800_op('BSR','R',0x8D);
+
+	$MODE=0,return 1 if asm_6800_op('JMP','XO',0x6E,0x7E);
+	$MODE=1,return 1 if asm_6800_op('JSR','XO',0xAD,0xBD);
+
+	return undef;
+}
+
+1;
