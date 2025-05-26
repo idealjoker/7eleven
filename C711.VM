@@ -1,9 +1,9 @@
 #======================================================================
-#                    C 7 1 1 . W V M 
+#                    C 7 1 1 . V M 
 #                    doc: Wed May 21 21:55:45 2025
-#                    dlm: Fri May 23 12:08:20 2025
+#                    dlm: Mon May 26 09:45:42 2025
 #                    (c) 2025 A.M. Thurnherr
-#                    uE-Info: 33 92 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 1094 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -11,6 +11,9 @@
 #	May 23, 2025: - adapted to strict vars
 #				  - replaced encode_scoreByte() with adapted code from 
 #					[C711.scoreByte.6a]
+#	May 26, 2025: - renamed from C711.WVM
+#				  - renamed some funs
+# HISTORY END
 
 use strict vars;
 
@@ -1088,11 +1091,11 @@ sub asm_wvm_copyTo($$)																	# copyTo Reg Reg
 # Main WVM Compiler Routine
 #----------------------------------------------------------------------
 
-sub assemble_wvm($)
+sub compile_vm($)
 {
 	local($current_mode) = @_;															# 1 for !oneShot, 2 for normal
 	
-#	print(STDERR "assemble_wvm(MODE=$MODE): $OP @OP_ARG\n");
+#	print(STDERR "compile_vm(MODE=$MODE): $OP @OP_ARG\n");
 	if ($opt_V >= 2) {
 		$MODE=$current_mode,return 1 if asm_wvm_op('displayStr' 	,'WB'	,0x3F);
 		$MODE=$current_mode,return 1 if asm_wvm_op('incAudit'		,'W'	,0x23);

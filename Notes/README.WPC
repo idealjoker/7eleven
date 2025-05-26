@@ -1,10 +1,49 @@
 ======================================================================
-                    . / N O T E S / R E A D M E . W P C 
+                    N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Mon May 12 17:45:39 2025
+                    dlm: Sat May 24 03:25:19 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 5 51 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 33 10 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
+
+=Memory Map=
+				    
+-Overview-
+				    
+$0000-$1FFF 	8KB RAM (battery backed)
+$2000-$2FFF 	unused?
+$3000-$37FF 	WPC-95 DMD frames (4 extra frames)
+$3800-$3FFF 	DMD frame (memory mapped; _DMD_LOW_PAGE)
+$3A00-$3BFF 	DMD frame (memory mapped; _DMD_HIGH_PAGE)
+$3C00-$3FFF 	ASIC registers
+$4000-$7FFF 	16KB banked ROM
+$8000-$FFFF 	32KB system ROM
+					  
+					  
+-ROM Paging-
+    
+- 1MB ROM space on WPC board
+	- organized into 64x16KB pages (PG#00-3F)
+	- 32KB (PG#3E-3F) permanently mapped to $8000-$FFFF
+	- 16KB (current game page) mapped to $4000-$7FFF
+	- up to 992MB (62 pages) for game assets
+    
+- 1MB ROM chip:
+	- address range: $00000 - $FFFFF
+	- PG#00-3D (30 pages, 480KB)
+	- PG#3E-3F (2 pages, 32KB)
+
+- T2 uses 512KB ROM chip:
+	- address range: $00000 - $7FFFF
+	- PG#20-3D (30 pages, 480KB)
+	- PG#3E-3F (2 pages, 32KB)
+
+- FH uses 256KB ROM chip:
+	- address range: $00000 - $3FFFF
+	- PG#30-3D (14 pages, 224KB)
+	- PG#3E-3F (2 pages, 32KB)	 
+
+----------------------------------------------------------------------
 
 =Truth Values=
 

@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri May 23 11:00:56 2025
+#                    dlm: Mon May 26 09:55:00 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 579 30 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 930 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -361,6 +361,8 @@
 #	May 19, 2025: - BUG: .IFUNDEF did not work
 #	May 22, 2025: - added use strict vars, finding several bugs in the process
 #	May 23, 2025: - made it work
+#				  - started working on WPC support
+#	May 26, 2025: - continued implementing WPC support
 # HISTORY END
 
 # RELEASE NOTES:
@@ -467,7 +469,8 @@ our($OPTIMIZABLE_LABEL_PREFIX) = '`';                            # this is prece
 my($PATH) = $0; $PATH =~ s{/[^/]*$}{};
 
 use Getopt::Std;
-die("Usage: $0 \n\t[system -6/-7 source] [sys11 I-V)M <stage>]" .
+die("Usage: $0 \n\t[system -6|-7 source] [-W)PC <A[lphanumeric>|DM[D]|F[liptronic]|DC[S]|S[ecurity]|9[5]" .
+			  "\n\t[sys11 I-V)M <stage>]" .
               "\n\t[-D)EFINE <symbol>]" .																# conditional compilation
               "\n\t[-1)st pass [-F)ind optimizable statements <from-addr,to-addr>]]" .					# code optimization
               "\n\t[-2)nd pass [-O)ptimization info <file>]]" .
@@ -478,25 +481,44 @@ die("Usage: $0 \n\t[system -6/-7 source] [sys11 I-V)M <stage>]" .
               "\n\t[ROM output -s <suffix>] [create -e)qual-sized (32K) ROM images (s11)]" .			# ROM image output control
               "\n\t[suppress -w)arnings] [-v)erbose (show warnings)]" .									# general compilation options
 			  "\n\t[suppress chec-k)sum verification]" .
-			  "\n\t[-f)orce (no mode checking)]" .
+			  "\n\t[-f)orce (attempt compilation of source files with disassembly warnings)]" .
 			  "\n\t[alt. output code -L)isting] [-x) alt. output D711 .dasm file]" .					# alternative output options
               "\n\t[-d)ump labels] [dump -J)SR targets] [dump -R)OM before resolving labels]" .			
               "\n\t[-c)hecksum info] [report free -m)emory blocks]" .
               "\n\t[-t)rust_but_verify <ROM_image[,...]> [check already during label -r)esolution]]" .	# ouput checking
-              "\n\t[-T)race assembly (debug)] [trace -C)onditional assembly (debug)]" .					# debugging
+              "\n\t[-T)race compilation (debug)] [trace -C)onditional compilation (debug)]" .			# debugging
               "\n\t<asm file>\n")
-    unless &getopts('1267a:cCdD:efF:g:i:IJkLl:mO:o:Rrs:Tt:V:vwx') && (@ARGV == 1);
+    unless &getopts('1267a:cCdD:efF:g:i:IJkLl:mO:o:Rrs:Tt:V:vW:wx') && (@ARGV == 1);
 
 our($opt_1,$opt_2,$opt_6,$opt_7,$opt_a,$opt_c,$opt_C,$opt_d,$opt_D,$opt_e,$opt_f,$opt_F,
 	$opt_g,$opt_i,$opt_I,$opt_J,$opt_k,$opt_L,$opt_l,$opt_m,$opt_o,$opt_O,$opt_r,$opt_R,
-	$opt_s,$opt_t,$opt_T,$opt_v,$opt_V,$opt_w,$opt_x);
+	$opt_s,$opt_t,$opt_T,$opt_v,$opt_V,$opt_w,$opt_W,$opt_x);
 
 my($dummy,$basename,$ext) = ($ARGV[0] =~ m{([^/]+/)?([^\.]+)\.(.*)}); 
 $basename = 'out' unless defined($basename);
 
-our($WMS_System) = 11;      										# determine WMS system
-$WMS_System = 7 if ($opt_7 || ($ext =~ m{^[sS]7$}));
-$WMS_System = 6 if ($opt_6 || ($ext =~ m{^[sS]6$}));
+our($WMS_System);      																					# source type
+if ($opt_6 || ($ext =~ m{^[sS]6$})) {
+	$WMS_System = 6;
+} elsif ($opt_7 || ($ext =~ m{^[sS]7$})) {
+	$WMS_System = 7;
+} elsif ($ext =~ m{^[sS]11$}) {
+	$WMS_System = 11;
+} elsif ($opt_W =~ m{^A}) {
+	$WMS_System = 'WPC(Alphanumeric)';
+} elsif ($opt_W =~ m{^DM}) {
+	$WMS_System = 'WPC(DMD)';
+} elsif ($opt_W =~ m{^F}) {
+	$WMS_System = 'WPC(Fliptronic)';
+} elsif ($opt_W =~ m{^DC}) {
+	$WMS_System = 'WPC(DCS)';
+} elsif ($opt_W =~ m{^S}) {
+	$WMS_System = 'WPC(Security)';
+} elsif ($opt_W =~ m{^9}) {
+	$WMS_System = 'WPC(95)';
+} else {
+	die("$0: cannot determine source type\n");
+}
 
 die("$0: System11 source required for -e\n")
     if ($opt_e && $WMS_System != 11);
@@ -513,7 +535,7 @@ if ($WMS_System == 6) {
 	require "C711.M6800";
 
 	$unroll_structureR = sub {
-							unroll_6800_structure(@_);
+							unroll_asm_structure(@_);
 						 };
 	$asm_macrosR = sub {
 						return asm_6800_macros();
@@ -521,10 +543,10 @@ if ($WMS_System == 6) {
 
 } elsif ($WMS_System == 7 || $WMS_System == 11) {
 	require "C711.M6800";
-	require "C711.WVM";
+	require "C711.VM";
 
 	$unroll_structureR = sub {
-							unroll_6800_structure(@_);
+							unroll_asm_structure(@_);
 			  				unroll_wvm_structure(@_);
 						 };
 
@@ -534,17 +556,29 @@ if ($WMS_System == 6) {
 						return asm_wvm_macros();
     			   };
 
+} elsif ($WMS_System =~ m{^WPC}) {
+	require "C711.M6809";
+	require "C711.WPC";
+
+	$unroll_structureR = sub {
+							unroll_asm_structure(@_);
+						 };
+	$asm_macrosR = sub {
+						return asm_6809_macros();
+    			   };
 } else {
 	die("Unsupported WMS System <$WMS_System>\n");
 }
 
 #----------------------------------------------------------------------
 # Global Variables
+#	my		PRIVATE: available in this source file only
+#	our		available in entire compiler
 #----------------------------------------------------------------------
 
 our(@ROM);														# output buffer
-my(@vROMimage);                                                 # verification ROM image
-our($ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR);
+our($ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR);							# Sys6-11: CPU address space; WPC: 1MB ROM address space
+our($RPG);														# Sys6-11: undefined; 		  WPC: current ROM page
 
 if ($WMS_System == 6) {											# System6
 	$MIN_ROM_ADDR = 0x6000; 
@@ -552,9 +586,14 @@ if ($WMS_System == 6) {											# System6
 } elsif ($WMS_System == 7) {									# System7
 	$MIN_ROM_ADDR = 0xD800; 
 	$MAX_ROM_ADDR = 0xE7FF;
-} else {														# System11
+} elsif ($WMS_System == 11) {									# System11
 	$MIN_ROM_ADDR = 0x4000; 			 
 	$MAX_ROM_ADDR = 0xFFFF;
+} elsif ($WMS_System =~ m{^WPC}) {								# WPC (1MB ROM)
+	$MIN_ROM_ADDR = 0x00000;
+	$MAX_ROM_ADDR = 0xFFFFF;									
+} else {
+	die;
 }
 
 if (defined($opt_a)) {											# override ROM address range with -a
@@ -565,19 +604,34 @@ if (defined($opt_a)) {											# override ROM address range with -a
 		unless ($MAX_ROM_ADDR > 0);
 }
 	
-my($FIRST_ADDR) = $MAX_ROM_ADDR + 1;                            # sentinel (true value set by .ORG)
+my($FIRST_ADDR) = $MAX_ROM_ADDR + 1;                            # PRIVATE: first @ROM address used; sentinel (true value set by .ORG)
 
-our(@SRC);														# source line 
-local(our(@LINE));												# source line number indexed by ADDR; accessed from encoders
+my(@vROMimage);                                                 # PRIVATE: verification ROM image
+
+our(@SRC);														# source lines (used for optimizer and warnings)
+local(our(@LINE));												# source line number indexed by ADDR (used for optimizer and warnings)
+
+local(our($OP,@OP_ARG));										# currently compiling operation and argments
 
 local(our(%ALIAS,%ALIAS_REFD));                                 # aliases (defines), number of references
-our(%LBL);														# labels (name->address)
-my(%LBL_TYPE);													# label type
-my(@LBL,@AUTO_LABEL_DEF);										# line numbers of auto label definitions for error messages
+our(%LBL);														# labels (name -> address)
+our(%LBP);														# ROM page of label (undef except in WPC)
+our(%LBL_TYPE);													# label type (see MODE below)
+our(@LBL);														# labels (address -> name)
+our(@newly_defined_label);										# list of newly defined labels (since last instruction), possibly of unknown type
 
-my(@IF_STACK) = (0);                                            # 0: sentinel: outside any if; 1: then/else assembling; -1: then/else not assembling; -2: nested if, not assembling
-our($EXEC6800_BLOCK_ID) = 0;                                   	# for making sure JSR/JMP statements are not optimized in begin6800/end6800 blocks
-our($MODE) = 0;													# 0: undefined; 1: M6800; 2: WVM/IVM; 3: data
+my(@AUTO_LABEL_DEF);											# PRIVATE: line numbers of auto label definitions for error messages
+
+my(@IF_STACK) = (0);                                            # PRIVATE: conditional compilation (TOS 0: sentinel: outside any if; 1: then/else compiling; -1: then/else not compiling; -2: nested if, not compiling)
+
+our($EXEC6800_BLOCK_ID) = 0;                                   	# WVM begin6800/end6800 blocks; 0: outside block, >0 inside block 
+our($MODE) = 0;													# compilation mode/label type; 0: undefined; 1: M6800; 2: WVM/IVM; 3: data
+
+our(%JSR_TRG);													# number of calls to subroutines for -J
+
+our(@IF_CONT_LBL,@LOOP_DONE_LBL);								# structured programming
+
+our($IVM_DISABLED);												# flag indicating that IVM is disabled; set by .ENABLE_IVM/.DISABLE_IVM
 
 #----------------------------------------------------------------------
 # Command-Line Options
@@ -667,7 +721,16 @@ printf(STDERR "$ARGV[0] [$COMPILATION_INFO]\n")                 # report on scre
 # Load API
 #----------------------------------------------------------------------
 
-my($LIB_API) = defined($opt_i) ? $opt_i : "$PATH/System$WMS_System.API";
+my($LIB_API) = $opt_i;
+
+unless (defined($LIB_API)) {
+	if ($WMS_System =~ m{^WPC}) {
+		$LIB_API = "$PATH/WPC.API";
+	} else {
+		$LIB_API = "$PATH/System$WMS_System.API";
+	}
+}
+
 my($LIB_MIN_ADDR,$LIB_MAX_ADDR,$LIB_CHECKSUM,@LIB_FN,@LIB_HASH);
 my($LIB_BASENAME) = ($LIB_API =~ m{([^/]+)$});
 
@@ -743,11 +806,12 @@ if (defined($opt_l)) {
 # Main Program
 #======================================================================
 
-my(@NO_OPT,@optimization_suppressed,@OP,$locked_page);
-our(@IF_CONT_LBL,@LOOP_DONE_LBL,@newly_defined_label,$IVM_DISABLED);
-local(our($OP,@OP_ARG));
+my(@NO_OPT);															# addresses where optimization is not allowed; set by !! line prefix
+my(@optimization_suppressed);											# instructions that must not be optimized; set by .SUPPRESS_OPTIMIZATION
+my(@OP);																# address -> instruction for optimizer
+my($locked_page);														# page addr (MSB ROM address) for .[UN]LOCK_ROM_PAGE
 
-while (<>) {															# assemble source line by line
+while (<>) {															# compile source line by line
 
 	if (defined($ADDR) && ($ADDR<$MIN_ROM_ADDR || $ADDR>$MAX_ROM_ADDR+1)) {
 		if ($opt_v || $opt_t) {
@@ -758,7 +822,7 @@ while (<>) {															# assemble source line by line
 	}
 	chomp;																# strip EOL
 	s{;.*}{};															# strip comments
-	s{^<[0-9A-Fa-f]{4}>\s+}{};											# strip disassembly addresses and leading whitespace
+	s{^<([0-9A-Fa-f]{2}:)?[0-9A-Fa-f]{4}>\s+}{};						# strip disassembly addresses and leading whitespace
 	while (m{\\\s*$}) { 												# line continuation
 		$_ = $` . <>;
 		chomp;															# strip EOL
@@ -827,7 +891,7 @@ while (<>) {															# assemble source line by line
     }
     
     @_ = split;                                             			# separate into operator and operands                                    
-    next unless (@_ > 0);                                   			# empty line => nothing to assemble
+    next unless (@_ > 0);                                   			# empty line => nothing to compile
 
     $MODE = 0 if $opt_f;												# froce compilation
 
@@ -840,10 +904,10 @@ while (<>) {															# assemble source line by line
             push(@newly_defined_label,$`);
 			set_label_type($MODE) if ($MODE > 0);
             shift(@_);
-            next if (@_ == 0);                              			# label-only line => nothing to assemble
+            next if (@_ == 0);                              			# label-only line => nothing to compile
         }
     
-        &expand_aliases;                                    			# expand aliases (except for .IFDEF, .IFNDEF, etc. which are handled in assemble_pragma())
+        &expand_aliases;                                    			# expand aliases (except for .IFDEF, .IFNDEF, etc. which are handled in compile_pragma())
 		&expand_repeatBytes;											# expand $FF[512x] 255[2x]        
         &decimalize;                                        			# convert all numbers to decimal (e.g. for .ORG); NB: does not deal with #$numbers
         ($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
@@ -853,19 +917,21 @@ while (<>) {															# assemble source line by line
         next unless defined($OP);                           			# some structure keywords only generate labels
     }
 
-    next if &assemble_pragma;                               			# .ORG, .DB, .ENDIF, etc.
+    next if &compile_pragma;                               				# .ORG, .DB, .ENDIF, etc.
 
     if ($IF_STACK[$#IF_STACK] >= 0) {                       			# currently assembling code
 		next if $asm_macrosR->();
 
-        if (($MODE==0||$MODE==1) && &assemble_6800) {       			# LDA, _IFEQ, etc.
+        if (($MODE==0||$MODE==1) && &compile_asm) {       				# LDA, _IFEQ, etc.
             set_label_type(1);
             next;
         }
-        if (($MODE==0||$MODE==2) && &assemble_wvm(2)) { 				# load, sleep, _If, etc.
-            set_label_type(2,1);
-            next;
-        }
+		if ($WMS_System>=7 && $WMS_System<=11) {
+			if (($MODE==0||$MODE==2) && &compile_vm(2)) {				# load, sleep, _If, etc.
+				set_label_type(2,1);
+				next;
+	        }
+	    }
         die("unrecognized mode-$MODE statement <@_> at input line $.\n");
     }
 }
@@ -1026,6 +1092,16 @@ exit(0);
 sub numberp(@)
 { return  $_[0] =~ /^([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?$/; }
 
+sub isMember($@)
+{
+    my($target,@list) = @_;
+
+    foreach my $le (@list) {
+        return 1 if ($le eq $target);
+    }
+    return 0;
+}
+
 sub set_label_type($)
 {
     my($lt) = @_;
@@ -1042,8 +1118,6 @@ sub set_label_type($)
     }
     undef(@newly_defined_label);
 }
-
-our(%JSR_TRG);
 
 sub dump_JSR()
 {
@@ -1137,11 +1211,15 @@ sub verify_checksums()
 
 sub dump_labels()
 {
-	my($types) = '?MWD';
-    foreach my $lbl (sort { $LBL{$a} <=> $LBL{$b} } keys(%LBL)) {
-        next unless defined($LBL{$lbl});
-        my($c) = substr($types,$LBL_TYPE{$lbl},1);
-        printf("%40s = \$%04X [$c]\n",$lbl,$LBL{$lbl});
+	my($types) = '?MVD';																# undefined, M680x, xVM, Data
+	foreach my $lbl (sort { $LBL{$a} <=> $LBL{$b} } keys(%LBL)) {
+		next unless defined($LBL{$lbl});
+		my($c) = substr($types,$LBL_TYPE{$lbl},1);
+		if ($WMS_System =~ m{^WPC}) {
+			printf("%40s = %02X:%04X [$c]\n",$lbl,$LBP{$lbl},$LBL{$lbl});
+		} else {
+			printf("%40s = \$%04X [$c]\n",$lbl,$LBL{$lbl});
+		}
     }
 }
 
@@ -1159,62 +1237,67 @@ sub check_duplicate_label_types()
     }
 }
 
-{ my($last_label_addr) = -1; 
 
-sub define_label($@)
-{
-#	print(STDERR "define_label(@_) $ADDR\n");
-    my($lbl,$addr,$allow_relabel) = @_;
-
-    $addr = $ADDR unless defined($addr);
-    die("ERROR: undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
-        unless defined($addr);
-
-    my($lofs) = ($addr =~ m{^\.\+(\d+)$}); 												# handle .+1 '.' dot
-    $addr = $last_label_addr + $lofs if defined($lofs);
-        
-    die("ERROR: Unmatched END on line $.\n") unless (length($lbl) > 0);
-
-    unless ($opt_1) {
-		if (defined($LBL{$lbl}) && ($LBL{$lbl} ne $addr) && ($lbl ne 'ANALYSIS_GAP')) {
-			my($msg) = sprintf("label <$lbl> = \$%04X [$addr] already defined with different value (\$%04X [$LBL{$lbl}]) at input line $.\n",$addr,$LBL{$lbl});
-			if ($opt_w) { print(STDERR "WARNING: $msg"); }
-			else		{ die("ERROR: $msg"); }
+{ my($last_label_addr) = -1; 															# static scope
+	sub define_label($@)
+	{
+#	print(STDERR "define_label(@_) [$RPG:$ADDR]\n");
+		my($lbl,$addr,$allow_relabel) = @_;
+	
+		$addr = $ADDR unless defined($addr);
+		die("ERROR: undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
+			unless defined($addr);
+	
+		my($lofs) = ($addr =~ m{^\.\+(\d+)$});											# handle .+1 '.' dot
+		$addr = $last_label_addr + $lofs if defined($lofs);
+		    
+		die("ERROR: Unmatched END on line $.\n") unless (length($lbl) > 0);
+	
+		unless ($opt_1) {																# don't generate label errors during 1st pass (optimization)
+			if (defined($LBL{$lbl}) &&													# check for label redefinition attempts
+				($LBL{$lbl} ne $addr) && ($LBP{$lbl} == $RPG) &&						# NB: LBP & RPG are undef except in WPC
+				($lbl ne 'ANALYSIS_GAP')) {
+				my($msg) = sprintf("label <$lbl> = \$%04X [$addr] already defined with different value (\$%04X [$LBL{$lbl}]) at input line $.\n",$addr,$LBL{$lbl});
+				if ($opt_w) { print(STDERR "WARNING: $msg"); }
+				else		{ die("ERROR: $msg"); }
+			}
+	    
+			printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$%04X to $lbl\n",$addr)
+				if !$allow_relabel && $addr!=$last_label_addr
+								   && !$opt_w && defined($LBL[$addr])
+								   && ($LBL[$addr] ne $lbl)
+								   && !($lbl =~ m/^auto_label_\d*$/ || $LBL[$addr] =~ m/^auto_label_\d*$/);
+			$last_label_addr = $addr;
 		}
 	
-		printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$%04X to $lbl\n",$addr)
-			if !$allow_relabel && $addr!=$last_label_addr
-							   && !$opt_w && defined($LBL[$addr])
-							   && ($LBL[$addr] ne $lbl)
-							   && !($lbl =~ m/^auto_label_\d*$/ || $LBL[$addr] =~ m/^auto_label_\d*$/);
-	    $last_label_addr = $addr;
+		$LBL{$lbl} = $addr;
+		$LBP{$lbl} = $RPG;																# undef except in WPC
+		$LBL[$addr] = $lbl;
 	}
+} # scope of $last_lbl_addr
 
-    $LBL{$lbl} = $addr;
-    $LBL[$addr] = $lbl;
-}
-
-}
 
 sub labelValue($$)
 {
     my($caller_id,$lbl) = @_;
 
-    $lbl = hex($1) if ($lbl =~ m{^\$([0-9A-Fa-f]+)$});
+    $lbl = hex($1) if ($lbl =~ m{^\$([0-9A-Fa-f]+)$});									# return numeric values (not labels)
     $lbl = eval('0b' . $1) if ($lbl =~ m{^%([01]+)$});
     return $lbl if numberp($lbl);
     
-	if ($opt_f) {
+	if ($opt_f) {																		# force mode, intended to compile (some) source files with D711 warnings
 		if (numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$}) {
 			return $LBL{$lbl};
-		} elsif ($lbl =~ m{_([0-9A-Fa-f]{4})$}) {
-			return hex($1);
+		} elsif ($lbl =~ m{_([0-9A-Fa-f]{4})$}) {										# allow undefined labels with addresses but without label base (e.g. _873C)
+			return hex($1);																#    (I am not sure why/when this is needed)
 		} else {
 		    die("Undefined label <$lbl> (cid $caller_id)\n");
 		}
-	} else {
+	} else {																			# not force mode
 	    die("Undefined label <$lbl> (cid $caller_id)\n")
 			unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
+		die("Label <$lbl> references different ROM page (%02X instead of %02X)\n")
+			unless ($LBP{$lbl} == $RPG);
 	    return $LBL{$lbl};
 	}
 }
@@ -1231,68 +1314,67 @@ sub labelValue($$)
     }
 }
 
-sub eval_label($@)                                                                  # addr argument is used when -x is set
-{                                                                                   #   set to undef when no output on -x should be generated
+
+sub eval_label($@)                                                                  	# Label Arithmetic (addr argument is used whith -x)
+{                                                                                   
 #	print(STDERR "eval_label(@_)\n");
     my($lexpr,$addr,$suppress_errors) = @_;
 
-    return $LBL{$lexpr} if (numberp($LBL{$lexpr}));                                 # number
+	my($lbl,$arg1,$arg2) = ($lexpr =~ m{^([^&]+)&\$([0-9A-Fa-f]+)([-+]\d+)$});		  	# hex bit mask with offset (e.g. (table_label&$FF)+2)
+	if (defined($lbl) && defined($arg1) && defined($arg2)) {
+		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
+		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
+			if (numberp($addr) && !numberp($lbl) && $opt_x);
+		my($lv) = labelValue(3,$lbl);
+		return ($lv & hex($arg1))+$arg2 if numberp($lv);
+	}
 
-    my($lbl,$arg1,$arg2) = ($lexpr =~ m{^([^&]+)&\$([0-9A-Fa-f]+)([-+]\d+)$});        # hex bit mask with offset (e.g. (table_label&$FF)+2)
-    if (defined($lbl) && defined($arg1) && defined($arg2)) {
-        return undef if (!defined($LBL{$lbl}) && $suppress_errors);
-        printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
-            if (numberp($addr) && !numberp($lbl) && $opt_x);
-        my($lv) = labelValue(3,$lbl);
-        return ($lv & hex($arg1))+$arg2 if numberp($lv);
-    }
-
-    my($lbl,$arg) = ($lexpr =~ m{^([^+-]+)([-+]\d+)$});                             # constant offsets (e.g. LBL+3)
-    if (defined($lbl) && defined($arg)) {
-        return undef if (!defined($LBL{$lbl}) && $suppress_errors);
-        printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
-            if (numberp($addr) && !numberp($lbl) && $opt_x);
-        my($lv) = labelValue(1,$lbl);
-        return $lv + $arg if numberp($lv);
-    }
+	my($lbl,$arg) = ($lexpr =~ m{^([^+-]+)([-+]\d+)$}); 								# constant offsets (e.g. LBL+3)
+	if (defined($lbl) && defined($arg)) {
+		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
+		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
+			if (numberp($addr) && !numberp($lbl) && $opt_x);
+		my($lv) = labelValue(1,$lbl);
+		return $lv + $arg if numberp($lv);
+	}
     
-    ($lbl,$arg) = ($lexpr =~ m{^([^\|]+)\|\$([0-9A-Fa-f]+)$});                      # hex bit mask (e.g. LG_all|$40)
-    if (defined($lbl) && defined($arg)) {
-        return undef if (!defined($LBL{$lbl}) && $suppress_errors);
-        printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
-            if (numberp($addr) && !numberp($lbl) && $opt_x);
-        my($lv) = labelValue(2,$lbl);
-        return $lv | hex($arg) if numberp($lv);
-    }
+	($lbl,$arg) = ($lexpr =~ m{^([^\|]+)\|\$([0-9A-Fa-f]+)$});							# hex bit mask (e.g. LG_all|$40)
+	if (defined($lbl) && defined($arg)) {
+		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
+		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
+			if (numberp($addr) && !numberp($lbl) && $opt_x);
+		my($lv) = labelValue(2,$lbl);
+		return $lv | hex($arg) if numberp($lv);
+	}
     
-    ($lbl,$arg) = ($lexpr =~ m{^([^&]+)&\$([0-9A-Fa-f]+)$});                        # hex bit mask (e.g. table_label&$FF)
-    if (defined($lbl) && defined($arg)) {
-        return undef if (!defined($LBL{$lbl}) && $suppress_errors);
-        printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
-            if (numberp($addr) && !numberp($lbl) && $opt_x);
-        my($lv) = labelValue(3,$lbl);
-        return $lv & hex($arg) if numberp($lv);
-    }
+	($lbl,$arg) = ($lexpr =~ m{^([^&]+)&\$([0-9A-Fa-f]+)$});							# hex bit mask (e.g. table_label&$FF)
+	if (defined($lbl) && defined($arg)) {
+		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
+		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
+			if (numberp($addr) && !numberp($lbl) && $opt_x);
+		my($lv) = labelValue(3,$lbl);
+		return $lv & hex($arg) if numberp($lv);
+	}
 
-    ($lbl,$arg) = ($lexpr =~ m{^([^>]+)>>(\d+)$});                                  # decimal shift bits (e.g. table_label>>8)
-    if (defined($lbl) && defined($arg)) {
-        return undef if (!defined($LBL{$lbl}) && $suppress_errors);
-        printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
-            if (numberp($addr) && !numberp($lbl) && $opt_x);
-        my($lv) = labelValue(4,$lbl);
-        return $lv >> $arg if numberp($lv);
-    }
+	($lbl,$arg) = ($lexpr =~ m{^([^>]+)>>(\d+)$});										# decimal shift bits (e.g. table_label>>8)
+	if (defined($lbl) && defined($arg)) {
+		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
+		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
+			if (numberp($addr) && !numberp($lbl) && $opt_x);
+		my($lv) = labelValue(4,$lbl);
+		return $lv >> $arg if numberp($lv);
+	}
 
-    ($lbl,$arg) = ($lexpr =~ m{^([^>]+)<<(\d+)$});                                  # decimal shift bits (e.g. table_label<<8)
-    if (defined($lbl) && defined($arg)) {
-        return undef if (!defined($LBL{$lbl}) && $suppress_errors);
-        printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
-            if (numberp($addr) && !numberp($lbl) && $opt_x);
-        my($lv) = labelValue(4,$lbl);
-        return $lv << $arg if numberp($lv);
-    }
+	($lbl,$arg) = ($lexpr =~ m{^([^>]+)<<(\d+)$});										# decimal shift bits (e.g. table_label<<8)
+	if (defined($lbl) && defined($arg)) {
+		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
+		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
+			if (numberp($addr) && !numberp($lbl) && $opt_x);
+		my($lv) = labelValue(4,$lbl);
+		return $lv << $arg if numberp($lv);
+	}
 
-    return undef;
+	return defined($LBL{$lexpr}) ? labelValue(12,$lexpr) : undef;						# assume simple number (not an expression); undef returned on auto lbls
 }
 
 
@@ -1467,7 +1549,7 @@ sub resolve_labels($)
 			require "$PATH/C711.$encoder";
 			$encoder =~ s/\./_/g;														# replace . by _ in function name
 			my($ofs);																	# find statement base address
-			our($addr); die if defined($addr);
+			our($addr); die if defined($addr);											# UNUSED VARIABLE
 			for ($ofs=0; !defined($LINE[$a-$ofs]); $ofs++) {}
 			my($expr) = sprintf("$encoder('%s',%d);",$str,$LINE[$a-$ofs]);
 #			print(STDERR "eval($expr)\n");
@@ -1855,7 +1937,7 @@ sub setROM($$)
     $ROM[$addr] = $val; 
 }
 
-sub assemble_pragma()
+sub compile_pragma()
 {
     my($OP,@OP_ARG) = @_;
     return undef unless ($OP =~ m{^\.});
@@ -2168,6 +2250,22 @@ sub assemble_pragma()
 				}
 				$ROM[$ADDR++] = $OP_ARG[0]; 
 				$ROM[$ADDR++] = '16-BIT VALUE';
+			}
+			return 1;
+		}
+	
+		if ($OP eq '.DBBRB') {																# .DBBRB (define 2 bytes, WPC ref, followed by bytes)
+			die("Syntax: .DBBRB byte-val byte-vale WPC-ref byte-val[...] (<@_> at input line $.)\n")
+				unless (@OP_ARG >= 5);
+			set_label_type(3);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			die(".DBBRB invalid WPC reference page (<@_> at input line $.)\n")
+				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
+			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {
+				$ROM[$ADDR++] = $OP_ARG[0];
 			}
 			return 1;
 		}
@@ -2492,21 +2590,43 @@ sub assemble_pragma()
 	#-----------------------------------------------------------
 
     if ($OP eq '.ORG') {                                                               		# .ORG
-    	my($opa) = $OP_ARG[0];
-		if ($opa =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {
-			die unless defined($2);
-			   if ($1 eq '$') { $opa = hex($2);	}											# decimalize
-			elsif ($1 eq '%') { $opa = eval('0b' . $2); }
-			else			  { $opa = $2; }
-			die("Cannot decode number <$OP_ARG[0]> at input line $.\n")
-				unless numberp($opa);
-			die(sprintf(".ORG address \$%04X out of range [\$%04X-\$%04X] at input line $.\n",$opa,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
-				unless ($opa >= $MIN_ROM_ADDR && $opa <= $MAX_ROM_ADDR);
-		} else {
-	        die("Syntax: .ORG ROM-addr (<@_> at input line $.)\n");
-        }
-        $ADDR = $opa;
+    	$ADDR = $OP_ARG[0];
+    	if ($WMS_System>=6 && $WMS_System<=11) {											# System 6-11: no ROM paging
+			if ($ADDR =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {
+				die("Syntax: .ORG ROM-addr (<@_> at input line $.)\n")
+					unless defined($2);
+				   if ($1 eq '$') { $ADDR = hex($2); }										# decimalize
+				elsif ($1 eq '%') { $ADDR = eval('0b' . $2); }
+				else			  { $ADDR = $2; }
+				die("Cannot decode number <$OP_ARG[0]> at input line $.\n")
+					unless numberp($ADDR);
+				die(sprintf(".ORG address \$%04X out of range [\$%04X-\$%04X] at input line $.\n",$ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
+					unless ($ADDR >= $MIN_ROM_ADDR && $ADDR <= $MAX_ROM_ADDR);
+			} else {
+				die("Syntax: .ORG ROM-addr (<@_> at input line $.)\n");
+	        }
+	    } elsif ($WMS_System =~ /^WPC/) {
+			if ($ADDR =~ m{^\$?([0-9A-Fa-f]{2}):\$?([0-9A-Fa-f]{4})$}) {
+				die("Syntax: .ORG PG:ADDR (<@_> at input line $.)\n")
+					unless defined($2);
+				my($pg) = hex($1);
+				my($ad) = hex($2);
+				die("Cannot decode <$OP_ARG[0]> at input line $.\n")
+					unless numberp($pg) && numberp($ad);
+##				$FIRST_RPG = $pg unless defined($FIRST_RPG);								# first .ORG
+				$RPG  = $pg;
+				$ADDR = $pg*0x4000 + ($ad - 0x4000);
+				die(sprintf(".ORG ROM address \$%05X out of valid range [\$%05X-\$%05X] at input line $.\n",$ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
+					unless ($ADDR >= $MIN_ROM_ADDR && $ADDR <= $MAX_ROM_ADDR);
+			} else {
+				die("Syntax: .ORG <PG:ADDR> (<@_> at input line $.)\n");
+	        }
+	    } else {
+	    	die;
+	    }
+
         $FIRST_ADDR = $ADDR if ($ADDR < $FIRST_ADDR);
+
 		if (defined($ROM[$ADDR])) {
 			my($nBytes) = 0;
 			while (defined($ROM[$ADDR + ++$nBytes])) {}

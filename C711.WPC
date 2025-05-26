@@ -1,0 +1,26 @@
+#======================================================================
+#                    C 7 1 1 . W P C 
+#                    doc: Mon May 26 08:07:03 2025
+#                    dlm: Mon May 26 08:15:18 2025
+#                    (c) 2025 idealjoker@mailbox.org
+#                    uE-Info: 23 30 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	May 26, 2025: - created
+
+our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE);
+
+sub define_syscall($$@)
+{
+	my($lbl,$addr,$args,$note) = @_;
+	$args = '' unless defined($args);
+
+	define_label($lbl,$addr);
+	push(@SC_ADDR,$addr);
+	push(@SC_ARGS,$args);
+	push(@SC_NOTE,$note);
+	$SYSCALL{$lbl} = $#SC_ADDR;
+}
+
+1; 

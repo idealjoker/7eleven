@@ -1,15 +1,18 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 0 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Fri May 23 10:03:51 2025
-#                    (c) 2025 A.M. Thurnherr
-#                    uE-Info: 667 2 NIL 0 0 72 0 2 4 NIL ofnI
+#                    dlm: Mon May 26 09:48:20 2025
+#                    (c) 2025 idealjoker@mailbox.org
+#                    uE-Info: 726 26 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May 21, 2025: - exported from [C711]
 #	May 22, 2025: - BUG: wvm compilation routines called with Sys 6
 #				  - started adapting to use stric vars
+#	May 23, 2025: - made it work
+#	May 26, 2025: - renamed some funs
+# HISTORY END
 
 use strict vars;
 
@@ -447,7 +450,7 @@ sub macro_while_6800($$)										# _LOOP ... _WHILE_EQ
     return undef;
 }
 
-sub unroll_6800_structure()
+sub unroll_asm_structure()
 {
 #	print(STDERR "unroll_6800_structure(MODE=$MODE): $OP @OP_ARG\n");
 	
@@ -662,9 +665,9 @@ sub asm_6800_op($$@)
 	die("Syntax error in statement <@_> at input line $.\n");
 }
 
-sub assemble_6800()
+sub compile_asm()
 {
-##	print(STDERR "assemble_6800(ADDR=$ADDR MODE=$MODE): $OP @OP_ARG\n");
+##	print(STDERR "compile_asm(ADDR=$ADDR MODE=$MODE): $OP @OP_ARG\n");
 
 	if ($WMS_System >= 7 && $WMS_System <= 11) {										# WVM instructions in assembler code
 
@@ -720,7 +723,7 @@ sub assemble_6800()
 				   asm_wvm_branchOp('branchSubroutine'		,0x90,2) || # to 9F
 				   asm_wvm_branchOp('branchSubroutine6800'	,0xA0,1); # to AF
 	
-			return &assemble_wvm(1);			   
+			return compile_vm(1);			   
 	    } # !oneShot
 	
 		$MODE=2,return 1 if asm_wvm_exec6800op('end6800');									# this is an anomaly, handled by asm_wvm_exec6800

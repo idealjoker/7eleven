@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun May 11 10:15:25 2025
+#					 dlm: Fri May 23 15:52:47 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 285 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 404 121 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -401,7 +401,7 @@ sub load_ROM($$@)
     open(RF,$fn) || die("$fn: $!");
     if (defined($RPG)) {
         die("load_ROM($fn,$saddr,$RPG,$lenK)") unless numberp($RPG);
-        unless (defined($start_page)) {										# usually defined in [disassemble_WPC] scripts
+        unless (defined($start_page)) {										# usually defined in [disassemble_WPC] script
         	my($nPG) = (sysseek(RF,0,2)) / 16 / 1024;
 			$start_page = 64 - $nPG;
 		}

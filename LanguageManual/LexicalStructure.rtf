@@ -23,9 +23,15 @@ Source Files \
 Lines and Statements
 \f2\b0 \
 \
-Every 7eleven statement consists of one or more lines in the source file. (There cannot be multiple statements on a single line.) If more than one line is required, a backslash character (\\) can be inserted anywhere between the last code character on the line and either the end of the line or the start of any comment on the same line.  Except in strings (see below), a semicolon character (;) starts a comment which extends to the end of the line. Every source line can additionally have an optional hex address in triangular brackets, e.g. <7F02>, before the first statement token. This address is completely ignored by the compiler. \
+Every 7eleven statement consists of one or more lines in the source file. (There cannot be multiple statements on a single line.) If more than one line is required, a backslash character (\\) can be inserted anywhere between the last code character on the line and either the end of the line or the start of any comment on the same line.  Except in strings (see below), a semicolon character (;) starts a comment which extends to the end of the line. \
 \
-After removing comments and splicing together all source lines that make up a 7eleven statement, the line is split into tokens. Unless the statement is a string definition (.STR, \'85) white space is used to separate the tokens. If the first token ends with a colon character (:), it is interpreted as a label definition. Labels are allowed to contain most printable ASCII characters except for white space. In order to avoid confusion a subset of special characters (: ; + - & | : # ! \'91 \{ \}  \\  < >) must not be used in labels. The remaining tokens comprise the operation and its arguments. With string definitions, single quote characters (\'91) are used as delimiters. There can be an optional label definition, followed by a string-definition pragma (e.g. .STR), followed by a single string, followed by optional whitespace and a comment.\
+Every source line that starts a new statement can additionally have an optional hexadecimal ROM reference in triangular brackets at the beginning of the line \'97 this reference is ignored by the compiler. For system 6-11 the ROM references are 4-digit (2-byte) hexadecimal addresses, e.g. <7FD2>. Since WPC uses ROM paging, the address is prepended by the 2-digit hexadecimal ROM page id, e.g. <3B:4301>. ROM page id FF is used for the two pages (nominal ids 3E and 3F) that are always mapped into the CPU address range (prime real estate area).\
+\
+After removing the optional ROM address and comments, all source lines that make up a single 7eleven statement are spliced together. If the resulting statement starts with a !! prefix, compilation optimization is disabled for this statement and the prefix is removed. \
+\
+If the first token (separated by white space) of the statement ends with a colon character (:), it is interpreted as a label definition. Labels are allowed to contain most printable ASCII characters except for white space. In order to avoid confusion a subset of special characters (: ; + - & | : # ! \'91 \{ \}  \\  < >) must not be used in labels. Label-only statements are allowed. \
+\
+The remaining tokens comprise the instruction, which consists of an operation and its arguments. For string-definition operations (.STR, .S7R, \'85), single quote characters (\'91) are used as delimiters for the single string argument. For all other operations white space is used to separate the statement tokens.\
 \
 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
@@ -49,7 +55,7 @@ After removing comments and splicing together all source lines that make up a 7e
 \cf0 With this definition in place, all \'93Lamp#1E\'94 strings in the source file can be replaced by \'93L_DogHouse\'94, greatly clarifying the code. \
 \
 The 7eleven disassembler can handle naming of the pinball assets automatically. To do so, it needs\expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec4  a file with the names of the game switches and lamps, which can be taken from \
+ a file with the names of the game switches and lamps, which can be taken from \
 \pard\pardeftab720\sa240\partightenfactor0
 \cf0 the game manual. Here is a snippet from a file
 \f5  
@@ -59,7 +65,7 @@ The 7eleven disassembler can handle naming of the pinball assets automatically. 
 \f5 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f4\fs20 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 \outl0\strokewidth0 			defSwitch(22,'SW_Doghouse_Kickbig');\
+\f4\fs20 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 			defSwitch(22,'SW_Doghouse_Kickbig');\
 			defSwitch(23,'SW_Enter_Tiger_Ramp');\
 			defSwitch(24,'SW_Fish_Collect');\
 \
@@ -73,7 +79,7 @@ The 7eleven disassembler can handle naming of the pinball assets automatically. 
 			defLamp(2,'L_bonus_2x');\
 			defLamp(3,'L_bonus_3x');	
 \f6\fs26 \cf0 \cb1 \expnd0\expndtw0\kerning0
-\CocoaLigature1 \outl0\strokewidth0 \strokec4 \
+\CocoaLigature1 \
 \pard\pardeftab720\partightenfactor0
 \cf0 \
 \pard\pardeftab720\sa240\partightenfactor0
@@ -81,17 +87,19 @@ The 7eleven disassembler can handle naming of the pinball assets automatically. 
 \f2\fs24 \cf0 This file can be supplied to the disassembly script via the -i option: \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f4\fs20 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 \outl0\strokewidth0 			disassemble_s11 -g -i BadCats.defs ic26.128 ic27.256 > BadCats.s11\
+\f4\fs20 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 			disassemble_s11 -g -i BadCats.defs ic26.128 ic27.256 > BadCats.s11\cf0 \cb1 \expnd0\expndtw0\kerning0
+\CocoaLigature1       \
 \pard\pardeftab720\partightenfactor0
-\cf0 \cb1 \expnd0\expndtw0\kerning0
-\CocoaLigature1 	      \
-   
-\f5\fs24 \outl0\strokewidth0 \strokec4 \
-\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0    
+\f2\fs24 \kerning1\expnd0\expndtw0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f2 \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 \
+\f1\b \cf0 \
+Numbers and ROM References
+\f2\b0 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 \
+Unsigned numerical values can be specified as decimals (no prefix), hexadecimals ($ prefix) or binary numbers (% prefix). Signed values must be specified as decimals. \
 \
-\
+For system 6-11, ROM references are simply 2-byte addresses (unsigned numbers) usually specified as 4-digit hexadecimals. Since WPC uses ROM paging, ROM references require both page ids (1-byte) and ROM addresses (2-bytes), where the address range of the paged ROM is $4000-7FFF. \
 }
