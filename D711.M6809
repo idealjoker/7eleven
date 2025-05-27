@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sun May 11 10:15:11 2025
+#                    dlm: Tue May 27 15:58:35 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 50 0 NIL 0 0 72 74 2 4 NIL ofnI
+#                    uE-Info: 51 30 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -47,6 +47,8 @@
 #	May  7, 2025: - replaced all ABORT: by WARNING:
 #	May  9, 2025: - BUG: op_EXT data arguments were labeled
 #	May 11, 2025: - put all warnings on STDERR and removed ;
+#	May 26, 2025: - BUG: SWI3 did not work
+#	May 27, 2025: - formatting
 # HISTORY END
 
 # NOTES:
@@ -573,43 +575,44 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 #			$addr,$max_bytes-$addr+$start_addr) if ($max_bytes < 1000);
 		$TYPE[$addr] = $CodeType_asm;
 
-		next if op_DIR(0x00,$addr,$ind,'NEG'); 		next if op_DIR(0x03,$addr,$ind,'COM');		# page 1 opcodes
-		next if op_DIR(0x04,$addr,$ind,'LSR'); 		next if op_DIR(0x06,$addr,$ind,'ROR');
-		next if op_DIR(0x07,$addr,$ind,'ASR'); 		next if op_DIR(0x08,$addr,$ind,'ASL');
-		next if op_DIR(0x09,$addr,$ind,'ROL'); 		next if op_DIR(0x0A,$addr,$ind,'DEC');
-		next if op_DIR(0x0C,$addr,$ind,'INC'); 		next if op_DIR(0x0D,$addr,$ind,'TST');
+		next   if op_DIR(0x00,$addr,$ind,'NEG'); 	next if op_DIR(0x03,$addr,$ind,'COM');		# page 1 opcodes
+		next   if op_DIR(0x04,$addr,$ind,'LSR'); 	next if op_DIR(0x06,$addr,$ind,'ROR');
+		next   if op_DIR(0x07,$addr,$ind,'ASR'); 	next if op_DIR(0x08,$addr,$ind,'ASL');
+		next   if op_DIR(0x09,$addr,$ind,'ROL'); 	next if op_DIR(0x0A,$addr,$ind,'DEC');
+		next   if op_DIR(0x0C,$addr,$ind,'INC'); 	next if op_DIR(0x0D,$addr,$ind,'TST');
 		return if op_DIR(0x0E,$addr,$ind,'JMP'); 	next if op_DIR(0x0F,$addr,$ind,'CLR');
 
-		next if op_INH(0x12,$addr,$ind,'NOP'); 	next if op_INH(0x13,$addr,$ind,'SYNC');
-		return if op_LREL(0x16,$addr,$ind,'LBRA',$lbl_root,$follow_code); 
-		next if op_LREL(0x17,$addr,$ind,'LBSR',$lbl_root,$follow_code);
+		next   if op_INH(0x12,$addr,$ind,'NOP'); 	next if op_INH(0x13,$addr,$ind,'SYNC');
 
-		next if op_INH(0x19,$addr,$ind,'DAA'); 
-		next if op_IMM(0x1A,$ind,'ORCC'); 		next if op_IMM(0x1C,$ind,'ANDCC');
-		next if op_INH(0x1D,$addr,$ind,'SEX'); 
-		next if op_2REGS(0x1E,$ind,'EXG'); 		next if op_2REGS(0x1F,$ind,'TFR');
+		return if op_LREL(0x16,$addr,$ind,'LBRA',$lbl_root,$follow_code); 
+		next   if op_LREL(0x17,$addr,$ind,'LBSR',$lbl_root,$follow_code);
+
+		next   if op_INH(0x19,$addr,$ind,'DAA'); 
+		next   if op_IMM(0x1A,$ind,'ORCC'); 		next if op_IMM(0x1C,$ind,'ANDCC');
+		next   if op_INH(0x1D,$addr,$ind,'SEX'); 
+		next   if op_2REGS(0x1E,$ind,'EXG'); 		next if op_2REGS(0x1F,$ind,'TFR');
 
 		return if op_REL(0x20,$ind,'BRA',$lbl_root,$follow_code); 
-		next if op_REL(0x21,$ind,'BRN',$lbl_root,0); 
-		next if op_REL(0x22,$ind,'BHI',$lbl_root,$follow_code); 
-		next if op_REL(0x23,$ind,'BLS',$lbl_root,$follow_code); 
-		next if op_REL(0x24,$ind,'BCC',$lbl_root,$follow_code); 
-		next if op_REL(0x25,$ind,'BCS',$lbl_root,$follow_code); 
-		next if op_REL(0x26,$ind,'BNE',$lbl_root,$follow_code); 
-		next if op_REL(0x27,$ind,'BEQ',$lbl_root,$follow_code); 
-		next if op_REL(0x28,$ind,'BVC',$lbl_root,$follow_code); 
-		next if op_REL(0x29,$ind,'BVS',$lbl_root,$follow_code); 
-		next if op_REL(0x2A,$ind,'BPL',$lbl_root,$follow_code); 
-		next if op_REL(0x2B,$ind,'BMI',$lbl_root,$follow_code); 
-		next if op_REL(0x2C,$ind,'BGE',$lbl_root,$follow_code); 
-		next if op_REL(0x2D,$ind,'BLT',$lbl_root,$follow_code); 
-		next if op_REL(0x2E,$ind,'BGT',$lbl_root,$follow_code); 
-		next if op_REL(0x2F,$ind,'BLE',$lbl_root,$follow_code); 
+		next   if op_REL(0x21,$ind,'BRN',$lbl_root,0); 
+		next   if op_REL(0x22,$ind,'BHI',$lbl_root,$follow_code); 
+		next   if op_REL(0x23,$ind,'BLS',$lbl_root,$follow_code); 
+		next   if op_REL(0x24,$ind,'BCC',$lbl_root,$follow_code); 
+		next   if op_REL(0x25,$ind,'BCS',$lbl_root,$follow_code); 
+		next   if op_REL(0x26,$ind,'BNE',$lbl_root,$follow_code); 
+		next   if op_REL(0x27,$ind,'BEQ',$lbl_root,$follow_code); 
+		next   if op_REL(0x28,$ind,'BVC',$lbl_root,$follow_code); 
+		next   if op_REL(0x29,$ind,'BVS',$lbl_root,$follow_code); 
+		next   if op_REL(0x2A,$ind,'BPL',$lbl_root,$follow_code); 
+		next   if op_REL(0x2B,$ind,'BMI',$lbl_root,$follow_code); 
+		next   if op_REL(0x2C,$ind,'BGE',$lbl_root,$follow_code); 
+		next   if op_REL(0x2D,$ind,'BLT',$lbl_root,$follow_code); 
+		next   if op_REL(0x2E,$ind,'BGT',$lbl_root,$follow_code); 
+		next   if op_REL(0x2F,$ind,'BLE',$lbl_root,$follow_code); 
 
-		next if op_IDX(0x30,$addr,$ind,'LEAX'); 	next if op_IDX(0x31,$addr,$ind,'LEAY');
-		next if op_IDX(0x32,$addr,$ind,'LEAS'); 	next if op_IDX(0x33,$addr,$ind,'LEAU');
+		next   if op_IDX(0x30,$addr,$ind,'LEAX'); 	next if op_IDX(0x31,$addr,$ind,'LEAY');
+		next   if op_IDX(0x32,$addr,$ind,'LEAS'); 	next if op_IDX(0x33,$addr,$ind,'LEAU');
 
-		next if defined(op_PP(0x34,$ind,'PSHS'));
+		next   if defined(op_PP(0x34,$ind,'PSHS'));
 		if (defined($rv = op_PP(0x35,$ind,'PULS'))) {
 			if ($rv == 0) {										# PC pulled
 				$REM[$addr-2] = 'RTS';
@@ -617,7 +620,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			}
 			next;
 		}
-		next if defined(op_PP(0x36,$ind,'PSHU'));
+		next   if defined(op_PP(0x36,$ind,'PSHU'));
 		if (defined($rv = op_PP(0x37,$ind,'PULU'))) {
 			if ($rv == 0) {										# PC pulled
 				$REM[$addr-2] = 'RTS';
@@ -627,35 +630,35 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		}
 		return if op_INH(0x39,$addr,$ind,'RTS');	next if op_INH(0x3A,$addr,$ind,'ABX');
 		return if op_INH(0x3B,$addr,$ind,'RTI');	next if op_INH(0x3C,$addr,$ind,'CWAI'); 
-		next if op_INH(0x3D,$addr,$ind,'MUL'); 		return if op_INH(0x3F,$addr,$ind,'SWI'); 
+		next   if op_INH(0x3D,$addr,$ind,'MUL'); 	return if op_INH(0x3F,$addr,$ind,'SWI'); 
 
-		next if op_INH(0x40,$addr,$ind,'NEGA'); 	next if op_INH(0x43,$addr,$ind,'COMA');
-		next if op_INH(0x44,$addr,$ind,'LSRA'); 	next if op_INH(0x46,$addr,$ind,'RORA');
-		next if op_INH(0x47,$addr,$ind,'ASRA'); 	next if op_INH(0x48,$addr,$ind,'ASLA');
-		next if op_INH(0x49,$addr,$ind,'ROLA'); 	next if op_INH(0x4A,$addr,$ind,'DECA');
-		next if op_INH(0x4C,$addr,$ind,'INCA'); 	next if op_INH(0x4D,$addr,$ind,'TSTA'); 
-		next if op_INH(0x4F,$addr,$ind,'CLRA');
+		next   if op_INH(0x40,$addr,$ind,'NEGA'); 	next if op_INH(0x43,$addr,$ind,'COMA');
+		next   if op_INH(0x44,$addr,$ind,'LSRA'); 	next if op_INH(0x46,$addr,$ind,'RORA');
+		next   if op_INH(0x47,$addr,$ind,'ASRA'); 	next if op_INH(0x48,$addr,$ind,'ASLA');
+		next   if op_INH(0x49,$addr,$ind,'ROLA'); 	next if op_INH(0x4A,$addr,$ind,'DECA');
+		next   if op_INH(0x4C,$addr,$ind,'INCA'); 	next if op_INH(0x4D,$addr,$ind,'TSTA'); 
+		next   if op_INH(0x4F,$addr,$ind,'CLRA');
 
-		next if op_INH(0x50,$addr,$ind,'NEGB'); 	next if op_INH(0x53,$addr,$ind,'COMB');
-		next if op_INH(0x54,$addr,$ind,'LSRB'); 	next if op_INH(0x56,$addr,$ind,'RORB');
-		next if op_INH(0x57,$addr,$ind,'ASRB'); 	next if op_INH(0x58,$addr,$ind,'ASLB');
-		next if op_INH(0x59,$addr,$ind,'ROLB'); 	next if op_INH(0x5A,$addr,$ind,'DECB');
-		next if op_INH(0x5C,$addr,$ind,'INCB'); 	next if op_INH(0x5D,$addr,$ind,'TSTB'); 
-		next if op_INH(0x5F,$addr,$ind,'CLRB');
+		next   if op_INH(0x50,$addr,$ind,'NEGB'); 	next if op_INH(0x53,$addr,$ind,'COMB');
+		next   if op_INH(0x54,$addr,$ind,'LSRB'); 	next if op_INH(0x56,$addr,$ind,'RORB');
+		next   if op_INH(0x57,$addr,$ind,'ASRB'); 	next if op_INH(0x58,$addr,$ind,'ASLB');
+		next   if op_INH(0x59,$addr,$ind,'ROLB'); 	next if op_INH(0x5A,$addr,$ind,'DECB');
+		next   if op_INH(0x5C,$addr,$ind,'INCB'); 	next if op_INH(0x5D,$addr,$ind,'TSTB'); 
+		next   if op_INH(0x5F,$addr,$ind,'CLRB');
 
-		next if op_IDX(0x60,$addr,$ind,'NEG'); 		next if op_IDX(0x63,$addr,$ind,'COM');
-		next if op_IDX(0x64,$addr,$ind,'LSR'); 		next if op_IDX(0x66,$addr,$ind,'ROR');
-		next if op_IDX(0x67,$addr,$ind,'ASR'); 		next if op_IDX(0x68,$addr,$ind,'ASL');
-		next if op_IDX(0x69,$addr,$ind,'ROL'); 		next if op_IDX(0x6A,$addr,$ind,'DEC');
-		next if op_IDX(0x6C,$addr,$ind,'INC'); 		next if op_IDX(0x6D,$addr,$ind,'TST'); 
+		next   if op_IDX(0x60,$addr,$ind,'NEG'); 	next if op_IDX(0x63,$addr,$ind,'COM');
+		next   if op_IDX(0x64,$addr,$ind,'LSR'); 	next if op_IDX(0x66,$addr,$ind,'ROR');
+		next   if op_IDX(0x67,$addr,$ind,'ASR'); 	next if op_IDX(0x68,$addr,$ind,'ASL');
+		next   if op_IDX(0x69,$addr,$ind,'ROL'); 	next if op_IDX(0x6A,$addr,$ind,'DEC');
+		next   if op_IDX(0x6C,$addr,$ind,'INC'); 	next if op_IDX(0x6D,$addr,$ind,'TST'); 
 		return if $rv = op_IDX(0x6E,$addr,$ind,'JMP');
-		next if op_IDX(0x6F,$addr,$ind,'CLR');
+		next   if op_IDX(0x6F,$addr,$ind,'CLR');
 
-		next if op_EXT(0x70,$addr,$ind,'NEG',1); 	next if op_EXT(0x73,$addr,$ind,'COM',1);
-		next if op_EXT(0x74,$addr,$ind,'LSR',1); 	next if op_EXT(0x76,$addr,$ind,'ROR',1);
-		next if op_EXT(0x77,$addr,$ind,'ASR',1); 	next if op_EXT(0x78,$addr,$ind,'ASL',1);
-		next if op_EXT(0x79,$addr,$ind,'ROL',1); 	next if op_EXT(0x7A,$addr,$ind,'DEC',1);
-		next if op_EXT(0x7C,$addr,$ind,'INC',1); 	next if op_EXT(0x7D,$addr,$ind,'TST',1); 
+		next   if op_EXT(0x70,$addr,$ind,'NEG',1); 	next if op_EXT(0x73,$addr,$ind,'COM',1);
+		next   if op_EXT(0x74,$addr,$ind,'LSR',1); 	next if op_EXT(0x76,$addr,$ind,'ROR',1);
+		next   if op_EXT(0x77,$addr,$ind,'ASR',1); 	next if op_EXT(0x78,$addr,$ind,'ASL',1);
+		next   if op_EXT(0x79,$addr,$ind,'ROL',1); 	next if op_EXT(0x7A,$addr,$ind,'DEC',1);
+		next   if op_EXT(0x7C,$addr,$ind,'INC',1); 	next if op_EXT(0x7D,$addr,$ind,'TST',1); 
 		if ($rv = op_EXT(0x7E,$addr,$ind,'JMP')) {												# handle JMP target syscalls
 			for (my($sc)=0; $sc<@SYSCALL; $sc++) {
 				die("syscall $SYSCALL[$sc] undefined -- replaced by $LBL[$SC_ADDR[$sc]]\n")
@@ -667,42 +670,42 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 				if $follow_code;
 			return;
         }
-		next if op_EXT(0x7F,$addr,$ind,'CLR',1);
+		next   if op_EXT(0x7F,$addr,$ind,'CLR',1);
 
-		next if op_IMM(0x80,$ind,'SUBA'); 			next if op_IMM(0x81,$ind,'CMPA');
-		next if op_IMM(0x82,$ind,'SBCA'); 			next if op_IMM2(0x83,$addr,$ind,'SUBD');
-		next if op_IMM(0x84,$ind,'ANDA'); 			next if op_IMM(0x85,$ind,'BITA');
-		next if op_IMM(0x86,$ind,'LDA'); 			next if op_IMM(0x88,$ind,'EORA');
-		next if op_IMM(0x89,$ind,'ADCA'); 			next if op_IMM(0x8A,$ind,'ORA');
-		next if op_IMM(0x8B,$ind,'ADDA'); 			next if op_IMM2(0x8C,$addr,$ind,'CMPX');
-		next if op_REL(0x8D,$ind,'BSR',$lbl_root,$follow_code); 
-		next if op_IMM2(0x8E,$addr,$ind,'LDX'); 	
+		next   if op_IMM(0x80,$ind,'SUBA'); 			next if op_IMM(0x81,$ind,'CMPA');
+		next   if op_IMM(0x82,$ind,'SBCA'); 			next if op_IMM2(0x83,$addr,$ind,'SUBD');
+		next   if op_IMM(0x84,$ind,'ANDA'); 			next if op_IMM(0x85,$ind,'BITA');
+		next   if op_IMM(0x86,$ind,'LDA'); 				next if op_IMM(0x88,$ind,'EORA');
+		next   if op_IMM(0x89,$ind,'ADCA'); 			next if op_IMM(0x8A,$ind,'ORA');
+		next   if op_IMM(0x8B,$ind,'ADDA'); 			next if op_IMM2(0x8C,$addr,$ind,'CMPX');
+		next   if op_REL(0x8D,$ind,'BSR',$lbl_root,$follow_code); 
+		next   if op_IMM2(0x8E,$addr,$ind,'LDX'); 	
 
-		next if op_DIR(0x90,$addr,$ind,'SUBA'); 	next if op_DIR(0x91,$addr,$ind,'CMPA');
-		next if op_DIR(0x92,$addr,$ind,'SBCA'); 	next if op_DIR(0x93,$addr,$ind,'SUBD');
-		next if op_DIR(0x94,$addr,$ind,'ANDA'); 	next if op_DIR(0x95,$addr,$ind,'BITA');
-		next if op_DIR(0x96,$addr,$ind,'LDA'); 		next if op_DIR(0x97,$addr,$ind,'STA'); 	
-		next if op_DIR(0x98,$addr,$ind,'EORA');		next if op_DIR(0x99,$addr,$ind,'ADCA'); 	
-		next if op_DIR(0x9A,$addr,$ind,'ORA');		next if op_DIR(0x9B,$addr,$ind,'ADDA'); 	
-		next if op_DIR(0x9C,$addr,$ind,'CMPX');		next if op_DIR(0x9D,$addr,$ind,'JSR');
-		next if op_DIR(0x9E,$addr,$ind,'LDX'); 		next if op_DIR(0x9F,$addr,$ind,'STX'); 	
+		next   if op_DIR(0x90,$addr,$ind,'SUBA'); 		next if op_DIR(0x91,$addr,$ind,'CMPA');
+		next   if op_DIR(0x92,$addr,$ind,'SBCA'); 		next if op_DIR(0x93,$addr,$ind,'SUBD');
+		next   if op_DIR(0x94,$addr,$ind,'ANDA'); 		next if op_DIR(0x95,$addr,$ind,'BITA');
+		next   if op_DIR(0x96,$addr,$ind,'LDA'); 		next if op_DIR(0x97,$addr,$ind,'STA'); 	
+		next   if op_DIR(0x98,$addr,$ind,'EORA');		next if op_DIR(0x99,$addr,$ind,'ADCA'); 	
+		next   if op_DIR(0x9A,$addr,$ind,'ORA');		next if op_DIR(0x9B,$addr,$ind,'ADDA'); 	
+		next   if op_DIR(0x9C,$addr,$ind,'CMPX');		next if op_DIR(0x9D,$addr,$ind,'JSR');
+		next   if op_DIR(0x9E,$addr,$ind,'LDX'); 		next if op_DIR(0x9F,$addr,$ind,'STX'); 	
 
-		next if op_IDX(0xA0,$addr,$ind,'SUBA'); 	next if op_IDX(0xA1,$addr,$ind,'CMPA');
-		next if op_IDX(0xA2,$addr,$ind,'SBCA'); 	next if op_IDX(0xA3,$addr,$ind,'SUBD');
-		next if op_IDX(0xA4,$addr,$ind,'ANDA'); 	next if op_IDX(0xA5,$addr,$ind,'BITA');
-		next if op_IDX(0xA6,$addr,$ind,'LDA'); 		next if op_IDX(0xA7,$addr,$ind,'STA'); 	
-		next if op_IDX(0xA8,$addr,$ind,'EORA');		next if op_IDX(0xA9,$addr,$ind,'ADCA'); 	
-		next if op_IDX(0xAA,$addr,$ind,'ORA');		next if op_IDX(0xAB,$addr,$ind,'ADDA'); 	
-		next if op_IDX(0xAC,$addr,$ind,'CMPX');		next if op_IDX(0xAD,$addr,$ind,'JSR');
-		next if op_IDX(0xAE,$addr,$ind,'LDX'); 		next if op_IDX(0xAF,$addr,$ind,'STX'); 	
+		next   if op_IDX(0xA0,$addr,$ind,'SUBA'); 		next if op_IDX(0xA1,$addr,$ind,'CMPA');
+		next   if op_IDX(0xA2,$addr,$ind,'SBCA'); 		next if op_IDX(0xA3,$addr,$ind,'SUBD');
+		next   if op_IDX(0xA4,$addr,$ind,'ANDA'); 		next if op_IDX(0xA5,$addr,$ind,'BITA');
+		next   if op_IDX(0xA6,$addr,$ind,'LDA'); 		next if op_IDX(0xA7,$addr,$ind,'STA'); 	
+		next   if op_IDX(0xA8,$addr,$ind,'EORA');		next if op_IDX(0xA9,$addr,$ind,'ADCA'); 	
+		next   if op_IDX(0xAA,$addr,$ind,'ORA');		next if op_IDX(0xAB,$addr,$ind,'ADDA'); 	
+		next   if op_IDX(0xAC,$addr,$ind,'CMPX');		next if op_IDX(0xAD,$addr,$ind,'JSR');
+		next   if op_IDX(0xAE,$addr,$ind,'LDX'); 		next if op_IDX(0xAF,$addr,$ind,'STX'); 	
 
-		next if op_EXT(0xB0,$addr,$ind,'SUBA',1); 	next if op_EXT(0xB1,$addr,$ind,'CMPA',1);
-		next if op_EXT(0xB2,$addr,$ind,'SBCA',1); 	next if op_EXT(0xB3,$addr,$ind,'SUBD',1);
-		next if op_EXT(0xB4,$addr,$ind,'ANDA',1); 	next if op_EXT(0xB5,$addr,$ind,'BITA',1);
-		next if op_EXT(0xB6,$addr,$ind,'LDA',1); 	next if op_EXT(0xB7,$addr,$ind,'STA',1); 	
-		next if op_EXT(0xB8,$addr,$ind,'EORA',1);	next if op_EXT(0xB9,$addr,$ind,'ADCA',1); 	
-		next if op_EXT(0xBA,$addr,$ind,'ORA',1);	next if op_EXT(0xBB,$addr,$ind,'ADDA',1); 	
-		next if op_EXT(0xBC,$addr,$ind,'CMPX',2);
+		next   if op_EXT(0xB0,$addr,$ind,'SUBA',1); 	next if op_EXT(0xB1,$addr,$ind,'CMPA',1);
+		next   if op_EXT(0xB2,$addr,$ind,'SBCA',1); 	next if op_EXT(0xB3,$addr,$ind,'SUBD',1);
+		next   if op_EXT(0xB4,$addr,$ind,'ANDA',1); 	next if op_EXT(0xB5,$addr,$ind,'BITA',1);
+		next   if op_EXT(0xB6,$addr,$ind,'LDA',1); 		next if op_EXT(0xB7,$addr,$ind,'STA',1); 	
+		next   if op_EXT(0xB8,$addr,$ind,'EORA',1);		next if op_EXT(0xB9,$addr,$ind,'ADCA',1); 	
+		next   if op_EXT(0xBA,$addr,$ind,'ORA',1);		next if op_EXT(0xBB,$addr,$ind,'ADDA',1); 	
+		next   if op_EXT(0xBC,$addr,$ind,'CMPX',2);
 		if ($rv = op_EXT(0xBD,$addr,$ind,'JSR')) {												# JSR to fixed address => handle syscalls
 			my($oaddr) = $addr - 3;
 			my($sc);
@@ -724,42 +727,42 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			}
 		    next;																				# continue disassembly after JSR
    		}
-		next if op_EXT(0xBE,$addr,$ind,'LDX',2); 	next if op_EXT(0xBF,$addr,$ind,'STX',2); 	
+		next   if op_EXT(0xBE,$addr,$ind,'LDX',2); 	next if op_EXT(0xBF,$addr,$ind,'STX',2); 	
 
-		next if op_IMM(0xC0,$ind,'SUBB'); 			next if op_IMM(0xC1,$ind,'CMPB');
-		next if op_IMM(0xC2,$ind,'SBCB'); 			next if op_IMM2(0xC3,$addr,$ind,'ADDD');
-		next if op_IMM(0xC4,$ind,'ANDB'); 			next if op_IMM(0xC5,$ind,'BITB');
-		next if op_IMM(0xC6,$ind,'LDB'); 			next if op_IMM(0xC8,$ind,'EORB');
-		next if op_IMM(0xC9,$ind,'ADCB'); 			next if op_IMM(0xCA,$ind,'ORB');
-		next if op_IMM(0xCB,$ind,'ADDB'); 			next if op_IMM2(0xCC,$addr,$ind,'LDD');
-		next if op_IMM2(0xCE,$addr,$ind,'LDU'); 	
+		next   if op_IMM(0xC0,$ind,'SUBB'); 			next if op_IMM(0xC1,$ind,'CMPB');
+		next   if op_IMM(0xC2,$ind,'SBCB'); 			next if op_IMM2(0xC3,$addr,$ind,'ADDD');
+		next   if op_IMM(0xC4,$ind,'ANDB'); 			next if op_IMM(0xC5,$ind,'BITB');
+		next   if op_IMM(0xC6,$ind,'LDB'); 			next if op_IMM(0xC8,$ind,'EORB');
+		next   if op_IMM(0xC9,$ind,'ADCB'); 			next if op_IMM(0xCA,$ind,'ORB');
+		next   if op_IMM(0xCB,$ind,'ADDB'); 			next if op_IMM2(0xCC,$addr,$ind,'LDD');
+		next   if op_IMM2(0xCE,$addr,$ind,'LDU'); 	
 
-		next if op_DIR(0xD0,$addr,$ind,'SUBB'); 	next if op_DIR(0xD1,$addr,$ind,'CMPB');
-		next if op_DIR(0xD2,$addr,$ind,'SBCB'); 	next if op_DIR(0xD3,$addr,$ind,'ADDD');
-		next if op_DIR(0xD4,$addr,$ind,'ANDB'); 	next if op_DIR(0xD5,$addr,$ind,'BITB');
-		next if op_DIR(0xD6,$addr,$ind,'LDB'); 		next if op_DIR(0xD7,$addr,$ind,'STB'); 	
-		next if op_DIR(0xD8,$addr,$ind,'EORB');		next if op_DIR(0xD9,$addr,$ind,'ADCB'); 	
-		next if op_DIR(0xDA,$addr,$ind,'ORB');		next if op_DIR(0xDB,$addr,$ind,'ADDB'); 	
-		next if op_DIR(0xDC,$addr,$ind,'LDD');		next if op_DIR(0xDD,$addr,$ind,'STD');
-		next if op_DIR(0xDE,$addr,$ind,'LDU'); 		next if op_DIR(0xDF,$addr,$ind,'STU'); 	
+		next   if op_DIR(0xD0,$addr,$ind,'SUBB'); 	next if op_DIR(0xD1,$addr,$ind,'CMPB');
+		next   if op_DIR(0xD2,$addr,$ind,'SBCB'); 	next if op_DIR(0xD3,$addr,$ind,'ADDD');
+		next   if op_DIR(0xD4,$addr,$ind,'ANDB'); 	next if op_DIR(0xD5,$addr,$ind,'BITB');
+		next   if op_DIR(0xD6,$addr,$ind,'LDB'); 		next if op_DIR(0xD7,$addr,$ind,'STB'); 	
+		next   if op_DIR(0xD8,$addr,$ind,'EORB');		next if op_DIR(0xD9,$addr,$ind,'ADCB'); 	
+		next   if op_DIR(0xDA,$addr,$ind,'ORB');		next if op_DIR(0xDB,$addr,$ind,'ADDB'); 	
+		next   if op_DIR(0xDC,$addr,$ind,'LDD');		next if op_DIR(0xDD,$addr,$ind,'STD');
+		next   if op_DIR(0xDE,$addr,$ind,'LDU'); 		next if op_DIR(0xDF,$addr,$ind,'STU'); 	
 
-		next if op_IDX(0xE0,$addr,$ind,'SUBB'); 	next if op_IDX(0xE1,$addr,$ind,'CMPB');
-		next if op_IDX(0xE2,$addr,$ind,'SBCB'); 	next if op_IDX(0xE3,$addr,$ind,'ADDD');
-		next if op_IDX(0xE4,$addr,$ind,'ANDB'); 	next if op_IDX(0xE5,$addr,$ind,'BITB');
-		next if op_IDX(0xE6,$addr,$ind,'LDB'); 		next if op_IDX(0xE7,$addr,$ind,'STB'); 	
-		next if op_IDX(0xE8,$addr,$ind,'EORB');		next if op_IDX(0xE9,$addr,$ind,'ADCB'); 	
-		next if op_IDX(0xEA,$addr,$ind,'ORB');		next if op_IDX(0xEB,$addr,$ind,'ADDB'); 	
-		next if op_IDX(0xEC,$addr,$ind,'LDD');		next if op_IDX(0xED,$addr,$ind,'STD');
-		next if op_IDX(0xEE,$addr,$ind,'LDU'); 		next if op_IDX(0xEF,$addr,$ind,'STU'); 	
+		next   if op_IDX(0xE0,$addr,$ind,'SUBB'); 	next if op_IDX(0xE1,$addr,$ind,'CMPB');
+		next   if op_IDX(0xE2,$addr,$ind,'SBCB'); 	next if op_IDX(0xE3,$addr,$ind,'ADDD');
+		next   if op_IDX(0xE4,$addr,$ind,'ANDB'); 	next if op_IDX(0xE5,$addr,$ind,'BITB');
+		next   if op_IDX(0xE6,$addr,$ind,'LDB'); 		next if op_IDX(0xE7,$addr,$ind,'STB'); 	
+		next   if op_IDX(0xE8,$addr,$ind,'EORB');		next if op_IDX(0xE9,$addr,$ind,'ADCB'); 	
+		next   if op_IDX(0xEA,$addr,$ind,'ORB');		next if op_IDX(0xEB,$addr,$ind,'ADDB'); 	
+		next   if op_IDX(0xEC,$addr,$ind,'LDD');		next if op_IDX(0xED,$addr,$ind,'STD');
+		next   if op_IDX(0xEE,$addr,$ind,'LDU'); 		next if op_IDX(0xEF,$addr,$ind,'STU'); 	
 
-		next if op_EXT(0xF0,$addr,$ind,'SUBB',1); 	next if op_EXT(0xF1,$addr,$ind,'CMPB',1);
-		next if op_EXT(0xF2,$addr,$ind,'SBCB',1); 	next if op_EXT(0xF3,$addr,$ind,'ADDD',2);
-		next if op_EXT(0xF4,$addr,$ind,'ANDB',1); 	next if op_EXT(0xF5,$addr,$ind,'BITB',1);
-		next if op_EXT(0xF6,$addr,$ind,'LDB',1); 	next if op_EXT(0xF7,$addr,$ind,'STB',1); 	
-		next if op_EXT(0xF8,$addr,$ind,'EORB',1);	next if op_EXT(0xF9,$addr,$ind,'ADCB',1); 	
-		next if op_EXT(0xFA,$addr,$ind,'ORB',1);	next if op_EXT(0xFB,$addr,$ind,'ADDB',1); 	
-		next if op_EXT(0xFC,$addr,$ind,'LDD',2);	next if op_EXT(0xFD,$addr,$ind,'STD',2);
-		next if op_EXT(0xFE,$addr,$ind,'LDU',2); 	next if op_EXT(0xFF,$addr,$ind,'STU',2); 	
+		next   if op_EXT(0xF0,$addr,$ind,'SUBB',1); 	next if op_EXT(0xF1,$addr,$ind,'CMPB',1);
+		next   if op_EXT(0xF2,$addr,$ind,'SBCB',1); 	next if op_EXT(0xF3,$addr,$ind,'ADDD',2);
+		next   if op_EXT(0xF4,$addr,$ind,'ANDB',1); 	next if op_EXT(0xF5,$addr,$ind,'BITB',1);
+		next   if op_EXT(0xF6,$addr,$ind,'LDB',1); 	next if op_EXT(0xF7,$addr,$ind,'STB',1); 	
+		next   if op_EXT(0xF8,$addr,$ind,'EORB',1);	next if op_EXT(0xF9,$addr,$ind,'ADCB',1); 	
+		next   if op_EXT(0xFA,$addr,$ind,'ORB',1);	next if op_EXT(0xFB,$addr,$ind,'ADDB',1); 	
+		next   if op_EXT(0xFC,$addr,$ind,'LDD',2);	next if op_EXT(0xFD,$addr,$ind,'STD',2);
+		next   if op_EXT(0xFE,$addr,$ind,'LDU',2); 	next if op_EXT(0xFF,$addr,$ind,'STU',2); 	
 
 		if (BYTE($addr) == 0x10) {																	# page 2 opcodes
 			push(@{$OI[$addr]},'10');
@@ -813,7 +816,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			push(@{$OI[$addr]},'11');
 			$decoded[$addr++] = 1;
 
-			return if op_INH(0x113F,$addr-1,$ind,'SWI3'); 
+			return if op_INH(0x3F,$addr-1,$ind,'SWI3'); 
 		    
 			next if op_IMM2(0x83,$addr-1,$ind,'CMPU');	next if op_IMM2(0x8C,$addr-1,$ind,'CMPS');
 			next if op_DIR(0x93,$addr-1,$ind,'CMPU');	next if op_DIR(0x9C,$addr-1,$ind,'CMPS');

@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon May 26 09:55:00 2025
+#                    dlm: Tue May 27 15:56:51 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 930 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 366 54 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -363,6 +363,7 @@
 #	May 23, 2025: - made it work
 #				  - started working on WPC support
 #	May 26, 2025: - continued implementing WPC support
+#	May 26, 2025: - continued implementing WPC support
 # HISTORY END
 
 # RELEASE NOTES:
@@ -464,6 +465,7 @@ use strict vars;
 
 our($EIGHT_BIT_LABEL_PREFIX)   = '(';                            # don't start labels with these characters or with numbers
 our($TWELVE_BIT_LABEL_PREFIX)  = ')';
+our($SIXTEEN_BIT_LABEL_PREFIX) = '|';
 our($OPTIMIZABLE_LABEL_PREFIX) = '`';                            # this is preceded by a numeric (decimal byte offset)
 
 my($PATH) = $0; $PATH =~ s{/[^/]*$}{};
@@ -890,7 +892,7 @@ while (<>) {															# compile source line by line
         $LINE[$ADDR] = $.;
     }
     
-    @_ = split;                                             			# separate into operator and operands                                    
+    @_ = split;                                             			# tokenize (separate into operator and operands)
     next unless (@_ > 0);                                   			# empty line => nothing to compile
 
     $MODE = 0 if $opt_f;												# froce compilation
@@ -908,7 +910,8 @@ while (<>) {															# compile source line by line
         }
     
         &expand_aliases;                                    			# expand aliases (except for .IFDEF, .IFNDEF, etc. which are handled in compile_pragma())
-		&expand_repeatBytes;											# expand $FF[512x] 255[2x]        
+		&expand_repeatBytes;											# expand $FF[512x] 255[2x]
+		&expand_bang;													# expand !longJSR
         &decimalize;                                        			# convert all numbers to decimal (e.g. for .ORG); NB: does not deal with #$numbers
         ($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
         $OP[$ADDR] = $OP;                                   			# make available to OPTIMIZER
@@ -1744,6 +1747,17 @@ sub expand_repeatBytes()
         	splice(@_,$i+1,0,$_[$i]);
         }
     }
+}
+
+#----------------------------------------------------------------------
+# Expand ! to JSR
+#----------------------------------------------------------------------
+
+sub expand_bang()
+{
+	return unless ($_[0] =~ m{^!});
+	splice(@_,1,0,$');
+	$_[0] = 'JSR';
 }
 
 #----------------------------------------------------------------------

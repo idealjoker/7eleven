@@ -1,26 +1,31 @@
 #======================================================================
 #                    C 7 1 1 . W P C 
 #                    doc: Mon May 26 08:07:03 2025
-#                    dlm: Mon May 26 08:15:18 2025
+#                    dlm: Tue May 27 15:57:22 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 23 30 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 12 13 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May 26, 2025: - created
+#	May 27, 2025: - BUG: %SYSCALL used wrong key
+# HISTORY END
 
 our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE);
 
 sub define_syscall($$@)
 {
 	my($lbl,$addr,$args,$note) = @_;
+#	printf(STDERR "define_syscall($lbl,%04X,$args,$note) ->",$addr);
 	$args = '' unless defined($args);
+	$note = '' unless defined($note);
 
 	define_label($lbl,$addr);
 	push(@SC_ADDR,$addr);
 	push(@SC_ARGS,$args);
 	push(@SC_NOTE,$note);
 	$SYSCALL{$lbl} = $#SC_ADDR;
+#	print(STDERR "#$#SC_ADDR ($SC_ADDR[$#SC_ADDR]|$SC_ARGS[$#SC_ARGS]|$SC_NOTES[$#SC_NOTES]\n");
 }
 
 1; 
