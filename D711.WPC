@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Apr  8 22:17:28 2025
+#                    dlm: Thu May 29 16:54:38 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 286 78 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 73 45 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -70,6 +70,7 @@
 #				  - added duplicate obj detection
 #	Apr  8, 2025: - re-worked and debugged scanCode in prep for adaptation
 #				    to multi-label matches
+#	May 29, 2025: - replaced _skip by & _SKIP
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -545,7 +546,7 @@ sub apply_magic_WPC($$)
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
 		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {			# 1) JMP *+3 
 			undef($OP[$addr]);													# 		generate postfix tag
-			push(@{$OPA[$addr-3]},'&skip');
+			push(@{$OPA[$addr-3]},'& _SKIP');
 			splice(@{$OPA[$addr]},0,1);
 			undef($LBL[$addr+3])												# 		should probably also undef Lbl!
 				if ($Lbl_refs{$LBL[$addr+3]} == 1);

@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sat May 24 03:25:19 2025
+                    dlm: Thu May 29 10:35:46 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 33 10 NIL 0 0 72 0 2 4 NIL ofnI
+                    uE-Info: 42 40 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -28,20 +28,53 @@ $8000-$FFFF 	32KB system ROM
 	- 16KB (current game page) mapped to $4000-$7FFF
 	- up to 992MB (62 pages) for game assets
     
-- 1MB ROM chip:
+- 1MB ROM chip (27C080/27C801):
 	- address range: $00000 - $FFFFF
 	- PG#00-3D (30 pages, 480KB)
 	- PG#3E-3F (2 pages, 32KB)
 
-- T2 uses 512KB ROM chip:
+- T2 uses 512KB ROM chip (27C040/27C401):
 	- address range: $00000 - $7FFFF
 	- PG#20-3D (30 pages, 480KB)
 	- PG#3E-3F (2 pages, 32KB)
+	- May/2025: NOS AT28C040 EEPROM replacement available for $295 on eBay
 
-- FH uses 256KB ROM chip:
+- FH uses 256KB ROM chip (27C020/27C201):
 	- address range: $00000 - $3FFFF
 	- PG#30-3D (14 pages, 224KB)
 	- PG#3E-3F (2 pages, 32KB)	 
+
+
+-ROM Map-
+
+$00000-$03FFF		PG#00
+$04000-$07FFF		PG#01
+$08000-$0CFFF		PG#02
+$0D000-$0FFFF		PG#03
+
+$1xxxx				PG#04-07
+$2xxxx				PG#08-0B
+$3xxxx				PG#0C-0F
+$4xxxx				PG#10-13
+$5xxxx				PG#14-17
+$6xxxx				PG#18-1C
+$7xxxx				PG#1D-1F
+$8xxxx				PG#20-23
+$9xxxx				PG#24-27
+$Axxxx				PG#28-2C
+$Bxxxx				PG#2D-2F
+$Cxxxx				PG#30-33
+$Dxxxx				PG#34-37
+$Exxxx				PG#38-3C
+
+$F0000-$F3FFF		PG#3D
+$F4000-$F7FFF		PG#3E
+$F8000-$FCFFF		PG#FF
+$FD000-$FFFFF		PG#FF
+
+PG 		= int(ROM_addr / 0x4000)
+ADDR	= (ROM_addr % 0x4000) + 0x4000
+
 
 ----------------------------------------------------------------------
 

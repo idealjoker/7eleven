@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 0 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Mon May 26 09:48:20 2025
+#                    dlm: Wed May 28 08:40:11 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 726 26 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 26 49 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -21,6 +21,9 @@ our($OP,@OP_ARG,$MODE,%JSR_TRG,@ROM,$ADDR,%LBL,@IF_CONT_LBL,@LOOP_LBL,@LOOP_DONE
 	@newly_defined_label,$WMS_System,$IVM_DISABLED);
 
 my($last_RTS_addr,@forward_lexical_RTS_branch);
+
+# TO-DO:
+#	- disallow extra arguments as in [C711.M6809]
 
 #======================================================================
 # Macros

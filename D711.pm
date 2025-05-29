@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri May 23 15:52:47 2025
+#					 dlm: Thu May 29 16:55:26 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 404 121 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 286 85 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -282,6 +282,8 @@
 #				  - prevent label_address() to overwrite existing AUTO_LBL so that it
 #				    respects !data labels
 #	May 11, 2025: - put all warnings on STDERR and removed ;
+#	May 29, 2025: - added support for $gapBytes
+#				  - fixed output formatting errors (double addr on line, empty lines)
 # END OF HISTORY
 
 # TO-DO:
@@ -3195,7 +3197,10 @@ sub produce_output(@)
 			for (my($i)=0; $i<@{$EXTRA[$addr]}; $i++) { 					# first, print the pre-label constructs (ENDIF, ...)
 				next unless ($EXTRA_BEFORE_LABEL[$addr][$i]);
 				$line .= indent($line,$hard_tab*$EXTRA_IND[$addr][$i]) . $EXTRA[$addr][$i];
-				if ($code_started && !defined($org) && !$lineEnded) {		# code required to allow divider immediately after free space
+###				die("$code_started/$org/$lineEnded") if $addr==0x5625 && $_cur_RPG==0x36;
+##				if ($code_started && !defined($org) && !$lineEnded) {		# code required to allow divider immediately after free space
+##				if (!$lineEnded && (!$code_started || !defined($org))) {	# works for FH & BadCats; RTS anomalies
+				if (!$lineEnded && !defined($org)) {						# works for FH & BadCats; empty line at start of switch table in BadCats
 					print("\n");
 					$lineEnded = 1;
 				}
@@ -3451,6 +3456,8 @@ sub produce_output(@)
 					$GB = BYTE($addr);
 					while ($addr+$n<=$la && !$decoded[$addr+$n] && BYTE($addr+$n)==$GB) { $n++; }
 					print("\n"),goto FREE_GAP_SPACE if ($GB==0xFF && $n>20);
+
+					$gapBytes += $n;
 					
 					if (defined($LBL[$addr])) {										# pre-existing label in gap
 						printf("\n");

@@ -1,14 +1,15 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Tue May 27 15:56:39 2025
+#                    dlm: Thu May 29 16:53:38 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 12 13 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 12 29 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May 26, 2025: - created from [C711.M6800]
 #	May 27, 2025: - adapted and added new opcodes
+#	May 29, 2025: - debugging
 # HISTORY END
 
 use strict vars;
@@ -16,7 +17,7 @@ use strict vars;
 our($OP,@OP_ARG,%JSR_TRG,@ROM,$ADDR,$RPG,%LBL,@IF_CONT_LBL,@LOOP_LBL,@LOOP_DONE_LBL,
 	$opt_V,$EXEC6809_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
 	$SIXTEEN_BIT_LABEL_PREFIX,@newly_defined_label,$WMS_System,$IVM_DISABLED,
-	@SC_ARGS,%SYSCALL);
+	@SC_ARGS,%SYSCALL,$DP);
 
 my($last_RTS_addr,@forward_lexical_RTS_branch);
 
@@ -369,6 +370,8 @@ sub macro_IF_6809($$)
 {
     my($mac,$cop) = @_;
     if ($OP eq $mac) {
+    	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
+    		if (@OP_ARG);
         $OP = $cop; push(@OP_ARG,auto_label(1));
         push(@IF_CONT_LBL,$OP_ARG[$#OP_ARG]);
         return 1;
@@ -380,6 +383,8 @@ sub macro_until_6809($$)                                        # _UNTIL_EQ ... 
 {
     my($mac,$cop) = @_;
     if ($OP eq $mac) {
+    	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
+    		if (@OP_ARG);
         my($loop_lbl) = auto_label(1);
         define_label($loop_lbl);
         push(@LOOP_LBL,$loop_lbl);
@@ -394,6 +399,8 @@ sub macro_while_6809($$)										# _LOOP ... _WHILE_EQ
 {
     my($mac,$cop) = @_;
     if ($OP eq $mac) {
+    	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
+    		if (@OP_ARG);
         $OP = $cop; @OP_ARG = (pop(@LOOP_LBL));
         define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
         return 1;
@@ -427,6 +434,8 @@ sub unroll_asm_structure()
 	return if macro_IF_6809('_IF_PL','BMI');
 
 	if ($OP eq '_ELSE') {
+    	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
+    		if (@OP_ARG);
 		$OP = 'BRA';
 		@OP_ARG = (auto_label(1));
 		define_label(pop(@IF_CONT_LBL),$ADDR+2);
@@ -435,6 +444,8 @@ sub unroll_asm_structure()
 	}
 
 	if (($OP eq '_ENDIF') || ($OP eq '_ENDUNLESS')) {
+    	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
+    		if (@OP_ARG);
 		undef($OP);
 		define_label(pop(@IF_CONT_LBL));
 		return;
@@ -445,6 +456,8 @@ sub unroll_asm_structure()
     #----------------------------------------
 
 	if ($OP eq '_LOOP') {
+    	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
+    		if (@OP_ARG);
 		undef($OP);
 		my($lbl) = auto_label(1);
 		define_label($lbl);
@@ -484,6 +497,8 @@ sub unroll_asm_structure()
 	return if macro_until_6809('_UNTIL_PL','BPL');
 
 	if ($OP eq '_ENDLOOP') {
+    	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
+    		if (@OP_ARG);
 		$OP = 'BRA';
 		@OP_ARG = (pop(@LOOP_LBL));
 		define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
@@ -491,6 +506,8 @@ sub unroll_asm_structure()
 	}
 
 	if ($OP eq '_ENDLOOOP') {									# long loop
+    	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
+    		if (@OP_ARG);
 		$OP = 'JMP';
 		@OP_ARG = (pop(@LOOP_LBL));
 		define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
@@ -646,6 +663,8 @@ sub asm_6809_op($$@)
 	my($trg,$aModes,@opc) = @_;	# also local($OP,@OP_ARG)
 	return undef unless (CORE::fc($OP) eq CORE::fc($trg));								# don't do anything unless operation is a match
 
+##	printf(STDERR "%04X: asm_6809_op($trg,$aModes,@opc)\n",code_addr());
+
 	if ($aModes eq '') {																# inherent addressing (no other modes possible)
 		die("Usage error: $OP (implied/acc mode) does not allow an argument (<@_> at input line $.)\n")
 			unless (@OP_ARG == 0);
@@ -661,28 +680,138 @@ sub asm_6809_op($$@)
 
 		if ($am eq 'B') {																# Immediate Mode 
 			next unless ($OP_ARG[0] =~ m{^#});
+            die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                if (@OP_ARG > 1);
+            store_opc($opc[$i]);
+            $ROM[$ADDR++] = $';
+            return 1;
+        }
+        if ($am eq 'W') { 
+            next unless ($OP_ARG[0] =~ m{^#});
+            die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                if (@OP_ARG > 1);
+            store_opc($opc[$i]);
+            $ROM[$ADDR++] = $';
+            $ROM[$ADDR++] = '16-BIT VALUE';
+            return 1;
+        }
+
+        if ($am eq 'X') {                                                               # Indexed Mode
+            if ($OP_ARG[0] =~ m{(-?[ABD\d]*)\s*,\s*([XYUSP\+\-])$}) {                   # direct
+                die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                    if (@OP_ARG > 1);
+                store_opc($opc[$i]);
+                store_postBytes_IM($1,$2,0);
+                return 1;
+            } elsif ($OP_ARG[0] =~ m{^\[\s*(-?[ABD\d]*)\s*,\s*([XYUSP\+\-])\s*\]$}) {   # indirect indexed
+                die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                    if (@OP_ARG > 1);
+                store_opc($opc[$i]);
+                store_postBytes_IM($1,$2,1);
+                return 1;
+            } elsif ($OP_ARG[0] =~ m{^\[\s*([\$%]?[0-9A-Fa-f]+)\s*\]$}) {               # indirect extended
+                die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                    if (@OP_ARG > 1);
+                store_opc($opc[$i]);
+                $ROM[$ADDR++] = 0b10011111;                                             # postbyte
+                $ROM[$ADDR++] = $OP_ARG[0];
+                $ROM[$ADDR++] = '16-BIT VALUE';
+                return 1;
+            } else {
+                next;
+            }
+        }
+
+        if (isMember($am,'U','S')) {                                                    # stack register set (1-byte immediate)
+            if (length($OP_ARG[0])==0 || $OP_ARG[0] =~ m{^#[\$%]?0+}) {                 # empty or 0 argument => push zero registers
+                print(STDERR "WARNING: empty register set <$OP_ARG[0]> at input line $.\n");
+                die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                    if (@OP_ARG > 1);
+                store_opc($opc[$i]);
+                $ROM[$ADDR++] = 0x00;
+                return 1;
+            }
+            next unless $OP_ARG[0] =~ m{^[ABCDPSUXY,]+$};
+
+            my($PB);                                                                    # postbyte
+            my($what);
+            foreach my $reg (split(',',$OP_ARG[0])) {
+                if ($reg eq 'CC') {
+                    $PB |= 0b00000001;
+                } elsif ($reg eq 'A') {
+                    $PB |= 0b00000010;
+                } elsif ($reg eq 'B') {
+                    $PB |= 0b00000100;
+                } elsif ($reg eq 'DP') {
+                    $PB |= 0b00001000;
+                } elsif ($reg eq 'X') {
+                    $PB |= 0b00010000;
+                } elsif ($reg eq 'Y') {
+                    $PB |= 0b00100000;
+                } elsif ($reg eq $am) {
+                    $what = ' stack';
+                    $PB |= 0b01000000;
+                } elsif ($reg eq 'PC') {
+                    $PB |= 0b10000000;
+                } else {
+                    die("Invalid$what register <$reg> in list <$OP_ARG[0]> at input line $.\n");
+                }
+            }
+            store_opc($opc[$i]);
+            $ROM[$ADDR++] = $PB;
+            return 1;
+        }
+
+        if ($am eq 'R') {                                                               # transfer Register pair
+            next unless ($OP_ARG[0] =~ m{^([ABCDPSUXY]+),([ABCDPSUXY]+)$});
+			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                if (@OP_ARG > 1);
 			store_opc($opc[$i]);
-			$ROM[$ADDR++] = $';
+			$ROM[$ADDR++] = (TFR_reg($1)<<4) | TFR_reg($2);
 			return 1;
 		}
-		if ($am eq 'W') { 
-			next unless ($OP_ARG[0] =~ m{^#});
+
+		if ($am eq 'D') {																# Direct Mode (LSB of address, pg register is MSB)
+			if ($OP_ARG[0] =~ m{^<}) {													# < prefix forces direct mode
+				$OP_ARG[0] = $';
+			} else {
+				next unless defined($DP);												# < prefix required unless DP is set
+				my($argval);															# determine numeric argument value if possible in order
+				if (numberp($OP_ARG[0])) {												# ... to determine whether direct mode can be used
+					$argval = $OP_ARG[0];
+				} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+					$argval = hex($1);
+				} elsif (numberp($LBL{$OP_ARG[0]})) {
+					$argval = $LBL{$OP_ARG[0]};
+				} else {
+					$argval = eval_label($OP_ARG[0],undef,1);							# returns undef if not a numerical result; no errors on undefined labels
+	            }
+	            next unless defined($argval) && $argval <= 0xFF;											# don't use direct addressing mode for large numbers
+	        }
+			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                if (@OP_ARG > 1) && $OP ne 'JSR';
 			store_opc($opc[$i]);
-			$ROM[$ADDR++] = $';
-			$ROM[$ADDR++] = '16-BIT VALUE';
+			$ROM[$ADDR++] = $OP_ARG[0];
 			return 1;
 		}
 
 		if ($am eq 'E') {																# Extended mode (2-byte absolute address)
-			store_opc($opc[$i]);
-			$ROM[$ADDR++] = $OP_ARG[0];
+			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                if (@OP_ARG > 1);
+			store_opc($opc[$i]);														# default choice (none of the above has matched, cannot be
+			$ROM[$ADDR++] = $OP_ARG[0];													# combined with O, s or L)
 			$ROM[$ADDR++] = '16-BIT VALUE';
 			return 1;
 		}
-		if ($am eq 'O') {																# optimizable 2-byte absolute address
-			die("No lexical label allowed for $OP instruction at input line $.\n")
+		if ($am eq 'O') {																# optimizable 2-byte absolute address (2nd default, cannot be
+			die("No lexical label allowed for $OP instruction at input line $.\n")		# combined with s or L); used for syscalls, so no ARG# checking
 				if ($OP_ARG[0] =~ m{^[<>]});
-			$JSR_TRG{$OP_ARG[0]}++ if ($OP eq 'JSR');			
+			if ($OP eq 'JSR') {
+				$JSR_TRG{$OP_ARG[0]}++;
+			} else {
+				die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+	                if (@OP_ARG > 1);
+			}
 			store_opc($opc[$i]);
 			$ROM[$ADDR++] = "1${OPTIMIZABLE_LABEL_PREFIX}${EIGHT_BIT_LABEL_PREFIX}$OP_ARG[0]";	# NB: 1 is byte offset
 			unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {								# set type of jump target
@@ -693,78 +822,9 @@ sub asm_6809_op($$@)
 			return 1;
 		}
 
-		if ($am eq 'D') {																# Direct Mode (LSB of address, pg register is MSB)
-			store_opc($opc[$i]);
-			$ROM[$ADDR++] = $OP_ARG[0];
-			return 1;
-		}
-
-		if ($am eq 'X') {																# Indexed Mode
-			if ($OP_ARG[0] =~ m{(-?[ABD\d]*)\s*,\s*([XYUSP\+\-])$}) {					# direct
-				store_opc($opc[$i]);
-				store_postBytes_IM($1,$2,0);
-				return 1;
-			} elsif ($OP_ARG[0] =~ m{^\[\s*(-?[ABD\d]*)\s*,\s*([XYUSP\+\-])\s*\]$}) {	# indirect indexed
-				store_opc($opc[$i]);
-				store_postBytes_IM($1,$2,1);
-				return 1;
-			} elsif ($OP_ARG[0] =~ m{^\[\s*([\$%]?[0-9A-Fa-f]+)\s*\]$}) {				# indirect extended
-				store_opc($opc[$i]);
-				$ROM[$ADDR++] = 0b10011111;												# postbyte
-				$ROM[$ADDR++] = $OP_ARG[0];
-				$ROM[$ADDR++] = '16-BIT VALUE';
-				return 1;
-			} else {
-				next;
-			}
-		}
-
-		if (isMember($am,'U','S')) {													# stack register set (1-byte immediate)
-			if (length($OP_ARG[0])==0 || $OP_ARG[0] =~ m{^#[\$%]?0+}) {					# empty or 0 argument => push zero registers
-				print(STDERR "WARNING: empty register set <$OP_ARG[0]> at input line $.\n");
-				store_opc($opc[$i]);
-				$ROM[$ADDR++] = 0x00;
-				return 1;
-			}
-			next unless $OP_ARG[0] =~ m{^[ABCDPSUXY,]+$};
-
-			my($PB);																	# postbyte
-			my($what);
-			foreach my $reg (split(',',$OP_ARG[0])) {
-				if ($reg eq 'CC') {
-					$PB |= 0b00000001;
-				} elsif ($reg eq 'A') {
-					$PB |= 0b00000010;
-				} elsif ($reg eq 'B') {
-					$PB |= 0b00000100;
-				} elsif ($reg eq 'DP') {
-					$PB |= 0b00001000;
-				} elsif ($reg eq 'X') {
-					$PB |= 0b00010000;
-				} elsif ($reg eq 'Y') {
-					$PB |= 0b00100000;
-				} elsif ($reg eq $am) {
-					$what = ' stack';
-					$PB |= 0b01000000;
-				} elsif ($reg eq 'PC') {
-					$PB |= 0b10000000;
-				} else {
-					die("Invalid$what register <$reg> in list <$OP_ARG[0]> at input line $.\n");
-				}
-			}
-			store_opc($opc[$i]);
-			$ROM[$ADDR++] = $PB;
-			return 1;
-		}
-
-		if ($am eq 'R') {																# transfer Register pair
-			next unless ($OP_ARG[0] =~ m{^([ABCDPSUXY]+),([ABCDPSUXY]+)$});
-			store_opc($opc[$i]);
-			$ROM[$ADDR++] = (TFR_reg($1)<<4) | TFR_reg($2);
-			return 1;
-		}
-
  		if ($am eq 's') {																# relative mode (1-byte relative address)
+			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                if (@OP_ARG > 1);
 			store_opc($opc[$i]);
 
 			$OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]						# _EXITLOOP pseudo label
@@ -790,6 +850,8 @@ sub asm_6809_op($$@)
 			return 1;
 		}
 		if ($am eq 'L') {																# long relative mode (2-byte relative address)
+			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                if (@OP_ARG > 1);
 			store_opc($opc[$i]);
 
 			$OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]						# _EXITLOOP pseudo label
@@ -817,7 +879,7 @@ sub asm_6809_op($$@)
 		}
 		
 #		die("Unknown addressing mode <$am> while assembling <$OP @OP_ARG> at input line $.\n");
-		die("Invalid operation argument in statement <$OP @OP_ARG> at input line $.\n");
+		die("Invalid argument(s) in statement <$OP @OP_ARG> at input line $.\n");
 	}
 
 	die("Syntax error in statement <$OP @OP_ARG> at input line $.\n");
@@ -929,6 +991,7 @@ sub compile_asm()
 	return 1 if asm_6809_op('PSHU','S',0x36);								# S allowed
 	return 1 if asm_6809_op('PULU','S',0x37);								# S allowed
 
+	return 1 if asm_6809_op('EXG' ,'R',0x1E);							
 	return 1 if asm_6809_op('TFR' ,'R',0x1F);							
 
 	return 1 if asm_6809_op('BRA','s',0x20);
@@ -955,7 +1018,13 @@ sub compile_asm()
 		asm_6809_op('JMP','DXO',0x0E,0x6E,0x7E) ||
 		asm_6809_op('JSR','DXO',0x9D,0xAD,0xBD)) {
 
+		return 1 unless defined($SYSCALL{$OP_ARG[0]});
+
 		my($SCA) = $SC_ARGS[$SYSCALL{$OP_ARG[0]}];
+##		print(STDERR "potential syscall at input line $. [$OP @OP_ARG <$SCA>]\n");
+		die("Extraneous syscall $OP_ARG[0] $SCA argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+			unless length($SCA) == @OP_ARG-1;
+
 		return 1 unless length($SCA)>0;
 
 		for (my($i)=0; $i<length($SCA); $i++) {								# must be consistent with [D711.M6809] disassemble_syscall()

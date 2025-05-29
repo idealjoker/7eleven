@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Sat Apr 26 08:35:15 2025
+#					 dlm: Thu May 29 10:47:45 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 134 37 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 145 46 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -21,6 +21,8 @@
 #	Apr  6, 2025: - added -t)ag support
 #	Apr 25, 2025: - added -f
 #	Apr 26, 2025: - removed -f (made default)
+#	May 29, 2025: - BUG: -f not removed everywhere
+#				  - added gapBytes
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -134,13 +136,15 @@ if (defined($opt_o)) {														# dump obj information from single page (or 
 my($decoded) = &D711::produce_output(0x4000,0x7FFF,1);
 for (my($rpg)=$D711::start_page+1; $rpg<0x3E; $rpg++) {						# remaining game pages without headers
 	&D711::select_WPC_RPG($rpg,22);		
-	$decoded += &D711::produce_output($opt_f,0x4000,0x7FFF,0);
+	$decoded += &D711::produce_output(0x4000,0x7FFF,0);
 }
 $D711::_cur_RPG = 0xFF;														# allow free space to be found in system code
-$decoded += &D711::produce_output($opt_f,0x8000,0xFFFF,0);					# WPC System
+$decoded += &D711::produce_output(0x8000,0xFFFF,0);							# WPC System
 
-printf("; %.1f KB decoded\n",$decoded/1024);
-printf("; %.1f KB free\n",$D711::freeBytes/1024)
+printf("; %5.1f KB decoded\n",$decoded/1024);
+printf("; %5.1f KB analysis gaps\n",$D711::gapBytes/1024)
+	if ($D711::gapBytes);
+printf("; %5.1f KB free\n",$D711::freeBytes/1024)
 	if ($D711::freeBytes);
 
 exit(0);
