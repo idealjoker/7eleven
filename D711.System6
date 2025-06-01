@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Wed May  7 19:51:05 2025
+#                    dlm: Sun Jun  1 07:43:37 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 37 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 192 76 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -34,6 +34,7 @@
 #	Apr 25, 2025: - tightened score magic so it works also with the GreenROM
 #	Apr 26, 2025: - renamed labels for conistency with [System6.API]
 #	May  7, 2025: - updated labels for consistency with IGR
+#	Jun  1, 2025: - renamed systemConstants to systemAliases
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -180,7 +181,7 @@ sub disassemble_System6($)
 {
 	our($opt_A) = @_;														# export into def_switch_script
 
-	$systemConstants{SS_DEFAULT} = 0;										# Switch Script conditional
+	$systemAliases{SS_DEFAULT} = 0;	f										# Switch Script conditional
 
 	$Address = 0x6000;														# Game Definition Table
 	def_byte_hex('GAMEROM_CHECKSUM');
@@ -188,7 +189,7 @@ sub disassemble_System6($)
 	def_byte_hex('GAMEROM_VERSION');
 	def_byte_hex('CMOS_CHECKBYTE');
 
-	def_byte_hex('DEFAULT_HIGHSCORE','Game Adjustments');										# Game Adjustments
+	def_byte_hex('DEFAULT_HIGHSCORE','Game Adjustments');					# Game Adjustments
 	def_byte_hex('DEFAULT_REPLAYLVL_1');
 	def_byte_hex('DEFAULT_REPLAYLVL_2');
 	def_byte_hex('DEFAULT_REPLAYLVL_3');

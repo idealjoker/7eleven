@@ -1,15 +1,17 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Thu May 29 16:53:38 2025
+#                    dlm: Sun Jun  1 01:53:44 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 12 29 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 14 46 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May 26, 2025: - created from [C711.M6800]
 #	May 27, 2025: - adapted and added new opcodes
 #	May 29, 2025: - debugging
+#	Jun  1, 2025: - BUG: pre-decrement was post-decrement
+#				  - BUG: LBfalse had short arg
 # HISTORY END
 
 use strict vars;
@@ -545,93 +547,105 @@ sub store_opc($)																		# copy OPC (possibly multi-byte) to @ROM
 
 sub store_postBytes_IM($$$)																# copy indexed-mode postbyte and offset to @ROM
 {
-	my($ofs,$R,$indirect) = @_;
+	my($ofs,$IR,$indirect) = @_;
+##	printf(STDERR "%4X: store_postBytes_IM($ofs,$IR,$indirect)\n",code_addr());
 
-	die("Invalid indexed mode address offset <$OP_ARG[0]> at input line $.\n")
+	my($f8,$f16);
+	if ($ofs =~ m{^>}) {																# forced 8-/16-bint offset
+		$f16 = 1;
+		$ofs = $';
+	} elsif ($ofs =~ m{^<}) {
+		$f8 = 1;
+		$ofs = $';
+	}
+
+	die("Invalid indexed mode address offset <$OP_ARG[0]> at input line $.\n")			# no offset, register offset or numeric offset
 		unless length($ofs)==0 || isMember($ofs,'A','B','D') || numberp($ofs);
 
 	my($PB);																			# postbyte
-	
-	my($auto_incDec);
-	if ($R =~ m{\+{2}$}) {																# 2-byte post increment
-		$auto_incDec = 1;
-		$R = $`;
-		$PB |= 0b10000001;
-	} elsif ($R =~ m{\+$}) {															# 1-byte post increment
-		die("Invalid indirect indexed mode auto-increment <$OP_ARG[0]> at input line $.\n")
-			if $indirect;
-		$auto_incDec = 1;
-		$R = $`;
-		$PB |= 0b10000000;
-	} elsif ($R =~ m{^--}) {															# 2-byte pre-decrement
-		$auto_incDec = 1;
-		$R = $';
-		$PB |= 0b10000011;
-	} elsif ($R =~ m{^-}) {																# 1-byte pre-decrement
-		die("Invalid indirect indexed mode auto-decrement <$OP_ARG[0]> at input line $.\n")
-			if $indirect;
-		$auto_incDec = 1;
-		$R = $';
-		$PB |= 0b10000010;
-	}
-
 	my($OB1,$OB2);																		# offset bytes
-	my($invalid_PCR_offset);		
-	if ($ofs eq 'A') {																	# register offset
-		$invalid_PCR_offset = 1;
-		$PB |= 0b10000110;
-	} elsif ($ofs eq 'B') {
-		$invalid_PCR_offset = 1;
-		$PB |= 0b10000101;
-	} elsif (isMember($ofs,'D','AB')) {
-		$invalid_PCR_offset = 1;
-		$PB |= 0b10001101;
-	} elsif (length($ofs) == 0) {														# zero offset
-		$invalid_PCR_offset = 2;
-		$PB |= 0b10000100;
-	} elsif ($ofs>=-16 && $ofs<=15) {													# constant offset
-		die("Invalid indirect indexed mode offset <$OP_ARG[0]> at input line $.\n")
+	
+	if ($IR eq 'PCR') {																	# ofs,PCR
+		die("Invalid PC-relative indirect mode <$OP_ARG[0]> at input line $.\n")
 			if $indirect;
-		$invalid_PCR_offset = 2;
-		$PB |= ($ofs & 0x1F);
-	} elsif ($ofs>=-128 && $ofs<=127) {
-		$PB |= 0b10001000;
-		$OB1 = ($ofs & 0xFF);
-	} elsif ($ofs>=-32768 && $ofs<=32767) {
-		$PB |= 0b10001001;
-		$OB1 = ($ofs & 0xFF00) >> 8;
-		$OB2 = ($ofs & 0xFF);
-	} else {
-		die("Invalid indexed mode offset <$OP_ARG[0]> at input line $.\n");
-	}
-
-	if ($R eq 'X') {																	# index register
-		$PB |= 0b00000000;
-	} elsif ($R eq 'Y') {
-		$PB |= 0b00100000;
-	} elsif ($R eq 'U') {
-		$PB |= 0b01000000;
-	} elsif ($R eq 'S') {
-		$PB |= 0b01100000;
-	} elsif ($R eq 'PCR') {																# here, PB is set with auto-inc/dec and offset bits
-		die("Invalid auto increment/decrement for PC-relative indexed mode <$OP_ARG[0]> at input line $.\n")
-			if $auto_incDec;
-		die("Invalid register offset for PC-relative indexed mode <$OP_ARG[0]> at input line $.\n")
-			if $invalid_PCR_offset == 1;
-		if ($invalid_PCR_offset == 2) {													# short offset encoded in postbyte
-			$PB = 0b10001100;
-			$OB1 = (length($ofs)==0) ? 0x00 : ($ofs & 0xFF);
-		} elsif (defined($OB2)) {														# valid long offset in OB1/OB2
-			$PB = 0b10001101;
-		} else {																		# valid short offset in OB1
-			$PB = 0b10001100;
-		}
-	} else {
-		die("Invalid indexed mode register <$OP_ARG[0]> at input line $.\n");
+		die("Invalid PC-relative 8-bit (forced) offset <$OP_ARG[0]> at input line $.\n")
+			if $f8;
+		if ($ofs>=-128 && $ofs<=127) {
+			$PB = 0b10001000;
+	        $OB1 = ($ofs & 0xFF);
+	    } elsif ($ofs>=-32768 && $ofs<=32767) {
+			$PB = 0b10001001;
+			$OB1 = ($ofs & 0xFF00) >> 8;
+			$OB2 = ($ofs & 0xFF);
+		} else {
+			die("Invalid PC-relative offset <$OP_ARG[0]> at input line $.\n");
+	    }
+	} elsif (isMember($ofs,'A','B','D')) {												# register offset
+		die("Invalid (forced) register offset <$OP_ARG[0]> at input line $.\n")
+			if ($f8 || $f16);
+		if ($ofs eq 'A') {																    
+			$PB = 0b10000110;
+		} elsif ($ofs eq 'B') {
+			$PB = 0b10000101;
+		} elsif (isMember($ofs,'D','AB')) {
+	        $PB = 0b10001101;
+	    } else {
+   			die("Invalid indexed mode register offset <$OP_ARG[0]> at input line $.\n")
+   		}
+	} elsif ($IR =~ m{\+{1,2}$} || $IR =~ m{^-{1,2}}) {									# auto inc/dec
+		die("Invalid non-zero auto-increment/-decrement offset <$OP_ARG[0]> at input line $.\n")
+			if defined($ofs) && $ofs!=0;
+		if ($IR =~ m{\+{2}$}) { 														# 2-byte post increment
+			$IR = $`;
+			$PB = 0b10000001;
+		} elsif ($IR =~ m{\+$}) {														# 1-byte post increment
+			die("Invalid indirect indexed mode auto-increment <$OP_ARG[0]> at input line $.\n")
+				if $indirect;
+			$IR = $`;
+			$PB = 0b10000000;
+		} elsif ($IR =~ m{^--}) {														# 2-byte pre-decrement
+			$IR = $';
+			$PB = 0b10000011;
+		} elsif ($IR =~ m{^-}) {														# 1-byte pre-decrement
+			die("Invalid indirect indexed mode auto-decrement <$OP_ARG[0]> at input line $.\n")
+				if $indirect;
+			$IR = $';
+			$PB = 0b10000010;
+	    } else {
+   			die("Invalid indexed mode auto post-increment/-decrement <$OP_ARG[0]> at input line $.\n")
+   		}
+	} else {																			# constant offset
+		if (!$f8 && !$f16 && (!defined($ofs) || $ofs==0)) {								# zero offset
+			$PB = 0b10000100;
+		} elsif (!$indirect && !$f8 && !$f16 && $ofs>=-16 && $ofs<=15) {				# short offset in postbyte
+			$PB = $ofs & 0x1F;
+		} elsif (!$f16 && $ofs>=-128 && $ofs<=127) {									# 1 postbyte offset 
+			$PB = 0b10001000;
+			$OB1 = $ofs & 0xFF;
+		} elsif ($ofs>=-32768 && $ofs<=32767) {											# 2 postbytes offset
+			$PB = 0b10001001;
+			$OB1 = ($ofs & 0xFF00) >> 8;
+			$OB2 = ($ofs & 0xFF);
+		} else {
+			die("Invalid indexed mode offset <$OP_ARG[0]> at input line $.\n");
+	    }
 	}
 
 	$PB |= 0b00010000 if $indirect;														# indirect mode
 
+	if ($IR eq 'X') {																	# index register
+		$PB |= 0b00000000;
+	} elsif ($IR eq 'Y') {
+		$PB |= 0b00100000;
+	} elsif ($IR eq 'U') {
+		$PB |= 0b01000000;
+	} elsif ($IR eq 'S') {
+		$PB |= 0b01100000;
+	} elsif ($IR ne 'PCR') {															# PCR handled above
+		die("Invalid indexed mode register <$OP_ARG[0]> at input line $.\n");
+	}
+
+##	printf(STDERR "%04X: PB = %08b, OB1 = $OB1 (%d), OB2 = $OB2 (%d) [$f8/$f16]\n",code_addr(),$PB,defined($OB1),defined($OB2));
 	$ROM[$ADDR++] = $PB;
 	$ROM[$ADDR++] = $OB1 if defined($OB1);
 	$ROM[$ADDR++] = $OB2 if defined($OB2);
@@ -696,31 +710,31 @@ sub asm_6809_op($$@)
             return 1;
         }
 
-        if ($am eq 'X') {                                                               # Indexed Mode
-            if ($OP_ARG[0] =~ m{(-?[ABD\d]*)\s*,\s*([XYUSP\+\-])$}) {                   # direct
-                die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
-                    if (@OP_ARG > 1);
-                store_opc($opc[$i]);
-                store_postBytes_IM($1,$2,0);
-                return 1;
-            } elsif ($OP_ARG[0] =~ m{^\[\s*(-?[ABD\d]*)\s*,\s*([XYUSP\+\-])\s*\]$}) {   # indirect indexed
-                die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
-                    if (@OP_ARG > 1);
-                store_opc($opc[$i]);
-                store_postBytes_IM($1,$2,1);
-                return 1;
-            } elsif ($OP_ARG[0] =~ m{^\[\s*([\$%]?[0-9A-Fa-f]+)\s*\]$}) {               # indirect extended
-                die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
-                    if (@OP_ARG > 1);
-                store_opc($opc[$i]);
-                $ROM[$ADDR++] = 0b10011111;                                             # postbyte
-                $ROM[$ADDR++] = $OP_ARG[0];
-                $ROM[$ADDR++] = '16-BIT VALUE';
-                return 1;
-            } else {
-                next;
-            }
-        }
+		if ($am eq 'X') {																# Indexed Mode
+			if ($OP_ARG[0] =~ m{(-?[ABD\d<>]*)?\s*,\s*([XYUSP\+\-]+)$}) {				# direct
+				die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+					if (@OP_ARG > 1);
+				store_opc($opc[$i]);
+				store_postBytes_IM($1,$2,0);
+				return 1;
+			} elsif ($OP_ARG[0] =~ m{^\[\s*(-?[ABD\d<>]*)\s*,\s*([XYUSP\+\-])\s*\]$}) {	# indirect indexed
+				die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+					if (@OP_ARG > 1);
+				store_opc($opc[$i]);
+				store_postBytes_IM($1,$2,1);
+				return 1;
+			} elsif ($OP_ARG[0] =~ m{^\[\s*([\$%]?[0-9A-Fa-f]+)\s*\]$}) {				# indirect extended
+				die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+					if (@OP_ARG > 1);
+				store_opc($opc[$i]);
+				$ROM[$ADDR++] = 0b10011111; 											# postbyte
+				$ROM[$ADDR++] = $OP_ARG[0];
+				$ROM[$ADDR++] = '16-BIT VALUE';
+				return 1;
+			} else {
+				next;
+			}
+		}
 
         if (isMember($am,'U','S')) {                                                    # stack register set (1-byte immediate)
             if (length($OP_ARG[0])==0 || $OP_ARG[0] =~ m{^#[\$%]?0+}) {                 # empty or 0 argument => push zero registers
@@ -764,214 +778,214 @@ sub asm_6809_op($$@)
 
         if ($am eq 'R') {                                                               # transfer Register pair
             next unless ($OP_ARG[0] =~ m{^([ABCDPSUXY]+),([ABCDPSUXY]+)$});
-			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+            die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
                 if (@OP_ARG > 1);
-			store_opc($opc[$i]);
-			$ROM[$ADDR++] = (TFR_reg($1)<<4) | TFR_reg($2);
-			return 1;
-		}
+            store_opc($opc[$i]);
+            $ROM[$ADDR++] = (TFR_reg($1)<<4) | TFR_reg($2);
+            return 1;
+        }
 
-		if ($am eq 'D') {																# Direct Mode (LSB of address, pg register is MSB)
-			if ($OP_ARG[0] =~ m{^<}) {													# < prefix forces direct mode
-				$OP_ARG[0] = $';
-			} else {
-				next unless defined($DP);												# < prefix required unless DP is set
-				my($argval);															# determine numeric argument value if possible in order
-				if (numberp($OP_ARG[0])) {												# ... to determine whether direct mode can be used
-					$argval = $OP_ARG[0];
-				} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
-					$argval = hex($1);
-				} elsif (numberp($LBL{$OP_ARG[0]})) {
-					$argval = $LBL{$OP_ARG[0]};
-				} else {
-					$argval = eval_label($OP_ARG[0],undef,1);							# returns undef if not a numerical result; no errors on undefined labels
-	            }
-	            next unless defined($argval) && $argval <= 0xFF;											# don't use direct addressing mode for large numbers
-	        }
-			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+        if ($am eq 'D') {                                                               # Direct Mode (LSB of address, pg register is MSB)
+            if ($OP_ARG[0] =~ m{^<}) {                                                  # < prefix forces direct mode
+                $OP_ARG[0] = $';
+            } else {
+                next unless defined($DP);                                               # < prefix required unless DP is set
+                my($argval);                                                            # determine numeric argument value if possible in order
+                if (numberp($OP_ARG[0])) {                                              # ... to determine whether direct mode can be used
+                    $argval = $OP_ARG[0];
+                } elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+                    $argval = hex($1);
+                } elsif (numberp($LBL{$OP_ARG[0]})) {
+                    $argval = $LBL{$OP_ARG[0]};
+                } else {
+                    $argval = eval_label($OP_ARG[0],undef,1);                           # returns undef if not a numerical result; no errors on undefined labels
+                }
+                next unless defined($argval) && $argval <= 0xFF;                                            # don't use direct addressing mode for large numbers
+            }
+            die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
                 if (@OP_ARG > 1) && $OP ne 'JSR';
-			store_opc($opc[$i]);
-			$ROM[$ADDR++] = $OP_ARG[0];
-			return 1;
-		}
+            store_opc($opc[$i]);
+            $ROM[$ADDR++] = $OP_ARG[0];
+            return 1;
+        }
 
-		if ($am eq 'E') {																# Extended mode (2-byte absolute address)
-			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+        if ($am eq 'E') {                                                               # Extended mode (2-byte absolute address)
+            die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
                 if (@OP_ARG > 1);
-			store_opc($opc[$i]);														# default choice (none of the above has matched, cannot be
-			$ROM[$ADDR++] = $OP_ARG[0];													# combined with O, s or L)
-			$ROM[$ADDR++] = '16-BIT VALUE';
-			return 1;
-		}
-		if ($am eq 'O') {																# optimizable 2-byte absolute address (2nd default, cannot be
-			die("No lexical label allowed for $OP instruction at input line $.\n")		# combined with s or L); used for syscalls, so no ARG# checking
-				if ($OP_ARG[0] =~ m{^[<>]});
-			if ($OP eq 'JSR') {
-				$JSR_TRG{$OP_ARG[0]}++;
-			} else {
-				die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
-	                if (@OP_ARG > 1);
-			}
-			store_opc($opc[$i]);
-			$ROM[$ADDR++] = "1${OPTIMIZABLE_LABEL_PREFIX}${EIGHT_BIT_LABEL_PREFIX}$OP_ARG[0]";	# NB: 1 is byte offset
-			unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {								# set type of jump target
-				push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
-				set_label_type(1);
-            }			        
-			$ROM[$ADDR++] = '16-BIT VALUE';
-			return 1;
-		}
-
- 		if ($am eq 's') {																# relative mode (1-byte relative address)
-			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
-                if (@OP_ARG > 1);
-			store_opc($opc[$i]);
-
-			$OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]						# _EXITLOOP pseudo label
-		        if ($OP_ARG[0] eq '_EXITLOOP' ||
-					$OP_ARG[0] eq '>EXITLOOP');
-			$OP_ARG[0] = $LOOP_LBL[$#LOOP_LBL]      									# _NEXTLOOP pseudo label
-			        if ($OP_ARG[0] eq '_NEXTLOOP' ||
-					    $OP_ARG[0] eq '<NEXTLOOP');
-
-			if ($OP_ARG[0] eq '<RTS') {													# lexical labels
-				$OP_ARG[0] = $last_RTS_addr;
-            } elsif ($OP_ARG[0] eq '>RTS') {
-            	push(@forward_lexical_RTS_branch,$ADDR);
-            	$OP_ARG[0] = 'no RTS found after branch to >RTS';
+            store_opc($opc[$i]);                                                        # default choice (none of the above has matched, cannot be
+            $ROM[$ADDR++] = $OP_ARG[0];                                                 # combined with O, s or L)
+            $ROM[$ADDR++] = '16-BIT VALUE';
+            return 1;
+        }
+        if ($am eq 'O') {                                                               # optimizable 2-byte absolute address (2nd default, cannot be
+            die("Invalid lexical label <$OP_ARG[0]> for $OP instruction at input line $.\n")        # combined with s or L); used for syscalls, so no ARG# checking
+                if ($OP_ARG[0] =~ m{^[<>]});
+            if ($OP eq 'JSR') {
+                $JSR_TRG{$OP_ARG[0]}++;
             } else {
-				unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {									# set type of branch target
-					push(@newly_defined_label,($OP_ARG[0]));
-					set_label_type(1);
-            	}
+                die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                    if (@OP_ARG > 1);
             }
-						        
-			$ROM[$ADDR++] = $EIGHT_BIT_LABEL_PREFIX . $OP_ARG[0];
-			return 1;
-		}
-		if ($am eq 'L') {																# long relative mode (2-byte relative address)
-			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+            store_opc($opc[$i]);
+            $ROM[$ADDR++] = "1${OPTIMIZABLE_LABEL_PREFIX}${EIGHT_BIT_LABEL_PREFIX}$OP_ARG[0]";  # NB: 1 is byte offset
+            unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {                               # set type of jump target
+                push(@newly_defined_label,($OP_ARG[$#OP_ARG]));
+                set_label_type(1);
+            }                   
+            $ROM[$ADDR++] = '16-BIT VALUE';
+            return 1;
+        }
+
+        if ($am eq 's') {                                                               # relative mode (1-byte relative address)
+            die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
                 if (@OP_ARG > 1);
-			store_opc($opc[$i]);
+            store_opc($opc[$i]);
 
-			$OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]						# _EXITLOOP pseudo label
-		        if ($OP_ARG[0] eq '_EXITLOOP' ||
-					$OP_ARG[0] eq '>EXITLOOP');
-			$OP_ARG[0] = $LOOP_LBL[$#LOOP_LBL]      									# _NEXTLOOP pseudo label
-			        if ($OP_ARG[0] eq '_NEXTLOOP' ||
-					    $OP_ARG[0] eq '<NEXTLOOP');
+            $OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]                       # _EXITLOOP pseudo label
+                if ($OP_ARG[0] eq '_EXITLOOP' ||
+                    $OP_ARG[0] eq '>EXITLOOP');
+            $OP_ARG[0] = $LOOP_LBL[$#LOOP_LBL]                                          # _NEXTLOOP pseudo label
+                    if ($OP_ARG[0] eq '_NEXTLOOP' ||
+                        $OP_ARG[0] eq '<NEXTLOOP');
 
-			if ($OP_ARG[0] eq '<RTS') {													# lexical labels
-				$OP_ARG[0] = $last_RTS_addr;
+            if ($OP_ARG[0] eq '<RTS') {                                                 # lexical labels
+                $OP_ARG[0] = $last_RTS_addr;
             } elsif ($OP_ARG[0] eq '>RTS') {
-            	push(@forward_lexical_RTS_branch,$ADDR);
-            	$OP_ARG[0] = 'no RTS found after branch to >RTS';
+                push(@forward_lexical_RTS_branch,$ADDR);
+                $OP_ARG[0] = 'no RTS found after branch to >RTS';
             } else {
-				unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {									# set type of branch target
-					push(@newly_defined_label,($OP_ARG[0]));
-					set_label_type(1);
-            	}
+                unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {                                  # set type of branch target
+                    push(@newly_defined_label,($OP_ARG[0]));
+                    set_label_type(1);
+                }
             }
-						        
-			$ROM[$ADDR++] = $SIXTEEN_BIT_LABEL_PREFIX . $OP_ARG[0];						# not yet optimizable
-			$ROM[$ADDR++] = '16-BIT VALUE';
-			return 1;
-		}
-		
-#		die("Unknown addressing mode <$am> while assembling <$OP @OP_ARG> at input line $.\n");
-		die("Invalid argument(s) in statement <$OP @OP_ARG> at input line $.\n");
-	}
+                                
+            $ROM[$ADDR++] = $EIGHT_BIT_LABEL_PREFIX . $OP_ARG[0];
+            return 1;
+        }
+        if ($am eq 'L') {                                                               # long relative mode (2-byte relative address)
+            die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                if (@OP_ARG > 1);
+            store_opc($opc[$i]);
 
-	die("Syntax error in statement <$OP @OP_ARG> at input line $.\n");
+            $OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]                       # _EXITLOOP pseudo label
+                if ($OP_ARG[0] eq '_EXITLOOP' ||
+                    $OP_ARG[0] eq '>EXITLOOP');
+            $OP_ARG[0] = $LOOP_LBL[$#LOOP_LBL]                                          # _NEXTLOOP pseudo label
+                    if ($OP_ARG[0] eq '_NEXTLOOP' ||
+                        $OP_ARG[0] eq '<NEXTLOOP');
+
+            if ($OP_ARG[0] eq '<RTS') {                                                 # lexical labels
+                $OP_ARG[0] = $last_RTS_addr;
+            } elsif ($OP_ARG[0] eq '>RTS') {
+                push(@forward_lexical_RTS_branch,$ADDR);
+                $OP_ARG[0] = 'no RTS found after branch to >RTS';
+            } else {
+                unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {                                  # set type of branch target
+                    push(@newly_defined_label,($OP_ARG[0]));
+                    set_label_type(1);
+                }
+            }
+                                
+            $ROM[$ADDR++] = $SIXTEEN_BIT_LABEL_PREFIX . $OP_ARG[0];                     # not yet optimizable
+            $ROM[$ADDR++] = '16-BIT VALUE';
+            return 1;
+        }
+        
+#       die("Unknown addressing mode <$am> while assembling <$OP @OP_ARG> at input line $.\n");
+        die("Invalid argument(s) in statement <$OP @OP_ARG> at input line $.\n");
+    }
+
+    die("Syntax error in statement <$OP @OP_ARG> at input line $.\n");
 }
 
 
 sub compile_asm()
 {
-##	print(STDERR "compile_asm(RPG=$RPG ADDR=$ADDR): $OP @OP_ARG\n");
+##  print(STDERR "compile_asm(RPG=$RPG ADDR=$ADDR): $OP @OP_ARG\n");
 
-	return 1 if asm_6809_op('NOP'	,'',0x12);											# inherent addressing (no ohter modes)
-	return 1 if asm_6809_op('SYNC'	,'',0x13);
-	return 1 if asm_6809_op('DAA'	,'',0x19);
-	return 1 if asm_6809_op('SEX'	,'',0x1D);
-	return 1 if asm_6809_op('ABX'	,'',0x3A);
-	return 1 if asm_6809_op('RTI'	,'',0x3B);
-	return 1 if asm_6809_op('CWAI'	,'',0x3C);
-	return 1 if asm_6809_op('MUL'	,'',0x3D);
-	return 1 if asm_6809_op('SWI'	,'',0x3F);
-	return 1 if asm_6809_op('SWI'	,'',0x103F);
-	return 1 if asm_6809_op('SWI'	,'',0x113F);
-	return 1 if asm_6809_op('NEGA'	,'',0x40) || asm_6809_op('NEGB','',0x50);
-	return 1 if asm_6809_op('COMA'	,'',0x43) || asm_6809_op('COMB','',0x53);
-	return 1 if asm_6809_op('LSRA'	,'',0x44) || asm_6809_op('LSRB','',0x54);
-	return 1 if asm_6809_op('RORA'	,'',0x46) || asm_6809_op('RORB','',0x56);
-	return 1 if asm_6809_op('ASRA'	,'',0x47) || asm_6809_op('ASRB','',0x57);
-	return 1 if asm_6809_op('ASLA'	,'',0x48) || asm_6809_op('ASLB','',0x58);
-	return 1 if asm_6809_op('ROLA'	,'',0x49) || asm_6809_op('ROLB','',0x59);
-	return 1 if asm_6809_op('DECA'	,'',0x4A) || asm_6809_op('DECB','',0x5A);
-	return 1 if asm_6809_op('INCA'	,'',0x4C) || asm_6809_op('INCB','',0x5C);
-	return 1 if asm_6809_op('TSTA'	,'',0x4D) || asm_6809_op('TSTB','',0x5D);
-	return 1 if asm_6809_op('CLRA'	,'',0x4F) || asm_6809_op('CLRB','',0x5F);
+    return 1 if asm_6809_op('NOP'   ,'',0x12);                                          # inherent addressing (no ohter modes)
+    return 1 if asm_6809_op('SYNC'  ,'',0x13);
+    return 1 if asm_6809_op('DAA'   ,'',0x19);
+    return 1 if asm_6809_op('SEX'   ,'',0x1D);
+    return 1 if asm_6809_op('ABX'   ,'',0x3A);
+    return 1 if asm_6809_op('RTI'   ,'',0x3B);
+    return 1 if asm_6809_op('CWAI'  ,'',0x3C);
+    return 1 if asm_6809_op('MUL'   ,'',0x3D);
+    return 1 if asm_6809_op('SWI'   ,'',0x3F);
+    return 1 if asm_6809_op('SWI'   ,'',0x103F);
+    return 1 if asm_6809_op('SWI'   ,'',0x113F);
+    return 1 if asm_6809_op('NEGA'  ,'',0x40) || asm_6809_op('NEGB','',0x50);
+    return 1 if asm_6809_op('COMA'  ,'',0x43) || asm_6809_op('COMB','',0x53);
+    return 1 if asm_6809_op('LSRA'  ,'',0x44) || asm_6809_op('LSRB','',0x54);
+    return 1 if asm_6809_op('RORA'  ,'',0x46) || asm_6809_op('RORB','',0x56);
+    return 1 if asm_6809_op('ASRA'  ,'',0x47) || asm_6809_op('ASRB','',0x57);
+    return 1 if asm_6809_op('ASLA'  ,'',0x48) || asm_6809_op('ASLB','',0x58);
+    return 1 if asm_6809_op('ROLA'  ,'',0x49) || asm_6809_op('ROLB','',0x59);
+    return 1 if asm_6809_op('DECA'  ,'',0x4A) || asm_6809_op('DECB','',0x5A);
+    return 1 if asm_6809_op('INCA'  ,'',0x4C) || asm_6809_op('INCB','',0x5C);
+    return 1 if asm_6809_op('TSTA'  ,'',0x4D) || asm_6809_op('TSTB','',0x5D);
+    return 1 if asm_6809_op('CLRA'  ,'',0x4F) || asm_6809_op('CLRB','',0x5F);
 
-	if (asm_6809_op('RTS','',0x39)) {													# lexical label support
-		$last_RTS_addr = $ADDR - 1;
-		while (@forward_lexical_RTS_branch) {
-			$ROM[pop(@forward_lexical_RTS_branch)] = $EIGHT_BIT_LABEL_PREFIX . ($ADDR - 1);
-		}
-		return 1;
-	}
+    if (asm_6809_op('RTS','',0x39)) {                                                   # lexical label support
+        $last_RTS_addr = $ADDR - 1;
+        while (@forward_lexical_RTS_branch) {
+            $ROM[pop(@forward_lexical_RTS_branch)] = $EIGHT_BIT_LABEL_PREFIX . ($ADDR - 1);
+        }
+        return 1;
+    }
 
-	return 1 if asm_6809_op('ORCC' ,'B',0x1A);
-	return 1 if asm_6809_op('ANDCC','B',0x1C);
+    return 1 if asm_6809_op('ORCC' ,'B',0x1A);
+    return 1 if asm_6809_op('ANDCC','B',0x1C);
 
-	return 1 if asm_6809_op('LEAX','X',0x30);
-	return 1 if asm_6809_op('LEAY','X',0x31);
-	return 1 if asm_6809_op('LEAS','X',0x32);
-	return 1 if asm_6809_op('LEAU','X',0x33);
+    return 1 if asm_6809_op('LEAX','X',0x30);
+    return 1 if asm_6809_op('LEAY','X',0x31);
+    return 1 if asm_6809_op('LEAS','X',0x32);
+    return 1 if asm_6809_op('LEAU','X',0x33);
 
-	return 1 if asm_6809_op('SUBA','BXDE',0x80,0xA0,0x90,0xB0);
-	return 1 if asm_6809_op('SUBB','BXDE',0xC0,0xE0,0xD0,0xF0);
-	return 1 if asm_6809_op('CMPA','BXDE',0x81,0xA1,0x91,0xB1);
-	return 1 if asm_6809_op('CMPB','BXDE',0xC1,0xE1,0xD1,0xF1);
-	return 1 if asm_6809_op('SBCA','BXDE',0x82,0xA2,0x92,0xB2);
-	return 1 if asm_6809_op('SBCB','BXDE',0xC2,0xE2,0xD2,0xF2);
-	return 1 if asm_6809_op('ANDA','BXDE',0x84,0xA4,0x94,0xB4);
-	return 1 if asm_6809_op('ANDB','BXDE',0xC4,0xE4,0xD4,0xF4);
-	return 1 if asm_6809_op('BITA','BXDE',0x85,0xA5,0x95,0xB5);
-	return 1 if asm_6809_op('BITB','BXDE',0xC5,0xE5,0xD5,0xF5);
-	return 1 if asm_6809_op('LDA' ,'BXDE',0x86,0xA6,0x96,0xB6);
-	return 1 if asm_6809_op('LDB' ,'BXDE',0xC6,0xE6,0xD6,0xF6);
-	return 1 if asm_6809_op('EORA','BXDE',0x88,0xA8,0x98,0xB8);
-	return 1 if asm_6809_op('EORB','BXDE',0xC8,0xE8,0xD8,0xF8);
-	return 1 if asm_6809_op('ADCA','BXDE',0x89,0xA9,0x99,0xB9);
-	return 1 if asm_6809_op('ADCB','BXDE',0xC9,0xE9,0xD9,0xF9);
-	return 1 if asm_6809_op('ORA' ,'BXDE',0x8A,0xAA,0x9A,0xBA);
-	return 1 if asm_6809_op('ORB' ,'BXDE',0xCA,0xEA,0xDA,0xFA);
-	return 1 if asm_6809_op('ADDA','BXDE',0x8B,0xAB,0x9B,0xBB);
-	return 1 if asm_6809_op('ADDB','BXDE',0xCB,0xEB,0xDB,0xFB);
+    return 1 if asm_6809_op('SUBA','BXDE',0x80,0xA0,0x90,0xB0);
+    return 1 if asm_6809_op('SUBB','BXDE',0xC0,0xE0,0xD0,0xF0);
+    return 1 if asm_6809_op('CMPA','BXDE',0x81,0xA1,0x91,0xB1);
+    return 1 if asm_6809_op('CMPB','BXDE',0xC1,0xE1,0xD1,0xF1);
+    return 1 if asm_6809_op('SBCA','BXDE',0x82,0xA2,0x92,0xB2);
+    return 1 if asm_6809_op('SBCB','BXDE',0xC2,0xE2,0xD2,0xF2);
+    return 1 if asm_6809_op('ANDA','BXDE',0x84,0xA4,0x94,0xB4);
+    return 1 if asm_6809_op('ANDB','BXDE',0xC4,0xE4,0xD4,0xF4);
+    return 1 if asm_6809_op('BITA','BXDE',0x85,0xA5,0x95,0xB5);
+    return 1 if asm_6809_op('BITB','BXDE',0xC5,0xE5,0xD5,0xF5);
+    return 1 if asm_6809_op('LDA' ,'BXDE',0x86,0xA6,0x96,0xB6);
+    return 1 if asm_6809_op('LDB' ,'BXDE',0xC6,0xE6,0xD6,0xF6);
+    return 1 if asm_6809_op('EORA','BXDE',0x88,0xA8,0x98,0xB8);
+    return 1 if asm_6809_op('EORB','BXDE',0xC8,0xE8,0xD8,0xF8);
+    return 1 if asm_6809_op('ADCA','BXDE',0x89,0xA9,0x99,0xB9);
+    return 1 if asm_6809_op('ADCB','BXDE',0xC9,0xE9,0xD9,0xF9);
+    return 1 if asm_6809_op('ORA' ,'BXDE',0x8A,0xAA,0x9A,0xBA);
+    return 1 if asm_6809_op('ORB' ,'BXDE',0xCA,0xEA,0xDA,0xFA);
+    return 1 if asm_6809_op('ADDA','BXDE',0x8B,0xAB,0x9B,0xBB);
+    return 1 if asm_6809_op('ADDB','BXDE',0xCB,0xEB,0xDB,0xFB);
 
-	return 1 if asm_6809_op('STA' ,'DXE',0x97,0xA7,0xB7);
-	return 1 if asm_6809_op('STB' ,'DXE',0xD7,0xE7,0xF7);
-	return 1 if asm_6809_op('STD' ,'DXE',0xDD,0xED,0xFD);
-	return 1 if asm_6809_op('STU' ,'DXE',0xDF,0xEF,0xFF);
-	return 1 if asm_6809_op('STX' ,'DXE',0x9F,0xAF,0xBF);
-	return 1 if asm_6809_op('STS' ,'DXE',0x10DF,0x10EF,0x10FF);
-	return 1 if asm_6809_op('STY' ,'DXE',0x109F,0x10AF,0x10BF);
-	
-	return 1 if asm_6809_op('NEG','DXE',0x00,0x60,0x70);
-	return 1 if asm_6809_op('COM','DXE',0x03,0x63,0x73);
-	return 1 if asm_6809_op('LSR','DXE',0x04,0x64,0x74);
-	return 1 if asm_6809_op('ROR','DXE',0x06,0x66,0x76);
-	return 1 if asm_6809_op('ASR','DXE',0x07,0x67,0x77);
-	return 1 if asm_6809_op('ASL','DXE',0x08,0x68,0x78);
-	return 1 if asm_6809_op('ROL','DXE',0x09,0x69,0x79);
-	return 1 if asm_6809_op('DEC','DXE',0x0A,0x6A,0x7A);
-	return 1 if asm_6809_op('INC','DXE',0x0C,0x6C,0x7C);
-	return 1 if asm_6809_op('TST','DXE',0x0D,0x6D,0x7D);
-	return 1 if asm_6809_op('CLR','DXE',0x0F,0x6F,0x7F);
+    return 1 if asm_6809_op('STA' ,'DXE',0x97,0xA7,0xB7);
+    return 1 if asm_6809_op('STB' ,'DXE',0xD7,0xE7,0xF7);
+    return 1 if asm_6809_op('STD' ,'DXE',0xDD,0xED,0xFD);
+    return 1 if asm_6809_op('STU' ,'DXE',0xDF,0xEF,0xFF);
+    return 1 if asm_6809_op('STX' ,'DXE',0x9F,0xAF,0xBF);
+    return 1 if asm_6809_op('STS' ,'DXE',0x10DF,0x10EF,0x10FF);
+    return 1 if asm_6809_op('STY' ,'DXE',0x109F,0x10AF,0x10BF);
+    
+    return 1 if asm_6809_op('NEG','DXE',0x00,0x60,0x70);
+    return 1 if asm_6809_op('COM','DXE',0x03,0x63,0x73);
+    return 1 if asm_6809_op('LSR','DXE',0x04,0x64,0x74);
+    return 1 if asm_6809_op('ROR','DXE',0x06,0x66,0x76);
+    return 1 if asm_6809_op('ASR','DXE',0x07,0x67,0x77);
+    return 1 if asm_6809_op('ASL','DXE',0x08,0x68,0x78);
+    return 1 if asm_6809_op('ROL','DXE',0x09,0x69,0x79);
+    return 1 if asm_6809_op('DEC','DXE',0x0A,0x6A,0x7A);
+    return 1 if asm_6809_op('INC','DXE',0x0C,0x6C,0x7C);
+    return 1 if asm_6809_op('TST','DXE',0x0D,0x6D,0x7D);
+    return 1 if asm_6809_op('CLR','DXE',0x0F,0x6F,0x7F);
 
-	return 1 if asm_6809_op('CMPD','WXDE',0x83,0xA3,0x93,0xB3);
 	return 1 if asm_6809_op('CMPX','WXDE',0x8C,0xAC,0x9C,0xBC);
+    return 1 if asm_6809_op('CMPD','WXDE',0x1083,0x10A3,0x1093,0x10B3);
 	return 1 if asm_6809_op('CMPU','WXDE',0x1183,0x11A3,0x1193,0x11B3);
 	return 1 if asm_6809_op('CMPS','WXDE',0x118C,0x11AC,0x119C,0x11BC);
 	return 1 if asm_6809_op('CMPY','WXDE',0x108C,0x10AC,0x109C,0x10BC);
@@ -1002,17 +1016,17 @@ sub compile_asm()
 	return 1 if asm_6809_op('BPL','s',0x2A) || asm_6809_op('BMI','s',0x2B);
 	return 1 if asm_6809_op('BGE','s',0x2C) || asm_6809_op('BLT','s',0x2D);
 	return 1 if asm_6809_op('BGT','s',0x2E) || asm_6809_op('BLE','s',0x2F);
-	return 1 if asm_6809_op('_branchIfTrue','s',0x24) || asm_6809_op('_branchIfFalse','s',0x25);
+	return 1 if asm_6809_op('Btrue','s',0x24) || asm_6809_op('Bfalse','s',0x25);
 
-	return 1 if asm_6809_op('LBRA','s',0x1020);
-	return 1 if asm_6809_op('LBHI','s',0x1022) || asm_6809_op('LBLS','s',0x1023);
-	return 1 if asm_6809_op('LBCC','s',0x1024) || asm_6809_op('LBCS','s',0x1025);
-	return 1 if asm_6809_op('LBNE','s',0x1026) || asm_6809_op('LBEQ','s',0x1027);
-	return 1 if asm_6809_op('LBVC','s',0x1028) || asm_6809_op('LBVS','s',0x1029);
-	return 1 if asm_6809_op('LBPL','s',0x102A) || asm_6809_op('LBMI','s',0x102B);
-	return 1 if asm_6809_op('LBGE','s',0x102C) || asm_6809_op('LBLT','s',0x102D);
-	return 1 if asm_6809_op('LBGT','s',0x102E) || asm_6809_op('LBLE','s',0x102F);
-	return 1 if asm_6809_op('LBtrue','s',0x1024) || asm_6809_op('LBfalse','s',0x1025);
+	return 1 if asm_6809_op('LBRA','L',0x1020);
+	return 1 if asm_6809_op('LBHI','L',0x1022) || asm_6809_op('LBLS','L',0x1023);
+	return 1 if asm_6809_op('LBCC','L',0x1024) || asm_6809_op('LBCS','L',0x1025);
+	return 1 if asm_6809_op('LBNE','L',0x1026) || asm_6809_op('LBEQ','L',0x1027);
+	return 1 if asm_6809_op('LBVC','L',0x1028) || asm_6809_op('LBVS','L',0x1029);
+	return 1 if asm_6809_op('LBPL','L',0x102A) || asm_6809_op('LBMI','L',0x102B);
+	return 1 if asm_6809_op('LBGE','L',0x102C) || asm_6809_op('LBLT','L',0x102D);
+	return 1 if asm_6809_op('LBGT','L',0x102E) || asm_6809_op('LBLE','L',0x102F);
+	return 1 if asm_6809_op('LBtrue','L',0x1024) || asm_6809_op('LBfalse','L',0x1025);
 
 	if (asm_6809_op('BSR','s',0x8D) ||										# System Call Handling
 		asm_6809_op('JMP','DXO',0x0E,0x6E,0x7E) ||

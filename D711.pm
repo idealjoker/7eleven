@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu May 29 16:55:26 2025
+#					 dlm: Sun Jun  1 07:45:06 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 286 85 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3189 47 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -284,6 +284,10 @@
 #	May 11, 2025: - put all warnings on STDERR and removed ;
 #	May 29, 2025: - added support for $gapBytes
 #				  - fixed output formatting errors (double addr on line, empty lines)
+#	May 30, 2025: - added support for > < addressing-mode label prefixes
+#	Jun  1, 2025: - disabled def_org()
+#				  - added FF PGid to WPC prime .ORG
+#				  - renamed systemConstants to systemAliases
 # END OF HISTORY
 
 # TO-DO:
@@ -306,7 +310,7 @@ our @no_autolabels;                 # set to true to suppress system 7 auto labe
 
 our @ROM;
 our $MIN_ROM_ADDR,$MAX_ROM_ADDR;    # set by load_ROM
-our %systemConstants;               # set, e.g., by [D711.system6]
+our %systemAliases;  				# set, e.g., by [D711.system6]
 
 sub BYTE($) { return $ROM[$_[0]]; }
 sub WORD($) { return $ROM[$_[0]]<<8|$ROM[$_[0]+1]; }
@@ -581,61 +585,62 @@ sub label_address($$@)                                          # save auto lbl 
 sub substitute_label($$)                                        # replace addresses in a single arg with labels
 {
     my($opaddr,$ai) = @_;                                       # argument to process
-    my($opa) = $OPA[$opaddr][$ai];
-    return $opa if ($nolabel[$opaddr]);
+##  my($opa) = $OPA[$opaddr][$ai];
+	my($prefix,$opa) = ($OPA[$opaddr][$ai] =~ m{^([<>]?)(.*)$});	# addressing-mode prefix < (direct) or > (extended)
+    return $prefix.$opa if ($nolabel[$opaddr]);
 
     my($pf,$addr,$mark) = ($opa =~ m{^(\#?\$)([0-9A-Fa-f]+)(!?)$}); # hex number ($ followed by hex digits) => potential address
 
     unless (defined($addr)) {									# handle XX:label for labels on same page
 		if ($opa =~ m{(^[0-9A-F]{2}):} &&  hex($1) == $_cur_RPG) {
-			return $';
+			return $prefix.$';
 		} else {
-			return $opa;
+			return $prefix.$opa;
 		}
 	}
     
-    return $opa unless defined($addr);                          # not an address => nothing to substitute
-    return $pf.$addr if ($mark eq '!');                         # address marked with trailing '!' (.DB, .DW) => do not substitute with labels
+    return $prefix.$opa unless defined($addr);                  # not an address => nothing to substitute
+    return $prefix.$pf.$addr if ($mark eq '!');                 # address marked with trailing '!' (.DB, .DW) => do not substitute with labels
     $addr = hex($addr);                                         # translate from hex
     my($imm) = (substr($opa,0,1) eq '#')                        # immediate addressing marker
              ? substr($opa,0,1) : '';                           
-    return $opa                                                 # don't substitute 8-bit immediate values
-        if ($addr == 0 || ($imm && $addr<0x100 && $OP[$opaddr] ne 'LDX'));
+	return $prefix.$opa 										# don't substitute 8-bit immediate values
+		if ($addr == 0 || ($imm && $addr<0x100 && $OP[$opaddr] ne 'LDX'));
 
-    my($opg);													# handle 3-byte WPC references (address word, page byte)
-    if (defined($_cur_RPG) &&
+	my($opg);													# handle 3-byte WPC references (address word, page byte)
+	if (defined($_cur_RPG) &&
 		defined($OPA[$opaddr][$ai+1]) &&
-	    $_cur_RPG != 0xFF &&
+		$_cur_RPG != 0xFF &&
 		$addr>=4000 && $addr<0x8000) {
-	        my($pga) = $OPA[$opaddr][$ai+1];
-    	    $pga = hex($1) if ($pga =~ m{^\$([0-9A-F]{2})$});
-#       	print(STDERR "select_WPC_RPG($OPA[$opaddr][$ai+1]=$pga)\n"),
-	        $opg = select_WPC_RPG($pga,13),						# change RPG to rom page of reference (opg is original page, the page of the code0
-    	        if (numberp($pga) && $pga>=0 && $pga<0x3E);
-    }
+			my($pga) = $OPA[$opaddr][$ai+1];
+			$pga = hex($1) if ($pga =~ m{^\$([0-9A-F]{2})$});
+#			print(STDERR "select_WPC_RPG($OPA[$opaddr][$ai+1]=$pga)\n"),
+			$opg = select_WPC_RPG($pga,13),						# change RPG to rom page of reference (opg is original page, the page of the code0
+				if (numberp($pga) && $pga>=0 && $pga<0x3E);
+	}
 
-    my($lbl) = $LBL[$addr];                                     # check if label is defined (in the correct ROM page)
-    if (defined($lbl)) {
-        $Lbl_refs{$lbl}++;										# update reference count (this is the full label, including ROM page prefix)
+	my($lbl) = $LBL[$addr]; 									# check if label is defined (in the correct ROM page)
+	if (defined($lbl)) {
+		$Lbl_refs{$lbl}++;										# update reference count (this is the full label, including ROM page prefix)
 
 		if (defined($_cur_RPG) && $_cur_RPG == $opg) {			# code and label on the same page
 			$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:});
 		} else {												# different pages
-	        select_WPC_RPG($opg,14) if defined($opg);				# if so, switch back to ROM page of code
-	    }
-        return $imm.$lbl;
-    }
+			select_WPC_RPG($opg,14) if defined($opg);			# if so, switch back to ROM page of code
+		}
+		return $prefix.$imm.$lbl;
+	}
 
     select_WPC_RPG($opg,15) if defined($opg);
 
     my($auto_lbl) = $AUTO_LBL[$addr];                           # use auto label if defined
-    return $opa unless defined($auto_lbl);
+    return $prefix.$opa unless defined($auto_lbl);
     
     if (defined($Lbl{$auto_lbl})) {                             # auto label already defined
         if (numberp($Lbl{$auto_lbl})) {
             if ($Lbl{$auto_lbl} == $addr) {                     # but it matches
                 $Lbl_refs{$auto_lbl}++;
-                return $imm.$auto_lbl;
+                return $prefix.$imm.$auto_lbl;
             }
         } else {
             my($pg,$ad) = split(':',$Lbl{$auto_lbl});
@@ -648,19 +653,19 @@ sub substitute_label($$)                                        # replace addres
                 } else {
                 	select_WPC_RPG($opg,16) if defined($opg);
                 }
-                return $imm.$auto_lbl;
+                return $prefix.$imm.$auto_lbl;
             }
         }
         my($i);
         for ($i=1; defined($Lbl{"${auto_lbl}$i"}); $i++) {      # otherwise, find unique alternative
-            return $imm."${auto_lbl}$i"                         # already defined
+            return $prefix.$imm."${auto_lbl}$i"                 # already defined
                 if ($Lbl{"${auto_lbl}$i"} == $addr);
         }
         $auto_lbl = "${auto_lbl}$i";                            # new, unique label
     }
     setLabel($auto_lbl,$addr);                                  # define label
     $Lbl_refs{$auto_lbl}++;
-    return $imm.$auto_lbl;
+    return $prefix.$imm.$auto_lbl;
 }
 
 sub substitute_labels(@)                                        # replace addresses with labels wherever possible
@@ -1741,11 +1746,12 @@ sub disassemble_wvm(@)
 }
 
 #----------------------------------------------------------------------
-# .ORG
+# .ORG (disabled Jun 2025)
 #----------------------------------------------------------------------
 
 sub def_org($)
 {
+	die("def_org(): code disabled (no WPC support)");
     my($addr) = @_;
     push(@{$EXTRA[$addr]},sprintf('.ORG $%04X',$addr));
     $EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
@@ -3099,7 +3105,11 @@ sub output_keyValue_aliases($@)
         $line = '.DEFINE';
         $line .= indent($line,$hard_tab*$def_name_indent);
         $line .= $key;
-        $line .= indent($line,$hard_tab*$def_val_indent) . sprintf('$%02X',$kv{$key});
+		if (numberp($kv{$key})) {
+	        $line .= indent($line,$hard_tab*$def_val_indent) . sprintf('$%02X',$kv{$key});
+	    } else {
+	        $line .= indent($line,$hard_tab*$def_val_indent) . $kv{$key};
+	    }
         print("$line\n");
     }
     print("\n");
@@ -3176,7 +3186,7 @@ sub produce_output(@)
         } else {
 	        output_aliases('Thread Aliases','Thread#%02X',@Thread);
 	    }
-        output_keyValue_aliases('System Constants',%systemConstants);
+        output_keyValue_aliases('System Aliases',%systemAliases);
         output_aliases('Game Adjustment Aliases','Adj#%02X',@Adj);   
         output_aliases('Audit Aliases','Audit#%04X',@Audit);  		
 ##      output_aliases('Error Aliases','Error#%02X',@Error);				# clutter
@@ -3235,7 +3245,8 @@ sub produce_output(@)
                 $line = indent('',$hard_tab*$IND[$addr]) . '.ORG';
                 $line .= indent($line,$hard_tab*($IND[$addr]+$op_width[3]));
                 $org = $addr;
-                if ($WMS_System =~ m{^WPC} && $org < 0x8000) {
+                if ($WMS_System =~ m{^WPC}) {
+                	my($RPG) = ($_cur_RPG <= 0x3D) ? $cur_RPG : 0xFF;
                     $line .= sprintf("\$%02X:%04X",$_cur_RPG,$org);
                 } else {
                     $line .= sprintf('$%04X',$org);

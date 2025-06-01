@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Apr  6 10:55:24 2025
+#                    dlm: Sun Jun  1 07:33:51 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 36 81 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 236 0 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -34,6 +34,7 @@
 #	Mar 19, 2025: - continued update
 #	Mar 25, 2025: - BUG: duplicated addBonus[A] in WPC(DMD)
 #	Apr  6, 2025: - BUG: a couple of Alpha definitions clashed with obj migration
+#	Jun  1, 2025: - BUG: syscall_82CB has argument
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -263,7 +264,7 @@ define_label('_DEBUGGER_CTRL',						0x3D61);
 
 define_syscall('Panic',								0x8298,'E',1);	# NOTE 1: does not return
 define_syscall('Error',								0x82B6,'E');
-define_syscall('syscall_82CB',						0x82CB);
+define_syscall('syscall_82CB',						0x82CB,'E');
 define_syscall('addToAudit??',						0x82E2,'B');
 define_syscall('Y=adjustment',						0x82F2,'A');
 define_syscall('A=adjustment',						0x82FF,'A');

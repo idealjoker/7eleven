@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Thu May 29 16:54:38 2025
+#                    dlm: Sun Jun  1 07:52:29 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 73 45 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 78 52 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -71,6 +71,11 @@
 #	Apr  8, 2025: - re-worked and debugged scanCode in prep for adaptation
 #				    to multi-label matches
 #	May 29, 2025: - replaced _skip by & _SKIP
+#	May 30, 2025: - renamed _branchIfTrue, etc. ops
+#	Jun  1, 2025: - improved disassembly of system pointers
+#				  - BUG: def_WPC_ref() did not update $Address
+#				  - added _SKIP macro
+#				  - replaced a couple of .DWB by .DR
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -403,74 +408,10 @@ sub disassemble_system_pointers()
 	def_WPC_stringRef('sysstr_gameName','System String');
 	def_WPC_stringRef('sysstr_gameNumber','System String');
 	def_WPC_stringRef('sysstr_buildDate','System String');
-	
-	$Address = 0x813C;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
-	
-	$Address = 0x813F;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
-	
-	$Address = 0x8142;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
-	
-	$Address = 0x8145;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
-	
-	$Address = 0x814E;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
-	
-	$Address = 0x8151;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
-	
-	$Address = 0x8157;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
-	
-	$Address = 0x815A;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
-	
-	$Address = 0x8166;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
-		def_word_hex();
-	
-	$Address = 0x8184;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
-		def_word_hex();
-	
-	$Address = 0x8187;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
-		def_word_hex();
-	
-	$Address = 0x818A;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
-		def_word_hex();
-	
-	$Address = 0x8190;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_WORD_%d',++$uword));
-		def_word_hex();
-	
-	$Address = 0x8193;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
-	
-	$Address = 0x8199;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
-	
-	$Address = 0x819C;
-	$Address = def_WPC_ref('=UNKNOWN_SYSTEM_TABLE_1');
-		def_wordblock_hex(8,'=UNKNOWN_SYSTEM_TABLE_1','System Table');
-	
-	$Address = 0x819F;
-	$Address = def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_BYTE_%d',++$ubyte));
-		def_byte_hex();
+
+	while ($Address < 0x81A5) {
+		def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_DATA_%04X',$Address));
+    }
 	
 	$Address = 0x81B6;
 	$Address = def_WPC_ref('=BITSHIFTER_LAMPMATRIX_LOOKUPTABLE');
@@ -543,8 +484,10 @@ sub apply_magic_WPC($$)
 {
 	my($fa,$la) = @_;
 
+	$systemAliases{_SKIP} = 'JMP .+3';											# _SKIP macro
+
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
-		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {			# 1) JMP *+3 
+		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {	# 1) JMP *+3 
 			undef($OP[$addr]);													# 		generate postfix tag
 			push(@{$OPA[$addr-3]},'& _SKIP');
 			splice(@{$OPA[$addr]},0,1);
@@ -569,8 +512,10 @@ sub apply_magic_WPC($$)
 			}
 			if    ($OP[$noa] eq '_IF_CC') { $OP[$noa] = '_IF_true'; }			# _IF_true
 			elsif ($OP[$noa] eq '_IF_CS') { $OP[$noa] = '_IF_false'; }			# _IF_false
-			elsif ($OP[$noa] eq 'BCC') { $OP[$noa] = '_branchIfTrue'; }			# _branchIfTrue
-			elsif ($OP[$noa] eq 'BCS') { $OP[$noa] = '_branchIfFalse'; }		# _branchIfFalse
+			elsif ($OP[$noa] eq 'BCC') { $OP[$noa] = 'Btrue'; }					# Btrue
+			elsif ($OP[$noa] eq 'BCS') { $OP[$noa] = 'Bfalse'; }				# Bfalse
+			elsif ($OP[$noa] eq 'LBCC') { $OP[$noa] = 'LBtrue'; }				# LBtrue
+			elsif ($OP[$noa] eq 'LBCS') { $OP[$noa] = 'LBfalse'; }				# LBfalse
 		}
 	}
 }
@@ -831,7 +776,7 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 	$pointee_lbl = $` if ($pointee_lbl =~ m{\[[0-9A-F]{2}\]$});            					# remove previous RPG if there is one
 	setLabel("^$pointee_lbl",$Address);
 	
-	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $codeType_data;
+	$OP[$Address] = '.DR'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $codeType_data;
 	if ($pointee_addr == 0x0000) {
 		$OPA[$Address][0] = '$0000';
 		$OPA[$Address][1] = '$00';
@@ -844,6 +789,8 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 	}
 	$REM[$Address] = $rem unless defined($REM[$Address]); 
 	$decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
+
+	$Address += 3;
 
 	return $pointee_addr;
 }
@@ -958,7 +905,7 @@ sub def_WPC_codeRef($@)																	# ROUTINE DOES NOT MAINTAIN RPG
     	$Address,$MIN_ROM_ADDR,$MAX_ROM_ADDRESS))
 			unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
 
-	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	$OP[$Address] = '.DR'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
 #	push(@{$OPA[$Address]},label_address(WORD($Address),$code_lbl,1));        			# suppress address suffix in label
 	push(@{$OPA[$Address]},sprintf('$%04X',WORD($Address)));        			# suppress address suffix in label
     push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address+2)));

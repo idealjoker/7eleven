@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue May 27 15:58:35 2025
+#                    dlm: Sun Jun  1 01:39:41 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 51 30 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 54 68 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -49,6 +49,9 @@
 #	May 11, 2025: - put all warnings on STDERR and removed ;
 #	May 26, 2025: - BUG: SWI3 did not work
 #	May 27, 2025: - formatting
+#	May 30, 2025: - added '>' and '<' address indicators (extended/direct)
+#	Jun  1, 2025: - added '>' and '<' address indicators for extended mnode offset
+#				  - BUG: had post-decrement instead of pre-decrement
 # HISTORY END
 
 # NOTES:
@@ -86,13 +89,22 @@ sub op_IMM2($$$$)																	# operation with immediate 2-byte addressing (
 	return 1;
 }
 
+sub code_addr(@)																	# 1MB ROM -> page address
+{
+	my($ROM_addr) = @_;
+	$ROM_addr = $addr unless defined($ROM_addr);
+	return ($ROM_addr % 0x4000) + 0x4000;
+}
+
+
 sub op_DIR($$$$)																	# operation with direct addressing (relative to DP register)
 {
 	my($opc,$opa,$ind,$op) = @_;
 	return undef unless (BYTE($addr) == $opc);
 	my($op_DIR) = BYTE($addr+1);
 	$OP[$opa] = $op; $IND[$opa] = $ind;
-	push(@{$OPA[$opa]},sprintf('$%02X',BYTE($addr+1)));
+	push(@{$OPA[$opa]},sprintf('<$%02X',BYTE($addr+1)));
+##	printf(STDERR "direct addressing mode at %02X:%04X\n",$_cur_RPG,code_addr());
 	push(@{$OI[$opa]},sprintf('%02X%02X',BYTE($addr),BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;
@@ -131,7 +143,12 @@ sub op_EXT($$$$@)																	# operation with extended addressing (similar 
 		label_address($trg_addr,'');
 	}
 	$OP[$opa] = $op; $IND[$opa] = $ind;
-	push(@{$OPA[$opa]},sprintf('$%04X',$trg_addr));
+	if ($trg_addr <= 0xFF) {
+##		printf(STDERR "extended zero-page addressing mode at %02X:%04X\n",$_cur_RPG,code_addr());
+		push(@{$OPA[$opa]},sprintf('>$%04X',$trg_addr));
+	} else {
+		push(@{$OPA[$opa]},sprintf('$%04X',$trg_addr));
+	}
 	push(@{$OI[$opa]},sprintf('%02X',$opc));
 	push(@{$OI[$opa]},sprintf(':%04X',$trg_addr));
 	$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
@@ -204,33 +221,41 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		return $addr-2;
     }
 	if ($PB == 0b10001000) {														# 8-bit signed offset, direct
+		my($fp);
 		my($ofs) = BYTE($addr+2);
-		$ofs = $ofs - 256 if ($ofs >= 128);						
-		push(@{$OPA[$opa]},sprintf('%d,%s',$ofs,$IR));
+		$ofs = $ofs - 256 if ($ofs >= 128);
+		$fp = '<' if ($ofs >= -16 && $ofs <= 15);
+		push(@{$OPA[$opa]},sprintf("$fp%d,%s",$ofs,$IR));
 		push(@{$OI[$opa]},sprintf('%02X%02X%02X',$opc,BYTE($addr+1),BYTE($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr - 3;
     }
 	if ($PB == 0b10011000) {														# 8-bit signed offset, indirect
+		my($fp);
 		my($ofs) = BYTE($addr+2);
 		$ofs = $ofs - 256 if ($ofs >= 128);						
-		push(@{$OPA[$opa]},sprintf('[%d,%s]',$ofs,$IR));
+		$fp = '<' if ($ofs >= -16 && $ofs <= 15);
+		push(@{$OPA[$opa]},sprintf("[$fp%d,%s]",$ofs,$IR));
 		push(@{$OI[$opa]},sprintf('%02X%02X%02X',$opc,BYTE($addr+1),BYTE($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-3;
     }
 	if ($PB == 0b10001001) {														# 16-bit signed offset, direct
+		my($fp);
 		my($ofs) = WORD($addr+2);
 		$ofs = $ofs - 65536 if ($ofs >= 32768);						
-		push(@{$OPA[$opa]},sprintf('%d,%s',$ofs,$IR));
+		$fp = '>' if ($ofs >= -128 && $ofs <= 127);
+		push(@{$OPA[$opa]},sprintf("$fp%d,%s",$ofs,$IR));
 		push(@{$OI[$opa]},sprintf('%02X%02X%04X',$opc,BYTE($addr+1),WORD($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-4;
     }
 	if ($PB == 0b10011001) {														# 16-bit signed offset, indirect
+		my($fp);
 		my($ofs) = WORD($addr+2);
 		$ofs = $ofs - 65536 if ($ofs >= 32768);						
-		push(@{$OPA[$opa]},sprintf('[%d,%s]',$ofs,$IR));
+		$fp = '>' if ($ofs >= -128 && $ofs <= 127);
+		push(@{$OPA[$opa]},sprintf("[$fp%d,%s]",$ofs,$IR));
 		push(@{$OI[$opa]},sprintf('%02X%02X%04X',$opc,BYTE($addr+1),WORD($addr+2)));
 		$decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-4;
@@ -289,20 +314,20 @@ sub op_IDX($$$$)																	# operation with indexed addressing
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
-	if ($PB == 0b10000010) {														# post-decrement by 1, direct
-		push(@{$OPA[$opa]},sprintf(',%s-',$IR));
+	if ($PB == 0b10000010) {														# pre-decrement by 1, direct
+		push(@{$OPA[$opa]},sprintf(',-%s',$IR));
 		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
-	if ($PB == 0b10000011) {														# post-decrement by 2, direct
-		push(@{$OPA[$opa]},sprintf(',%s--',$IR));
+	if ($PB == 0b10000011) {														# pre-decrement by 2, direct
+		push(@{$OPA[$opa]},sprintf(',--%s',$IR));
 		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;
     }
-	if ($PB == 0b10010011) {														# post-decrement by 2, indirect
-		push(@{$OPA[$opa]},sprintf('[,%s--]',$IR));
+	if ($PB == 0b10010011) {														# pre-decrement by 2, indirect
+		push(@{$OPA[$opa]},sprintf('[,--%s]',$IR));
 		push(@{$OI[$opa]},sprintf('%02X%02X',$opc,BYTE($addr+1)));
 		$decoded[$addr++] = $decoded[$addr++] = 1;
 		return $addr-2;

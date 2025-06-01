@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu May 29 16:52:57 2025
+#                    dlm: Sun Jun  1 07:49:35 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 367 10 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 368 10 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -365,6 +365,7 @@
 #	May 26, 2025: - continued implementing WPC support
 #	May 27, 2025: - continued implementing WPC support
 #	May 29, 2025: - continued implementing WPC support
+#	Jun  1, 2025: - continued implementing WPC support
 # HISTORY END
 
 # RELEASE NOTES:
@@ -836,9 +837,12 @@ while (!eof()) {
 	}
 	chomp;																# strip EOL
 	s{;.*}{};															# strip comments
-	m{^<([0-9A-Fa-f]{2})?:?([0-9A-Fa-f]{4})>};							# record address information for -A
-	$tag_rpg   = hex($1) if defined($1);
-	$tag_addr = hex($2) if defined($2);
+	if (m{^<([0-9A-Fa-f]{2})?:?([0-9A-Fa-f]{4})>}) {					# record address information for -A
+		$tag_rpg   = hex($1) if defined($1);
+		$tag_addr  = hex($2);
+	} else {
+		undef($tag_rpg); undef($tag_addr);
+	}
 	s{^<([0-9A-Fa-f]{2}:)?[0-9A-Fa-f]{4}>\s+}{};						# strip disassembly addresses and leading whitespace
 	while (m{\\\s*$}) { 												# line continuation
 		$_ = $` . <>;
@@ -945,11 +949,10 @@ while (!eof()) {
     next if &compile_pragma;                               				# .ORG, .DB, .ENDIF, etc.; also done while not currently compiling code!
 
     if ($IF_STACK[$#IF_STACK] >= 0) {                       			# currently assembling code
-    	if ($opt_A) {													# verify <> address information
+    	if ($opt_A && defined($tag_addr)) {								# verify <> address information
     		if (defined($RPG)) {
-    			my($caddr) = ($RPG == 0xFF) ? $ADDR : ($ADDR + 0x4000) - $RPG*0x4000;
-	    		die(sprintf("ROM reference mismatch (%02X:%04X expected, %02X:%04X found) at input line $.\n",$tag_rpg,$tag_addr,$RPG,$caddr))
-    				unless ($caddr == $tag_addr) && ($RPG == $tag_rpg);
+	    		die(sprintf("ROM reference mismatch (%02X:%04X expected, %02X:%04X found) at input line $.\n",$tag_rpg,$tag_addr,$RPG,code_addr()))
+    				unless (code_addr() == $tag_addr) && ($RPG == $tag_rpg);
     		} else {
 	    		die(sprintf("ROM address mismatch (\$%04X expected, \$%04X found) at input line $.\n",$tag_addr,$ADDR))
     				unless ($ADDR == $tag_addr);
@@ -1282,18 +1285,27 @@ sub check_duplicate_label_types()
 	sub define_label($@)
 	{
 		my($lbl,$addr,$allow_relabel) = @_;
+
+		if ($lbl eq 'ANALYSIS_GAP') {													# ignore gap labels
+			$last_label_addr = -1;
+			return;
+		}
 	
 		$addr = $ADDR unless defined($addr);
-		die("ERROR: undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
+		die("Undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
 			unless defined($addr);
 
 		$addr = code_addr($addr)														# convert WPC ROM to code addr
 			if defined($RPG);
 	
-##		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,$ADDR);
+##		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr());
 
 		my($lofs) = ($addr =~ m{^\.\+(\d+)$});											# handle .+1 '.' dot
-		$addr = $last_label_addr + $lofs if defined($lofs);
+		if (defined($lofs)) {
+			die("No valid target for . label <$OP_ARG[0]> at input line $.\n")
+				unless $last_label_addr>=0;
+			$addr = $last_label_addr + $lofs;
+		}
 		    
 		die("ERROR: Unmatched END on line $.\n") unless (length($lbl) > 0);
 	
@@ -1308,11 +1320,19 @@ sub check_duplicate_label_types()
 					else		{ die("ERROR: $msg"); }
 			}
 	    
-			printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$%04X to $lbl\n",$addr)
-				if !$allow_relabel && $addr!=$last_label_addr
-								   && !$opt_w && defined($LBL[$addr])
-								   && ($LBL[$addr] ne $lbl)
-								   && !($lbl =~ m/^auto_label_\d*$/ || $LBL[$addr] =~ m/^auto_label_\d*$/);
+			my($oPG,$nPG);
+			if (defined($RPG)) {
+				$oPG = sprintf("%02X:",$LBP{$LBL[$addr]});
+				$nPG = sprintf("%02X:",$RPG);
+			}
+
+			printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$$oPG%04X to $nPG$lbl at input line $.\n",code_addr())
+				if !$allow_relabel && $addr!=$last_label_addr							# multiple labels at same address allowed
+								   && !$opt_w											# warnings suppressed
+								   && defined($LBL[$addr])								# already defined label at same address...
+								   && $oPG eq $nPG 										# ... on same ROM page (WPC)
+								   && ($LBL[$addr] ne $lbl)								# ... with a different name
+								   && !($lbl =~ m/^auto_label_\d*$/ || $LBL[$addr] =~ m/^auto_label_\d*$/);	# neither is an auto label
 			$last_label_addr = $addr;
 		}
 	
@@ -2261,7 +2281,7 @@ sub compile_pragma()
     #--------
 
 	if (($MODE == 0) || ($MODE == 3)) {		
-		if ($OP eq '.DB') { 																# .DB (define bytes)
+		if ($OP eq '.DB') { 																# .DB (define data bytes)
 			die("Syntax: .DB byte-val[...] (<@_> at input line $.)\n")
 				unless (@OP_ARG >= 1);
 			set_label_type(3);
@@ -2272,7 +2292,7 @@ sub compile_pragma()
 			return 1;
 		}
 	    
-		if ($OP eq '.DW') { 																# .DW (define words)
+		if ($OP eq '.DW') { 																# .DW (define data words)
 			die("Syntax: .DW word-val[...] (<@_> at input line $.)\n")
 				unless (@OP_ARG >= 1);
 			set_label_type(3);
@@ -2285,6 +2305,17 @@ sub compile_pragma()
 				$ROM[$ADDR++] = '16-BIT VALUE';
 				shift(@OP_ARG);
 			}
+			return 1;
+		}
+	
+		if ($OP eq '.DR') { 																# .DR (define WPC code ref)
+			die("Syntax: .DR WPC-ref (<@_> at input line $.)\n")
+				unless (@OP_ARG == 2);
+			set_label_type(1);
+			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			die(".DBR invalid WPC reference page (<@_> at input line $.)\n")
+				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
 			return 1;
 		}
 	
@@ -2322,7 +2353,7 @@ sub compile_pragma()
 			set_label_type(3);
 			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
 			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; 
 			die(".DBR invalid WPC reference page (<@_> at input line $.)\n")
 				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
 			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {
