@@ -1,20 +1,22 @@
 #======================================================================
 #                    C 7 1 1 . L S B 
 #                    doc: Sun Oct 29 17:35:44 2023
-#                    dlm: Sat Jun  8 12:39:09 2024
+#                    dlm: Mon Jun  2 11:56:38 2025
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 13 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 19 28 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Oct 29, 2024: - created
 #	May 31, 2024: - removed unnecessary statements
 #	Jun  8, 2024: - adapted to new interface
+#	Jun  2, 2025: - adapted to new labelValue
+# HISTORY END
 
 sub LSB($$)
 {
 	my($str,$line) = @_;
-	return labelValue(99,$str) & 0xFF;
+	return labelValue(-$line,$str) & 0xFF;
 }
 
 1;

@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Thu May 29 10:35:46 2025
+                    dlm: Mon Jun  2 10:52:23 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 42 40 NIL 0 0 72 0 2 4 NIL ofnI
+                    uE-Info: 54 11 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -43,6 +43,20 @@ $8000-$FFFF 	32KB system ROM
 	- address range: $00000 - $3FFFF
 	- PG#30-3D (14 pages, 224KB)
 	- PG#3E-3F (2 pages, 32KB)	 
+
+
+-Labels-
+
+- every label has a hex page id (00-3D, FF) and a name
+
+- label definitions:
+	- .LBL <name> <pg:addr>
+	- name:
+
+- label references:
+	- [pg:]name
+	- pg prefix can be omitted for labels on same page
+	- pg prefix can be omitted for labels in prime RE 
 
 
 -ROM Map-

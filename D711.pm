@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Jun  2 10:10:49 2025
+#					 dlm: Mon Jun  2 11:19:49 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 295 39 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3469 28 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -3139,15 +3139,20 @@ sub output_labels($)
         my($lv) = $Lbl{$lbl};
         next unless defined($lv);                                           # undefined label?
 
-        if (numberp($lv)) {
+        if (numberp($lv)) {													# not WPC
             next if defined($ROM[$lv]);                                     # not an external label
             $line = '.LBL'; 
             $line .= indent($line,$hard_tab*$def_name_indent) . $lbl;
             $line .= indent($line,$hard_tab*$def_val_indent) .
                         sprintf(($lv > 0xFF)?"\$%04X\n":"\$%02X\n",$Lbl{$lbl});
-        } else {
+        } else {															# WPC
             my($pg,$addr) = split(':',$lv);
-            next if $decodedPG[hex($pg)][hex($addr)-0x4000];                # not an external label
+            next if !$opt_g || $decodedPG[hex($pg)][hex($addr)-0x4000];		# not an external label; NOT SURE THIS IS CORRECT FOR PRIME RE!!
+
+            if ($lbl =~ m{^[0-9A-Fa-f]{2}:}) {								# remove pg encoded in name
+            	die unless (substr($lbl,0,2) eq $pg);						# sanity check
+            	$lbl = $';
+            }
             $line = '.LBL'; 
             $line .= indent($line,$hard_tab*$def_name_indent) . $lbl;
             $line .= indent($line,$hard_tab*$def_val_indent) . $lv . "\n";
@@ -3456,7 +3461,12 @@ sub produce_output(@)
 				print_addr($addr) if ($print_addrs);
 				print("\n"); print_addr($addr) if ($print_addrs);
 				$LBL[$addr] = 'ANALYSIS_GAP' unless defined($LBL[$addr]);
-				printf("$LBL[$addr]:");
+				my($lbl) = $LBL[$addr];
+				if ($lbl =~ m{^[0-9A-Fa-f]{2}:}) {							# remove pg encoded in name
+					die unless (hex(substr($lbl,0,2)) == $_cur_RPG);		# sanity check
+					$lbl = $';
+                }
+				printf("$lbl:");
 				printf("%s.DB \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
 				print("[${n}x]") if ($n > 1);
 				my($col) = 1;
@@ -3471,9 +3481,14 @@ sub produce_output(@)
 					$gapBytes += $n;
 					
 					if (defined($LBL[$addr])) {										# pre-existing label in gap
-						printf("\n");
+						my($lbl) = $LBL[$addr];
+						if ($lbl =~ m{^[0-9A-Fa-f]{2}:}) {							# remove pg encoded in name
+							die unless (hex(substr($lbl,0,2)) == $_cur_RPG);		# sanity check
+							$lbl = $';
+			            }
+            			printf("\n");
 						print_addr($addr) if ($print_addrs);
-						printf("$LBL[$addr]:%s.DB  \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),$GB);
+						printf("$lbl:%s.DB  \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),$GB);
 						print("[${n}x]") if ($n > 1);
 						$col = 1;
 					} elsif ($col >= 8) {											# continue gap on new line

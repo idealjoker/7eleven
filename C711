@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon Jun  2 10:04:37 2025
+#                    dlm: Mon Jun  2 12:31:57 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 371 62 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1301 54 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -369,6 +369,7 @@
 #	Jun  2, 2025: - added label address checking to -A
 #				  - BUG: WPC MAX_ROM_ADDR was wrong
 #				  - cleaned up WMS_system specific compilation
+#				  - finally added line numbers to undefined label errors
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1266,7 +1267,7 @@ sub check_duplicate_label_types()
 }
 
 
-{ my($last_label_addr) = -1; 															# static scope used for .
+{ my($last_label_addr) = -1; 															# static scope used for repeat labels
 	sub define_label($@)
 	{
 		my($lbl,$addr,$allow_relabel) = @_;
@@ -1285,19 +1286,19 @@ sub check_duplicate_label_types()
 	
 ##		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr());
 
-		my($lofs) = ($addr =~ m{^\.\+(\d+)$});											# handle .+1 '.' dot
-		if (defined($lofs)) {
-			die("No valid target for . label <$OP_ARG[0]> at input line $.\n")
-				unless $last_label_addr>=0;
-			$addr = $last_label_addr + $lofs;
-		}
+###		my($lofs) = ($addr =~ m{^\.\+(\d+)$});											# handle .+1 '.' dot
+###		if (defined($lofs)) {
+###			die;
+###			die("No valid target for . label <$OP_ARG[0]> at input line $.\n")
+###				unless $last_label_addr>=0;
+###			$addr = $last_label_addr + $lofs;
+###		}
 		    
 		die("ERROR: Unmatched END on line $.\n") unless (length($lbl) > 0);
 	
 		unless ($opt_1) {																# don't generate label errors during 1st pass (optimization)
 			if (defined($LBL{$lbl}) &&													# check for label redefinition attempts
 				($LBL{$lbl} ne $addr) && ($LBP{$lbl} == $RPG) &&						# NB: LBP & RPG are undef except in WPC
-				($lbl ne 'ANALYSIS_GAP') &&
 				($lbl ne 'FREE_SPACE')) {
 ##					die(sprintf("$lbl: %04X (addr = %04X) pg %02X (RPG = %02X)",$LBL{$lbl},$addr,$LBP{$lbl},$RPG));
 					my($msg) = sprintf("label <$lbl> = \$%04X [$addr] already defined with different value (\$%04X [$LBL{$lbl}]) at input line $.\n",$addr,$LBL{$lbl});
@@ -1328,28 +1329,56 @@ sub check_duplicate_label_types()
 } # scope of $last_lbl_addr
 
 
-sub labelValue($$)
+sub labelValue($$)																		# addr<0: line no; addr>=0: address
 {
-    my($caller_id,$lbl) = @_;
+    my($addr,$lbl) = @_;
 
     $lbl = hex($1) if ($lbl =~ m{^\$([0-9A-Fa-f]+)$});									# return numeric values (not labels)
     $lbl = eval('0b' . $1) if ($lbl =~ m{^%([01]+)$});
     return $lbl if numberp($lbl);
     
+	my($line);																			# line number for error messages
+	if ($addr < 0) {																	# e.g. [C711.InvertByte]
+		$line = -$addr;
+	} else {
+		while (!defined($LINE[$addr])) { $addr--; }
+		$line = $LINE[$addr];
+	}
+
+	if ($lbl =~ m{^\.\+}) {																# handle .+3 dot "."
+		die("Invalid .-label arithmetic <$lbl> at input line $line\n")
+			unless numberp($');
+		return $addr + $';
+	}
+
 	if ($opt_f) {																		# force mode, intended to compile (some) source files with D711 warnings
+		die("-f not implemented for WPC code\n") if ($WMS_System =~ m{^WPC});
 		if (numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$}) {
 			return $LBL{$lbl};
 		} elsif ($lbl =~ m{_([0-9A-Fa-f]{4})$}) {										# allow undefined labels with addresses but without label base (e.g. _873C)
 			return hex($1);																#    (I am not sure why/when this is needed)
 		} else {
-		    die("Undefined label <$lbl> (cid $caller_id)\n");
+		    die("Undefined label <$lbl> at input line $line\n");
 		}
-	} else {																			# not force mode
-	    die("Undefined label <$lbl> (cid $caller_id)\n")
-			unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
-		die("Label <$lbl> references different ROM page (%02X instead of %02X)\n")
-			unless ($LBP{$lbl} == $RPG);
-	    return $LBL{$lbl};
+	} else {																			# not force-compilation
+		if ($WMS_System =~ m{^WPC}) {													# WPC
+			my($pg,$l) = ($lbl =~ m{^([0-9A-Fa-f]{2}:)?(.*)$});
+			if (defined($pg)) {
+				die("Undefined label <$lbl> at input line $line\n")
+					unless numberp($LBL{$l});
+				die(sprintf("Label <$l> defined in different ROM page (%02X instead of %02X) at input line $line\n",hex($pg),$LBP{$l}))
+	                unless ($LBP{$l} == hex($pg));
+		        return $LBL{$l};
+			} else {
+				die(sprintf("Undefined label <$lbl> at input line %d\n",$line))
+					unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
+		        return $LBL{$lbl};
+			}
+		} else {																		# System 7-11
+			die(sprintf("Undefined label <$lbl> at input line $line\n"))
+				unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
+	        return $LBL{$lbl};
+	    }
 	}
 }
 
@@ -1376,7 +1405,7 @@ sub eval_label($@)                                                              
 		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
 		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
 			if (numberp($addr) && !numberp($lbl) && $opt_x);
-		my($lv) = labelValue(3,$lbl);
+		my($lv) = labelValue($addr,$lbl);
 		return ($lv & hex($arg1))+$arg2 if numberp($lv);
 	}
 
@@ -1385,7 +1414,7 @@ sub eval_label($@)                                                              
 		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
 		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
 			if (numberp($addr) && !numberp($lbl) && $opt_x);
-		my($lv) = labelValue(1,$lbl);
+		my($lv) = labelValue($addr,$lbl);
 		return $lv + $arg if numberp($lv);
 	}
     
@@ -1394,7 +1423,7 @@ sub eval_label($@)                                                              
 		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
 		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
 			if (numberp($addr) && !numberp($lbl) && $opt_x);
-		my($lv) = labelValue(2,$lbl);
+		my($lv) = labelValue($addr,$lbl);
 		return $lv | hex($arg) if numberp($lv);
 	}
     
@@ -1403,7 +1432,7 @@ sub eval_label($@)                                                              
 		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
 		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
 			if (numberp($addr) && !numberp($lbl) && $opt_x);
-		my($lv) = labelValue(3,$lbl);
+		my($lv) = labelValue($addr,$lbl);
 		return $lv & hex($arg) if numberp($lv);
 	}
 
@@ -1412,7 +1441,7 @@ sub eval_label($@)                                                              
 		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
 		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
 			if (numberp($addr) && !numberp($lbl) && $opt_x);
-		my($lv) = labelValue(4,$lbl);
+		my($lv) = labelValue($addr,$lbl);
 		return $lv >> $arg if numberp($lv);
 	}
 
@@ -1421,11 +1450,11 @@ sub eval_label($@)                                                              
 		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
 		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
 			if (numberp($addr) && !numberp($lbl) && $opt_x);
-		my($lv) = labelValue(4,$lbl);
+		my($lv) = labelValue($addr,$lbl);
 		return $lv << $arg if numberp($lv);
 	}
 
-	return defined($LBL{$lexpr}) ? labelValue(12,$lexpr) : undef;						# assume simple number (not an expression); undef returned on auto lbls
+	return defined($LBL{$lexpr}) ? labelValue($addr,$lexpr) : undef;					# assume simple number (not an expression); undef returned on auto lbls
 }
 
 
@@ -1502,7 +1531,8 @@ sub resolve_labels($)
             $ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})/ ||
             $ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})/ ||
             $ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})/ ||
-            $ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})/) {
+            ($WMS_System =~ m{^WPC} && $ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})/) ||
+            (!($WMS_System =~ m{^WPC}) && $ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})/)) {
                 $ROM[$a] = hex($1) . $';												# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
                 next if numberp($ROM[$a]);                                              # we are done, if we have a number
         }
@@ -1513,7 +1543,7 @@ sub resolve_labels($)
         
         my($ms) = '^\\' . $EIGHT_BIT_LABEL_PREFIX;                                      # 8-bit relative address
         if ($ROM[$a] =~ m{$ms}) {                                                   
-            my($offset) = labelValue(5,$') - $a - 1;
+            my($offset) = labelValue($a,$') - code_addr($a) - 1;
             my($src_addr) = $a;
             while (!defined($LINE[$src_addr])) { $src_addr--; }
             die(sprintf("8-bit branch offset $offset <$ROM[$a]> out of range at source line %d\n",$LINE[$src_addr]))
@@ -1523,7 +1553,7 @@ sub resolve_labels($)
         }
         my($ms) = '^\\' . $TWELVE_BIT_LABEL_PREFIX;                                     # 12-bit relative address
         if ($ROM[$a] =~ m{$ms}) {               
-            my($offset) = labelValue(6,$') - $a - 1;
+            my($offset) = labelValue($a,$') - code_addr($a) - 1;
             my($src_addr) = $a;
             while (!defined($LINE[$src_addr])) { $src_addr--; }
             die(sprintf("12-bit branch offset <$ROM[$a]> out of range at source line %d\n",$LINE[$src_addr]))
@@ -1538,7 +1568,7 @@ sub resolve_labels($)
             my($bo) = $`;                                                               # byte offset (1 for unconditional jumps)
             my($lbl) = $';
 
-            my($offset) = labelValue(7,$lbl) - $a - $bo;
+            my($offset) = labelValue($a,$lbl) - code_addr($a) - $bo;
             if ($offset >= -128 && $offset <= 127) {
                 printf(STDERR "\$%04X %5d: WARNING: optimizable statement %s\n",$a-$bo,$LINE[$a-$bo],$SRC[$a-$bo])
                     if ($opt_v);
@@ -1550,14 +1580,14 @@ sub resolve_labels($)
                     else        { print(OPTF $opt); }									# Optimizer pass 1
                 }
             }
-            $ROM[$a] = labelValue(8,$lbl);
+            $ROM[$a] = labelValue($a,$lbl);
             next;
         }
 
         my($ms) = '^\\' . $OPTIMIZABLE_LABEL_PREFIX . '\\' . $TWELVE_BIT_LABEL_PREFIX;
         if ($ROM[$a] =~ m{$ms}) {                                                       # potentially optimizable to 12-bit address
             my($lbl) = $';
-            my($offset) = labelValue(9,$lbl) - $a - 1;
+            my($offset) = labelValue($a,$lbl) - code_addr($a) - 1;
             if ($offset >= -2048 && $offset <= 2047) {
                 printf(STDERR "\$%04X %5d: WARNING: optimizable statement $SRC[$a-1]\n",$a-1,$LINE[$a-1])
                     if ($opt_v);
@@ -1569,19 +1599,17 @@ sub resolve_labels($)
                     else        { print(OPTF $opt); }									# Optimizer pass 1
                 }
             }
-            $ROM[$a] = labelValue(10,$lbl);
+            $ROM[$a] = labelValue($a,$lbl);
             next;
         }
 
         if (numberp($LBL{$ROM[$a]})) {                                                  # if entire remaining string exists in list of labels, substitute its value
-#           print(STDERR "$ROM[$a] -> ");       
-            $ROM[$a] = labelValue(11,$ROM[$a]);                                         # [ this allows re-defining apparent label arithmetic 
-#           print(STDERR "$ROM[$a]\n");     
+            $ROM[$a] = labelValue($a,$ROM[$a]);                                         # [ this allows re-defining apparent label arithmetic 
             next;                                                                       # (e.g. .LBL RAM_var $FF; .LBL RAM_var+1 $C000)]
         }
 
         #----------------------------------------------------------------------
-        # Value Encoders / Data Types
+        # Value Encoders / Data Types / Interpreters
         #   - should allow for simple arithmetic to be applied afterwards
         #     where this makes sense
         #   - Examples:
@@ -1621,7 +1649,7 @@ sub resolve_labels($)
             next;
         }
 
-        $ROM[$a] = labelValue(666,$ROM[$a]);                                            # this will always trigger an error unless ROM[a] is numeric
+        $ROM[$a] = labelValue($a,$ROM[$a]);												# this will always trigger an error unless ROM[a] is numeric
     }
     
     for (my($a)=$FIRST_ADDR; $a<=$MAX_ROM_ADDR; $a++) {                                 # finally, split signed words & check ranges
