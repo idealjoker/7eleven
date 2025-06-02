@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . V M 
 #                    doc: Wed May 21 21:55:45 2025
-#                    dlm: Mon May 26 09:45:42 2025
-#                    (c) 2025 A.M. Thurnherr
-#                    uE-Info: 1094 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    dlm: Mon Jun  2 10:05:23 2025
+#                    (c) 2025 idealjoker@mailbox.org
+#                    uE-Info: 16 36 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -13,6 +13,7 @@
 #					[C711.scoreByte.6a]
 #	May 26, 2025: - renamed from C711.WVM
 #				  - renamed some funs
+#	Jun  2, 2025: - corrected header
 # HISTORY END
 
 use strict vars;

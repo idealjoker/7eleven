@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Jun  2 06:52:35 2025
+#                    dlm: Mon Jun  2 10:08:12 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 81 38 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 82 59 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -79,6 +79,7 @@
 #	Jun  2, 2025: - re-wrote def_WPC_codeRef()
 #				  - modify def_WPC_ref() to deal with pre-existing partial
 #					analysis (munging)
+#				  - cleaned up System Data Pointers with FH
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -404,18 +405,6 @@ sub disassemble_system_pointers()
 	
 	$Address = 0x812D;
 	insert_divider($Address,'System Data Pointers');
-	while ($Address < 0x813C) {
-		def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_DATA_%04X',$Address));
-    }
-
-##	$Address = def_WPC_ref('_RAM_04AF_INIT_VALUE');
-##		def_byte_hex();
-	
-	$Address = 0x813C;
-	def_WPC_stringRef('sysstr_gameName','System String');
-	def_WPC_stringRef('sysstr_gameNumber','System String');
-	def_WPC_stringRef('sysstr_buildDate','System String');
-
 	while ($Address < 0x81AE) {
 		def_WPC_ref(sprintf('_UNKNOWN_SYSTEM_DATA_%04X',$Address));
     }
@@ -492,6 +481,7 @@ sub apply_magic_WPC($$)
 	my($fa,$la) = @_;
 
 	$systemAliases{_SKIP} = 'JMP .+3';											# _SKIP macro
+##	$systemAliases{'Lamp#0'} = '$00';											# invalid Lamp#0
 
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
 		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {	# 1) JMP *+3 
@@ -735,7 +725,6 @@ sub def_WPC_switchTable(@)
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 	for (my($sw)=0; $sw<$rows; $sw++) {
-#		print(STDERR "sw = $sw\n");
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $data_indent; $TYPE[$opaddr] =  $CodeType_data;
 		$OP[$opaddr] = '.DBBRB';
@@ -751,7 +740,8 @@ sub def_WPC_switchTable(@)
 		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
-		push(@{$OPA[$opaddr]},sprintf('Lamp#%d',BYTE($Address))); $decoded[$Address++] = 1;
+##		push(@{$OPA[$opaddr]},sprintf('Lamp#%d',BYTE($Address))); $decoded[$Address++] = 1;			# incorrect in FH at least
+		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;

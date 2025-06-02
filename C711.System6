@@ -1,0 +1,41 @@
+#======================================================================
+#                    C 7 1 1 . S Y S T E M 6 
+#                    doc: Mon Jun  2 09:55:01 2025
+#                    dlm: Mon Jun  2 09:59:23 2025
+#                    (c) 2025 idealjoker@mailbox.org
+#                    uE-Info: 35 97 NIL 0 0 72 2 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Jun  2, 2025: - created
+# HISTORY END
+
+use strict vars;
+
+our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE,$ADDR);
+
+sub unroll_structure()
+{
+	unroll_asm_structure();													# in [C711.M6800]
+}
+
+
+sub asm_macros()
+{
+	return asm_6800_macros();												# in [C711.M6800]
+}
+
+
+sub define_syscall($$@)
+{
+	die("define_syscall() not implemented for Sytstem 6");
+}
+
+
+sub code_addr(@)															# ROM addr = CPU addr
+{
+	return $_[0];
+
+}
+
+1; 

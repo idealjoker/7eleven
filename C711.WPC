@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . W P C 
 #                    doc: Mon May 26 08:07:03 2025
-#                    dlm: Mon Jun  2 06:57:07 2025
+#                    dlm: Mon Jun  2 10:06:50 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 13 71 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 14 61 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -11,11 +11,24 @@
 #	May 27, 2025: - BUG: %SYSCALL used wrong key
 #	May 29, 2025: - added code_addr()
 #	Jun  1, 2025: - BUG: code_addr() returned wrong address in prime RE
+#	Jun  2, 2025: - added unroll_structure() and asm_macros()
 # HISTORY END
 
 use strict vars;
 
 our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE,$ADDR);
+
+sub unroll_structure()
+{
+	unroll_asm_structure();
+}
+
+
+sub asm_macros()
+{
+	return asm_6809_macros();
+}
+
 
 sub define_syscall($$@)
 {

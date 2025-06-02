@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Jun  2 06:53:34 2025
+#					 dlm: Mon Jun  2 10:10:49 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 291 42 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 295 39 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -289,6 +289,10 @@
 #				  - added FF PGid to WPC prime .ORG
 #				  - renamed systemConstants to systemAliases
 #	Jun  2, 2025: - added debugging output
+#				  - BUG: addr output just after ANALYSIS_GAP was one too low
+#				  - BUG: WPC lamp aliases were hex
+#				  - debugged/cleaned up newlines with address output
+#				  - removed unused code
 # END OF HISTORY
 
 # TO-DO:
@@ -3017,7 +3021,7 @@ sub substitute_identifiers(@)                                                   
                 $OPA[$addr][$i] = $Sol[hex($num)] . $len if defined($Sol[hex($num)]);
             } elsif ($OPA[$addr][$i] =~ m{^Lamp#([0-9A-Fa-f]{1,3})}) {                      # lamps
             	if (defined($_cur_RPG)) {
-            		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless numberp($1);
+	           		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless numberp($1);
 	                $OPA[$addr][$i] = $Lamp[$1] . $' if defined($Lamp[$1]);
             	} else {
             		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr))
@@ -3179,7 +3183,11 @@ sub produce_output(@)
 
     if ($hdr) {
         output_aliases('Solenoid Aliases','Sol#%02X',@Sol);
-        output_aliases('Lamp Aliases','Lamp#%02X',@Lamp);
+        if (defined($_cur_RPG)) {
+	        output_aliases('Lamp Aliases','Lamp#%d',@Lamp);
+        } else {
+	        output_aliases('Lamp Aliases','Lamp#%02X',@Lamp);
+	    }
         output_aliases('Flag Aliases','Flag#%02X',@Flag);
         output_aliases('Bitgroup Aliases','Bitgroup#%02X',@BitGroup);
         output_aliases('Switch Aliases','Switch#%02X',@Switch);
@@ -3206,17 +3214,9 @@ sub produce_output(@)
 			# Pre-Label Pseudo Ops
 			#------------------------------------------------------------------------------------------
 
-			my($lineEnded);
 			for (my($i)=0; $i<@{$EXTRA[$addr]}; $i++) { 					# first, print the pre-label constructs (ENDIF, ...)
 				next unless ($EXTRA_BEFORE_LABEL[$addr][$i]);
 				$line .= indent($line,$hard_tab*$EXTRA_IND[$addr][$i]) . $EXTRA[$addr][$i];
-###				die("$code_started/$org/$lineEnded") if $addr==0x5625 && $_cur_RPG==0x36;
-##				if ($code_started && !defined($org) && !$lineEnded) {		# code required to allow divider immediately after free space
-##				if (!$lineEnded && (!$code_started || !defined($org))) {	# works for FH & BadCats; RTS anomalies
-				if (!$lineEnded && !defined($org)) {						# works for FH & BadCats; empty line at start of switch table in BadCats
-					print("\n");
-					$lineEnded = 1;
-				}
 				print_addr($addr) if ($print_addrs);
 				printf('			')	   if ($print_code);
 				print("$line\n"); undef($line);
@@ -3228,7 +3228,7 @@ sub produce_output(@)
 
             unless (defined($org)) {                                        # new .ORG after a gap
 				if ($code_started) {
-					print("\n");
+#####				print("\n");													# introduces empty lines in BadCats e.g. at $4530
 				} elsif (!($WMS_System =~ m{^WPC})) {
 					print_addr($addr) if ($print_addrs);
 					printf('			')	if ($print_code);
@@ -3241,7 +3241,7 @@ sub produce_output(@)
 					print(";----------------------------------------------------------------------\n");
 					print_addr($addr) if ($print_addrs);
 					print("\n");
-					$code_started = 1;
+					$code_started = 1;												# not used!
                 }
                 print_addr($addr) if ($print_addrs);
                 printf('            ')  if ($print_code);
@@ -3254,8 +3254,6 @@ sub produce_output(@)
                 } else {
                     $line .= sprintf('$%04X',$org);
                 }
-##              $line .= sprintf("\t\t; %d-byte gap",$gapLen)
-##                  if ($gapLen > 0);
                 $line .= "\n";                  
                 print($line); $line = '';
                 $gapLen = 0;
@@ -3364,7 +3362,7 @@ sub produce_output(@)
 
 				unless (defined($org)) {											# first .ORG (ROM starts with gap)
 					if ($code_started) {
-						print("\n");
+#####					print("\n");												# introduces empty lines in BadCats, e.g. at addr $9000
 					} elsif (!($WMS_System =~ m{^WPC})) {
 						print_addr($addr) if ($print_addrs);
 						printf('			')	if ($print_code);
@@ -3384,13 +3382,11 @@ sub produce_output(@)
 					$line = indent('',$hard_tab*$data_indent) . '.ORG';
 					$line .= indent($line,$hard_tab*($code_base_indent+$op_width[3]));
 					$org = $addr;
-					if ($WMS_System =~ m{^WPC} && $org < 0x8000) {
+					if ($WMS_System =~ m{^WPC}) {
 						$line .= sprintf("\$%02X:%04X",$_cur_RPG,$org);
 					} else {
 						$line .= sprintf('$%04X',$org);
 					}
-##					$line .= sprintf("\t\t; %d-byte gap",$gapLen)
-##						if ($gapLen > 0);
 					$line .= "\n";				    
 					print($line); $line = '';
 					$gapLen = 0;
@@ -3422,6 +3418,7 @@ sub produce_output(@)
 					print_addr($addr) if ($print_addrs);
 					print(";----------------------------------------------------------------------\n");
 					print_addr($addr) if ($print_addrs);
+					print("\n");
 					undef($org);
 
 #					FOLLOWING CODE INSTEAD OF undef($org) FILLS EMPTY SPACE WITH FF
@@ -3493,12 +3490,9 @@ sub produce_output(@)
 					}
 					$addr += $n;
 				}
-				$addr--;
+
 				print("\n");
-				if (defined($_cur_RPG) && $addr> 0x8000) {							# this looks wrong, why only for WPC?
-					print_addr($addr) if ($print_addrs);
-					printf("\n");
-				}
+				$addr--;
 ##			} elsif ($print_code && defined($org)) {								# print code in gaps
 ##				print_addr($addr) if ($print_addrs);								# code disabled 07/20 to avoid zillions of single-byte no-code lines
 ##				printf("%02X		  $LBL[$addr]:\n",BYTE($addr));

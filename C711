@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon Jun  2 06:55:10 2025
+#                    dlm: Mon Jun  2 10:04:37 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 369 54 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 371 62 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -367,6 +367,8 @@
 #	May 29, 2025: - continued implementing WPC support
 #	Jun  1, 2025: - continued implementing WPC support
 #	Jun  2, 2025: - added label address checking to -A
+#				  - BUG: WPC MAX_ROM_ADDR was wrong
+#				  - cleaned up WMS_system specific compilation
 # HISTORY END
 
 # RELEASE NOTES:
@@ -533,45 +535,18 @@ die("$0: System11 source required for -e\n")
 # Load System Dependent Libraries
 #----------------------------------------------------------------------
 
-my($unroll_structureR,$asm_macrosR);
-
 use lib ($0 =~ m@/[^/]*$@,$`);												# add 7eleven installation dir to path
 
 if ($WMS_System == 6) {
 	require "C711.M6800";
-
-	$unroll_structureR = sub {
-							unroll_asm_structure(@_);
-						 };
-	$asm_macrosR = sub {
-						return asm_6800_macros();
-    			   };
-
+	require "C711.System6";
 } elsif ($WMS_System == 7 || $WMS_System == 11) {
 	require "C711.M6800";
 	require "C711.VM";
-
-	$unroll_structureR = sub {
-							unroll_asm_structure(@_);
-			  				unroll_wvm_structure(@_);
-						 };
-
-	$asm_macrosR = sub {
-						my($retval) = asm_6800_macros();
-						return $retval if $retval;
-						return asm_wvm_macros();
-    			   };
-
+	require "C711.System711";
 } elsif ($WMS_System =~ m{^WPC}) {
 	require "C711.M6809";
 	require "C711.WPC";
-
-	$unroll_structureR = sub {
-							unroll_asm_structure(@_);
-						 };
-	$asm_macrosR = sub {
-						return asm_6809_macros();
-    			   };
 } else {
 	die("Unsupported WMS System <$WMS_System>\n");
 }
@@ -597,8 +572,8 @@ if ($WMS_System == 6) {											# System6
 	$MIN_ROM_ADDR = 0x4000; 			 
 	$MAX_ROM_ADDR = 0xFFFF;
 } elsif ($WMS_System =~ m{^WPC}) {								# WPC (1MB ROM)
-	$MIN_ROM_ADDR = 0x00000;
-	$MAX_ROM_ADDR = 0xFFFFF;									
+	$MIN_ROM_ADDR = 0x000000;
+	$MAX_ROM_ADDR = 0xFFFFFF;									
 } else {
 	die;
 }
@@ -952,7 +927,7 @@ while (!eof()) {
         ($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
         $OP[$ADDR] = $OP;                                   			# make available to OPTIMIZER
 
-        $unroll_structureR->();                                			# _IF, _Loop, etc.  
+        &unroll_structure;  	                              			# _IF, _Loop, etc.  
         next unless defined($OP);                           			# some structure keywords only generate labels
     }
 
@@ -969,7 +944,7 @@ while (!eof()) {
     		}
     	}
 
-		next if $asm_macrosR->();
+		next if &asm_macros;;
 
         if (($MODE==0||$MODE==1) && &compile_asm) {       				# LDA, _IFEQ, etc.
             set_label_type(1);
