@@ -1,15 +1,16 @@
 #======================================================================
 #                    C 7 1 1 . W P C 
 #                    doc: Mon May 26 08:07:03 2025
-#                    dlm: Thu May 29 16:48:12 2025
+#                    dlm: Mon Jun  2 06:57:07 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 31 2 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 13 71 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	May 26, 2025: - created
 #	May 27, 2025: - BUG: %SYSCALL used wrong key
 #	May 29, 2025: - added code_addr()
+#	Jun  1, 2025: - BUG: code_addr() returned wrong address in prime RE
 # HISTORY END
 
 use strict vars;
@@ -36,7 +37,9 @@ sub code_addr(@)																			# 1MB ROM -> page address
 {
 	my($ROM_addr) = @_;
 	$ROM_addr = $ADDR unless defined($ROM_addr);
-	return ($ROM_addr % 0x4000) + 0x4000;
+	my($RPG) = int($ROM_addr / 0x4000);
+	return ($RPG <= 0x3D) ? ($ROM_addr % 0x4000) + 0x4000
+						  : ($ROM_addr - 0x3D*0x4000);
 }
 
 1; 

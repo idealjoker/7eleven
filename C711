@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Jun  1 07:49:35 2025
+#                    dlm: Mon Jun  2 06:55:10 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 368 10 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 369 54 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -366,6 +366,7 @@
 #	May 27, 2025: - continued implementing WPC support
 #	May 29, 2025: - continued implementing WPC support
 #	Jun  1, 2025: - continued implementing WPC support
+#	Jun  2, 2025: - added label address checking to -A
 # HISTORY END
 
 # RELEASE NOTES:
@@ -928,6 +929,15 @@ while (!eof()) {
 
     if ($IF_STACK[$#IF_STACK] >= 0) {                       			# currently assembling code
         if ($_[0] =~ m{:$}) {                               			# define label
+			if ($opt_A && defined($tag_addr)) { # && defined($ADDR)) {			# verify <> address information
+				if (defined($RPG)) {
+					die(sprintf("ROM reference mismatch (%02X:%04X expected, %02X:%04X found) at input line $.\n",$tag_rpg,$tag_addr,$RPG,code_addr()))
+						unless (code_addr() == $tag_addr) && ($RPG == $tag_rpg);
+				} else {
+					die(sprintf("ROM address mismatch (\$%04X expected, \$%04X found) at input line $.\n",$tag_addr,$ADDR))
+						unless ($ADDR == $tag_addr);
+				}
+            }
             define_label($`);
             push(@newly_defined_label,$`);
 			set_label_type($MODE) if ($MODE > 0);
@@ -2772,7 +2782,8 @@ sub compile_pragma()
 					unless numberp($pg) && numberp($ad);
 ##				$FIRST_RPG = $pg unless defined($FIRST_RPG);								# first .ORG
 				$RPG  = $pg;
-				$ADDR = ($pg == 0xFF) ? $ad : ($pg*0x4000 + ($ad - 0x4000));
+				$ADDR = ($pg == 0xFF) ? (0x3D*0x4000 + $ad)
+									  : ($pg*0x4000 + ($ad - 0x4000));
 				die(sprintf(".ORG ROM address \$%05X out of valid range [\$%05X-\$%05X] at input line $.\n",$ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
 					unless ($ADDR >= $MIN_ROM_ADDR && $ADDR <= $MAX_ROM_ADDR);
 			} else {

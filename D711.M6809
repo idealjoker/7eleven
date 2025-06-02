@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sun Jun  1 01:39:41 2025
+#                    dlm: Mon Jun  2 06:54:25 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 54 68 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 55 39 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -52,6 +52,7 @@
 #	May 30, 2025: - added '>' and '<' address indicators (extended/direct)
 #	Jun  1, 2025: - added '>' and '<' address indicators for extended mnode offset
 #				  - BUG: had post-decrement instead of pre-decrement
+#	Jun  2, 2025: - added debug output 
 # HISTORY END
 
 # NOTES:
@@ -125,6 +126,7 @@ sub op_EXT($$$$@)																	# operation with extended addressing (similar 
 				push(@{$OI[$trg_addr]},sprintf('%04X',WORD($trg_addr)));
 				$decoded[$trg_addr] = $decoded[$trg_addr+1] = 1;
 			} elsif ($data_bytes == 1) {											# data byte (not code)
+##				printf(STDERR "new data byte at trg_addr = %04X [$OP[$trg_addr-2] @{$OPA[$trg_addr-2]} $decoded[$trg_addr-2]]\n",$trg_addr);
 				label_address($trg_addr,'!data');									
 				$IND[$trg_addr] = $data_indent; $TYPE[$trg_addr] =	$CodeType_data;
 				$OP[$trg_addr] = '.DB';

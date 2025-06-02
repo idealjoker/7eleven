@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Jun  1 07:45:06 2025
+#					 dlm: Mon Jun  2 06:53:34 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 3189 47 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 291 42 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -288,6 +288,7 @@
 #	Jun  1, 2025: - disabled def_org()
 #				  - added FF PGid to WPC prime .ORG
 #				  - renamed systemConstants to systemAliases
+#	Jun  2, 2025: - added debugging output
 # END OF HISTORY
 
 # TO-DO:
@@ -451,12 +452,14 @@ sub setLabel($$@)
 {
     my($lbl,$addr,$pg) = @_;
 
-#   die(sprintf("trying to define empty label [setLabel($lbl,0x%04X,$allow_multiple)]\n",$addr))
-#       if (length($lbl) == 0);
-    return '' if (length($lbl) == 0);               
+##	printf(STDERR "setLabel($lbl,%04X,%02X)\n",$addr,$pg);
 
-    $lbl = sprintf('{%04X}%s',$addr,$')                         # STICKY -> fill address
-        if ($lbl =~ /^{}/);
+#	die(sprintf("trying to define empty label [setLabel($lbl,0x%04X,$allow_multiple)]\n",$addr))
+#		if (length($lbl) == 0);
+	return '' if (length($lbl) == 0);			    
+
+	$lbl = sprintf('{%04X}%s',$addr,$') 						# STICKY -> fill address
+		if ($lbl =~ /^{}/);
 
     my($faddr) = $addr;
     if (defined($_cur_RPG) && $addr>=0x4000 && $addr<0x8000) {
