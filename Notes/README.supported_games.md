@@ -1,9 +1,9 @@
 <!---======================================================================
                     N O T E S / R E A D M E . S U P P O R T E D _ G A M E S . M D 
                     doc: Wed May 14 08:47:17 2025
-                    dlm: Wed May 14 08:52:29 2025
+                    dlm: Wed Jun  4 14:06:28 2025
                     (c) 2025 idealjoker@mailbox.org
-                    uE-Info: 5 51 NIL 0 0 72 3 2 4 NIL ofnI
+                    uE-Info: 118 46 NIL 0 0 72 3 2 4 NIL ofnI
 ======================================================================--->
 
 # Current Game Support
@@ -93,22 +93,30 @@ prototype code) is not the same for Rollergames (?)
 
 - Pin Bot
 	- Sys 11A
-	- disassemble_s11 produces WARNINGs
-	- C711 -f okay
-	- single routine switches to WVM mode => PinBot.defs => all okay
+	- disassemble_s11 produces WARNINGs 
+		- warnings due to game routine that switches to WVM mode (-f required)
+		- C711 -f option enabled by default
+	- C711 okay
 - Bad Cats
 	- Sys 11B
-	- disassemble_s11 okay
+	- disassemble_s11 okay 
 	- C711 okay
 - Radical!
 	- Sys 11C
-	- disassemble_s11 produces WARNING, which can be ignored (different way of starting WVM mode!)
-	- C711 requires -f because of a mode-switching bug in the original code
+	- disassemble_s11 produces WARNING
+		- warning can be ignored (no mode conflicts)
+		- C711 -f option enabled by default anyway
+		- -f option required because of unrelated BUG in stock ROM
+	- C711 okay
 - RollerGames
 	- Sys 11C
 	- disassemble_s11 produces WARNINGs
-	- C711 with -f bombs, likely because of confusion related to WARNINGs
-	- (at least some) WARNINGs related routines have inline arguments
+		- (at least some) WARNINGs related routines have inline arguments
+		- C711 -f option enabled by default 
+	- C711 bombs even with -f
+		- likely confusion with inline arguments
+		- Sys 11 extensions? [Reg-?] arguments
+	
 
 
 ## WPC

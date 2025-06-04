@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 0 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Wed May 28 08:40:11 2025
+#                    dlm: Wed Jun  4 08:56:51 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 26 49 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 702 30 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -12,13 +12,14 @@
 #				  - started adapting to use stric vars
 #	May 23, 2025: - made it work
 #	May 26, 2025: - renamed some funs
+#	Jun  4, 2025: - adapted to %System_Options
 # HISTORY END
 
 use strict vars;
 
 our($OP,@OP_ARG,$MODE,%JSR_TRG,@ROM,$ADDR,%LBL,@IF_CONT_LBL,@LOOP_LBL,@LOOP_DONE_LBL,
-	$opt_V,$EXEC6800_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
-	@newly_defined_label,$WMS_System,$IVM_DISABLED);
+	$EXEC6800_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
+	@newly_defined_label,$WMS_System,%System_Option,$IVM_DISABLED);
 
 my($last_RTS_addr,@forward_lexical_RTS_branch);
 
@@ -477,7 +478,7 @@ sub unroll_asm_structure()
 		$MODE=1,return if macro_IF_6800('_IF_MI','BPL');
 	    $MODE=1,return if macro_IF_6800('_IF_PL','BMI');
 
-		if ($opt_V > 0) {
+		if ($System_Option{IVM} > 0) {
 			$MODE=1,return if macro_IF_6800('_!IF','!branchUnless');
 			$MODE=1,return if macro_IF_6800('_!UNLESS','!branchIf');
 		}
@@ -676,7 +677,7 @@ sub compile_asm()
 
 		if ($OP =~ /^!/) {																	# !oneShot IVM support
 			die("IVM: Illegal !oneShot while IVM is not enabled at input line $.\n")
-				unless ($opt_V > 0);
+				unless ($System_Option{IVM} > 0);
 			die("IVM: Illegal !oneShot (perhaps due to optimization) while .IVM_DISABLED is active at input line $.\n")
 				if $IVM_DISABLED;
 			die("IVM: Illegal !oneShot in begin6800/end6800[$EXEC6800_BLOCK_ID] at input line $.\n")
@@ -687,7 +688,7 @@ sub compile_asm()
 	
 			$MODE=2,return 1 if asm_wvm_op('IVM_mode'		,'' 	,0x00);
 	
-			if ($opt_V >= 2) {
+			if ($System_Option{IVM} >= 2) {
 				$MODE=1,return 1 if asm_wvm_op('displayStr' 	,'WB'	,0x3F);
 				$MODE=1,return 1 if asm_wvm_op('incAudit'		,'W'	,0x23);
 				$MODE=1,return 1 if asm_wvm_op('soundcardCmd'	,'B'	,0x27);
@@ -698,7 +699,7 @@ sub compile_asm()
 					   asm_wvm_op('incAudit'		,'' 	,0x27);
 			}
 	
-			if ($opt_V >= 4) {
+			if ($System_Option{IVM} >= 4) {
 				$MODE=1,return 1 if asm_wvm_op('PSHX'		,'' 	,0x02);
 				$MODE=1,return 1 if asm_wvm_op('PULX'		,'' 	,0x04);
 				$MODE=1,return 1 if asm_wvm_op('AAX'		,'' 	,0x0C);

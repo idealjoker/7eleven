@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon Jun  2 12:31:57 2025
+#                    dlm: Wed Jun  4 13:36:36 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1301 54 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 523 40 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -370,6 +370,8 @@
 #				  - BUG: WPC MAX_ROM_ADDR was wrong
 #				  - cleaned up WMS_system specific compilation
 #				  - finally added line numbers to undefined label errors
+#	Jun  4, 2025: - adapted to %System_Options
+#				  - implemented ;! line-1 options
 # HISTORY END
 
 # RELEASE NOTES:
@@ -466,86 +468,110 @@
 #   ? add .IF <var|val> [=,!=,<,>,<=,>=] <var|val>
 #   ? implement more general label arithmetic
 
-no warnings 'deprecated';                                       # suppress warning about Goto into structure :)
+no warnings 'deprecated';                                       		# suppress warning about Goto into structure :)
 use strict vars;
 
-our($EIGHT_BIT_LABEL_PREFIX)   = '(';                            # don't start labels with these characters or with numbers
+our($EIGHT_BIT_LABEL_PREFIX)   = '(';                            		# don't start labels with these characters or with numbers
 our($TWELVE_BIT_LABEL_PREFIX)  = ')';
 our($SIXTEEN_BIT_LABEL_PREFIX) = '|';
-our($OPTIMIZABLE_LABEL_PREFIX) = '`';                            # this is preceded by a numeric (decimal byte offset)
+our($OPTIMIZABLE_LABEL_PREFIX) = '`';                            		# this is preceded by a numeric (decimal byte offset)
 
 my($PATH) = $0; $PATH =~ s{/[^/]*$}{};
 
-use Getopt::Std;
-die("Usage: $0 \n\t[system -6|-7 source] [-W)PC <A[lphanumeric>|DM[D]|F[liptronic]|DC[S]|S[ecurity]|9[5]" .
-			  "\n\t[sys11 I-V)M <stage>]" .
-              "\n\t[-D)EFINE <symbol>]" .																# conditional compilation
-              "\n\t[-1)st pass [-F)ind optimizable statements <from-addr,to-addr>]]" .					# code optimization
-              "\n\t[-2)nd pass [-O)ptimization info <file>]]" .
-              "\n\t[system -i)nterface <API file>] [-l)ink system <code file> (s6)]" .					# game code compilation/linker
-			  "\n\t[output -I)nterface on stdout (s6)]" .												# system code compilation/linker
-			  "\n\t[-o)utput <file> (s6)] [prepend image with -g)ap of <x> KB of FF bytes (s6)]" .		# linker output control
-              "\n\t[ROM -a)ddress range <min hex addr,max hex addr>]".									# compilation/output address range
-              "\n\t[ROM output -s <suffix>] [create -e)qual-sized (32K) ROM images (s11)]" .			# ROM image output control
-              "\n\t[suppress -w)arnings] [-v)erbose (show warnings)]" .									# general compilation options
-   			  "\n\t[suppress chec-k)sum verification]" .
-			  "\n\t[-f)orce (attempt compilation of source files with disassembly warnings)]" .
-			  "\n\t[alt. output code -L)isting] [-x) alt. output D711 .dasm file]" .					# alternative output options
-              "\n\t[-d)ump labels] [dump -J)SR targets] [dump -R)OM before resolving labels]" .			
-              "\n\t[-c)hecksum info] [report free -m)emory blocks]" .
-              "\n\t[-t)rust_but_verify <ROM_image[,...]> [check already during label -r)esolution]]" .	# ouput checking
-              "\n\t[-T)race compilation (debug)] [trace -C)onditional compilation (debug)]" .			# debugging
-	          "\n\t[verify -A)ddress information in source (debug)]" .
-              "\n\t<asm file>\n")
-    unless &getopts('1267Aa:cCdD:efF:g:i:IJkLl:mO:o:Rrs:Tt:V:vW:wx') && (@ARGV == 1);
-
-our($opt_1,$opt_2,$opt_6,$opt_7,$opt_a,$opt_A,$opt_c,$opt_C,$opt_d,$opt_D,$opt_e,$opt_f,$opt_F,
+our($opt_1,$opt_2,$opt_a,$opt_A,$opt_c,$opt_C,$opt_d,$opt_D,$opt_f,$opt_F,
 	$opt_g,$opt_i,$opt_I,$opt_J,$opt_k,$opt_L,$opt_l,$opt_m,$opt_o,$opt_O,$opt_r,$opt_R,
-	$opt_s,$opt_t,$opt_T,$opt_v,$opt_V,$opt_w,$opt_W,$opt_x);
+	$opt_s,$opt_S,$opt_t,$opt_T,$opt_v,,$opt_w,$opt_x);
+
+use Getopt::Std;
+die("Usage: $0 " .
+		"\n\t[-S)ystem <type[6,7,11,WPC][:option[...]]>" .										# source type and options
+		"\n\t[-D)EFINE <symbol>]" . 															# conditional compilation
+		"\n\t[-1)st pass [-F)ind optimizable statements <from-addr,to-addr>]]" .				# code optimization
+		"\n\t[-2)nd pass [-O)ptimization info <file>]]" .
+		"\n\t[system -i)nterface <API file>] [-l)ink system <code file> (s6)]" .				# game code compilation/linker
+		"\n\t[output -I)nterface on stdout (s6)]" . 											# system code compilation/linker
+		"\n\t[-o)utput <file> (s6)] [prepend image with -g)ap of <x> KB of FF bytes (s6)]" .	# linker output control
+		"\n\t[ROM -a)ddress range <min hex addr,max hex addr>]".								# compilation/output address range
+		"\n\t[ROM output -s <suffix>]" .														# ROM image output control
+		"\n\t[suppress -w)arnings] [-v)erbose (show warnings)]" .								# general compilation options
+		"\n\t[suppress chec-k)sum verification]" .
+		"\n\t[-f)orce (attempt compilation of source files with disassembly warnings)]" .
+		"\n\t[output code -L)isting]" .															# alternative output options
+		"\n\t[-d)ump labels] [dump -J)SR targets] [dump -R)OM before resolving labels]" .		  
+		"\n\t[-c)hecksum info] [report free -m)emory blocks]" .
+		"\n\t[-t)rust_but_verify <ROM_image[,...]> [check already during label -r)esolution]]" .# ouput checking
+		"\n\t[-T)race compilation (debug)] [trace -C)onditional compilation (debug)]" . 		# debugging
+		"\n\t[verify -A)ddress information in source (debug)]" .
+	    "\n\t<source file>\n")
+    unless &getopts('12Aa:cCdD:fF:g:i:IJkLl:mO:o:RrS:s:Tt:vw') && (@ARGV == 1);
 
 my($dummy,$basename,$ext) = ($ARGV[0] =~ m{([^/]+/)?([^\.]+)\.(.*)}); 
 $basename = 'out' unless defined($basename);
 
-our($WMS_System);      																					# source type
-if ($opt_6 || ($ext =~ m{^[sS]6$})) {
-	$WMS_System = 6;
-} elsif ($opt_7 || ($ext =~ m{^[sS]7$})) {
-	$WMS_System = 7;
-} elsif ($ext =~ m{^[sS]11$}) {
-	$WMS_System = 11;
-} elsif ($opt_W =~ m{^A}) {
-	$WMS_System = 'WPC(Alphanumeric)';
-} elsif ($opt_W =~ m{^DM}) {
-	$WMS_System = 'WPC(DMD)';
-} elsif ($opt_W =~ m{^F}) {
-	$WMS_System = 'WPC(Fliptronic)';
-} elsif ($opt_W =~ m{^DC}) {
-	$WMS_System = 'WPC(DCS)';
-} elsif ($opt_W =~ m{^S}) {
-	$WMS_System = 'WPC(Security)';
-} elsif ($opt_W =~ m{^9}) {
-	$WMS_System = 'WPC(95)';
-} else {
-	die("$0: cannot determine source type\n");
-}
+my($EXTRA);																# additional statements on the current line
 
-die("$0: System11 source required for -e\n")
-    if ($opt_e && $WMS_System != 11);
+die("$ARGV[0]: No such file or directory\n")                    		# check input file
+    unless (-r $ARGV[0]);
+
+$_ = <>;																# process hash-bang options
+if (m{^;!.*C711\s+}) {
+	my(@opt) = split('\s+',$');
+	for (my($i)=0; $i<@opt; $i++) {
+		if ($opt[$i] =~ m{^-S}) {										# system type
+			if (defined($opt_S)) {
+				print(STDERR "Warning: command-line <-S $opt_S> overrides <@opt> at input line 1\n");
+				$i++ unless defined($');
+			} else {
+				$opt_S = defined($') ? $' : $opt[++$i];
+			}
+			next;
+		}
+		if ($opt[$i] =~ m{^-a}) {										# address range
+			if (defined($opt_a)) {
+				print(STDERR "Warning: command-line <-a $opt_a> overrides <@opt> at input line 1\n");
+			} else {
+				$opt_a = $opt[++$i];
+			}
+			next;
+		}
+		$opt_f = 1,next if $opt[$i] eq '-f';
+		die("Invalid ;! option <$opt[$i]>\n");
+	}
+} else {																# regular statement
+	$EXTRA = $_;
+}
 
 #----------------------------------------------------------------------
 # Load System Dependent Libraries
 #----------------------------------------------------------------------
 
-use lib ($0 =~ m@/[^/]*$@,$`);												# add 7eleven installation dir to path
+use lib ($0 =~ m@/[^/]*$@,$`);											# add 7eleven installation dir to path
 
-if ($WMS_System == 6) {
+our($WMS_System,%System_Option); 										# determine source type
+if (defined($opt_S)) {													# explicitly set
+	$WMS_System = 6 	if $opt_S =~ m{^6};
+	$WMS_System = 7 	if $opt_S =~ m{^7};
+	$WMS_System = 11 	if $opt_S =~ m{^11}; 
+	$WMS_System = 'WPC' if $opt_S =~ m{^WPC};
+} else {
+	$WMS_System = 6 	if $ext =~ m{^[sS].*6$};
+	$WMS_System = 7 	if $ext =~ m{^[sS].*7$};
+	$WMS_System = 11 	if $ext =~ m{^[sS].*11$};
+	$WMS_System = 'WPC' if $ext eq 'WPC';
+}
+	
+if ($WMS_System == 6) {													# load system libraries
 	require "C711.M6800";
 	require "C711.System6";
-} elsif ($WMS_System == 7 || $WMS_System == 11) {
+} elsif ($WMS_System == 7) {
 	require "C711.M6800";
 	require "C711.VM";
-	require "C711.System711";
-} elsif ($WMS_System =~ m{^WPC}) {
+	require "C711.System7";
+} elsif ($WMS_System == 11) {
+	require "C711.M6800";
+	require "C711.VM";
+	require "C711.System11";
+} elsif ($WMS_System eq 'WPC') {
 	require "C711.M6809";
 	require "C711.WPC";
 } else {
@@ -619,23 +645,6 @@ our($IVM_DISABLED);												# flag indicating that IVM is disabled; set by .E
 #----------------------------------------------------------------------
 # Command-Line Options
 #----------------------------------------------------------------------
-
-if (defined($opt_V)) {                                          # IVM support
-    die("cannot decode -V $opt_V\n")
-        unless ($opt_V =~ m/^\d+$/);
-}
-my($i);     
-for ($i=1; $i<=$opt_V; $i++) {
-    $ALIAS{"IVM_STAGE$i"} = 'ALIAS_IS_DEFINED';
-    $ALIAS_REFD{"IVM_STAGE$i"}++;
-}
-while ($i < 20) {
-    $ALIAS_REFD{"IVM_STAGE$i"} = -99;                           # prevent compiler warnings
-    $i++;
-}
-
-die("$ARGV[0]: No such file or directory\n")                    # check input file
-    unless (-r $ARGV[0]);
 
 $opt_w = 1 if $opt_L;                                           # suppress warnings on code outputs
 
@@ -789,7 +798,6 @@ if (defined($opt_l)) {
 # Main Program
 #======================================================================
 
-my($EXTRA);																# additional statements on the current line
 my(@NO_OPT);															# addresses where optimization is not allowed; set by !! line prefix
 my(@optimization_suppressed);											# instructions that must not be optimized; set by .SUPPRESS_OPTIMIZATION
 my(@OP);																# address -> instruction for optimizer
@@ -804,6 +812,7 @@ while (!eof()) {
 	} else {
 		$_ = <>;
 	}
+	next if m{^#!} && $. == 1;
 
 	if (defined($ADDR) && ($ADDR<$MIN_ROM_ADDR || $ADDR>$MAX_ROM_ADDR+1)) {
 		if ($opt_v || $opt_t) {
@@ -849,7 +858,7 @@ while (!eof()) {
 					$subst += s/\bJMP\b/BRA/g;							# JMP
 					$subst += s/\bJSR\b/BSR/g;							# JSR
 					$subst += s/\bjump/branch/g;						# branchIf, branchUnless, branch
-					if ($opt_V >= 1) {									# IVM STAGE1
+					if ($System_Option{IVM} >= 1) {									# IVM STAGE1
 						$subst += s/\b_WVM_MODE\b/!IVM_mode/g;			# _WVM_MODE
 						$subst += s/\b_SETFLAG\[A\]/!setBits/g; 		# _SETFLAG[A]
 						$subst += s/\b_SETFLAG\[B\]/!setBits/g; 		# _SETFLAG[B]
@@ -859,13 +868,13 @@ while (!eof()) {
 						$subst += s/\b_LAMPOFF\[A\]/!clearBits/g;		# _LAMPOFF[A]
 						$subst += s/\b_EXIT_THREAD\b/!exitThread/g; 	# _EXIT_THREAD
 					}
-					if ($opt_V >= 4) {									# IVM STAGE4
+					if ($System_Option{IVM} >= 4) {									# IVM STAGE4
 						$subst += s/\b_PSHX\b/!PSHX/g;					# _PSHX
 						$subst += s/\b_PULX\b/!PULX/g;					# _PULX
 						$subst += s/\b_AAX\b/!AAX/g;					# _AAX
 						$subst += s/\b_ABX\b/!ABX/g;					# _ABX
 					}
-					if ($opt_V >= 5) {									# IVM STAGE5
+					if ($System_Option{IVM} >= 5) {									# IVM STAGE5
 						$subst += s/\b_SLEEP\b/!sleep/g;				# _SLEEP
 					}
 				    
@@ -914,8 +923,7 @@ while (!eof()) {
 						unless ($ADDR == $tag_addr);
 				}
             }
-            define_label($`);
-            push(@newly_defined_label,$`);
+			push(@newly_defined_label,define_label($`));
 			set_label_type($MODE) if ($MODE > 0);
             shift(@_);
             next if (@_ == 0);                              			# label-only line => nothing to compile
@@ -1238,9 +1246,10 @@ sub verify_checksums()
 
 sub dump_labels()
 {
-	my($types) = '?MVD';												# undefined, M680x, xVM, Data
+	my($types) = '?AVD';												# undefined, M680x, xVM, Data
 	foreach my $lbl (sort { $LBL{$a} <=> $LBL{$b} } keys(%LBL)) {
 		next unless defined($LBL{$lbl});
+		next if ($lbl =~ m{^auto_label_\d+$});
 		my($c) = substr($types,$LBL_TYPE{$lbl},1);
 		if ($WMS_System =~ m{^WPC}) {
 			printf("%40s = %02X:%04X [$c]\n",$lbl,$LBP{$lbl},$LBL{$lbl});
@@ -1322,9 +1331,14 @@ sub check_duplicate_label_types()
 			$last_label_addr = $addr;
 		}
 	
+		$lbl = sprintf("%02X:$lbl",$RPG)
+			if (defined($RPG) && !($lbl =~ m{^auto_label_\d+$}));
+
 		$LBL{$lbl} = $addr;
 		$LBP{$lbl} = $RPG;																# undef except in WPC
 		$LBL[$addr] = $lbl;
+
+		return $lbl;
 	}
 } # scope of $last_lbl_addr
 
@@ -1363,17 +1377,19 @@ sub labelValue($$)																		# addr<0: line no; addr>=0: address
 	} else {																			# not force-compilation
 		if ($WMS_System =~ m{^WPC}) {													# WPC
 			my($pg,$l) = ($lbl =~ m{^([0-9A-Fa-f]{2}:)?(.*)$});
-			if (defined($pg)) {
-				die("Undefined label <$lbl> at input line $line\n")
-					unless numberp($LBL{$l});
-				die(sprintf("Label <$l> defined in different ROM page (%02X instead of %02X) at input line $line\n",hex($pg),$LBP{$l}))
-	                unless ($LBP{$l} == hex($pg));
-		        return $LBL{$l};
-			} else {
-				die(sprintf("Undefined label <$lbl> at input line %d\n",$line))
-					unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
-		        return $LBL{$lbl};
+			unless (defined($pg)) {														# no RPG info: 1) same pg, 2) prime RE, 3) low address
+##				printf(STDERR "searching for $lbl (RPG = %02X)\n",code_PG($addr));
+				if (defined($LBL{sprintf("%02X:$lbl",code_PG($addr))})) {
+					$lbl = sprintf("%02X:$lbl",code_PG($addr));
+##					print(STDERR "$lbl found\n");
+				} elsif (defined($LBL{"FF:$lbl"})) {
+					$lbl = "FF:$lbl";
+##					print(STDERR "$lbl found\n");
+				}
 			}
+			die(sprintf("Undefined label <$lbl> at input line %d\n",$line))
+				unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
+	        return $LBL{$lbl};
 		} else {																		# System 7-11
 			die(sprintf("Undefined label <$lbl> at input line $line\n"))
 				unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
@@ -1482,7 +1498,7 @@ sub resolve_labels($)
         if ($opt_1 && !$NO_OPT[$a-$bo]                                                  # Optimizer: Pass 1: Write instructions
                    && ($a-$bo)         >= $opt_F_from && ($a-$bo)         <= $opt_F_to
                    && ($offset+$a+$bo) >= $opt_F_from && ($offset+$a+$bo) <= $opt_F_to) {
-            if ((($opt_V >= 1) &&
+            if ((($System_Option{IVM} >= 1) &&
                     (($OP[$a] eq '_WVM_MODE') ||
                      ($OP[$a] eq '_SETFLAG[A]') ||
                      ($OP[$a] eq '_SETFLAG[B]') ||
@@ -1491,12 +1507,12 @@ sub resolve_labels($)
                      ($OP[$a] eq '_CLEARFLAG[B]') ||
                      ($OP[$a] eq '_LAMPOFF[A]') ||
                      ($OP[$a] eq '_EXIT_THREAD'))) ||
-                (($opt_V >= 4) &&                   
+                (($System_Option{IVM} >= 4) &&                   
                     (($OP[$a] eq '_PSHX') ||
                      ($OP[$a] eq '_PULX') ||
                      ($OP[$a] eq '_AAX') ||
                      ($OP[$a] eq '_ABX'))) ||
-                (($opt_V >= 5) &&                   
+                (($System_Option{IVM} >= 5) &&                   
                     ($OP[$a] eq '_SLEEP'))) {
                         my($opt) = "$LINE[$a] $SRC[$a]\n";
                         if (! -t 1) { print($opt); }
@@ -1525,17 +1541,34 @@ sub resolve_labels($)
         die(sprintf("<%04X> $@\n",$a)) unless defined($ROM[$a]);
         next if numberp($ROM[$a]);                                                      # we are done, if we have a number
 
-        if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})/ ||                                     # substitute all system identifiers
-            $ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})/ ||
-            $ROM[$a] =~ m/^Lamp#([0-9A-Fa-f]{2})/ ||
-            $ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})/ ||
-            $ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})/ ||
-            $ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})/ ||
-            ($WMS_System =~ m{^WPC} && $ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})/) ||
-            (!($WMS_System =~ m{^WPC}) && $ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})/)) {
-                $ROM[$a] = hex($1) . $';												# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
-                next if numberp($ROM[$a]);                                              # we are done, if we have a number
-        }
+		if ($WMS_System =~ m{^WPC}) {
+			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})/ || 								# substitute all system identifiers
+				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^Error#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})/ ||
+				$ROM[$a] =~ m/^Audit#([0-9A-Fa-f]{4})/) {
+					$ROM[$a] = hex($1) . $';											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
+					next if numberp($ROM[$a]);											# we are done, if we have a number
+	        }
+			if ($ROM[$a] =~ m/^Lamp#(\d{1,3})/) {
+				$ROM[$a] = $1 . $';														# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
+				next if numberp($ROM[$a]);												# we are done, if we have a number
+			}
+		} else {
+			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})/ || 								# substitute all system identifiers
+				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^Lamp#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})/) {
+					$ROM[$a] = hex($1) . $';											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
+					next if numberp($ROM[$a]);											# we are done, if we have a number
+	        }
+	    }
         if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})/) {	                                # flags are lamps with bit 6 set (all systems?)
             $ROM[$a] = hex($1) + 64 . $';
 			next if numberp($ROM[$a]);                                                  # we are done, if we have a number
@@ -1562,6 +1595,16 @@ sub resolve_labels($)
             $ROM[$a]    =  $offset     & 0xFF;   
             next;
         }
+		my($ms) = '^\\' . $SIXTEEN_BIT_LABEL_PREFIX;									# 16-bit relative address
+		if ($ROM[$a] =~ m{$ms}) {			    
+			my($offset) = labelValue($a,$') - code_addr($a) - 1;
+			my($src_addr) = $a;
+			while (!defined($LINE[$src_addr])) { $src_addr--; }
+			die(sprintf("16-bit branch offset <$ROM[$a]> out of range at source line %d\n",$LINE[$src_addr]))
+				unless ($offset >= -32768 && $offset <= 32727);
+			$ROM[$a] = pack('s',$offset);
+			next;
+		}
 
         my($ms) = '\\' . $OPTIMIZABLE_LABEL_PREFIX . '\\' . $EIGHT_BIT_LABEL_PREFIX;    # absolute address potentially optimizable to 8-bit relative address
         if ($ROM[$a] =~ m{$ms}) {                                                       
@@ -1995,7 +2038,7 @@ sub produce_output()
         for (my($a)=$MIN_ROM_ADDR; $a<$MIN_ROM_ADDR+0x4000; $a++) {
             print(F pack('c',defined($ROM[$a])?$ROM[$a]:0xFF));
         }
-        if ($opt_e) {                                                                           # 32K ROM chips (e.g. Bad Cats)
+        if ($System_Option{'U26_size'} eq '32KB') {  											# 32KB U26 ROM chips (e.g. Bad Cats)
             for (my($a)=$MIN_ROM_ADDR; $a<$MIN_ROM_ADDR+0x4000; $a++) {                         
                 print(F pack('c',defined($ROM[$a])?$ROM[$a]:0xFF));
             }

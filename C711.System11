@@ -1,0 +1,95 @@
+#======================================================================
+#                    C 7 1 1 . S Y S T E M 1 1 
+#                    doc: Mon Jun  2 09:55:01 2025
+#                    dlm: Wed Jun  4 13:33:57 2025
+#                    (c) 2025 idealjoker@mailbox.org
+#                    uE-Info: 69 31 NIL 0 0 72 2 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Jun  2, 2025: - created
+#	Jun  4, 2025: - added option parsing
+# HISTORY END
+
+use strict vars;
+
+#----------------------------------------------------------------------
+# Structured Programming
+#----------------------------------------------------------------------
+
+sub unroll_structure()
+{
+	unroll_asm_structure();													# in [C711.M6800]
+	unroll_wvm_structure();													# in [C711.VM]
+}
+
+#----------------------------------------------------------------------
+# Macro Support
+#----------------------------------------------------------------------
+
+sub asm_macros()
+{
+	my($retval) = asm_6800_macros();
+	return $retval if $retval;
+    return asm_wvm_macros();
+}
+
+#----------------------------------------------------------------------
+# System Calls
+#----------------------------------------------------------------------
+
+sub define_syscall($$@)
+{
+	die("define_syscall() not implemented for Sytstem 6");
+}
+
+#----------------------------------------------------------------------
+# ROM to CPU Address Mapping
+#----------------------------------------------------------------------
+
+sub code_addr(@)															# ROM addr = CPU addr
+{
+	return $_[0];
+
+}
+
+#----------------------------------------------------------------------
+# System Options
+#	IVM 	 = 0 .. 10			IVM stage
+#	U26_size = 16KB, 32KB		U26 ROM size (16KB default)
+#----------------------------------------------------------------------
+
+our($opt_S,%System_Option,%ALIAS,%ALIAS_REFD);
+
+if (defined($opt_S)) {
+	foreach my $o (split(':',$opt_S)) {
+		next if $o eq '11';
+		my($k,$v) = ($o =~ m{^\s*([^=\s]+)\s*=\s*([^\s]*)\s*$});
+		die("Invalid system option <$o>\n")
+			unless isMember($k,'IVM','U26_size');
+		$System_Option{$k} = defined($v) ? $v : 1;
+	}
+}
+
+if (defined($System_Option{IVM})) {
+	die("Invalid IVM system option value <$System_Option{IVM}>\n")
+		unless numberp($System_Option{IVM}) &&
+				$System_Option{IVM}>=0 &&
+				$System_Option{IVM}<=10;
+	my($i);     
+	for ($i=1; $i<=$System_Option{IVM}; $i++) {
+		$ALIAS{"IVM_STAGE$i"} = 'ALIAS_IS_DEFINED';
+		$ALIAS_REFD{"IVM_STAGE$i"}++;
+	}
+	while ($i < 20) {
+		$ALIAS_REFD{"IVM_STAGE$i"} = -99;							# prevent compiler warnings
+		$i++;
+	}
+}				
+
+if (defined($System_Option{IVM})) {
+	die("Invalid U26_size system option value <$System_Option{U26_size}>\n")
+		unless isMember($System_Option{U26_size},'16KB','32KB');
+}
+
+1; 

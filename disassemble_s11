@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 1 1 
 #					 doc: Wed May  7 09:51:43 2025
-#					 dlm: Thu May 15 13:45:45 2025
+#					 dlm: Wed Jun  4 13:38:40 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 19 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 197 28 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -49,9 +49,15 @@ $D711::fill_gaps	=  $opt_g;
 #----------------------------------------------------------------------
 
 &D711::load_ROM($ARGV[0],0x4000); 										# load ROM images
-die("ic26.128: invalid size\n") unless ($D711::MAX_ROM_ADDR == 0x7FFF);
+if ($D711::MAX_ROM_ADDR == 0x7FFF) {									# 16KB ROM (not doubled up)
+	$D711::compilation_options .= '-S11 ';
+} elsif ($D711::MAX_ROM_ADDR == 0xBFFF) {								# 32KB ROM (doubled up)
+	$D711::compilation_options .= '-S11:U26_size=32KB ';
+} else {
+	die("$ARGV[0]: invalid size\n");
+}
 &D711::load_ROM($ARGV[1],0x8000);
-die("ic27.256: invalid size\n") unless ($D711::MAX_ROM_ADDR == 0xFFFF);
+die("$ARGV[1]: invalid size\n") unless ($D711::MAX_ROM_ADDR == 0xFFFF);
 
 #----------------------------------------------------------------------
 # Load User-Supplied Information
@@ -187,6 +193,9 @@ if (D711::BYTE($D711::Address) == 12) {										# ROM_TEST_BLOCKS
 #----------------------------------------------------------------------
 # Produce Output
 #----------------------------------------------------------------------
+
+$D711::compilation_options .= '-f '											# use forced compilation
+	if $D711::unclean;
 
 if ($opt_l) {																# dump label information
 	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u

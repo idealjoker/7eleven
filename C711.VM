@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . V M 
 #                    doc: Wed May 21 21:55:45 2025
-#                    dlm: Mon Jun  2 10:05:23 2025
+#                    dlm: Wed Jun  4 08:55:37 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 16 36 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 1100 0 NIL 0 0 72 8 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -21,9 +21,9 @@ use strict vars;
 # Global Variables
 
 our($OP,@OP_ARG,$MODE,%JSR_TRG,@ROM,$ADDR,%LBL,@IF_CONT_LBL,@LOOP_DONE_LBL,
-	$opt_V,$EXEC6800_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
-	@newly_defined_label,$WMS_System,$IVM_DISABLED,@SRC,$TWELVE_BIT_LABEL_PREFIX,
-	@LINE,$opt_v);
+	$EXEC6800_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
+	@newly_defined_label,$WMS_System,%System_Option,$IVM_DISABLED,@SRC,
+	$TWELVE_BIT_LABEL_PREFIX,@LINE,$opt_v);
 
 # Local Variables
 
@@ -1097,7 +1097,7 @@ sub compile_vm($)
 	local($current_mode) = @_;															# 1 for !oneShot, 2 for normal
 	
 #	print(STDERR "compile_vm(MODE=$MODE): $OP @OP_ARG\n");
-	if ($opt_V >= 2) {
+	if ($System_Option{IVM} >= 2) {
 		$MODE=$current_mode,return 1 if asm_wvm_op('displayStr' 	,'WB'	,0x3F);
 		$MODE=$current_mode,return 1 if asm_wvm_op('incAudit'		,'W'	,0x23);
 		$MODE=$current_mode,return 1 if asm_wvm_op('soundcardCmd'	,'B'	,0x27);

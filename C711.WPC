@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . W P C 
 #                    doc: Mon May 26 08:07:03 2025
-#                    dlm: Mon Jun  2 11:37:44 2025
+#                    dlm: Mon Jun  2 13:20:43 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 64 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 65 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -53,6 +53,15 @@ sub code_addr(@)																			# 1MB ROM -> page address
 	my($RPG) = int($ROM_addr / 0x4000);
 	return ($RPG <= 0x3D) ? ($ROM_addr % 0x4000) + 0x4000
 						  : ($ROM_addr - 0x3D*0x4000);
+}
+
+
+sub code_PG(@)																			# 1MB ROM -> page address
+{
+	my($ROM_addr) = @_;
+	$ROM_addr = $ADDR unless defined($ROM_addr);
+	my($RPG) = int($ROM_addr / 0x4000);
+	return ($RPG <= 0x3D) ? $RPG : 'FF';
 }
 
 

@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Mon Jun  2 12:04:15 2025
+#                    dlm: Wed Jun  4 08:24:33 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 1068 32 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 17 33 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -14,16 +14,18 @@
 #				  - BUG: LBfalse had short arg
 #	Jun  2, 2025: - BUG: forced indexed mode offset did not work for -ve
 #						 offsets
+#	Jun  4, 2025: - removed opt_V
 # HISTORY END
 
 use strict vars;
 
 our($OP,@OP_ARG,%JSR_TRG,@ROM,$ADDR,$RPG,%LBL,@IF_CONT_LBL,@LOOP_LBL,@LOOP_DONE_LBL,
-	$opt_V,$EXEC6809_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
+	$EXEC6809_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
 	$SIXTEEN_BIT_LABEL_PREFIX,@newly_defined_label,$WMS_System,$IVM_DISABLED,
 	@SC_ARGS,%SYSCALL,$DP);
 
 my($last_RTS_addr,@forward_lexical_RTS_branch);
+my($last_exitThread_addr,@forward_lexical_exitThread_branch);
 
 #======================================================================
 # Macros
@@ -693,6 +695,7 @@ sub asm_6809_op($$@)
 	    
 	for (my($i)=0; $i<@opc; $i++) { 													# remaining addressing modes
 		my($am) = substr($aModes,$i,1);
+##		printf(STDERR "$.: am = $am\n");
 
 		if ($am eq 'B') {																# Immediate Mode 
 			next unless ($OP_ARG[0] =~ m{^#});
@@ -730,7 +733,7 @@ sub asm_6809_op($$@)
 					if (@OP_ARG > 1);
 				store_opc($opc[$i]);
 				$ROM[$ADDR++] = 0b10011111; 											# postbyte
-				$ROM[$ADDR++] = $OP_ARG[0];
+				$ROM[$ADDR++] = $1;
 				$ROM[$ADDR++] = '16-BIT VALUE';
 				return 1;
 			} else {
@@ -787,31 +790,43 @@ sub asm_6809_op($$@)
             return 1;
         }
 
-        if ($am eq 'D') {                                                               # Direct Mode (LSB of address, pg register is MSB)
-            if ($OP_ARG[0] =~ m{^<}) {                                                  # < prefix forces direct mode
-                $OP_ARG[0] = $';
-            } else {
-                next unless defined($DP);                                               # < prefix required unless DP is set
-                my($argval);                                                            # determine numeric argument value if possible in order
-                if (numberp($OP_ARG[0])) {                                              # ... to determine whether direct mode can be used
-                    $argval = $OP_ARG[0];
-                } elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
-                    $argval = hex($1);
-                } elsif (numberp($LBL{$OP_ARG[0]})) {
-                    $argval = $LBL{$OP_ARG[0]};
-                } else {
-                    $argval = eval_label($OP_ARG[0],undef,1);                           # returns undef if not a numerical result; no errors on undefined labels
-                }
-                next unless defined($argval) && $argval <= 0xFF;                                            # don't use direct addressing mode for large numbers
-            }
-            die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
-                if (@OP_ARG > 1) && $OP ne 'JSR';
-            store_opc($opc[$i]);
-            $ROM[$ADDR++] = $OP_ARG[0];
-            return 1;
-        }
+		if ($am eq 'D') { 																# Direct Mode (LSB of address, pg register is MSB)
+			next if ($OP_ARG[0] =~ m{^>});												# > forces extended mode
+			my($forced);
+			if ($OP_ARG[0] =~ m{^<}) {													# < prefix forces direct mode
+				$forced = 1;
+				$OP_ARG[0] = $';
+			} else {
+				next unless defined($DP);												# unforced direct mode requires DP set
+			}
+
+			my($argval);																# determine numeric argument value if possible in order
+			if (numberp($OP_ARG[0])) {													# ... to determine whether direct mode is valid
+				$argval = $OP_ARG[0];
+			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
+				$argval = hex($1);
+			} elsif (numberp($LBL{$OP_ARG[0]})) {
+				$argval = $LBL{$OP_ARG[0]};
+			} else {
+				$argval = eval_label($OP_ARG[0],undef,1);								# returns undef if not a numerical result; no errors on undefined labels
+			}
+			if (defined($argval) && $argval > 0xFF) {									# don't use direct addressing mode for large numbers
+				die("Invalid argument <$OP_ARG[0]> for forced direct mode at input line $.\n")
+					if $forced;
+				next;
+			}
+
+			die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+				if (@OP_ARG > 1) && $OP ne 'JSR';
+			store_opc($opc[$i]);
+			$ROM[$ADDR++] = $OP_ARG[0];
+			return 1;
+		}
 
         if ($am eq 'E') {                                                               # Extended mode (2-byte absolute address)
+			if ($OP_ARG[0] =~ m{^>}) {													# < prefix forces extended mode
+				$OP_ARG[0] = $';
+			} 
             die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
                 if (@OP_ARG > 1);
             store_opc($opc[$i]);                                                        # default choice (none of the above has matched, cannot be
@@ -819,6 +834,7 @@ sub asm_6809_op($$@)
             $ROM[$ADDR++] = '16-BIT VALUE';
             return 1;
         }
+
         if ($am eq 'O') {                                                               # optimizable 2-byte absolute address (2nd default, cannot be
             die("Invalid lexical label <$OP_ARG[0]> for $OP instruction at input line $.\n")        # combined with s or L); used for syscalls, so no ARG# checking
                 if ($OP_ARG[0] =~ m{^[<>]});
@@ -851,17 +867,20 @@ sub asm_6809_op($$@)
                         $OP_ARG[0] eq '<NEXTLOOP');
 
             if ($OP_ARG[0] eq '<RTS') {                                                 # lexical labels
-                $OP_ARG[0] = $last_RTS_addr;
+                $OP_ARG[0] = code_addr($last_RTS_addr);
             } elsif ($OP_ARG[0] eq '>RTS') {
                 push(@forward_lexical_RTS_branch,$ADDR);
                 $OP_ARG[0] = 'no RTS found after branch to >RTS';
+            } elsif ($OP_ARG[0] eq '>!exitThread') {
+                push(@forward_lexical_exitThread_branch,$ADDR);
+                $OP_ARG[0] = 'no !exitThread found after branch to >!exitThread';
             } else {
                 unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {                                  # set type of branch target
                     push(@newly_defined_label,($OP_ARG[0]));
                     set_label_type(1);
                 }
             }
-                                
+
             $ROM[$ADDR++] = $EIGHT_BIT_LABEL_PREFIX . $OP_ARG[0];
             return 1;
         }
@@ -878,10 +897,13 @@ sub asm_6809_op($$@)
                         $OP_ARG[0] eq '<NEXTLOOP');
 
             if ($OP_ARG[0] eq '<RTS') {                                                 # lexical labels
-                $OP_ARG[0] = $last_RTS_addr;
+                $OP_ARG[0] = code_addr($last_RTS_addr);
             } elsif ($OP_ARG[0] eq '>RTS') {
                 push(@forward_lexical_RTS_branch,$ADDR);
                 $OP_ARG[0] = 'no RTS found after branch to >RTS';
+            } elsif ($OP_ARG[0] eq '>!exitThread') {
+                push(@forward_lexical_exitThread_branch,$ADDR);
+                $OP_ARG[0] = 'no !exitThread found after branch to >!exitThread';
             } else {
                 unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {                                  # set type of branch target
                     push(@newly_defined_label,($OP_ARG[0]));
@@ -932,7 +954,7 @@ sub compile_asm()
     if (asm_6809_op('RTS','',0x39)) {                                                   # lexical label support
         $last_RTS_addr = $ADDR - 1;
         while (@forward_lexical_RTS_branch) {
-            $ROM[pop(@forward_lexical_RTS_branch)] = $EIGHT_BIT_LABEL_PREFIX . ($ADDR - 1);
+            $ROM[pop(@forward_lexical_RTS_branch)] = $EIGHT_BIT_LABEL_PREFIX . code_addr($ADDR - 1);
         }
         return 1;
     }
@@ -1035,6 +1057,15 @@ sub compile_asm()
 		asm_6809_op('JSR','DXO',0x9D,0xAD,0xBD)) {
 
 		return 1 unless defined($SYSCALL{$OP_ARG[0]});
+
+		if ($OP_ARG[0] eq 'exitThread') {
+			$last_exitThread_addr = $ADDR;
+	        while (@forward_lexical_exitThread_branch) {
+##    	        $ROM[pop(@forward_lexical_exitThread_branch)] = $EIGHT_BIT_LABEL_PREFIX . code_addr();	# does not work with LBRAnches
+    	        $ROM[pop(@forward_lexical_exitThread_branch)] = code_addr();
+        	}
+			
+		}
 
 		my($SCA) = $SC_ARGS[$SYSCALL{$OP_ARG[0]}];
 ##		print(STDERR "potential syscall at input line $. [$OP @OP_ARG <$SCA>]\n");
