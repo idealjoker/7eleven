@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Jun  4 13:36:36 2025
+#                    dlm: Wed Jun  4 19:37:47 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 523 40 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 381 31 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -359,6 +359,7 @@
 #	May 15: 2025: - BUG: page locking was checked during phase 1
 #				  - BUG: page locking considered 1 byte beyond block
 #	May 19, 2025: - BUG: .IFUNDEF did not work
+#	May 20, 2025: - BUG: several .PRAGMAs were executed in disabled code
 #	May 22, 2025: - added use strict vars, finding several bugs in the process
 #	May 23, 2025: - made it work
 #				  - started working on WPC support
@@ -372,6 +373,12 @@
 #				  - finally added line numbers to undefined label errors
 #	Jun  4, 2025: - adapted to %System_Options
 #				  - implemented ;! line-1 options
+#				  - merged with studio version
+#				  - BUG: expand_bang() mangled ! in Sys 11
+#				  - BUG: disabled "dot" code required for Ideal.s6
+#				  - BUG: DEFINED_ALIAS instead of ALIAS_IS_DEFINED in some
+#						 places
+#				  - BUG: ALIAS local vars defined after used
 # HISTORY END
 
 # RELEASE NOTES:
@@ -510,8 +517,9 @@ $basename = 'out' unless defined($basename);
 
 my($EXTRA);																# additional statements on the current line
 
-die("$ARGV[0]: No such file or directory\n")                    		# check input file
+die("$ARGV[0]: No such file or directory\n")                    		# check input file (STDIN does not work because of .OPTINFO)
     unless (-r $ARGV[0]);
+my($SRC) = $ARGV[0];
 
 $_ = <>;																# process hash-bang options
 if (m{^;!.*C711\s+}) {
@@ -542,12 +550,49 @@ if (m{^;!.*C711\s+}) {
 }
 
 #----------------------------------------------------------------------
+# Global Variables
+#	my		PRIVATE: available in this source file only
+#	our		available in entire compiler
+#----------------------------------------------------------------------
+
+my(@vROMimage);                                                 		# PRIVATE: verification ROM image
+my(@AUTO_LABEL_DEF);													# PRIVATE: line numbers of auto label definitions for error messages
+my(@IF_STACK) = (0);                                            		# PRIVATE: conditional compilation (TOS 0: sentinel: outside any if; 1: then/else compiling; -1: then/else not compiling; -2: nested if, not compiling)
+
+our(@ROM);																# output buffer
+our($ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR);									# Sys6-11: CPU address space; WPC: 1MB ROM address space
+our($RPG);																# Sys6-11: undefined; 		  WPC: current ROM page
+our($DP);																# undefined until .ASSUME_DP is used
+
+our($WMS_System,%System_Option); 										# source type
+local(our(%ALIAS,%ALIAS_REFD));                                 		# aliases (defines), number of references
+
+our(@SRC);																# source lines (used for optimizer and warnings)
+local(our(@LINE));														# source line number indexed by ADDR (used for optimizer and warnings)
+
+local(our($OP,@OP_ARG));												# currently compiling operation and argments
+
+our(%LBL);																# labels (name -> address)
+our(%LBP);																# ROM page of label (undef except in WPC)
+our(%LBL_TYPE);															# label type (see MODE below)
+our(@LBL);																# labels (address -> name)
+our(@newly_defined_label);												# list of newly defined labels (since last instruction), possibly of unknown type
+
+our($EXEC6800_BLOCK_ID) = 0;                                   			# WVM begin6800/end6800 blocks; 0: outside block, >0 inside block 
+our($MODE) = 0;															# compilation mode/label type; 0: undefined; 1: M6800; 2: WVM/IVM; 3: data
+
+our(%JSR_TRG);															# number of calls to subroutines for -J
+
+our(@IF_CONT_LBL,@LOOP_DONE_LBL);										# structured programming
+
+our($IVM_DISABLED);														# flag indicating that IVM is disabled; set by .ENABLE_IVM/.DISABLE_IVM
+
+#----------------------------------------------------------------------
 # Load System Dependent Libraries
 #----------------------------------------------------------------------
 
 use lib ($0 =~ m@/[^/]*$@,$`);											# add 7eleven installation dir to path
 
-our($WMS_System,%System_Option); 										# determine source type
 if (defined($opt_S)) {													# explicitly set
 	$WMS_System = 6 	if $opt_S =~ m{^6};
 	$WMS_System = 7 	if $opt_S =~ m{^7};
@@ -578,17 +623,6 @@ if ($WMS_System == 6) {													# load system libraries
 	die("Unsupported WMS System <$WMS_System>\n");
 }
 
-#----------------------------------------------------------------------
-# Global Variables
-#	my		PRIVATE: available in this source file only
-#	our		available in entire compiler
-#----------------------------------------------------------------------
-
-our(@ROM);														# output buffer
-our($ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR);							# Sys6-11: CPU address space; WPC: 1MB ROM address space
-our($RPG);														# Sys6-11: undefined; 		  WPC: current ROM page
-our($DP);														# undefined until .ASSUME_DP is used
-
 if ($WMS_System == 6) {											# System6
 	$MIN_ROM_ADDR = 0x6000; 
 	$MAX_ROM_ADDR = 0x67FF;
@@ -605,6 +639,8 @@ if ($WMS_System == 6) {											# System6
 	die;
 }
 
+my($FIRST_ADDR) = $MAX_ROM_ADDR + 1;                            # PRIVATE: first @ROM address used; sentinel (true value set by .ORG)	
+
 if (defined($opt_a)) {											# override ROM address range with -a
 	my($mia,$maa) = split(',',$opt_a);
 	$MIN_ROM_ADDR = hex($mia);
@@ -613,35 +649,6 @@ if (defined($opt_a)) {											# override ROM address range with -a
 		unless ($MAX_ROM_ADDR > 0);
 }
 	
-my($FIRST_ADDR) = $MAX_ROM_ADDR + 1;                            # PRIVATE: first @ROM address used; sentinel (true value set by .ORG)
-
-my(@vROMimage);                                                 # PRIVATE: verification ROM image
-
-our(@SRC);														# source lines (used for optimizer and warnings)
-local(our(@LINE));												# source line number indexed by ADDR (used for optimizer and warnings)
-
-local(our($OP,@OP_ARG));										# currently compiling operation and argments
-
-local(our(%ALIAS,%ALIAS_REFD));                                 # aliases (defines), number of references
-our(%LBL);														# labels (name -> address)
-our(%LBP);														# ROM page of label (undef except in WPC)
-our(%LBL_TYPE);													# label type (see MODE below)
-our(@LBL);														# labels (address -> name)
-our(@newly_defined_label);										# list of newly defined labels (since last instruction), possibly of unknown type
-
-my(@AUTO_LABEL_DEF);											# PRIVATE: line numbers of auto label definitions for error messages
-
-my(@IF_STACK) = (0);                                            # PRIVATE: conditional compilation (TOS 0: sentinel: outside any if; 1: then/else compiling; -1: then/else not compiling; -2: nested if, not compiling)
-
-our($EXEC6800_BLOCK_ID) = 0;                                   	# WVM begin6800/end6800 blocks; 0: outside block, >0 inside block 
-our($MODE) = 0;													# compilation mode/label type; 0: undefined; 1: M6800; 2: WVM/IVM; 3: data
-
-our(%JSR_TRG);													# number of calls to subroutines for -J
-
-our(@IF_CONT_LBL,@LOOP_DONE_LBL);								# structured programming
-
-our($IVM_DISABLED);												# flag indicating that IVM is disabled; set by .ENABLE_IVM/.DISABLE_IVM
-
 #----------------------------------------------------------------------
 # Command-Line Options
 #----------------------------------------------------------------------
@@ -659,8 +666,8 @@ if (defined($opt_F)) {
         unless ($opt_F_to > $opt_F_from);
 }
 if ($opt_1 && -t 1) {                                           # open optimization output file
-    open(OPTF,">.OPTINFO_$ARGV[0]")
-        || die(".OPTINFO_$ARGV[0]: $!\n");
+    open(OPTF,">.OPTINFO_$SRC")
+        || die(".OPTINFO_$SRC: $!\n");
 }
 
 die("-o requires -2 (2nd pass)\n")                              # OPTIMIZER 2nd pass)
@@ -670,7 +677,7 @@ if ($opt_2) {
     if (defined($opt_O)) {
         open(OF,$opt_O) || die("$opt_O: $!\n");
     } else {
-        open(OF,".OPTINFO_$ARGV[0]") || die(".OPTINFO_$ARGV[0]: $!\n");
+        open(OF,".OPTINFO_$SRC") || die(".OPTINFO_$SRC: $!\n");
     }
     my($line) = scalar(<OF>);
     $line =~ s/^\s*//;
@@ -706,7 +713,7 @@ chop($COMPILATION_INFO =                                        # BAD CATS (16-c
 chop($COMPILATION_INFO77 =                                      # PIN BOT (2x7-character display)
     $MERCURIAL_RELEASE . `date '+   %m%d%y'`);
 chop($COMPILATION_TIMESTAMP = uc(`date '+%h %d  %H %M '`));     # used for PIN BOT first
-printf(STDERR "$ARGV[0] [$COMPILATION_INFO]\n")                 # report on screen during 2nd pass
+printf(STDERR "$SRC [$COMPILATION_INFO]\n")                 # report on screen during 2nd pass
     unless defined($opt_1 || $opt_L);
     
 #----------------------------------------------------------------------
@@ -858,7 +865,7 @@ while (!eof()) {
 					$subst += s/\bJMP\b/BRA/g;							# JMP
 					$subst += s/\bJSR\b/BSR/g;							# JSR
 					$subst += s/\bjump/branch/g;						# branchIf, branchUnless, branch
-					if ($System_Option{IVM} >= 1) {									# IVM STAGE1
+					if ($System_Option{IVM} >= 1) {						# IVM STAGE1
 						$subst += s/\b_WVM_MODE\b/!IVM_mode/g;			# _WVM_MODE
 						$subst += s/\b_SETFLAG\[A\]/!setBits/g; 		# _SETFLAG[A]
 						$subst += s/\b_SETFLAG\[B\]/!setBits/g; 		# _SETFLAG[B]
@@ -868,13 +875,13 @@ while (!eof()) {
 						$subst += s/\b_LAMPOFF\[A\]/!clearBits/g;		# _LAMPOFF[A]
 						$subst += s/\b_EXIT_THREAD\b/!exitThread/g; 	# _EXIT_THREAD
 					}
-					if ($System_Option{IVM} >= 4) {									# IVM STAGE4
+					if ($System_Option{IVM} >= 4) {						# IVM STAGE4
 						$subst += s/\b_PSHX\b/!PSHX/g;					# _PSHX
 						$subst += s/\b_PULX\b/!PULX/g;					# _PULX
 						$subst += s/\b_AAX\b/!AAX/g;					# _AAX
 						$subst += s/\b_ABX\b/!ABX/g;					# _ABX
 					}
-					if ($System_Option{IVM} >= 5) {									# IVM STAGE5
+					if ($System_Option{IVM} >= 5) {						# IVM STAGE5
 						$subst += s/\b_SLEEP\b/!sleep/g;				# _SLEEP
 					}
 				    
@@ -1293,15 +1300,14 @@ sub check_duplicate_label_types()
 		$addr = code_addr($addr)														# convert WPC ROM to code addr
 			if defined($RPG);
 	
-##		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr());
+		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr()) if $opt_T;
 
-###		my($lofs) = ($addr =~ m{^\.\+(\d+)$});											# handle .+1 '.' dot
-###		if (defined($lofs)) {
-###			die;
-###			die("No valid target for . label <$OP_ARG[0]> at input line $.\n")
-###				unless $last_label_addr>=0;
-###			$addr = $last_label_addr + $lofs;
-###		}
+		my($lofs) = ($addr =~ m{^\.\+(\d+)$});											# handle .+1 '.' dot in Sys6 only?
+		if (defined($lofs)) {
+			die("No valid target for . label <$OP_ARG[0]> at input line $.\n")
+				unless $last_label_addr>=0;
+			$addr = $last_label_addr + $lofs;
+		}
 		    
 		die("ERROR: Unmatched END on line $.\n") unless (length($lbl) > 0);
 	
@@ -1874,7 +1880,7 @@ sub expand_repeatBytes()
 
 sub expand_bang()
 {
-	return unless ($_[0] =~ m{^!});
+	return unless defined($RPG) && ($_[0] =~ m{^!});
 	splice(@_,1,0,$');
 	$_[0] = 'JSR';
 }
@@ -2101,91 +2107,6 @@ sub compile_pragma()
     my($OP,@OP_ARG) = @_;
     return undef unless ($OP =~ m{^\.});
 
-	#------------------------------
-	# Mode Checking
-	#------------------------------
-
-    if (($MODE==0 || $MODE==1) && ($OP eq '.WVM_MODE' || $OP eq '.IVM_MODE')) {    
-        die("Syntax: .WVM_MODE|.IVM_MODE (<@_> at input line $.)\n")
-            unless (@OP_ARG == 0);
-        $MODE = 2;
-        return 1;
-    }
-
-    if (($MODE==0 || $MODE==2) && ($OP eq '.M6800_MODE' || $OP eq '.M6809_MODE')) {    
-        die("Syntax: .M6800_MODE|.M680X_MODE (<@_> at input line $.)\n")
-            unless (@OP_ARG == 0);
-        $MODE = 1;
-        return 1;
-    }
-
-    if ($OP eq '.DATA_MODE') {    
-        die("Syntax: .DATA_MODE (<@_> at input line $.)\n")
-            unless (@OP_ARG == 0);
-        $MODE = 0;																			# don't set to mode 3, because after any data mode byte, there can be any mode
-        return 1;
-    }
-
-    #------------------------------
-    # IVM: Enabling and Disabling
-    #------------------------------
-
-    if ($OP eq '.DISABLE_IVM') {    
-        die("Syntax: .DISABLE_IVM (<@_> at input line $.)\n")
-            unless (@OP_ARG == 0);
-        die("attempted nesting of .DISABLE_IVM at input line $.\n")
-            if $IVM_DISABLED;
-        $IVM_DISABLED = 1;
-        return 1;
-    }
-
-    if ($OP eq '.ENABLE_IVM') { 
-        die("Syntax: .ENABLE_IVM (<@_> at input line $.)\n")
-            unless (@OP_ARG == 0);
-        die("attempted nesting of .ENABLE_IVM at input line $.\n")
-            unless $IVM_DISABLED;
-        undef($IVM_DISABLED);
-        return 1;
-    }
-
-    #---------------------------------
-    # Optimizer: Suppress Optimization
-    #---------------------------------
-
-    if ($OP eq '.SUPPRESS_OPTIMIZATION') {                                              
-        die("Syntax: .SUPPRESS_OPTIMIZATION <string> (<@_> at input line $.)\n")
-            unless (@OP_ARG == 1);
-        push(@optimization_suppressed,$OP_ARG[0]);
-        return 1;
-    }
-
-	#--------------------
-	# Memory Management
-	#	- Page locking
-	#--------------------
-
-    if ($OP eq '.LOCK_ROM_PAGE') {                                              
-        die("Syntax: .LOCK_ROM_PAGE (<@_> at input line $.)\n")
-            unless (@OP_ARG == 0);
-##        printf(STDERR "page locked at %04X\n",$ADDR) unless $opt_1;
-		$locked_page = ($ADDR >> 8);
-        return 1;
-    }
-
-    if ($OP eq '.UNLOCK_ROM_PAGE') {                                              
-        die("Syntax: .UNLOCK_ROM_PAGE (<@_> at input line $.)\n")
-            unless (@OP_ARG == 0);
-		die("unexpected .UNLOCK_ROM_PAGE at input line $.\n")
-			unless defined($locked_page);
-		unless ($opt_1) {			
-##	        printf(STDERR "page unlocked at %04X\n",$ADDR-1);
-			die(sprintf("page-lock violation (%02X -> %04X) at input line $.\n",$locked_page,$ADDR-1))
-				unless $locked_page == (($ADDR-1) >> 8);
-		}
-		undef($locked_page);
-        return 1;
-    }
-
     #---------------------
     # Conditional Assembly
     #---------------------
@@ -2248,7 +2169,7 @@ sub compile_pragma()
         return 1;
     }
 
-    return 1 if ($IF_STACK[$#IF_STACK] < 0);                                            # conditional assembly is suspended 
+    return 1 if ($IF_STACK[$#IF_STACK] < 0);                                            # NOT COMPILING CODE => IGNORE REMAINING PRAGMAS
 
 	if ($OP eq '.ASSUME_DEFINED') { 													# .ASSUME_DEFINED
 		die("Syntax: .ASSUME_DEFINED id[...] (<@_> at input line $.)\n")
@@ -2271,6 +2192,91 @@ sub compile_pragma()
 		return 1;
 	}
 
+	#------------------------------
+	# Mode Checking
+	#------------------------------
+
+	if (($MODE==0 || $MODE==1) && ($OP eq '.WVM_MODE' || $OP eq '.IVM_MODE')) {    
+		die("Syntax: .WVM_MODE|.IVM_MODE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$MODE = 2;
+		return 1;
+	}
+
+	if (($MODE==0 || $MODE==2) && ($OP eq '.M6800_MODE' || $OP eq '.M6809_MODE')) {    
+		die("Syntax: .M6800_MODE|.M680X_MODE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$MODE = 1;
+		return 1;
+	}
+
+	if ($OP eq '.DATA_MODE') {	  
+		die("Syntax: .DATA_MODE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$MODE = 0;																			# don't set to mode 3, because after any data mode byte, there can be any mode
+		return 1;
+    }
+
+    #------------------------------
+    # IVM: Enabling and Disabling
+    #------------------------------
+
+	if ($OP eq '.DISABLE_IVM') {    
+		die("Syntax: .DISABLE_IVM (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		die("attempted nesting of .DISABLE_IVM at input line $.\n")
+			if $IVM_DISABLED;
+		$IVM_DISABLED = 1;
+		return 1;
+	}
+
+	if ($OP eq '.ENABLE_IVM') { 
+		die("Syntax: .ENABLE_IVM (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		die("attempted nesting of .ENABLE_IVM at input line $.\n")
+			unless $IVM_DISABLED;
+		undef($IVM_DISABLED);
+		return 1;
+    }
+
+    #---------------------------------
+    # Optimizer: Suppress Optimization
+    #---------------------------------
+
+	if ($OP eq '.SUPPRESS_OPTIMIZATION') {											    
+		die("Syntax: .SUPPRESS_OPTIMIZATION <string> (<@_> at input line $.)\n")
+			unless (@OP_ARG == 1);
+		push(@optimization_suppressed,$OP_ARG[0]);
+		return 1;
+    }
+
+	#--------------------
+	# Memory Management
+	#	- Page locking
+	#--------------------
+
+	if ($OP eq '.LOCK_ROM_PAGE') {											    
+		die("Syntax: .LOCK_ROM_PAGE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+##		  printf(STDERR "page locked at %04X\n",$ADDR) unless $opt_1;
+		$locked_page = ($ADDR >> 8);
+		return 1;
+	}
+
+	if ($OP eq '.UNLOCK_ROM_PAGE') {											  
+		die("Syntax: .UNLOCK_ROM_PAGE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		die("unexpected .UNLOCK_ROM_PAGE at input line $.\n")
+			unless defined($locked_page);
+		unless ($opt_1) {		    
+##			printf(STDERR "page unlocked at %04X\n",$ADDR-1);
+			die(sprintf("page-lock violation (%02X -> %04X) at input line $.\n",$locked_page,$ADDR-1))
+				unless $locked_page == (($ADDR-1) >> 8);
+		}
+		undef($locked_page);
+		return 1;
+    }
+
     #-----------------------------------------
     # Defines (Aliases & Conditional Assembly)
     #-----------------------------------------
@@ -2278,10 +2284,10 @@ sub compile_pragma()
 	if (match_pragma($OP,'.DEF','INE')) { 												# .DEFINE (define alias)
 		die("Syntax: .DEF[INE] name [value...] (<@_> at input line $.)\n")
 			unless (@OP_ARG >= 1);
-		die if ($OP_ARG[0] eq 'DEFINED_ALIAS');
+		die if ($OP_ARG[0] eq 'ALIAS_IS_DEFINED');
 		$ALIAS_REFD{$OP_ARG[0]}++;
 		if (@OP_ARG == 1) { 															# no argument (just define)
-			$ALIAS{$OP_ARG[0]} = 'DEFINED_ALIAS';
+			$ALIAS{$OP_ARG[0]} = 'ALIAS_IS_DEFINED';
 		} elsif ($OP_ARG[1] =~ m{^'}) { 												# string argument (copy including quotes)
 			($ALIAS{$OP_ARG[0]}) = m{('.*')};
 		} else {																		# non-string arguments
@@ -2293,7 +2299,7 @@ sub compile_pragma()
 	if (match_pragma($OP,'.UNDEF','INE')) {												# .UNDEF (undefine alias)
 		die("Syntax: .UNDEF[INE] name [value...] (<@_> at input line $.)\n")			# using this prevents warnings of used but not defined defines  
 			unless (@OP_ARG >= 1);
-		die if ($OP_ARG[0] eq 'DEFINED_ALIAS');
+		die if ($OP_ARG[0] eq 'ALIAS_IS_DEFINED');
 		$ALIAS_REFD{$OP_ARG[0]} = -99;
 		undef($ALIAS{$OP_ARG[0]});
 		die if defined($ALIAS{$OP_ARG[0]});

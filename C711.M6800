@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 0 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Wed Jun  4 08:56:51 2025
+#                    dlm: Wed Jun  4 19:36:38 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 702 30 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 16 36 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -13,13 +13,14 @@
 #	May 23, 2025: - made it work
 #	May 26, 2025: - renamed some funs
 #	Jun  4, 2025: - adapted to %System_Options
+#				  - debugging output
 # HISTORY END
 
 use strict vars;
 
 our($OP,@OP_ARG,$MODE,%JSR_TRG,@ROM,$ADDR,%LBL,@IF_CONT_LBL,@LOOP_LBL,@LOOP_DONE_LBL,
 	$EXEC6800_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
-	@newly_defined_label,$WMS_System,%System_Option,$IVM_DISABLED);
+	@newly_defined_label,$WMS_System,%System_Option,$IVM_DISABLED,$opt_T);
 
 my($last_RTS_addr,@forward_lexical_RTS_branch);
 
@@ -671,9 +672,9 @@ sub asm_6800_op($$@)
 
 sub compile_asm()
 {
-##	print(STDERR "compile_asm(ADDR=$ADDR MODE=$MODE): $OP @OP_ARG\n");
+	print(STDERR "\tcompile_asm(ADDR=$ADDR MODE=$MODE): $OP @OP_ARG\n") if $opt_T;
 
-	if ($WMS_System >= 7 && $WMS_System <= 11) {										# WVM instructions in assembler code
+	if ($WMS_System >= 7 && $WMS_System <= 11) {											# WVM instructions in assembler code
 
 		if ($OP =~ /^!/) {																	# !oneShot IVM support
 			die("IVM: Illegal !oneShot while IVM is not enabled at input line $.\n")
