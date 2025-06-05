@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Jun  4 16:13:10 2025
+#					 dlm: Thu Jun  5 07:53:51 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 301 25 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 297 49 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -294,6 +294,7 @@
 #				  - debugged/cleaned up newlines with address output
 #				  - removed unused code
 #	Jun  4, 2025: - added support for ;! ($compilation_options)
+#	Jun  5, 2025: - BUG: debug output was enabled
 # END OF HISTORY
 
 # TO-DO:
@@ -459,7 +460,7 @@ sub setLabel($$@)
 {
     my($lbl,$addr,$pg) = @_;
 
-	printf(STDERR "setLabel($lbl,%04X,%02X)\n",$addr,$pg);
+##	printf(STDERR "setLabel($lbl,%04X,%02X)\n",$addr,$pg);
 
 #	die(sprintf("trying to define empty label [setLabel($lbl,0x%04X,$allow_multiple)]\n",$addr))
 #		if (length($lbl) == 0);

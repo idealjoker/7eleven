@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 1 1 
 #					 doc: Wed May  7 09:51:43 2025
-#					 dlm: Wed Jun  4 13:38:40 2025
+#					 dlm: Thu Jun  5 08:00:47 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 197 28 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 21 59 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -15,7 +15,10 @@
 #				  - added ROM_TEST_BLOCKS
 #				  - added defSwitch() and defLamp()
 #	May 11, 2025: - fiddled
-#	May 15, 2025: - moved -i after loadROM() to allow disassembly instructions
+#	May 15, 2025: - moved -i after loadROM() to allow disassembly
+#					instructions
+#	Jun  4, 2025: - added -f to ;! options on unclean disassembly
+#	Jun  5, 2025: - replaced -f option by addl debug output
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -194,8 +197,8 @@ if (D711::BYTE($D711::Address) == 12) {										# ROM_TEST_BLOCKS
 # Produce Output
 #----------------------------------------------------------------------
 
-$D711::compilation_options .= '-f '											# use forced compilation
-	if $D711::unclean;
+print(STDERR "[Compilation with C711 may require the -f option]\n")
+	if ($D711::unclean);
 
 if ($opt_l) {																# dump label information
 	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
