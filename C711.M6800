@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 0 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Wed Jun  4 19:36:38 2025
+#                    dlm: Thu Jun  5 16:02:39 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 16 36 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 43 0 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -14,6 +14,7 @@
 #	May 26, 2025: - renamed some funs
 #	Jun  4, 2025: - adapted to %System_Options
 #				  - debugging output
+#				  - BUG: _SLEEP did not accept hex values any more
 # HISTORY END
 
 use strict vars;
@@ -37,14 +38,15 @@ sub asm_6800_macros()																			# _SLEEP, _WVM_MODE, ...
 		if ($OP eq '_SLEEP') {
 			die("Syntax: _SLEEP #time at input line $.\n")
 				unless (@OP_ARG == 1 && $OP_ARG[0] =~ m{^#});
+			my($val) = ($' =~ m{^\$}) ? hex($') : $';											# decimalize
 			die("invalid _SLEEP time ($') at input line $.\n")
-				unless numberp($') && $'>=0 && $'<=255; 
+				unless numberp($val) && $val>=0 && $val<=255; 
 			set_label_type(1);
 			$JSR_TRG{WVM_sleepI}++; 	    
 			$ROM[$ADDR++] = 0xBD;																# JSR WVM_sleepI
 			$ROM[$ADDR++] = 'WVM_sleepI';
 			$ROM[$ADDR++] = '16-BIT VALUE';
-			$ROM[$ADDR++] = $'; 																# .DB xx
+			$ROM[$ADDR++] = $val; 																# .DB xx
 			$MODE=1,return 1;
 		}
 	

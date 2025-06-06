@@ -1,14 +1,15 @@
 #======================================================================
 #                    C 7 1 1 . S Y S T E M 1 1 
 #                    doc: Mon Jun  2 09:55:01 2025
-#                    dlm: Wed Jun  4 13:33:57 2025
+#                    dlm: Fri Jun  6 08:05:31 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 69 31 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 13 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jun  2, 2025: - created
 #	Jun  4, 2025: - added option parsing
+#	Jun  6, 2025: - BUG: rom_addr() returned 0 on empty args
 # HISTORY END
 
 use strict vars;
@@ -49,8 +50,10 @@ sub define_syscall($$@)
 
 sub code_addr(@)															# ROM addr = CPU addr
 {
-	return $_[0];
-
+	my($ROM_addr) = @_;
+	$ROM_addr = $ADDR unless (@_);
+##	print(STDERR "code_addr(@_) -> $ROM_addr\n");
+	return $ROM_addr;
 }
 
 #----------------------------------------------------------------------

@@ -1,13 +1,21 @@
 #======================================================================
 #                    S Y S T E M 7 . A P I 
 #                    doc: Mon May 27 20:31:03 2024
-#                    dlm: Tue May 28 19:30:33 2024
+#                    dlm: Fri Jun  6 08:19:37 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 186 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 12 50 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
+
+# HISTORY:
+#	Jun  6, 2025: - started adaptation to updated C711
+#				  - disabled alternate register names
+#				  - renamed RAM_F_ballTilted back to gameTilted
+# HISTORY END
 
 define_label('RAM_Reg-A',					0x00);			# CPU Registers
 define_label('RAM_Reg-B',					0x01);
+
+if (0) {
 define_label('RAM_Reg-C',					0x02);			# Permanent Registers
 define_label('RAM_Reg-D',					0x03);
 define_label('RAM_Reg-E',					0x04);
@@ -22,7 +30,7 @@ define_label('RAM_Reg-M',					0x0C);
 define_label('RAM_Reg-N',					0x0D);
 define_label('RAM_Reg-O',					0x0E);
 define_label('RAM_Reg-P',					0x0F);
-
+} else {
 define_label('RAM_Reg-P0',					0x02);			# Permanent Registers (alternate names)
 define_label('RAM_Reg-P1',					0x03);
 define_label('RAM_Reg-P2',					0x04);
@@ -38,6 +46,7 @@ define_label('RAM_Reg-V4',					0x0C);
 define_label('RAM_Reg-V5',					0x0D);
 define_label('RAM_Reg-V6',					0x0E);
 define_label('RAM_Reg-V7',					0x0F);
+}
 
 define_label('RAM_lampBuf', 				0x10);
 define_label('RAM_flagBuf', 				0x18);
@@ -82,7 +91,7 @@ define_label('RAM_sys_temp_w2', 			0xA6);
 define_label('RAM_sys_temp_w3', 			0xA8);
 define_label('RAM_WVM_next_spawn_id',		0xAA);
 
-define_label('RAM_F_ballTilted',			0xC8);
+define_label('RAM_F_gameTilted',			0xC8);
 define_label('RAM_F_count_bonus',			0xCA);
 define_label('RAM_current_player',			0xCD);
 define_label('RAM_current_score_buf',		0xCE);

@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Jun  4 19:37:47 2025
+#                    dlm: Fri Jun  6 15:49:01 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 381 31 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 382 28 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -379,6 +379,7 @@
 #				  - BUG: DEFINED_ALIAS instead of ALIAS_IS_DEFINED in some
 #						 places
 #				  - BUG: ALIAS local vars defined after used
+#	Jun  6, 2025: - fiddled 
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1297,8 +1298,7 @@ sub check_duplicate_label_types()
 		die("Undefined address (.ORG missing) when defining label <$lbl> at input line $.\n")
 			unless defined($addr);
 
-		$addr = code_addr($addr)														# convert WPC ROM to code addr
-			if defined($RPG);
+		$addr = code_addr($addr);														# convert WPC ROM to code addr
 	
 		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr()) if $opt_T;
 
@@ -1327,7 +1327,7 @@ sub check_duplicate_label_types()
 				$nPG = sprintf("%02X:",$RPG);
 			}
 
-			printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$$oPG%04X to $nPG$lbl at input line $.\n",code_addr())
+			printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$$oPG%04X to $nPG$lbl at input line $.\n",$addr)
 				if !$allow_relabel && $addr!=$last_label_addr							# multiple labels at same address allowed
 								   && !$opt_w											# warnings suppressed
 								   && defined($LBL[$addr])								# already defined label at same address...
