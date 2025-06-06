@@ -1,6 +1,6 @@
 {\rtf1\ansi\ansicpg1252\cocoartf2822
 \cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica-Oblique;\f1\fswiss\fcharset0 Helvetica-Bold;\f2\fswiss\fcharset0 Helvetica;
-\f3\fnil\fcharset0 Menlo-Regular;\f4\fnil\fcharset0 Monaco;\f5\froman\fcharset0 Times-Roman;
+\f3\fnil\fcharset0 Monaco;\f4\fnil\fcharset0 Menlo-Regular;\f5\froman\fcharset0 Times-Roman;
 \f6\fmodern\fcharset0 Courier;}
 {\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red255\green255\blue255;}
 {\*\expandedcolortbl;;\csgenericrgb\c0\c0\c0;\csgenericrgb\c100000\c100000\c100000;}
@@ -31,6 +31,15 @@ If the first token (separated by white space) of the statement sequence ends wit
 \
 The remaining tokens up to but not including any & token comprise the instruction, which consists of an operation and its arguments. All tokens after a & are re-assembled into a new statement sequence that is processed as described above.  \
 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 Any argument can be repeated by adding a suffix of [<num>x]. This is useful primarily of data definition statements such as the following definition from  Pin Bot:\
+\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f3\fs20 \cf2 \cb3 \CocoaLigature0 			auto_adjustment_data:  .DB $00[3x] $01[38x] $02[20x] $03[20x] $04[21x]
+\f2\fs24 \cf0 \cb1 \CocoaLigature1 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
 For string-definition operations (.STR, .S7R, \'85), single quote characters (\'91) are used as delimiters for the single string argument. For all other operations white space is used to separate the statement tokens.\
 \
 \
@@ -40,14 +49,14 @@ For string-definition operations (.STR, .S7R, \'85), single quote characters (\'
 \f2\b0 \
 \
 7eleven supports a number of pinball-specific data types, such as switches, solenoids and lamps. The names of the corresponding variables are fixed \'97 the 64 possible lamps, for example, are named 
-\f3\fs22 Lamp#00 
+\f4\fs22 Lamp#00 
 \f2\fs24 to 
-\f3\fs22 Lamp#3F
+\f4\fs22 Lamp#3F
 \f2\fs24  where the last two digits are the hexadecimal lamp number starting from zero. (Hexadecimal is used because it maps easily onto the 8x8 lamp matrix.) Since it is not convenient to remember the lamp numbers, lamps can be named by inserting the following statement near the beginning of the source file:\
 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f4\fs20 \cf2 \cb3 \CocoaLigature0 			.DEFINE  L_DogHouse   Lamp#1E
+\f3\fs20 \cf2 \cb3 \CocoaLigature0 			.DEFINE  L_DogHouse   Lamp#1E
 \f2\fs24 \cf0 \cb1 \CocoaLigature1 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 \
@@ -65,7 +74,7 @@ The 7eleven disassembler can handle naming of the pinball assets automatically. 
 \f5 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f4\fs20 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 			defSwitch(22,'SW_Doghouse_Kickbig');\
+\f3\fs20 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 			defSwitch(22,'SW_Doghouse_Kickbig');\
 			defSwitch(23,'SW_Enter_Tiger_Ramp');\
 			defSwitch(24,'SW_Fish_Collect');\
 \
@@ -73,7 +82,7 @@ The 7eleven disassembler can handle naming of the pinball assets automatically. 
 
 \f2\fs24 \cf0 \cb1 \expnd0\expndtw0\kerning0
 \CocoaLigature1 The switch numbers -- 22, 23 and 24 in this example -- are those listed in the operator manual. The lamps can be defined in a similar way:
-\f4\fs20 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 \
+\f3\fs20 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 \cf2 			defLamp(1,'L_MeowAgain');\
 			defLamp(2,'L_bonus_2x');\
@@ -87,7 +96,7 @@ The 7eleven disassembler can handle naming of the pinball assets automatically. 
 \f2\fs24 \cf0 This file can be supplied to the disassembly script via the -i option: \
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f4\fs20 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 			disassemble_s11 -g -i BadCats.defs ic26.128 ic27.256 > BadCats.s11\cf0 \cb1 \expnd0\expndtw0\kerning0
+\f3\fs20 \cf2 \cb3 \kerning1\expnd0\expndtw0 \CocoaLigature0 			disassemble_s11 -g -i BadCats.defs ic26.128 ic27.256 > BadCats.s11\cf0 \cb1 \expnd0\expndtw0\kerning0
 \CocoaLigature1       \
 \pard\pardeftab720\partightenfactor0
 \cf0    
