@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Thu Jun 12 09:09:28 2025
+#                    dlm: Thu Jun 12 15:51:52 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 86 30 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 89 62 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -84,6 +84,9 @@
 #	Jun 10, 2025: - BUG: SKIP label removal was still broken
 #				  - BUG: hard-coded page number used for debugging left in
 #						 place
+#	Jun 12, 2025: - BUG: disassemble_sycalls() did not set page
+#				  - BUG: WPC reference +2 page labels were not created
+#						 unless .DR came after .DB of this ref
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -360,7 +363,10 @@ sub disassemble_syscalls()													# execute this after all syscalls have be
 	for (my($sc)=0; $sc<@SYSCALL; $sc++) {
 		select_WPC_RPG(0x3B) if ($SC_NOTE[$sc] == 3);						# NOTE 3: syscall tied to PG#3B
 		if ($decoded[$SC_ADDR[$sc]]) {
-			overwriteLabel($SYSCALL[$sc],$SC_ADDR[$sc]);
+			my($pg) = ($SC_ADDR[$sc]>=0x4000 && $SC_ADDR[$sc]<0x8000)
+					? $_cur_RPG
+					: 0xFF;
+			overwriteLabel($SYSCALL[$sc],$SC_ADDR[$sc],$pg);
 		} else{ 
 			disassemble_asm($code_base_indent,$SC_ADDR[$sc]);				# labels already defined
 			if ($unclean) {
@@ -789,13 +795,16 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 			undef($OP[$Address+2]);
 			undef(@{$OPA[$Address+2]});
 			die unless defined($AUTO_LBL[$Address+2]);
-			undef($AUTO_LBL[$Address+2]);													# maybe LBL should be cleared as well?
-			$AUTO_LBL[$Address+2] = sprintf("^$pointee_lbl+2");
+##			undef($AUTO_LBL[$Address+2]);													# maybe LBL should be cleared as well?
+##			$AUTO_LBL[$Address+2] = sprintf("^$pointee_lbl+2");
         }
     }
 
 	die,$pointee_lbl = $` if ($pointee_lbl =~ m{\[[0-9A-F]{2}\]$});            				# remove previous RPG if there is one
 	setLabel("^$pointee_lbl",$Address);
+	undef($LBL[$Address+2]);
+	$AUTO_LBL[$Address+2] = sprintf("^$pointee_lbl+2");
+##	print(STDERR "AUTO_LBL[$Address+2] = $AUTO_LBL[$Address+2] <$LBL[$Address+2]>\n");
 	
 	$OP[$Address] = '.DR'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $codeType_data;
 	if ($pointee_addr == 0x0000) {															# FH.WPC $FF:821C

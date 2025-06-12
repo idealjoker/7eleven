@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu Jun 12 10:47:52 2025
+#					 dlm: Thu Jun 12 15:52:59 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 438 60 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 303 75 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -300,6 +300,7 @@
 #				  - various other WPC bug fixes
 #	Jun 10, 2025: - BUG: compilation options were output for every ROM page
 #	Jun 12, 2025: - moved init_system_11() to [disassemble_s11]
+#				  - BUG: dump_labels() did not deal correctly with WPC page
 # END OF HISTORY
 
 # TO-DO:
@@ -467,7 +468,8 @@ sub setLabel($$@)
 {
     my($lbl,$addr,$pg) = @_;
 
-	my($t) = 0;
+#	my($t) = ($lbl =~ m{Error}) || ($lbl =~ m{Panic});
+#	my($t) = ($addr == 0x82B6);
 	printf(STDERR "setLabel($lbl,\$%04X,\$%02X) [_cur_RPG=\$%02X]",$addr,$pg,$_cur_RPG) if $t;
 
 #	die(sprintf("trying to define empty label [setLabel($lbl,0x%04X,$allow_multiple)]\n",$addr))
@@ -518,7 +520,7 @@ sub setLabel($$@)
 	$LBL[$addr] = $lbl; 													# define label
 	$Lbl{$lbl} = $faddr;
 	$LblPg{$lbl} = $pg;
-	print(STDERR " -> $lbl ($pg)\n") if $t;
+	printf(STDERR " -> $lbl (pg=%02X)\n",$LblPg{$lbl}) if $t;
 	return $lbl;
 }
 
@@ -528,6 +530,7 @@ sub overwriteLabel($$@)
 {
 	my($lbl,$addr,$pg) = @_;
 ##	print(STDERR "overwriteLabel($lbl,$addr,$pg)\n");
+##	die if ($addr == 0x82B6);
 
 	select_WPC_RPG($pg,12) if defined($pg);
 	undef($Lbl{$LBL[$addr]});
@@ -3554,39 +3557,45 @@ sub dump_labels($)
 	if ($fmt == 1) {																# label code
 		foreach my $lbl (sort { $Lbl{$a} <=> $Lbl{$b} } keys(%Lbl)) {
 			next unless defined($Lbl{$lbl});
-			my($laddr) = $Lbl{$lbl};
-			if (numberp($laddr)) {
-				printf("D711::overwriteLabel('$lbl',0x%04X,0x%02X);\n",$Lbl{$lbl},$LblPg{$lbl});
+			if (defined($_cur_RPG)) {
+				my($pg) = $LblPg{$lbl};
+				my($laddr) = $Lbl{$lbl};
+				$laddr = hex($') if ($laddr =~ m{:});
+				printf("D711::overwriteLabel('$lbl',0x%04X,0x%02X);\n",$laddr,$LblPg{$lbl});
 			} else {
-				my($pg);
-				($pg,$laddr) = split(':',$laddr);
-				$pg = hex($pg); $laddr = hex($laddr);
-				printf("D711::overwriteLabel('$lbl',0x%04X,0x%02X);\n",$laddr,$pg);
+				printf("D711::overwriteLabel('$lbl',0x%04X);\n",$Lbl{$lbl});
 			}
 		}	
 	} else {																		# human readable
 		print("Labels:\n");
 		foreach my $lbl (sort byHexValue keys %Lbl) {
 			next unless defined($Lbl{$lbl});
+			my($pg) = $LblPg{$lbl};
 			my($laddr) = $Lbl{$lbl};
 			my($defd);
-			if (numberp($laddr)) {
-				$defd = defined($LBL[$laddr]);
-			} else {
-				my($pg);
-				($pg,$laddr) = split(':',$laddr);
-				$pg = hex($pg); $laddr = hex($laddr);
+			if (defined($_cur_RPG)) {
+				my($alt_pg);
+				if ($laddr =~ m{:}) {
+					($alt_pg,$laddr) = split(':',$laddr);
+					$laddr = hex($laddr);
+					$alt_pg = hex($alt_pg);
+				}
+				die("Inconsistent page id <$pg/$pg2> for label $lbl\n")
+					if defined($alt_pg) && ($pg != $alt_pg);
 				$defd = defined($LBLPG[$pg][$laddr-0x4000]);
+			} else {
+				$defd = defined($LBL[$laddr]);
 			}
+
 			print("\t");
 			print($decoded[$laddr]	? ' ' : 'D');							# D)ecoded
 			print(($Lbl_refs{$lbl} > 0) ? ' ' : 'O');						# O)rphaned (unreferenced)
 			print($defd ? ' ' : '!');										# ! inconsistent (not in @LBL)
 
-			if (numberp($Lbl{$lbl})) {
-				printf("\t0x%04X $lbl\n",$Lbl{$lbl});
+			if (defined($_cur_RPG)) {
+				printf("\t\$%02X:%04X\t$lbl\n",$pg,$laddr);
 			} else {
-				printf("\t$Lbl{$lbl} $lbl\n");
+				printf("\t\$%04X $lbl\n",$Lbl{$lbl});
 			}
 	    }
 	}
