@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Thu May 29 10:47:45 2025
+#					 dlm: Tue Jun 10 09:54:05 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 145 46 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 55 57 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -23,6 +23,8 @@
 #	Apr 26, 2025: - removed -f (made default)
 #	May 29, 2025: - BUG: -f not removed everywhere
 #				  - added gapBytes
+#	Jun  8, 2025: - BUG: D711.pm error messages were suppressed
+#	Jun 10, 2025: - BUG: DMD was not recognized
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -44,12 +46,19 @@ die("Usage:\t$0\n\t\t" .
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 
-my($lbl) = 'Alphanumeric';
-if ($lbl =~ m{^$ARGV[0]}) {
-	eval "use D711 ('WPC(Alphanumeric)','\$opt_Q = $opt_l;')";				# suppress D711 splash message during label generation
+my($lbl);
+if ($ARGV[0] =~ m{^[aA][lL]}) {
+	$lbl = 'Alphanumeric';
+	$D711::compilation_options .= '-SWPC:WPC_Version=Alphanumeric:ROM_Size=256KB';
+} elsif ($ARGV[0] =~ m{^[dD][mM]}) {
+	$lbl = 'DMD';
+	$D711::compilation_options .= '-SWPC:WPC_Version=DMD:ROM_Size=512KB';
 } else {
-	eval "use D711 ('WPC(DMD)','\$opt_Q = $opt_l;')";
+	die("Invalid WPC subtype <$ARGV[0]>\n");
 }
+
+require "D711.pm";
+D711->import("WPC($lbl)","\$opt_Q = $opt_l;");
 
 shift;
 
@@ -64,6 +73,7 @@ $D711::fill_gaps	= !$opt_g;												# -g) exclude gap data
 $D711::start_page = ($D711::WMS_System eq 'WPC(Alphanumeric)') ? 0x30 : 0x20;
 &D711::load_ROM($ARGV[0],0x4000,$D711::start_page,16);						# Load ROM: first game page (256KB ROM)
 &D711::load_ROM($ARGV[0],0x8000,0x3E,32);									# Load ROM: System pages
+#printf(STDERR "Address Range = %04X - %04X\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR);
 
 #----------------------------------------------------------------------
 # Disassemble ROM

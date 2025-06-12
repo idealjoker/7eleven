@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Tue May 13 15:53:02 2025
+#                    dlm: Thu Jun 12 09:25:56 2025
 #                    (c) idealjoker@mailbox.org
-#                    uE-Info: 32 54 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 36 82 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -30,6 +30,10 @@
 #						 gaps in the code
 #	May 13, 2025: - BUG: optimizable jump to lexical labels was produced
 #				  - BUG: gap check used wrong variable
+#	Jun 11, 2025: - removed unused undo_code_structure()
+#	Jun 12, 2025: - BUG: nested IFs could have bad nesting because ELSE/ENDIF
+#						 were not recognized as implicit labels
+#				  - bug cs_while_loop is used in WVM mode and had to be re-enabled
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -47,14 +51,14 @@
 
 sub same_block($$@)
 {
-	my($la,$ha,$if_block) = @_;														# low and high
+	my($la,$ha,$if_block) = @_;												# low and high
 
-##	local($trace) = ($la == 0x6D49 && $ha == 0x6D88) ? 1 : 0;						# SET TO TRACE IF AND LOOP BLOCK LOGIC
-##	local($trace) = ($la == 0x6D50 && $ha == 0x6D6C) ? 1 : 0;						# SET TO TRACE IF AND LOOP BLOCK LOGIC
+#	local($trace) = ($la == 0xDDCD6 && $ha == 0xDDEC2) ? 1 : 0;				# SET TO TRACE IF AND LOOP BLOCK LOGIC
+#	local($trace) = 1;
 
 	my($block_ind) = $IND[$la];
 	for (my($i)=0; $i<@{$EXTRA[$la]}; $i++) {
-		next unless $EXTRA_IND[$la][$i] > 0;						# ignore dividers
+		next unless $EXTRA_IND[$la][$i] > 0;								# ignore dividers
 		$block_ind = $EXTRA_IND[$la][$i] if ($EXTRA_IND[$la][$i] < $block_ind);
 	}
 
@@ -64,30 +68,38 @@ sub same_block($$@)
 	my(@eb) = split(':',$END_BLOCK[$#END_BLOCK]);
 	my($good);
 	for (my($i)=0; $i<@bb; $i++) {
+		printf(STDERR "\t%04X>=%04X && %04X<=%04X?\n",$la,$bb[$i],$ha,$eb[$i]) if $trace;
 		$good = 1 if ($la >= $bb[$i] && $ha <= $eb[$i]);
 	}
 	return 0 unless $good;		
 
-	print(STDERR "yes\nanalysis gap in block?\n") if $trace;	# can happen with disassembler warnings
+	print(STDERR "yes\nanalysis gap in block?\n") if $trace;				# can happen with disassembler warnings
 	for (my($a)=$la; $a<$ha; $a++) {
 		return 0 unless $decoded[$a];
 	}
 
-	print(STDERR "no\nexit from block?\n") if $trace;
+	print(STDERR "NO\nexit from block?\n") if $trace;
 	return 0 if exit_from_block($la,$ha,$if_block);
 
-	print(STDERR "no\nbranch into block?\n") if $trace;
-	if ($if_block == 2) {										# _ELSE block
-		return 0 if branch_into_block($la,$ha-2,$la,$ha,1);		# 1 required for IF to ELSE
-	} elsif ($if_block == 1) {									# _IF block
+	print(STDERR "NO\nbranch into block?\n") if $trace;
+	if ($if_block == 2) {													# _ELSE block
+		return 0 if branch_into_block($la,$ha-2,$la,$ha,1);					# 1 required for IF to ELSE
+	} elsif ($if_block == 1) {												# _IF block
 		return 0 if branch_into_block($la,$ha-2,$la,$ha,0);					
-    } else {													# _LOOP block
-		return 0 if branch_into_block($la+2,$ha,$la,$ha,0);		# allowing entry into loop is not good
+    } else {																# _LOOP block
+		return 0 if branch_into_block($la+2,$ha,$la,$ha,0);					# allowing entry into loop is not good
 	}
 
-	print(STDERR "no\nchecking labels...\n") if $trace;
+	print(STDERR "NO\nbad nesting in block?\n") if $trace;
+	if ($if_block) {														# _IF or _ELSE block
+		return 0 if bad_nesting_in_block($la,$ha-2,$if_block);
+    } else {																# _LOOP block
+		return 0 if bad_nesting_in_block($la,$ha-2,$if_block);	
+	}
+
+	print(STDERR "NO\nchecking labels...\n") if $trace;
 	for (my($a)=$la; $a<$ha; $a++) {
-		if ($if_block == 2 || $a > $la) {						# BRA at start of _IF and _LOOP blocks can have labels
+		if ($if_block == 2 || $a > $la) {									# BRA at start of _IF and _LOOP blocks can have labels
 			printf(STDERR "addr = %04X; non-local LBL defined? [$LBL[$a]]\n",$a) if $trace;
 			printf(STDERR "%d && %d && %d && %d (%d,%d)??\n",
 							defined($LBL[$a]),!($LBL[$a] =~ m{^([0-9A-F]{2}:)?\.}),substr($LBL[$a],0,1) ne '.',
@@ -97,16 +109,16 @@ sub same_block($$@)
 				if $trace;
 			return 0 if defined($LBL[$a])
 						&& !($LBL[$a] =~ m{^([0-9A-F]{2}:)?\.}) 
-						&& substr($LBL[$a],0,1) ne '.'											# allow local labels inside blocks
+						&& substr($LBL[$a],0,1) ne '.'						# allow local labels inside blocks
 						&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,4)) == $a);		# allow &skip inside blocks
-			printf(STDERR "no. non-local AUTO_LBL (= $AUTO_LBL[$a], _cur_RPG = %02X) defined?\n",$_cur_RPG) if $trace;
+			printf(STDERR "NO. non-local AUTO_LBL (= $AUTO_LBL[$a], _cur_RPG = %02X) defined?\n",$_cur_RPG) if $trace;
 			printf(STDERR "[$OP[$a-3] $OPA[$a-3][0]]\n") if $trace;
 			return 0 if defined($AUTO_LBL[$a]) && substr($AUTO_LBL[$a],0,1) ne '.'				# non local label exists
 							&& !($OP[$a-3] eq 'JMP' && hex(substr($OPA[$a-3][0],1,4)) == $a);	# ... and it's not part of a &skip
 		}
     }
 
-	print(STDERR "no\nindentation okay?\n") if $trace;
+	print(STDERR "NO\nindentation okay?\n") if $trace;
 	my($lopa) = $if_block ? $ha-1 : $ha;						# _IF _ENDIF has ha at the first OP afer the if
 	while (!defined($OP[$lopa])) { $lopa--; }
 	printf(STDERR "[%04X: $OP[$lopa] @{$OPA[$lopa]} ind=$IND[$lopa] vs block_ind=$block_ind\n",$lopa) if $trace;
@@ -115,10 +127,10 @@ sub same_block($$@)
 	printf(STDERR "indentation okay. LBL at ha?\n") if $trace;
 ##	return 0 if defined($LBL[$ha]);
 	print(STDERR "ignored\n") if $trace && defined($LBL[$ha]);	# necessary for trace((508D,509E)
-	print(STDERR "no. OP[ha] defined?\n") if $trace;
+	print(STDERR "NO. OP[ha] defined?\n") if $trace;
 	next unless defined($OP[$ha]);
 
-	print(STDERR "yes. checking indentation at end of block ($if_block/$IND[$ha]/$block_ind//$EXTRA[$ha][0]/$EXTRA_IND[$ha][0]\n") if $trace;
+	print(STDERR "YES. checking indentation at end of block ($if_block/$IND[$ha]/$block_ind//$EXTRA[$ha][0]/$EXTRA_IND[$ha][0]\n") if $trace;
 	return 0 unless ($IND[$ha] == $block_ind) ||
 					(defined($EXTRA_IND[$ha][0]) && $block_ind == $EXTRA_IND[$ha][0]) ||				# needed e.g. for loop abutting if (T2 31:6481)
 					($if_block && (($block_ind == $EXTRA_IND[$ha][0]+1 && $EXTRA[$ha][0] eq '_ENDIF') ||
@@ -126,11 +138,13 @@ sub same_block($$@)
 	return 0 if ( $EXTRA[$ha][0] && !$EXTRA_BEFORE_LABEL[$ha][0] && $EXTRA_IND[$ha][0] != $block_ind && $EXTRA[$ha][0] ne '_ENDIF') ||
 			    (!$EXTRA[$ha][0] && $IND[$ha] != $block_ind && $OP[$ha] ne '_ELSE');
 	
-	print(STDERR "all good. returning 1\n") if $trace;
+	print(STDERR "ALL GOOD. returning 1\n") if $trace;
 	return 1;
 }
 
+#----------------------------------------------------------------------
 # finds exits from block
+#----------------------------------------------------------------------
 
 sub exit_from_block($$$)
 {
@@ -222,7 +236,46 @@ sub exit_from_block($$$)
 	return undef;																	# no exit in block found
 }
 
-sub branch_into_block($$@)
+#----------------------------------------------------------------------
+# finds illegally nexted blocks
+#	- becaue the ROM is processed linearly, there cannot yet be any
+#	  _IF statements (forward branches) in if-blocks
+#	- therefore, any else or endif statements must be from an earlier
+#	  if, indicating bad nesting
+#	- loops are backward branches which means that the innermost
+#	  loop is detected first
+#	- therefore, there will always be while statements in the block
+#	  of an outer loop
+#	- a proper bad-nesting test can be made for loops by counting
+#	  the loop-start/loop-end statements in the block
+#----------------------------------------------------------------------
+
+sub bad_nesting_in_block($$$)
+{
+	my($la,$ha,$if_block) = @_;
+	
+	return undef unless $if_block;													
+	
+	for (my($a)=$la; $a<=$ha; $a++) {
+		next unless defined($OP[$a]);
+
+		if ($if_block) {															# IF-ELSE-ENDIF / If-Else-EndIf / Unless-Else-EndUnless
+			return 1 if isMember($OP[$a],'_ELSE','_Else');
+			return 1 if $EXTRA[$a][$#{$EXTRA[$a]}] &&
+					    isMember($EXTRA[$a][$#{$EXTRA[$a]}],'_ENDIF','_EndIf','_EndUnless');
+		} else {																	# LOOP-WHILE / LOOP-ENDLOOP / Loop-While / Loop-Until / Loop-EndLoop
+			## NOT YET IMPLEMENTED
+			## (see comments above)
+		}
+    }
+    return undef;
+}
+
+#----------------------------------------------------------------------
+# finds branches into block
+#----------------------------------------------------------------------
+
+sub branch_into_block($$@)															# find branches into block
 {
 	my($la,$ha,$sla,$sha,$allowed_branch) = @_;
 
@@ -298,48 +351,48 @@ sub cs_loop_while($$$$$)
 }
 
 # more complex loop with test at beginning, and BRA back to test at end of block
-if (0) {
+#  (used by disassemble_s11)
+
 sub cs_while_loop($$$$$$)
 {
-	my($addr,$eaddr,$test_op,$branch_op,$loop_op,$endloop_op) = @_;
+   my($addr,$eaddr,$test_op,$branch_op,$loop_op,$endloop_op) = @_;
 
-	if ($OP[$addr] eq $test_op) {
-		local(@LOOPSTART,@EXITLOOP);
-		my($endloop_trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});
-		$endloop_trg = hex($endloop_trg);
-		if (($endloop_trg > $addr) && ($endloop_trg <= $eaddr)
-				&& same_block($addr,$endloop_trg,0)
-				&& !($OP[$endloop_trg] =~ m{^_})
-				&& !defined($NoLoop{$addr})) {
-			if ($OP[$endloop_trg-2] eq $branch_op) {
-				 my($loop_trg) = ($OPA[$trg-2][$#{$OPA[$trg-2]}] =~ m{\$([0-9A-Fa-f]+)$});
-				 $loop_trg = hex($loop_trg);
-				 if ($loop_trg == $addr) {
-					$OP[$addr] = $loop_op; pop(@{$OPA[$addr]});
-					$OP[$endloop_trg-2] = undef; undef(@{$OPA[$addr]});
-					unshift(@{$EXTRA[$endloop_trg]},$endloop_op);
-					unshift(@{$EXTRA_IND[$endloop_trg]},$IND[$endloop_trg]);
-					unshift(@{$EXTRA_BEFORE_LABEL[$endloop_trg]},1);
-					unshift(@{$EXTRA_AFTER_OP[$endloop_trg]},0);
-					$IND[$endloop_trg]++;
-					for (my($a)=$addr+1; $a<$endloop_trg; $a++) {
-						$IND[$a]++;
-						for (my($i)=0; $i<@{$EXTRA[$a]}; $i++) {
-							$EXTRA_IND[$a][$i]++;
-						}
-					} # indent loop
-					push(@BEGIN_BLOCK,$addr);
-					push(@END_BLOCK,$endloop_trg);
-					foreach my $a (@LOOPSTART) { $OPA[$a][0] = '<NEXTLOOP' if defined($OPA[$a][0]); }
-					foreach my $a (@EXITLOOP) { $OPA[$a][0] = '>EXITLOOP' if defined($OPA[$a][0]); }
-					return 1;
-				 } # found a loop
-			} # found a BRA statement at end of loop body
-		} # initial BRA is forward, not too far, and in same block
-	}
-	return 0;
+   if ($OP[$addr] eq $test_op) {
+	   local(@LOOPSTART,@EXITLOOP);
+	   my($endloop_trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});
+	   $endloop_trg = hex($endloop_trg);
+	   if (($endloop_trg > $addr) && ($endloop_trg <= $eaddr)
+			   && same_block($addr,$endloop_trg,0)
+			   && !($OP[$endloop_trg] =~ m{^_})
+			   && !defined($NoLoop{$addr})) {
+		   if ($OP[$endloop_trg-2] eq $branch_op) {
+				my($loop_trg) = ($OPA[$trg-2][$#{$OPA[$trg-2]}] =~ m{\$([0-9A-Fa-f]+)$});
+				$loop_trg = hex($loop_trg);
+				if ($loop_trg == $addr) {
+				   $OP[$addr] = $loop_op; pop(@{$OPA[$addr]});
+				   $OP[$endloop_trg-2] = undef; undef(@{$OPA[$addr]});
+				   unshift(@{$EXTRA[$endloop_trg]},$endloop_op);
+				   unshift(@{$EXTRA_IND[$endloop_trg]},$IND[$endloop_trg]);
+				   unshift(@{$EXTRA_BEFORE_LABEL[$endloop_trg]},1);
+				   unshift(@{$EXTRA_AFTER_OP[$endloop_trg]},0);
+				   $IND[$endloop_trg]++;
+				   for (my($a)=$addr+1; $a<$endloop_trg; $a++) {
+					   $IND[$a]++;
+					   for (my($i)=0; $i<@{$EXTRA[$a]}; $i++) {
+						   $EXTRA_IND[$a][$i]++;
+					   }
+				   } # indent loop
+				   push(@BEGIN_BLOCK,$addr);
+				   push(@END_BLOCK,$endloop_trg);
+				   foreach my $a (@LOOPSTART) { $OPA[$a][0] = '<NEXTLOOP' if defined($OPA[$a][0]); }
+				   foreach my $a (@EXITLOOP) { $OPA[$a][0] = '>EXITLOOP' if defined($OPA[$a][0]); }
+				   return 1;
+				} # found a loop
+		   } # found a BRA statement at end of loop body
+	   } # initial BRA is forward, not too far, and in same block
+   }
+   return 0;
 }
-} # code disabled
 					    
 # if-else
 sub cs_if_else($$$$$$$)
@@ -366,12 +419,14 @@ sub cs_if_else($$$$$$$)
 					unshift(@{$EXTRA_BEFORE_LABEL[$endif_trg]},1);
 					unshift(@{$EXTRA_AFTER_OP[$endif_trg]},0);
 					for (my($a)=$addr+1; $a<$else_trg-2; $a++) {			# indent THEN block
+##						printf("IF-indent %04X: $OP[$a] @{$EXTRA[$a]}\n",$a);
 						$IND[$a]++;
 						for (my($i)=0; $i<@{$EXTRA[$a]}; $i++) {
 							$EXTRA_IND[$a][$i]++;
 						}
 					}
 					for (my($a)=$else_trg; $a<$endif_trg; $a++) {			# indent ELSE block
+##						printf("ELSE-indent %04X: $OP[$a] @{$EXTRA[$a]}\n",$a);
 						$IND[$a]++;
 						for (my($i)=0; $i<@{$EXTRA[$a]}; $i++) {
 							$EXTRA_IND[$a][$i]++;
@@ -379,8 +434,6 @@ sub cs_if_else($$$$$$$)
 					}
 					push(@BEGIN_BLOCK,"$addr:$else_trg");
 					push(@END_BLOCK,"$else_trg:$endif_trg");
-#					push(@BEGIN_BLOCK,$else_trg);
-#					push(@END_BLOCK,$endif_trg);
 					return 1;
 ##				}  else { 													
 ##					return 0;												# not a legal ELSE-forward branch => not a
@@ -407,6 +460,13 @@ sub cs_if_else($$$$$$$)
 	return 0;
 }
 					    
+
+#======================================================================
+# Main Routine
+#	- called from disassemble_XXX scripts
+#	- saddr/eaddr cover entire ROM or WPC ROM page
+#======================================================================
+
 sub process_code_structure($$)
 {
 	my($saddr,$eaddr) = @_;
@@ -617,46 +677,5 @@ sub process_code_structure($$)
 		$OPA[$addr][0] = $LEX_LABEL[$trg];
     }
 }
-
-
-#sub undo_code_structure($$$)																# called for labels inside code structure
-#{
-#	my($F,$lbl_addr,$ind) = @_;
-#
-##	printf(STDERR "$LBL[$lbl_addr] @ %04X\n",$lbl_addr);
-#
-#	my($a) = $lbl_addr;																		# search backward, marking if, until and while
-#	my($min_ind) = $ind;
-#	while (1) {	
-#		$a--;
-#		next unless defined($OP[$a]);
-#		next if ($OP[$a] eq '_ELSE' || $OP[$a] eq '_Else');
-#		next if ($IND[$a] >= $min_ind);
-#		if (($OP[$a] =~ m{^_IF}) 	|| ($OP[$a] =~ m{^_If}) ||
-#			($OP[$a] =~ m{^_UNTIL}) || ($OP[$a] =~ m{^_Until}) ||
-#			($OP[$a] =~ m{^_While}) || ($OP[$a] =~ m{^_Unless})) {
-#				printf($F "\$unstructured[0x%04X] = 1;\n",$a);
-#				$min_ind = $IND[$a] if ($IND[$a] > $code_base_indent);
-#				next;
-#		}
-#		last if ($IND[$a] == $code_base_indent);
-#	}
-#
-#	$a = $lbl_addr;	$min_ind = $ind;														# search forward, marking until, until and while
-#	while (1) {	
-#		$a++;
-#		next unless defined($OP[$a]);
-#		next if ($OP[$a] eq '_ELSE' || $OP[$a] eq '_Else');
-#		next if ($IND[$a] >= $min_ind);
-#		if (($OP[$a] =~ m{^_ENDLOOP}) || ($OP[$a] =~ m{^_EndLoop}) ||
-#			($OP[$a] =~ m{^_WHILE})   || ($OP[$a] =~ m{^_While}) ||
-#			($OP[$a] =~ m{^_Until}) || ($OP[$a] =~ m{^_Unless})) {
-#				printf($F "\$unstructured[0x%04X] = 1;\n",$a);
-#				$min_ind = $IND[$a] if ($IND[$a] > $code_base_indent);
-#				next;
-#		}
-#		last if ($IND[$a] == $code_base_indent);
-#	}
-#}
 
 1;

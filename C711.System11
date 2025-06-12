@@ -1,15 +1,17 @@
 #======================================================================
 #                    C 7 1 1 . S Y S T E M 1 1 
 #                    doc: Mon Jun  2 09:55:01 2025
-#                    dlm: Fri Jun  6 08:05:31 2025
+#                    dlm: Thu Jun 12 09:23:20 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 13 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 14 54 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jun  2, 2025: - created
 #	Jun  4, 2025: - added option parsing
 #	Jun  6, 2025: - BUG: rom_addr() returned 0 on empty args
+#	Jun 10, 2025: - BUG: %System_Option parsing had errors
+#	Jun 12, 2025: - BUG: U26_size needs capitalization
 # HISTORY END
 
 use strict vars;
@@ -41,12 +43,14 @@ sub asm_macros()
 
 sub define_syscall($$@)
 {
-	die("define_syscall() not implemented for Sytstem 6");
+	die("define_syscall() not implemented for Sytstem 11");
 }
 
 #----------------------------------------------------------------------
 # ROM to CPU Address Mapping
 #----------------------------------------------------------------------
+
+our($ADDR);
 
 sub code_addr(@)															# ROM addr = CPU addr
 {
@@ -59,7 +63,7 @@ sub code_addr(@)															# ROM addr = CPU addr
 #----------------------------------------------------------------------
 # System Options
 #	IVM 	 = 0 .. 10			IVM stage
-#	U26_size = 16KB, 32KB		U26 ROM size (16KB default)
+#	U26_Size = 16KB, 32KB		U26 ROM size (16KB default)
 #----------------------------------------------------------------------
 
 our($opt_S,%System_Option,%ALIAS,%ALIAS_REFD);
@@ -69,7 +73,7 @@ if (defined($opt_S)) {
 		next if $o eq '11';
 		my($k,$v) = ($o =~ m{^\s*([^=\s]+)\s*=\s*([^\s]*)\s*$});
 		die("Invalid system option <$o>\n")
-			unless isMember($k,'IVM','U26_size');
+			unless isMember($k,'IVM','U26_Size');
 		$System_Option{$k} = defined($v) ? $v : 1;
 	}
 }
@@ -90,9 +94,9 @@ if (defined($System_Option{IVM})) {
 	}
 }				
 
-if (defined($System_Option{IVM})) {
-	die("Invalid U26_size system option value <$System_Option{U26_size}>\n")
-		unless isMember($System_Option{U26_size},'16KB','32KB');
+if (defined($System_Option{U26_Size})) {
+	die("Invalid U26_Size system option value <$System_Option{U26_Size}>\n")
+		unless isMember($System_Option{U26_Size},'16KB','32KB');
 }
 
 1; 

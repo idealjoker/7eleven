@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Jun  3 14:50:48 2025
+#                    dlm: Thu Jun 12 09:09:28 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 799 48 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 86 30 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -80,6 +80,10 @@
 #				  - modify def_WPC_ref() to deal with pre-existing partial
 #					analysis (munging)
 #				  - cleaned up System Data Pointers with FH
+#	Jun  9, 2025: - BUG: SKIP label removal was broken
+#	Jun 10, 2025: - BUG: SKIP label removal was still broken
+#				  - BUG: hard-coded page number used for debugging left in
+#						 place
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -262,8 +266,8 @@ SCANCODE_SUCCESS:															# jump target when there is no 2nd match
 #			($LBL[$saddr] ne $lbl) &&										# ... already  defined labels ...
 			!($lbl =~ m{^GameHook#[0-9A-F]{2}_event$})) {					# ... and automatically generated labels (GameHook#XX_event)
 		$labels_defined++;
-		printf("D711::setLabel('$lbl',0x%04X,0x%02X); \$D711::Address = 0x%04X; D711::def_code();\n",
-			$saddr,$pg,$saddr);
+##		printf("D711::setLabel('$lbl',0x%04X,0x%02X); \$D711::Address = 0x%04X; D711::def_code();\n",
+##			$saddr,$pg,$saddr);
 		for (my($i)=0; $i<@matchData; $i++) {
 			next if ($matchLabel[$i] =~ m{^RAM_[0-9A-F]{2,4}$});			# "anonymous" labels (e.g. RAM_0384) are set automatically (no need to handle here)
 			next if ($LBL[$matchData[$i]] eq $matchLabel[$i]);				# label already defined
@@ -485,11 +489,12 @@ sub apply_magic_WPC($$)
 
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
 		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {	# 1) JMP *+3 
-			undef($OP[$addr]);													# 		generate postfix tag
+			undef($OP[$addr]);													# generate postfix tag
 			push(@{$OPA[$addr-3]},'& _SKIP');
 			splice(@{$OPA[$addr]},0,1);
-###			undef($LBL[$addr+3])												# 		should probably also undef Lbl!
-###				if ($Lbl_refs{$LBL[$addr+3]} == 1);								# BROKEN XXX
+			my($l) = ($LBL[$addr+3] =~ m{^[0-9A-Fa-f]{2}:(.*)$});
+			undef($LBL[$addr+3])												# should probably also undef Lbl!
+				unless ($Lbl_refs{$l}+$Lbl_refs{$LBL[$addr+3]} > 1);			# (this is a hack; all refs should have prefix)
 			undef(@{$OI[$addr]});
 			push(@{$OI[$addr-3]},sprintf('7E%04X',$addr+3));
 		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{leep$}) {				# 2) decimalize sleep arguments
@@ -527,6 +532,7 @@ sub init_WPC(@)
 	
 	require 'WPC.API';														# load API after ROM has been loaded but before -i are processed
 	while (@linc) {
+##		print(STDERR "processing $linc[0]...\n");
 		require './' . shift(@linc);
 	}
 
@@ -540,6 +546,8 @@ sub init_WPC(@)
 #----------------------------------------------------------------------
 # ROM Paging
 #----------------------------------------------------------------------
+
+our($_cur_RPG) = 0xFF;
 
 sub select_WPC_RPG($@)
 {
@@ -734,7 +742,7 @@ sub def_WPC_switchTable(@)
 
 		my($ta,$tp) = (WORD($Address),BYTE($Address+2));
 		my($swn) = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('Switch#%02X',$sw);
-		push(@{$OPA[$opaddr]},label_address($ta,$swn.'_handler',1));		# suppress address suffix in label
+		push(@{$OPA[$opaddr]},label_address($ta,$swn.'_handler',1));						# suppress address suffix in label
 		push(@{$OPA[$opaddr]},sprintf('$%02X',$tp));
 		WPC_codeRef($swn.'_handler',"Switch Handler ($swn)",$follow_code);
 		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
@@ -767,12 +775,12 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 
 	my($pointee_addr) = WORD($Address);
 	my($RPG) = BYTE($Address+2);
-	printf(STDERR "%04X: def_WPC_ref($pointee_lbl) -> %02X:%04X\n",$Address,$RPG,$pointee_addr);
+##	printf(STDERR "%04X: def_WPC_ref($pointee_lbl) -> %02X:%04X\n",$Address,$RPG,$pointee_addr);
 	select_WPC_RPG($RPG,3)
 		unless ($RPG == 0x00);																# NULL ref
 
 	if ($decoded[$Address] || $decoded[$Address+2]) {										# already decoded
-		printf(STDERR "%04X: def_WPC_ref($pointee_lbl): munging pre-existing analysis $OP[$Address]/$OP[$Address+2]\n",$Address);
+##		printf(STDERR "%04X: def_WPC_ref($pointee_lbl): munging pre-existing analysis $OP[$Address]/$OP[$Address+2]\n",$Address);
 		if ($decoded[$Address]) {
 			die unless ($OP[$Address] eq '.DW');
 		}
@@ -796,11 +804,11 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 	} else {
 		my($usr_lbl) = $LBL[$pointee_addr];
 		$pointee_lbl = $usr_lbl if defined($usr_lbl);
-		setLabel($pointee_lbl,$pointee_addr,0x36);
-		$OPA[$Address][0] = $pointee_lbl; 
+		setLabel($pointee_lbl,$pointee_addr);
+		$OPA[$Address][0] = $LBL[$pointee_addr]; #$pointee_lbl; 
 		$OPA[$Address][1] = sprintf('$%02X',$RPG);
     }
-    printf(STDERR "%04X: $OP[$Address] @{$OPA[$Address]}\n",$Address);
+##    printf(STDERR "%04X: $OP[$Address] @{$OPA[$Address]}\n",$Address);
 
 	$REM[$Address] = $rem unless defined($REM[$Address]); 
 	$decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
@@ -887,27 +895,24 @@ sub def_WPC_stringRef($@)														# DOES NOT MAINTAIN RPG
 # Code
 #----------------------------------------------------------------------
 
-sub WPC_codeRef($@)
+sub WPC_codeRef($@)															# label and disassemble 3-byte code reference
 {
-	my($code_lbl,$divider_label,$follow_code) = @_;
-	my($code_addr) = WORD($Address);
+	my($code_lbl,$divider_title,$follow_code) = @_;							# (optional) code_label page prefix ignored
 
+	my($code_addr) = WORD($Address);										# extract address components and swap-in correct ROM page
 	my($RPG) = BYTE($Address+2);
 	my($orpg) = select_WPC_RPG($RPG,5);
 
-	label_address($code_addr,$code_lbl,1);												# suppress address suffix in label
+	label_address($code_addr,$code_lbl,1);									# label this address (without _addr suffix)
 
-	$code_lbl = $` if ($code_lbl =~ m{\[[0-9A-F]{2}\]$});             					# remove previous RPG if there is one
-
-	my($usr_lbl) = $LBL[$code_addr];
+	my($usr_lbl) = $LBL[$code_addr];										# set label, using pre-existing (external) label when available
 	$code_lbl = $usr_lbl if defined($usr_lbl);
 	setLabel($code_lbl,$code_addr);
 
-	disassemble_asm($code_base_indent,$code_addr,$code_lbl,$divider_label,$follow_code);
-#	die if $unclean;
+	disassemble_asm($code_base_indent,$code_addr,$code_lbl,$divider_title,$follow_code);
+#	die if $unclean;														# disassemble referenced code
 
-	select_WPC_RPG($orpg,6);
-#	return $Address-3;
+	select_WPC_RPG($orpg,6);												# return to original ROM page
 }
 
 
@@ -920,7 +925,7 @@ sub def_WPC_codeRef($@)
 	my($na) = $Address;
 
 	$Address = $ra;
-	WPC_codeRef($code_lbl,$divider_label,1);
+	WPC_codeRef($code_lbl,$divider_title,1);
 
 	$Address = $na;
 }

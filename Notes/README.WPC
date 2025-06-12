@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Mon Jun  2 10:52:23 2025
+                    dlm: Tue Jun 10 10:06:28 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 54 11 NIL 0 0 72 0 2 4 NIL ofnI
+                    uE-Info: 78 28 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -71,18 +71,18 @@ $2xxxx				PG#08-0B
 $3xxxx				PG#0C-0F
 $4xxxx				PG#10-13
 $5xxxx				PG#14-17
-$6xxxx				PG#18-1C
-$7xxxx				PG#1D-1F
+$6xxxx				PG#18-1B
+$7xxxx				PG#1C-1F
 $8xxxx				PG#20-23
 $9xxxx				PG#24-27
-$Axxxx				PG#28-2C
-$Bxxxx				PG#2D-2F
+$Axxxx				PG#28-2B
+$Bxxxx				PG#2C-2F
 $Cxxxx				PG#30-33
 $Dxxxx				PG#34-37
-$Exxxx				PG#38-3C
+$Exxxx				PG#38-3B
 
-$F0000-$F3FFF		PG#3D
-$F4000-$F7FFF		PG#3E
+$F0000-$F3FFF		PG#3C
+$F4000-$F7FFF		PG#3D
 $F8000-$FCFFF		PG#FF
 $FD000-$FFFFF		PG#FF
 

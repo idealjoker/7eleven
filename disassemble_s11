@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 1 1 
 #					 doc: Wed May  7 09:51:43 2025
-#					 dlm: Thu Jun  5 08:00:47 2025
+#					 dlm: Thu Jun 12 09:15:02 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 21 59 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 23 57 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -19,6 +19,8 @@
 #					instructions
 #	Jun  4, 2025: - added -f to ;! options on unclean disassembly
 #	Jun  5, 2025: - replaced -f option by addl debug output
+#	Jun 10, 2025: - renamed U26_size to U26_Size
+#	Jun 12, 2025: - moved init_system_11() from [D711.pm]
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -55,7 +57,7 @@ $D711::fill_gaps	=  $opt_g;
 if ($D711::MAX_ROM_ADDR == 0x7FFF) {									# 16KB ROM (not doubled up)
 	$D711::compilation_options .= '-S11 ';
 } elsif ($D711::MAX_ROM_ADDR == 0xBFFF) {								# 32KB ROM (doubled up)
-	$D711::compilation_options .= '-S11:U26_size=32KB ';
+	$D711::compilation_options .= '-S11:U26_Size=32KB ';
 } else {
 	die("$ARGV[0]: invalid size\n");
 }
@@ -64,8 +66,10 @@ die("$ARGV[1]: invalid size\n") unless ($D711::MAX_ROM_ADDR == 0xFFFF);
 
 #----------------------------------------------------------------------
 # Load User-Supplied Information
-#	- must be done after ROM loading to allow disassebly instructions
+#	- must be done after ROM loading to allow disassembly instructions
 #----------------------------------------------------------------------
+
+D711::init_system_11();
 
 if (defined($opt_i)) {													# include files with perl code
 	my(@linc) = split(',',$opt_i);

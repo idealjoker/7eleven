@@ -1,20 +1,24 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Wed Jun  4 08:24:33 2025
+#                    dlm: Thu Jun 12 09:01:56 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 17 33 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 22 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
-#	May 26, 2025: - created from [C711.M6800]
-#	May 27, 2025: - adapted and added new opcodes
-#	May 29, 2025: - debugging
-#	Jun  1, 2025: - BUG: pre-decrement was post-decrement
-#				  - BUG: LBfalse had short arg
-#	Jun  2, 2025: - BUG: forced indexed mode offset did not work for -ve
-#						 offsets
-#	Jun  4, 2025: - removed opt_V
+#   May 26, 2025: - created from [C711.M6800]
+#   May 27, 2025: - adapted and added new opcodes
+#   May 29, 2025: - debugging
+#   Jun  1, 2025: - BUG: pre-decrement was post-decrement
+#                 - BUG: LBfalse had short arg
+#   Jun  2, 2025: - BUG: forced indexed mode offset did not work for -ve
+#                        offsets
+#   Jun  4, 2025: - removed opt_V
+#   Jun  8, 2025: - added support for long lexical branches
+#                 - BUG: wrong opcodes for 16-bit LD instructions
+#   Jun 10, 2025: - BUG: extended mode postbyte was wrong for reg D
+#                 - BUG: !exitThread did not respect Note (JMP)
 # HISTORY END
 
 use strict vars;
@@ -592,7 +596,7 @@ sub store_postBytes_IM($$$)																# copy indexed-mode postbyte and offs
 		} elsif ($ofs eq 'B') {
 			$PB = 0b10000101;
 		} elsif (isMember($ofs,'D','AB')) {
-	        $PB = 0b10001101;
+	        $PB = 0b10001011;
 	    } else {
    			die("Invalid indexed mode register offset <$OP_ARG[0]> at input line $.\n")
    		}
@@ -899,10 +903,10 @@ sub asm_6809_op($$@)
             if ($OP_ARG[0] eq '<RTS') {                                                 # lexical labels
                 $OP_ARG[0] = code_addr($last_RTS_addr);
             } elsif ($OP_ARG[0] eq '>RTS') {
-                push(@forward_lexical_RTS_branch,$ADDR);
+                push(@forward_lexical_RTS_branch,-$ADDR);								# -ve addr marks long branches
                 $OP_ARG[0] = 'no RTS found after branch to >RTS';
             } elsif ($OP_ARG[0] eq '>!exitThread') {
-                push(@forward_lexical_exitThread_branch,$ADDR);
+                push(@forward_lexical_exitThread_branch,-$ADDR);
                 $OP_ARG[0] = 'no !exitThread found after branch to >!exitThread';
             } else {
                 unless ($OP_ARG[0] =~ m{^[#\$%0-9]}) {                                  # set type of branch target
@@ -954,7 +958,12 @@ sub compile_asm()
     if (asm_6809_op('RTS','',0x39)) {                                                   # lexical label support
         $last_RTS_addr = $ADDR - 1;
         while (@forward_lexical_RTS_branch) {
-            $ROM[pop(@forward_lexical_RTS_branch)] = $EIGHT_BIT_LABEL_PREFIX . code_addr($ADDR - 1);
+        	my($a) = pop(@forward_lexical_RTS_branch);
+        	if ($a < 0) {																# long branch
+	            $ROM[-$a] = $SIXTEEN_BIT_LABEL_PREFIX . code_addr($ADDR - 1);
+        	} else {																	# short branch
+	            $ROM[$a]  = $EIGHT_BIT_LABEL_PREFIX . code_addr($ADDR - 1);
+	        }
         }
         return 1;
     }
@@ -1017,12 +1026,12 @@ sub compile_asm()
 	return 1 if asm_6809_op('SUBD','WXDE',0x83,0xA3,0x93,0xB3);
 	return 1 if asm_6809_op('ADDD','WXDE',0xC3,0xE3,0xD3,0xF3);
 
-	return 1 if asm_6809_op('LDD' ,'WXDE',0xDC,0xCC,0xEC,0xFC);
-	return 1 if asm_6809_op('LDAB','WXDE',0xDC,0xCC,0xEC,0xFC);				# OWN OPC
-	return 1 if asm_6809_op('LDX' ,'WXDE',0x9E,0x8E,0xAE,0xBE);
-	return 1 if asm_6809_op('LDU' ,'WXDE',0xDE,0xCE,0xEE,0xFE);
-	return 1 if asm_6809_op('LDS' ,'WXDE',0x10DE,0x10CE,0x10EE,0x10FE);
-	return 1 if asm_6809_op('LDY' ,'WXDE',0x109E,0x108E,0x10AE,0x10BE);
+	return 1 if asm_6809_op('LDD' ,'DWXE',0xDC,0xCC,0xEC,0xFC);
+	return 1 if asm_6809_op('LDAB','DWXE',0xDC,0xCC,0xEC,0xFC);				# OWN OPC
+	return 1 if asm_6809_op('LDX' ,'DWXE',0x9E,0x8E,0xAE,0xBE);
+	return 1 if asm_6809_op('LDU' ,'DWXE',0xDE,0xCE,0xEE,0xFE);
+	return 1 if asm_6809_op('LDS' ,'DWXE',0x10DE,0x10CE,0x10EE,0x10FE);
+	return 1 if asm_6809_op('LDY' ,'DWXE',0x109E,0x108E,0x10AE,0x10BE);
 
 	return 1 if asm_6809_op('PSHS','U',0x34);								# U allowed
 	return 1 if asm_6809_op('PULS','U',0x35);								# U allowed
@@ -1052,19 +1061,27 @@ sub compile_asm()
 	return 1 if asm_6809_op('LBGT','L',0x102E) || asm_6809_op('LBLE','L',0x102F);
 	return 1 if asm_6809_op('LBtrue','L',0x1024) || asm_6809_op('LBfalse','L',0x1025);
 
-	if (asm_6809_op('BSR','s',0x8D) ||										# System Call Handling
-		asm_6809_op('JMP','DXO',0x0E,0x6E,0x7E) ||
-		asm_6809_op('JSR','DXO',0x9D,0xAD,0xBD)) {
+	return 1 if asm_6809_op('JMP','DXO',0x0E,0x6E,0x7E);
+	return 1 if asm_6809_op('BSR','s',0x8D);
+
+	if (asm_6809_op('JSR','DXO',0x9D,0xAD,0xBD)) {							# System Call Handling
 
 		return 1 unless defined($SYSCALL{$OP_ARG[0]});
 
 		if ($OP_ARG[0] eq 'exitThread') {
-			$last_exitThread_addr = $ADDR;
+##			die(sprintf("%X: $OP @OP_ARG",$ADDR));
+			die unless $ROM[$ADDR-3] == 0xBD;								# replace JSR (from expand_bangs) with JMP
+			$ROM[$ADDR-3] = 0x7E;
+
+			$last_exitThread_addr = $ADDR-3;
 	        while (@forward_lexical_exitThread_branch) {
-##    	        $ROM[pop(@forward_lexical_exitThread_branch)] = $EIGHT_BIT_LABEL_PREFIX . code_addr();	# does not work with LBRAnches
-    	        $ROM[pop(@forward_lexical_exitThread_branch)] = code_addr();
+	        	my($a) = pop(@forward_lexical_exitThread_branch);
+	        	if ($a < 0) {
+	        		$ROM[-$a] = $SIXTEEN_BIT_LABEL_PREFIX . code_addr($ADDR-3);
+	        	} else {
+	        		$ROM[$a] = $EIGHT_BIT_LABEL_PREFIX . code_addr($ADDR-3);
+	        	}
         	}
-			
 		}
 
 		my($SCA) = $SC_ARGS[$SYSCALL{$OP_ARG[0]}];
@@ -1114,8 +1131,8 @@ sub compile_asm()
 				die("Invalid syscall reference <$OP_ARG[$i+1]> at input line $. [$pg]\n")
 					unless ($pg>=0 && $pg<=0x3D) || $pg==0xFF;
 				$ROM[$ADDR++] = $OP_ARG[$i+1];              
-	            $ROM[$ADDR++] = '16-BIT VALUE';
-	            $ROM[$ADDR++] = $pg;
+	            $ROM[$ADDR++] = 'WPC REFERENCE';
+	            $ROM[$ADDR++] = $pg;										# this may be overwritten with FF during resolve_labels()
 			} else {
 				die("invalid syscall argument spec <$SCA>");
 	        }

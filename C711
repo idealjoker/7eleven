@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri Jun  6 15:49:01 2025
+#                    dlm: Thu Jun 12 09:23:46 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 382 28 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 387 54 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -379,7 +379,12 @@
 #				  - BUG: DEFINED_ALIAS instead of ALIAS_IS_DEFINED in some
 #						 places
 #				  - BUG: ALIAS local vars defined after used
-#	Jun  6, 2025: - fiddled 
+#	Jun  6, 2025: - fiddled
+#	Jun  8, 2025: - BUG: API load errors were not displayed
+#	Jun 10, 2025: - added ROM_Size System_Option
+#				  - implemented WPC REFERENCEs
+#				  - fixed minor bugs
+#	Jun 12, 2025: - BUG: U26_size needs capitalization
 # HISTORY END
 
 # RELEASE NOTES:
@@ -599,7 +604,7 @@ if (defined($opt_S)) {													# explicitly set
 	$WMS_System = 7 	if $opt_S =~ m{^7};
 	$WMS_System = 11 	if $opt_S =~ m{^11}; 
 	$WMS_System = 'WPC' if $opt_S =~ m{^WPC};
-} else {
+} else {																# based on filename
 	$WMS_System = 6 	if $ext =~ m{^[sS].*6$};
 	$WMS_System = 7 	if $ext =~ m{^[sS].*7$};
 	$WMS_System = 11 	if $ext =~ m{^[sS].*11$};
@@ -634,8 +639,16 @@ if ($WMS_System == 6) {											# System6
 	$MIN_ROM_ADDR = 0x4000; 			 
 	$MAX_ROM_ADDR = 0xFFFF;
 } elsif ($WMS_System =~ m{^WPC}) {								# WPC (1MB ROM)
-	$MIN_ROM_ADDR = 0x000000;
-	$MAX_ROM_ADDR = 0xFFFFFF;									
+	if ($System_Option{ROM_Size} eq '256KB') {
+		$MIN_ROM_ADDR = 0xC0000;
+	} elsif ($System_Option{ROM_Size} eq '512KB') {
+		$MIN_ROM_ADDR = 0x80000;
+	} elsif ($System_Option{ROM_Size} eq '1MB') {
+		$MIN_ROM_ADDR = 0x00000;
+	} else {
+		die("Invalid System Option <ROM_Size=$System_Option{ROM_Size}>\n");
+	}
+	$MAX_ROM_ADDR = 0xFFFFF;									
 } else {
 	die;
 }
@@ -734,34 +747,34 @@ unless (defined($LIB_API)) {
 my($LIB_MIN_ADDR,$LIB_MAX_ADDR,$LIB_CHECKSUM,@LIB_FN,@LIB_HASH);
 my($LIB_BASENAME) = ($LIB_API =~ m{([^/]+)$});
 
+sub code_address_range($$)
 {
-	sub code_address_range($$)
-	{
-		($LIB_MIN_ADDR,$LIB_MAX_ADDR) = @_;
-		die(sprintf("$LIB_BASENAME: invalid librarary address range (\$%04X-\$%04X)\n",
-			$LIB_MIN_ADDR,$LIB_MAX_ADDR,$MIN_ROM_ADDR))
-				unless ($LIB_MAX_ADDR - $LIB_MIN_ADDR >= 2048) && ($LIB_MIN_ADDR >= 0);
-	}
+	($LIB_MIN_ADDR,$LIB_MAX_ADDR) = @_;
+	die(sprintf("$LIB_BASENAME: invalid librarary address range (\$%04X-\$%04X)\n",
+		$LIB_MIN_ADDR,$LIB_MAX_ADDR))
+			unless ($LIB_MAX_ADDR - $LIB_MIN_ADDR >= 2048) && ($LIB_MIN_ADDR >= 0);
+}
 
-	sub code_checksum($)
-	{
-		($LIB_CHECKSUM) = @_;
-		die(sprintf("$LIB_BASENAME: invalid librarary checksum (\$%02X)\n",$LIB_CHECKSUM))
-			unless ($LIB_CHECKSUM>=0 && $LIB_CHECKSUM<=0xFF);
-	}
+sub code_checksum($)
+{
+	($LIB_CHECKSUM) = @_;
+	die(sprintf("$LIB_BASENAME: invalid librarary checksum (\$%02X)\n",$LIB_CHECKSUM))
+		unless ($LIB_CHECKSUM>=0 && $LIB_CHECKSUM<=0xFF);
+}
 
-	sub code_hash($)
-	{
-		foreach my $hd (@_) {
-			my($fn,$hash) = ($hd =~ m{^SHA2-256\((.*)\)= ([0-9a-fA-F]{64})$});
-			die("$LIB_BASENAME: invalid hash specifier <$hd>\n")
-				unless defined($hash);
-			push(@LIB_FN,$fn);
-			push(@LIB_HASH,$hash);				
-		}
+sub code_hash($)
+{
+	foreach my $hd (@_) {
+		my($fn,$hash) = ($hd =~ m{^SHA2-256\((.*)\)= ([0-9a-fA-F]{64})$});
+		die("$LIB_BASENAME: invalid hash specifier <$hd>\n")
+			unless defined($hash);
+		push(@LIB_FN,$fn);
+		push(@LIB_HASH,$hash);			    
 	}
+}
 
-	require $LIB_API unless ($LIB_API eq '');
+unless ($LIB_API eq '') {
+	require $LIB_API;
 }
 
 #----------------------------------------------------------------------
@@ -1288,6 +1301,7 @@ sub check_duplicate_label_types()
 	sub define_label($@)
 	{
 		my($lbl,$addr,$allow_relabel) = @_;
+		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr($addr)) if $opt_T;
 
 		if ($lbl eq 'ANALYSIS_GAP') {													# ignore gap labels
 			$last_label_addr = -1;
@@ -1300,8 +1314,6 @@ sub check_duplicate_label_types()
 
 		$addr = code_addr($addr);														# convert WPC ROM to code addr
 	
-		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr()) if $opt_T;
-
 		my($lofs) = ($addr =~ m{^\.\+(\d+)$});											# handle .+1 '.' dot in Sys6 only?
 		if (defined($lofs)) {
 			die("No valid target for . label <$OP_ARG[0]> at input line $.\n")
@@ -1326,6 +1338,8 @@ sub check_duplicate_label_types()
 				$oPG = sprintf("%02X:",$LBP{$LBL[$addr]});
 				$nPG = sprintf("%02X:",$RPG);
 			}
+
+			return if defined($LBL[$addr]) && $lbl =~ m{^RAM_[0-9A-Fa-f]+$}; 			# ignore re-labling attempts with auto-generated label
 
 			printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$$oPG%04X to $nPG$lbl at input line $.\n",$addr)
 				if !$allow_relabel && $addr!=$last_label_addr							# multiple labels at same address allowed
@@ -1365,10 +1379,10 @@ sub labelValue($$)																		# addr<0: line no; addr>=0: address
 		$line = $LINE[$addr];
 	}
 
-	if ($lbl =~ m{^\.\+}) {																# handle .+3 dot "."
-		die("Invalid .-label arithmetic <$lbl> at input line $line\n")
+	if ($lbl =~ m{^\.\+}) {																# handle .+3 dot "." (WPC only?)
+		die("Invalid .-label arithmetic <$lbl>\n")
 			unless numberp($');
-		return $addr + $';
+		return code_addr($addr) + $';
 	}
 
 	if ($opt_f) {																		# force mode, intended to compile (some) source files with D711 warnings
@@ -1540,7 +1554,7 @@ sub resolve_labels($)
         }
 
         next if ($ROM[$a] =~ m{^\@});                                                   # leave resolution of @COMPILER_VARIABLES for later
-        next if ($ROM[$a] eq '16-BIT VALUE');
+        next if isMember($ROM[$a],'16-BIT VALUE','WPC REFERENCE');
 
         $ROM[$a] = hex($1) if ($ROM[$a] =~ m{^\$([0-9A-Fa-f]+)$});                      # turn $hex and %binary numbers into decimals
         $ROM[$a] = eval('0b' . $1) if ($ROM[$a] =~ m{^%([01]+)$});
@@ -1554,6 +1568,7 @@ sub resolve_labels($)
 				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})/ ||
 				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})/ ||
 				$ROM[$a] =~ m/^Error#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^DMD#([0-9A-Fa-f]{2})/ ||
 				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})/ ||
 				$ROM[$a] =~ m/^Audit#([0-9A-Fa-f]{4})/) {
 					$ROM[$a] = hex($1) . $';											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
@@ -1563,6 +1578,12 @@ sub resolve_labels($)
 				$ROM[$a] = $1 . $';														# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 				next if numberp($ROM[$a]);												# we are done, if we have a number
 			}
+	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})/) {	                            # flags are lamps with bit 6 set
+	        	my($fno) = hex($1);
+    	        $ROM[$a] = ($fno >= 0x40) ? $fno + 0x80 . $'
+    	        						  : $fno + 0x40 . $';
+				next if numberp($ROM[$a]);                                          
+	        }
 		} else {
 			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})/ || 								# substitute all system identifiers
 				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})/ ||
@@ -1574,15 +1595,15 @@ sub resolve_labels($)
 					$ROM[$a] = hex($1) . $';											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 					next if numberp($ROM[$a]);											# we are done, if we have a number
 	        }
+	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})/) {	                            # flags are lamps with bit 6 set 
+    	        $ROM[$a] = hex($1) + 64 . $';
+				next if numberp($ROM[$a]);                                          
+	        }
 	    }
-        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})/) {	                                # flags are lamps with bit 6 set (all systems?)
-            $ROM[$a] = hex($1) + 64 . $';
-			next if numberp($ROM[$a]);                                                  # we are done, if we have a number
-        }
-        
         my($ms) = '^\\' . $EIGHT_BIT_LABEL_PREFIX;                                      # 8-bit relative address
         if ($ROM[$a] =~ m{$ms}) {                                                   
             my($offset) = labelValue($a,$') - code_addr($a) - 1;
+##          printf(STDERR "%04X -> %04X ($offset)\n",code_addr($a-1),labelValue($a,$'));
             my($src_addr) = $a;
             while (!defined($LINE[$src_addr])) { $src_addr--; }
             die(sprintf("8-bit branch offset $offset <$ROM[$a]> out of range at source line %d\n",$LINE[$src_addr]))
@@ -1602,13 +1623,14 @@ sub resolve_labels($)
             next;
         }
 		my($ms) = '^\\' . $SIXTEEN_BIT_LABEL_PREFIX;									# 16-bit relative address
-		if ($ROM[$a] =~ m{$ms}) {			    
-			my($offset) = labelValue($a,$') - code_addr($a) - 1;
+		if ($ROM[$a] =~ m{$ms}) {
+			my($offset) = labelValue($a,$') - code_addr($a) - 2;
 			my($src_addr) = $a;
 			while (!defined($LINE[$src_addr])) { $src_addr--; }
 			die(sprintf("16-bit branch offset <$ROM[$a]> out of range at source line %d\n",$LINE[$src_addr]))
 				unless ($offset >= -32768 && $offset <= 32727);
-			$ROM[$a] = pack('s',$offset);
+            $ROM[$a]    = ($offset>>8) & 0xFF;                                          # set high byte
+            $ROM[$a+1]  =  $offset     & 0xFF;											# low byte
 			next;
 		}
 
@@ -1711,16 +1733,19 @@ sub resolve_labels($)
         die("Error: Invalid intermediate value $ROM[$a] at address $a (input line $LINE[$opaddr])\n")
             unless ($ROM[$a]>=0 || $ROM[$a]<=0xFFFF);
         die(sprintf("Error: byte value $ROM[$a] out of range at address \$%04X (input line $LINE[$opaddr])\n",$a))
-            if (!$opt_1 && $ROM[$a] > 0xFF && defined($ROM[$a+1]) && $ROM[$a+1] ne '16-BIT VALUE');                                         
+            if (!$opt_1 && $ROM[$a] > 0xFF && defined($ROM[$a+1]) && !isMember($ROM[$a+1],'16-BIT VALUE','WPC REFERENCE'));                                         
 #       print(STDERR sprintf("Attempting to overwrite already defined ROM [%02X %02X <%02X($ROM[$a+1])> %02X] at address \$%04X with high byte of word value \$%04X\n",
 #           $ROM[$a-1],$ROM[$a],$ROM[$a+1],$ROM[$a+2],$a+1,$ROM[$a])) 
 #               if (!defined($opt_1) && $ROM[$a] > 0xFF && defined($ROM[$a+1]) && $ROM[$a+1] ne '16-BIT VALUE');
-        if ($ROM[$a+1] eq '16-BIT VALUE') {                                             # signed byte value
-#           printf(STDERR "splitting 16-bit value $ROM[$a] at address %04X -> ",$a);
+        if ($ROM[$a+1] eq '16-BIT VALUE') {                                             # 16-bit value
             $ROM[$a+1] =  $ROM[$a]     & 0xFF;
             $ROM[$a]   = ($ROM[$a]>>8) & 0xFF;
-#            printf(STDERR "\$%02X \$%02X\n",$ROM[$a],$ROM[$a+1]);
-        } else {                                                                        # signed word value
+        } elsif ($ROM[$a+1] eq 'WPC REFERENCE') { 										# 16-bit address, followed by 8-bit page
+        	$ROM[$a+2] = 0xFF
+	        	if ($ROM[$a]>=0x8000 || $ROM[$a]<0x4000);
+            $ROM[$a+1] =  $ROM[$a]     & 0xFF;
+            $ROM[$a]   = ($ROM[$a]>>8) & 0xFF;
+        } else {                                                                        # single byte
             $ROM[$a] &= 0xFF;                                                           
         }
         die("Invalid final value $ROM[$a] at address $a\n")
@@ -1909,7 +1934,7 @@ sub load_vROM(@)
         my($fn) = shift(@files);
         open(F,$fn) || die("$fn: $!\n");
         my($ROMimage);
-        my($nRead) = read(F,$ROMimage,0xFFFF);
+        my($nRead) = read(F,$ROMimage,0xFFFFF);
         die("$fn: no data\n") unless ($nRead > 0);
         push(@vROMimage,unpack("C*",$ROMimage));
     }
@@ -1917,12 +1942,17 @@ sub load_vROM(@)
 
 sub verify_vROM(@)
 {
-	my($AFMT) = ($WMS_System =~ m{^WPC}) ? '%05X' : '%04X';
     for (my($a)=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {
         my($val) = defined($ROM[$a]) ? $ROM[$a] : 0xFF;
-        next if ($val == $vROMimage[$a-$MIN_ROM_ADDR+1024*$opt_g]);
-        printf(STDERR "ROM mismatch at $AFMT: %02X instead of %02X [$AFMT]\n",
-                      $a,$val,$vROMimage[$a-$MIN_ROM_ADDR+1024*$opt_g],$a-$MIN_ROM_ADDR+1024*$opt_g);
+##        printf(STDERR "\$%02X matches at %02X:%04X\n",$val,code_PG($a),code_addr($a)),
+		next if ($val == $vROMimage[$a-$MIN_ROM_ADDR+1024*$opt_g]);
+		if (defined($RPG)) {
+	        printf(STDERR "ROM mismatch at \$%02X:%04X [%05X]: %02X instead of %02X\n",
+    	                  code_PG($a),code_addr($a),$a,$val,$vROMimage[$a-$MIN_ROM_ADDR+1024*$opt_g]);
+		} else {
+	        printf(STDERR "ROM mismatch at \$%04X: %02X instead of %02X [\$%04X]\n",
+    	                  $a,$val,$vROMimage[$a-$MIN_ROM_ADDR+1024*$opt_g],$a-$MIN_ROM_ADDR+1024*$opt_g);
+    	}
     }
 }
 
@@ -1949,7 +1979,7 @@ sub find_free_space()
         printf(STDERR "<%04X> %d bytes free\n",$a-$free,$free)
             if $opt_m;
     }
-    printf(STDERR "Total Free Space = %d bytes\n",$totalfree)
+    printf(STDERR "Total Free Space = %d bytes (%d%%)\n",$totalfree,int(100*$totalfree/($MAX_ROM_ADDR-$MIN_ROM_ADDR+1)+0.5))
         unless $opt_1 || $opt_L;
     return $totalfree;
 }
@@ -2044,7 +2074,7 @@ sub produce_output()
         for (my($a)=$MIN_ROM_ADDR; $a<$MIN_ROM_ADDR+0x4000; $a++) {
             print(F pack('c',defined($ROM[$a])?$ROM[$a]:0xFF));
         }
-        if ($System_Option{'U26_size'} eq '32KB') {  											# 32KB U26 ROM chips (e.g. Bad Cats)
+        if ($System_Option{'U26_Size'} eq '32KB') {  											# 32KB U26 ROM chips (e.g. Bad Cats)
             for (my($a)=$MIN_ROM_ADDR; $a<$MIN_ROM_ADDR+0x4000; $a++) {                         
                 print(F pack('c',defined($ROM[$a])?$ROM[$a]:0xFF));
             }
@@ -2055,7 +2085,7 @@ sub produce_output()
             print(F pack('c',defined($ROM[$a])?$ROM[$a]:0xFF));
         }
         close(F);
-    } elsif ($WMS_System =~ m{^WPC}) {															# WPC
+    } elsif ($WMS_System eq 'WPC') {															# WPC
 		if (defined($opt_o)) {																	# single linked output file
 			open(F,">$opt_o") || die("$opt_o: $!\n");
 			if (defined($opt_g)) {																# add pre gap
@@ -2070,7 +2100,7 @@ sub produce_output()
 				if defined($opt_g) || defined($opt_l);
 			die(sprintf("${basename}${opt_s}_U6.bin: invalid ROM address range (\$%05X-\$%05X) for WPC\n",
 							$MIN_ROM_ADDR,$MAX_ROM_ADDR))
-				unless ($MIN_ROM_ADDR == 0x00000 && $MAX_ROM_ADDR == 0xFFFFF);
+				unless ($MIN_ROM_ADDR >= 0x00000 && $MAX_ROM_ADDR == 0xFFFFF);
 	        open(F,">${basename}${opt_s}_U6.bin") || die("${basename}${opt_s}_U6.bin: $!\n");	
 		}
 			
@@ -2824,7 +2854,7 @@ sub compile_pragma()
 			} else {
 				die("Syntax: .ORG ROM-addr (<@_> at input line $.)\n");
 	        }
-	    } elsif ($WMS_System =~ /^WPC/) {
+	    } elsif ($WMS_System =~ /^WPC/) {													# WPC: ROM paging
 			if ($ADDR =~ m{^\$?([0-9A-Fa-f]{2}):\$?([0-9A-Fa-f]{4})$}) {
 				die("Syntax: .ORG PG:ADDR (<@_> at input line $.)\n")
 					unless defined($2);
@@ -2834,7 +2864,7 @@ sub compile_pragma()
 					unless numberp($pg) && numberp($ad);
 ##				$FIRST_RPG = $pg unless defined($FIRST_RPG);								# first .ORG
 				$RPG  = $pg;
-				$ADDR = ($pg == 0xFF) ? (0x3D*0x4000 + $ad)
+				$ADDR = ($pg == 0xFF) ? (0x3C*0x4000 + $ad)
 									  : ($pg*0x4000 + ($ad - 0x4000));
 				die(sprintf(".ORG ROM address \$%05X out of valid range [\$%05X-\$%05X] at input line $.\n",$ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
 					unless ($ADDR >= $MIN_ROM_ADDR && $ADDR <= $MAX_ROM_ADDR);

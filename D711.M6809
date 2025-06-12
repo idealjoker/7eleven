@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Mon Jun  2 06:54:25 2025
+#                    dlm: Thu Jun 12 09:05:26 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 55 39 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 57 26 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -52,7 +52,9 @@
 #	May 30, 2025: - added '>' and '<' address indicators (extended/direct)
 #	Jun  1, 2025: - added '>' and '<' address indicators for extended mnode offset
 #				  - BUG: had post-decrement instead of pre-decrement
-#	Jun  2, 2025: - added debug output 
+#	Jun  2, 2025: - added debug output
+#	Jun 10, 2025: - changed solenoid numbers from hex to dec for consistency with
+#					[C711]
 # HISTORY END
 
 # NOTES:
@@ -443,12 +445,12 @@ sub disassemble_syscall($$)
 	if (numberp($Lbl{$SYSCALL[$sc]})) {															# numeric label => address above 8000
 		return undef unless ($Lbl{$SYSCALL[$sc]} == $rv);
 	} else {
-		my($rpg,$saddr) = split(':',$Lbl{$SYSCALL[$sc]});										# compond label => rom page & address between 40000 and 80000
+		my($rpg,$saddr) = split(':',$Lbl{$SYSCALL[$sc]});										# compond label => rom page & address between 4000 and 8000
 		$rpg = hex($rpg); $saddr = hex($saddr);
 		return undef unless ($saddr == $rv && $rpg == $_cur_RPG);
 	}
 	my($oaddr) = $addr-3;																		# address of OP
-	$OP[$oaddr] = '!';
+	$OP[$oaddr] = '!';																			# bang
 	for (my($i)=0; $i<length($SC_ARGS[$sc]); $i++) {     
 		if (substr($SC_ARGS[$sc],$i,1) eq 'W') { 												# W: word (not addr!)
 			push(@{$OPA[$oaddr]},sprintf('$%04X!',WORD($addr)));
@@ -471,7 +473,7 @@ sub disassemble_syscall($$)
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'O') {											# O: sOlenoid
 			die(sprintf("Invalid solenoid Sol#%d",BYTE($addr)))
 				unless (BYTE($addr)>=1 && BYTE($addr)<=65);
-			push(@{$OPA[$oaddr]},sprintf('Sol#%d',BYTE($addr)));
+			push(@{$OPA[$oaddr]},sprintf('Sol#%02X',BYTE($addr)));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'L') {											# L: Lamp

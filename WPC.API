@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Jun  2 15:29:30 2025
+#                    dlm: Thu Jun 12 09:11:54 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 856 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 40 41 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -36,7 +36,42 @@
 #	Apr  6, 2025: - BUG: a couple of Alpha definitions clashed with obj migration
 #	Jun  1, 2025: - BUG: syscall_82CB has argument
 #	Jun  2, 2025: - BUG: Error aliases had illegal characters
+#	Jun  8, 2025: - adapted to %System_Option
+#				  - added VERSION_OFFSETS
+#	Jun  9, 2025: - another ERR alias with illegal character
+#	Jun 10, 2025: - added exitThread
 # END OF HISTORY
+
+#======================================================================
+# System Selection
+#======================================================================
+
+my($WPCV) = $WMS_System;													# WPC version in D711 notation
+
+if (%System_Option) {
+	if ($System_Option{WPC_Version} =~ m{^[Aa][Ll]}) {						# alphanumeric
+		$WPCV = "WPC(Alphanumeric)";
+	} elsif ($System_Option{WPC_Version} =~ m{^[Dd][Mm]}) { 				# DMD
+		$WPCV = "WPC(DMD)";
+	} else {
+		die("WPC.API: WPC_Version <$System_Option{'WPC_Version'}> not yet implemented\n");
+    }
+}
+	
+my($VO);																	# byte offset from DMD nominal address
+
+sub VERSION_OFFSETS($$) 
+{
+	my($alpha,$DMD) = @_;
+
+	if ($WPCV eq 'WPC(Alphanumeric)') {										# D711.pm
+		$VO = $alpha;
+	} elsif ($WPCV eq 'WPC(DMD)') {
+		$VO = $DMD;
+	} else {
+		die("WPC.API: $WPCV not yet implemented\n");
+	}
+}
 
 #----------------------------------------------------------------------
 # RAM Memory Map
@@ -83,55 +118,44 @@ define_label('=BLINK_MATRIX',						0x0320);
 define_label('=FLAGS',								0x0328);
 define_label('=FLAGS_HIGH',							0x0330);
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-    $ofs = -1;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-    $ofs = 0;
-} else {
-    die("WPC.API: $WMS_System not yet implemented\n");
-}
-define_label('=UNKNOWN_THREAD_DATA_1',				0x0366+$ofs);		
-define_label('^LOW_PRIORITY_THREADS',				0x036F+$ofs);		
-define_label('=END_OF_THREADLIST??',				0x0371+$ofs);		
-define_label('=STATUS_AREA_POINTER',				0x0380+$ofs);	# Scott
-define_label('=GI_BRIGHTNESS',						0x03D6+$ofs); 	# 5 bytes
+VERSION_OFFSETS(-1,0);
 
-define_label('_PLAYER_UP',							0x040F+$ofs);
-define_label('_BALL_IN_PLAY',						0x0410+$ofs);
-define_label('_EXTRABALLS_PENDING??',				0x0411+$ofs);
-	define_label('_BACKGROUND_MUSIC_PLAYING',		0x0445+$ofs);
-unless ($WMS_System eq 'WPC(Alphanumeric)') {
+define_label('=UNKNOWN_THREAD_DATA_1',				0x0366+$VO);		
+define_label('^LOW_PRIORITY_THREADS',				0x036F+$VO);		
+define_label('=END_OF_THREADLIST??',				0x0371+$VO);		
+define_label('=STATUS_AREA_POINTER',				0x0380+$VO);	# Scott
+define_label('=GI_BRIGHTNESS',						0x03D6+$VO); 	# 5 bytes
+
+define_label('_PLAYER_UP',							0x040F+$VO);
+define_label('_BALL_IN_PLAY',						0x0410+$VO);
+define_label('_EXTRABALLS_PENDING??',				0x0411+$VO);
+	define_label('_BACKGROUND_MUSIC_PLAYING',		0x0445+$VO);
+unless ($WPCV eq 'WPC(Alphanumeric)') {
 	define_label('^DMD_PLAYING_ANIMATION_DATA',		0x0481);
 	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
 	define_label('_LAST_DMD_ANIMATION_PLAYED??',	0x0487);
 }
-define_label('=PLAYER_MEM_DATA??',					0x04AC+$ofs);
-define_label('_SIZE_PLAYER_MEM_DATA??',				0x04AE+$ofs);
-define_label('_CRON_MINUTE_COUNTER_1',				0x04B4+$ofs);
-define_label('_CRON_MINUTE_COUNTER_2',				0x04B5+$ofs);
-define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$ofs);
-define_label('_BALLSEARCH_SUSPEND_TIMER',			0x04C7+$ofs);
-define_label('_TILTWARNINGS_LEFT',					0x04D4+$ofs);
+define_label('=PLAYER_MEM_DATA??',					0x04AC+$VO);
+define_label('_SIZE_PLAYER_MEM_DATA??',				0x04AE+$VO);
+define_label('_CRON_MINUTE_COUNTER_1',				0x04B4+$VO);
+define_label('_CRON_MINUTE_COUNTER_2',				0x04B5+$VO);
+define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$VO);
+define_label('_BALLSEARCH_SUSPEND_TIMER',			0x04C7+$VO);
+define_label('_TILTWARNINGS_LEFT',					0x04D4+$VO);
 
-#define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN',	0x0CC9+$ofs);	# 59E
-#define_label('_LOCKED_BALLS_DEFICIT',				0x0CCA+$ofs);
-#define_label('_NUM_BALLS_LOCKED',					0x0CCB+$ofs);
-#define_label('_BALLS_IN_TROUGH',					0x0CCF+$ofs);
-#define_label('_BALLS_INSTALLED_IN_GAME',			0x0CD0+$ofs);
+#define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN',	0x0CC9+$VO);	# 59E
+#define_label('_LOCKED_BALLS_DEFICIT',				0x0CCA+$VO);
+#define_label('_NUM_BALLS_LOCKED',					0x0CCB+$VO);
+#define_label('_BALLS_IN_TROUGH',					0x0CCF+$VO);
+#define_label('_BALLS_INSTALLED_IN_GAME',			0x0CD0+$VO);
 
 define_label('_RND_1',								0x1790);
 define_label('_RND_2',								0x1791);
 define_label('_RND_3',								0x1792);
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-    $ofs = -6;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-    $ofs = 0;
-} else {
-    die("WPC.API: $WMS_System not yet implemented\n");
-}
-##define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$ofs);
-##define_label('_BALLS_ACCOUNTED_FOR_COMPL',			0x1ED1+$ofs);
+VERSION_OFFSETS(-6,0);
+##define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$VO);
+##define_label('_BALLS_ACCOUNTED_FOR_COMPL',			0x1ED1+$VO);
 
 #----------------------------------------------------------------------
 # ASIC
@@ -148,7 +172,7 @@ define_label('_LAMP_ROW_OUTPUT',					0x3FE4);	# 7-0: W: Lamp matrix row output
 
 define_label('_RELAYS_TRIAC',						0x3FE6);	# 7: W: Flipper enable relay 5: W: Coin door enable relay 4-0: W: General illumination enables
 
-if (isMember($WMS_System,'WPC(Alphanumeric)','WPC(DMD)','WPC(Fliptronic)','WPC(DCS)')) {	# Pre-security
+if (isMember($WPCV,'WPC(Alphanumeric)','WPC(DMD)','WPC(Fliptronic)','WPC(DCS)')) {	# Pre-security
 	define_label('_SW_COLUMN_STROBE',				0x3FEA);	# W: exactly one bit must be set
 	define_label('_SW_ROW_INPUT',					0x3FE9); 	# Pre-security;	7-0: R: Readings for the currently selected switch column. Bit 0 corresponds to row 1, bit 1 to row 2, and so on. A '1' indicates active voltage level. For a mechanical switch, this means the switch is closed. For an optical switch, this means the switch is open.
 } else {
@@ -164,7 +188,7 @@ define_label('_SOL_GENERAL_ENABLE',	       			0x3FE0);	# 7-0: W: Enables for sol
 define_label('_SOUNDCARD_DATA',						0x3FDC);	# 7-0: R/W: Send/receive a byte of data to/from the sound board.
 define_label('_SOUNDCARD_STATUS',					0x3FDD);	# 7: R: WPC sound board read ready 0: R: DCS sound board read ready
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {						# Display
+if ($WPCV eq 'WPC(Alphanumeric)') {						# Display
 	define_label('_ALPHANUMERIC_POS',				0x3FEB); 	# ALPHAnumeric display
 	define_label('_ALPHANUMERIC_ROW1',				0x3FEC); 	
 	define_label('_ALPHANUMERIC_ROW2',				0x3FEE); 	
@@ -175,7 +199,7 @@ if ($WMS_System eq 'WPC(Alphanumeric)') {						# Display
 	define_label('=DMD_FRAMEBUF_3800',				0x3800);
 	define_label('=DMD_FRAMEBUF_3A00',				0x3A00);
 	define_label('_DMD_SCANLINE',					0x3FBD);	# W: Request an FIRQ after a particular scanline is drawn; R: The last scanline that was drawn
-	if ($WMS_System eq 'WPC(95)') { 					
+	if ($WPCV eq 'WPC(95)') { 					
 		define_label('_DMD_FRAMESELECT_3200',		0x3FB8);	# W
 		define_label('_DMD_FRAMESELECT_3000',		0x3FB9);	# W
 		define_label('_DMD_FRAMESELECT_3600',		0x3FBA);	# W
@@ -190,10 +214,10 @@ if ($WMS_System eq 'WPC(Alphanumeric)') {						# Display
 	define_label('_EXTBOARD_3',						0x3FED); 	
 }
 
-if (isMember($WMS_System,'WPC(Fliptronic)','WPC(DCS)','WPC(Security)','WPC(95)')) {
+if (isMember($WPCV,'WPC(Fliptronic)','WPC(DCS)','WPC(Security)','WPC(95)')) {
 	define_label('_FLIPTRONIC',						0x3FD4);	
 	define_label('_FLIPTRONIC_UNUSED',				0x3FD5);	# Not used.
-	if ($WMS_System eq 'WPC(95)') {
+	if ($WPCV eq 'WPC(95)') {
 		define_label('_FLIPPER_COIL_OUTPUT',		0x3FEE);    
 		define_label('_FLIPPER_SWITCH_INPUT',		0x3FEF);    
 	}
@@ -212,7 +236,7 @@ define_label('_ROM_PAGE',							0x3FFC);	# R/W
 
 define_label('_RAM_LOCK',							0x3FFD);	
 define_label('_RAM_LOCKSIZE',						0x3FFE);	
-if ($WMS_System eq 'WPC(95)') {
+if ($WPCV eq 'WPC(95)') {
 	define_label('_RAM_PAGE',						0x3FF3); 	# W
 }
 
@@ -263,7 +287,7 @@ define_label('_DEBUGGER_CTRL',						0x3D61);
 #	- identical for Alphanumeric and DMD
 #----------------------------------------------------------------------
 
-define_syscall('Panic',								0x8298,'E',1);	# NOTE 1: does not return
+define_syscall('Panic',								0x8298,'E',1);			# NOTE 1: does not return
 define_syscall('Error',								0x82B6,'E');
 define_syscall('syscall_82CB',						0x82CB,'E');
 define_syscall('addToAudit??',						0x82E2,'B');
@@ -365,287 +389,215 @@ define_syscall('syscall_8EFD',						0x8EFD);
 #	- address labels of unknown syscalls refer to DMD location
 #----------------------------------------------------------------------
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = -205;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
+VERSION_OFFSETS(-205,0);
 
-define_syscall('setBank=3D',							0x90B4+$ofs);  # 0x8FE7 in FH
-define_syscall('setBank[B]',							0x90BC+$ofs);
-define_syscall('longJSR[BX]',							0x90D1+$ofs);
-define_syscall('A=[XB]==1?_INX',						0x90E7+$ofs);
-define_syscall('A=[XB]==1?',							0x90EC+$ofs);
-define_syscall('BX=loadRef[X]',							0x90C5+$ofs);
-define_syscall('Y=[XB]_INXINX',							0x910E+$ofs);
-define_syscall('Y=[XB]',								0x9113+$ofs);    
-define_syscall('Y=indexed[X]==1?X',						0x9117+$ofs);
-define_syscall('memCopy[ABXY]',							0x9139+$ofs);
-define_syscall('^memCopy[AXY]',							0x913D+$ofs);
-define_syscall('memCopy[ABXY]_otherbank',				0x9141+$ofs);
-define_syscall('lockRAM[B]',							0x9207+$ofs);
-define_syscall('unlockRAM',								0x9223+$ofs);
-define_syscall('lockRAM',								0x922C+$ofs);
-define_syscall('CS=badChecksum[XY]',					0x928A+$ofs);
-define_syscall('Y=adjustmentA??==1',					0x92D4+$ofs);
-define_syscall('A=adjustmentA??==1',					0x92DE+$ofs);
-define_syscall('D=adjustmentA??==1',					0x92EC+$ofs);
-define_syscall('Y=adjustmentA??',						0x92F8+$ofs);
-define_syscall('switch[B]closed?',						0x93E4+$ofs);
-define_syscall('Bitshifter_testUnknownSwitchState[B]',	0x93ED+$ofs);
-define_syscall('Bitshifter_testSwitch[BX]',				0x93F6+$ofs);
-define_syscall('start_thread_execution',				0x975F+$ofs);
+define_syscall('setBank=3D',							0x90B4+$VO);  # 0x8FE7 in FH
+define_syscall('setBank[B]',							0x90BC+$VO);
+define_syscall('longJSR[BX]',							0x90D1+$VO);
+define_syscall('A=[XB]==1?_INX',						0x90E7+$VO);
+define_syscall('A=[XB]==1?',							0x90EC+$VO);
+define_syscall('BX=loadRef[X]',							0x90C5+$VO);
+define_syscall('Y=[XB]_INXINX',							0x910E+$VO);
+define_syscall('Y=[XB]',								0x9113+$VO);    
+define_syscall('Y=indexed[X]==1?X',						0x9117+$VO);
+define_syscall('memCopy[ABXY]',							0x9139+$VO);
+define_syscall('^memCopy[AXY]',							0x913D+$VO);
+define_syscall('memCopy[ABXY]_otherbank',				0x9141+$VO);
+define_syscall('lockRAM[B]',							0x9207+$VO);
+define_syscall('unlockRAM',								0x9223+$VO);
+define_syscall('lockRAM',								0x922C+$VO);
+define_syscall('CS=badChecksum[XY]',					0x928A+$VO);
+define_syscall('Y=adjustmentA??==1',					0x92D4+$VO);
+define_syscall('A=adjustmentA??==1',					0x92DE+$VO);
+define_syscall('D=adjustmentA??==1',					0x92EC+$VO);
+define_syscall('Y=adjustmentA??',						0x92F8+$VO);
+define_syscall('switch[B]closed?',						0x93E4+$VO);
+define_syscall('Bitshifter_testUnknownSwitchState[B]',	0x93ED+$VO);
+define_syscall('Bitshifter_testSwitch[BX]',				0x93F6+$VO);
+define_syscall('start_thread_execution',				0x975F+$VO);
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = -246
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
+VERSION_OFFSETS(-246,0);
+define_syscall('X=^spawnThread_2_myId??_codeRef[BX]', 	0x982E+$VO);	# 9738 -246
+define_syscall('X=^spawnThread_1_myId??_codeRef[BX]', 	0x983D+$VO);
 
-define_syscall('X=^spawnThread_2_myId??_codeRef[BX]', 	0x982E+$ofs);	# 9738 -246
-define_syscall('X=^spawnThread_1_myId??_codeRef[BX]', 	0x983D+$ofs);
+VERSION_OFFSETS(-270,0);
+define_syscall('exitThread',							0x99A2+$VO,'',2);	# 9894
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	define_syscall('exitThread',					0x9894,'',2);	# NOTE 2: sycall is JMP target (rather than JSR); different code
-	$ofs = -314;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	define_syscall('exitThread',					0x99A2,'',2);	# NOTE 2: sycall is JMP target (rather than JSR); different code
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
+VERSION_OFFSETS(-314,0);
+define_syscall('killAllThreads_Y',						0x9AEB+$VO);	# 99B1 
+define_syscall('killThreads_DY',						0x9AFD+$VO);
+define_syscall('killThreads_Y',							0x9AF4+$VO);
+define_syscall('killThread',							0x9B24+$VO);	# 9AB7
+define_syscall('findThread[Y]?',						0x9B34+$VO);
+define_syscall('findThread[DY]?',						0x9B3D+$VO);
+define_syscall('find_thread_in_list',					0x9B55+$VO);	
+define_syscall('setThreadId[Y]',						0x9B83+$VO);
+define_syscall('Y=threadId',							0x9BC5+$VO);
+define_syscall('X=^threadData',							0x9BFE+$VO);
+##define_syscall('zeroCrossIRQ_clear',					0x9D00+$VO);	# clashes when using object file migration
 
-define_syscall('killAllThreads_Y',					0x9AEB+$ofs);	# 99B1 
-define_syscall('killThreads_DY',					0x9AFD+$ofs);
-define_syscall('killThreads_Y',						0x9AF4+$ofs);
-define_syscall('killThread',						0x9B24+$ofs);	# 9AB7
-define_syscall('findThread[Y]?',					0x9B34+$ofs);
-define_syscall('findThread[DY]?',					0x9B3D+$ofs);
-define_syscall('find_thread_in_list',				0x9B55+$ofs);	
-define_syscall('setThreadId[Y]',					0x9B83+$ofs);
-define_syscall('Y=threadId',						0x9BC5+$ofs);
-define_syscall('X=^threadData',						0x9BFE+$ofs);
-##define_syscall('zeroCrossIRQ_clear',				0x9D00+$ofs);	# clashes when using object file migration
+VERSION_OFFSETS(-332,0);
+define_syscall('syscall_9D96',							0x9D96+$VO);	# 9C4A
+define_syscall('syscall_9E3B',							0x9E3B+$VO);
+define_syscall('setBit[AB]',							0x9E7F+$VO);
+define_syscall('clearBit[AB]',							0x9E92+$VO);
+define_syscall('twiddle_BitShifter_input',				0x9EA5+$VO);
+define_syscall('twiddle_BitShifter_for_flags',			0x9EAF+$VO);
+define_syscall('twiddle_BitShifter_success',			0x9EBF+$VO);
+define_syscall('twiddle_BitShifter_failure',			0x9EC3+$VO);
+define_syscall('toggleBit[AB]',							0x9ECA+$VO);
+define_syscall('bit[AB]Set?',							0x9EDD+$VO);
+define_syscall('sys_setBit[AB]',						0x9EF1+$VO);
+define_syscall('sys_toggleBit[AB]',						0x9F11+$VO);
+define_syscall('sys_clearBit[AB]',						0x9F18+$VO);
+define_syscall('BitShifter_setBit[AB]',					0x9F47+$VO);
+define_syscall('BitShifter_clearBit[AB]',				0x9F73+$VO);
+define_syscall('BitShifter_testBit[AB]',				0x9FA0+$VO);
+define_syscall('sys_lampOp',							0x9FD7+$VO);
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = -332;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
+VERSION_OFFSETS(-332,0);
+define_syscall('lampOn[A]',								0xA03A+$VO);	# 9F6D
+define_syscall('lampOnBlinkOff[A]',						0xA055+$VO);
+define_syscall('lampOff[A]',							0xA063+$VO);
+define_syscall('lamp[A]On?',							0xA0B9+$VO);
 
-define_syscall('syscall_9D96',						0x9D96+$ofs);	# 9C4A
-define_syscall('syscall_9E3B',						0x9E3B+$ofs);
-define_syscall('setBit[AB]',						0x9E7F+$ofs);
-define_syscall('clearBit[AB]',						0x9E92+$ofs);
-define_syscall('twiddle_BitShifter_input',			0x9EA5+$ofs);
-define_syscall('twiddle_BitShifter_for_flags',		0x9EAF+$ofs);
-define_syscall('twiddle_BitShifter_success',		0x9EBF+$ofs);
-define_syscall('twiddle_BitShifter_failure',		0x9EC3+$ofs);
-define_syscall('toggleBit[AB]',						0x9ECA+$ofs);
-define_syscall('bit[AB]Set?',						0x9EDD+$ofs);
-define_syscall('sys_setBit[AB]',					0x9EF1+$ofs);
-define_syscall('sys_toggleBit[AB]',					0x9F11+$ofs);
-define_syscall('sys_clearBit[AB]',					0x9F18+$ofs);
-define_syscall('BitShifter_setBit[AB]',				0x9F47+$ofs);
-define_syscall('BitShifter_clearBit[AB]',			0x9F73+$ofs);
-define_syscall('BitShifter_testBit[AB]',			0x9FA0+$ofs);
-define_syscall('sys_lampOp',						0x9FD7+$ofs);
+VERSION_OFFSETS(-145,0);
+define_syscall('memCopy[AXY]',							0xA6B9+$VO);	# A628
+define_syscall('memClear[AY]',							0xA6C4+$VO);
+define_syscall('memClear[XY]',							0xA6D1+$VO);
+define_syscall('addEntropy',							0xA6EC+$VO);
+define_syscall('CS=randomBit',							0xA70B+$VO);
+define_syscall('A=100xGetRandom<[A]?',					0xA713+$VO);
+define_syscall('A=getRandom', 							0xA725+$VO);
+define_syscall('A=getRandom[A]',          				0xA75B+$VO);
+define_syscall('solCmd[A]_wait',						0xA84D+$VO);
+define_syscall('solCmd[A]', 							0xA895+$VO);
+define_syscall('memSet[ABY]',							0xA6E3+$VO);
+define_syscall('pulseFlasher[A]',						0xA9EC+$VO);	# A95B
+define_syscall('setGIbrightness80[A]',					0xAB43+$VO);
+define_syscall('setGIbrightness81[A]',					0xAB4B+$VO);
+define_syscall('setGIbrightness[AB]',     				0xAB53+$VO);
+define_syscall('sys_setGIbrightness[AB]',				0xAB56+$VO);
+define_syscall('X=^tableElt[AX]',						0xAC5B+$VO);
+define_syscall('X=^tableElt[ABX]',						0xAC5E+$VO);
+define_syscall('X=^tableElt[AXY]',						0xAC89+$VO);
+define_syscall('bitgroup[D]_clearAll',					0xAE09+$VO);
+define_syscall('bitgroup[D]_allSet?',					0xAE19+$VO);
+define_syscall('bitgroup[D]_allOff?',					0xAE29+$VO);
+define_syscall('bitgroupOp_bitSet?',					0xAE39+$VO);
+define_syscall('bitgroupOp_bitClear?',					0xAE46+$VO);
+define_syscall('bitgroupOp[ABXY]',						0xAE53+$VO);
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	define_syscall('suspendThread',					0x97C5);		# different code Alpha/DMD
-	$ofs = -332;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	define_syscall('suspendThread',					0x98BB);
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
+VERSION_OFFSETS(-163,0);
+define_syscall('sys_initGameStartVariables',			0xB170+$VO);	# B0CD -163
+define_syscall('A=playerUp',							0xB1AB+$VO);	# B11E?
+define_syscall('setPlayerUp[A]',						0xB1BD+$VO);	
+define_syscall('A=ballInPlay_lastBall?',				0xB1D1+$VO);	# B12E
+define_syscall('serveBall_and_exit',					0xB213+$VO);	# B170
+define_syscall('serveBall',								0xB218+$VO);	# B175
+define_syscall('ballServe_displayFX',					0xB224+$VO);
+define_syscall('qualifyPlayfield',						0xB2C7+$VO);	# B224
+define_syscall('playfieldQualified?',					0xB2DF+$VO);
 
-define_syscall('lampOn[A]',							0xA03A+$ofs);	# 9F6D
-define_syscall('lampOnBlinkOff[A]',					0xA055+$ofs);
-define_syscall('lampOff[A]',						0xA063+$ofs);
-define_syscall('lamp[A]On?',						0xA0B9+$ofs);
+VERSION_OFFSETS(-213,0);
+define_syscall('addScore[A]',							0xBA99+$VO);
+define_syscall('addScore_unknown_2',					0xBABB+$VO);
+define_syscall('addScore[ABX]',							0xBACD+$VO);
+define_syscall('scoreMultiplier_error',					0xBADA+$VO);
+define_syscall('addScore_AXY',							0xBAE0+$VO);
+define_syscall('addScore_done',							0xBAE8+$VO);
+define_syscall('addScore[ABXY]',						0xBAEA+$VO);	# BA15 -213
+define_syscall('playSound[Y]',							0xBDE8+$VO);
+define_syscall('playSound[A]',							0xBDFB+$VO);
+define_syscall('abortBackgroundMusic??',				0xC095+$VO);
+define_syscall('ensureBackgroundMusic[A]',				0xC0BC+$VO);
+define_syscall('setBackgroundMusic[A]',					0xC0CA+$VO);
+define_syscall('A=backgroundMusic',						0xC0D7+$VO);
+define_syscall('changeBackgroundMusic[A]',  			0xC0DB+$VO);
+define_syscall('soundCardCmd[AB]',						0xC0ED+$VO);
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = -145;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
-define_syscall('memCopy[AXY]',						0xA6B9+$ofs);	# A628
-define_syscall('memClear[AY]',						0xA6C4+$ofs);
-define_syscall('memClear[XY]',						0xA6D1+$ofs);
-define_syscall('addEntropy',						0xA6EC+$ofs);
-define_syscall('CS=randomBit',						0xA70B+$ofs);
-define_syscall('A=100xGetRandom<[A]?',				0xA713+$ofs);
-define_syscall('A=getRandom', 						0xA725+$ofs);
-define_syscall('A=getRandom[A]',          			0xA75B+$ofs);
-define_syscall('solCmd[A]_wait',					0xA84D+$ofs);
-define_syscall('solCmd[A]', 						0xA895+$ofs);
-define_syscall('memSet[ABY]',						0xA6E3+$ofs);
-define_syscall('pulseFlasher[A]',					0xA9EC+$ofs);	# A95B
-define_syscall('setGIbrightness80[A]',				0xAB43+$ofs);
-define_syscall('setGIbrightness81[A]',				0xAB4B+$ofs);
-define_syscall('setGIbrightness[AB]',     			0xAB53+$ofs);
-define_syscall('sys_setGIbrightness[AB]',			0xAB56+$ofs);
-define_syscall('X=^tableElt[AX]',					0xAC5B+$ofs);
-define_syscall('X=^tableElt[ABX]',					0xAC5E+$ofs);
-define_syscall('X=^tableElt[AXY]',					0xAC89+$ofs);
-define_syscall('bitgroup[D]_clearAll',				0xAE09+$ofs);
-define_syscall('bitgroup[D]_allSet?',				0xAE19+$ofs);
-define_syscall('bitgroup[D]_allOff?',				0xAE29+$ofs);
-define_syscall('bitgroupOp_bitSet?',				0xAE39+$ofs);
-define_syscall('bitgroupOp_bitClear?',				0xAE46+$ofs);
-define_syscall('bitgroupOp[ABXY]',					0xAE53+$ofs);
+VERSION_OFFSETS(-273,0);
+define_syscall('abortDisplayFX[A]??',					0xC6E0+$VO);	# C5CF -273
+define_syscall('displayFX[A]',							0xC791+$VO);
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = -163;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
-define_syscall('sys_initGameStartVariables',		0xB170+$ofs);	# B0CD -163
-define_syscall('A=playerUp',						0xB1AB+$ofs);	# B11E?
-define_syscall('setPlayerUp[A]',					0xB1BD+$ofs);	
-define_syscall('A=ballInPlay_lastBall?',			0xB1D1+$ofs);	# B12E
-define_syscall('serveBall_and_exit',				0xB213+$ofs);	# B170
-define_syscall('serveBall',							0xB218+$ofs);	# B175
-define_syscall('ballServe_displayFX',				0xB224+$ofs);
-define_syscall('qualifyPlayfield',					0xB2C7+$ofs);	# B224
-define_syscall('playfieldQualified?',				0xB2DF+$ofs);
-
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = -213;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
-define_syscall('addScore[A]',						0xBA99+$ofs);
-define_syscall('addScore_unknown_2',				0xBABB+$ofs);
-define_syscall('addScore[ABX]',						0xBACD+$ofs);
-define_syscall('scoreMultiplier_error',				0xBADA+$ofs);
-define_syscall('addScore_AXY',						0xBAE0+$ofs);
-define_syscall('addScore_done',						0xBAE8+$ofs);
-define_syscall('addScore[ABXY]',					0xBAEA+$ofs);	# BA15 -213
-define_syscall('playSound[Y]',						0xBDE8+$ofs);
-define_syscall('playSound[A]',						0xBDFB+$ofs);
-define_syscall('abortBackgroundMusic??',			0xC095+$ofs);
-define_syscall('ensureBackgroundMusic[A]',			0xC0BC+$ofs);
-define_syscall('setBackgroundMusic[A]',				0xC0CA+$ofs);
-define_syscall('A=backgroundMusic',					0xC0D7+$ofs);
-define_syscall('changeBackgroundMusic[A]',  		0xC0DB+$ofs);
-define_syscall('soundCardCmd[AB]',					0xC0ED+$ofs);
-
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = -273;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
-define_syscall('abortDisplayFX[A]??',				0xC6E0+$ofs);	# C5CF -273
-define_syscall('displayFX[A]',						0xC791+$ofs);
-
-#if ($WMS_System eq 'WPC(Alphanumeric)') {							# clashes with obj-based migration
-#	$ofs = -248;
-#} elsif ($WMS_System eq 'WPC(DMD)') {
-#	$ofs = 0;
+#if ($WPCV eq 'WPC(Alphanumeric)') {							# clashes with obj-based migration
+#	$VO = -248;
+#} elsif ($WPCV eq 'WPC(DMD)') {
+#	$VO = 0;
 #} else {
-#	die("WPC.API: $WMS_System not yet implemented\n");
+#	die("WPC.API: $WPCV not yet implemented\n");
 #}
-#define_syscall('A=displayFX',						0xCA90+$ofs);	# C998
+#define_syscall('A=displayFX',							0xCA90+$VO);	# C998
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = -329;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
-define_syscall('resetBallSearchTimer[A]',			0xCF4B+$ofs);	# CE02 -329
+VERSION_OFFSETS(-329,0);
+define_syscall('resetBallSearchTimer[A]',				0xCF4B+$VO);	# CE02 -329
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = -2549;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
-
-define_syscall('rotLeft',							0xFDA2+$ofs,'GB');
-define_syscall('fill', 								0xFDB4+$ofs,'GB');
-define_syscall('unknownBitgroupOp1',				0xFDC6+$ofs,'GB');
-define_syscall('unknownBitgroupOp2',				0xFDD8+$ofs,'GB');
-define_syscall('MBD_callHandler[A]',               	0xFDFC+$ofs,'B',3);          # NOTE 3: must only be called from PG#3B
-define_syscall('switchActive[B]?',					0xFE0D+$ofs);
+VERSION_OFFSETS(-2549,0);
+define_syscall('rotLeft',								0xFDA2+$VO,'GB');
+define_syscall('fill', 									0xFDB4+$VO,'GB');
+define_syscall('unknownBitgroupOp1',					0xFDC6+$VO,'GB');
+define_syscall('unknownBitgroupOp2',					0xFDD8+$VO,'GB');
+define_syscall('MBD_callHandler[A]',               		0xFDFC+$VO,'B',3);          # NOTE 3: must only be called from PG#3B
+define_syscall('switchActive[B]?',						0xFE0D+$VO);
 
 #----------------------------------------------------------------------
 # Group 3:
 #	- different syscalls in different subversions
 #----------------------------------------------------------------------
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
- define_syscall('A=ballInPlay',			       		0xB327);
- define_syscall('ISR_lampMatrix_MUX',	       		0xD4E5);
- define_syscall('syscall_DD3B',						0xDD3B,'B');			# FH
- define_syscall('syscall_F365',						0xF365,'B');			# FH
- define_syscall('syscall_F377',						0xF377,'B');			# FH
- define_syscall('syscall_F389',						0xF389,'W');			# FH
+if ($WPCV eq 'WPC(Alphanumeric)') {
+ define_syscall('A=ballInPlay',			       			0xB327);
+ define_syscall('ISR_lampMatrix_MUX',	       			0xD4E5);
+ define_syscall('syscall_DD3B',							0xDD3B,'B');			# FH
+ define_syscall('syscall_F365',							0xF365,'B');			# FH
+ define_syscall('syscall_F377',							0xF377,'B');			# FH
+ define_syscall('syscall_F389',							0xF389,'W');			# FH
 }
 
-if ($WMS_System eq 'WPC(DMD)') {
- define_syscall('A=EBpending', 			      		0xB3CA);
- define_syscall('printString[BXY]',					0xB97B);
- define_syscall('lampFX[A]',						0xCC3A);
- define_syscall('setDMDanimation_playing[A]',		0xCAB0);
- define_syscall('A==DMDanimation_playing?',			0xCAB4);
- define_syscall('setDMDfunction[A]', 				0xCABD);
- define_syscall('A=lastDMDanimation_played??',		0xCADE);
- define_syscall('replay_last_DMDanimation??',		0xCAE2);
- define_syscall('syscall_D799',						0xD799,'WBW');
- define_syscall('ISR_lampMatrix_MUX',	       		0xDAC6);
- define_syscall('IRQ_timer_handler??',				0xECCA);
- define_syscall('NE=gameDisabled',					0xF759);
- define_syscall('wait4_Thread#0041_not_running',	0xF766);
- define_syscall('lastBall?',						0xF7EF,'');
- define_syscall('growJackpot[A]',					0xFA7D);
- define_syscall('addBonus_1130',					0xFAA8);
- define_syscall('addBonus_3330',					0xFAAE);
- define_syscall('addBonus_5530',					0xFAB4);
- define_syscall('addBonus_9930',					0xFABA);
- define_syscall('addBonus[A]',						0xFABE);
+if ($WPCV eq 'WPC(DMD)') {
+ define_syscall('A=EBpending', 			      			0xB3CA);
+ define_syscall('printString[BXY]',						0xB97B);
+ define_syscall('lampFX[A]',							0xCC3A);
+ define_syscall('setDMDanimation_playing[A]',			0xCAB0);
+ define_syscall('A==DMDanimation_playing?',				0xCAB4);
+ define_syscall('setDMDfunction[A]', 					0xCABD);
+ define_syscall('A=lastDMDanimation_played??',			0xCADE);
+ define_syscall('replay_last_DMDanimation??',			0xCAE2);
+ define_syscall('syscall_D799',							0xD799,'WBW');
+ define_syscall('ISR_lampMatrix_MUX',	       			0xDAC6);
+ define_syscall('IRQ_timer_handler??',					0xECCA);
+ define_syscall('NE=gameDisabled',						0xF759);
+ define_syscall('wait4_Thread#0041_not_running',		0xF766);
+ define_syscall('lastBall?',							0xF7EF,'');
+ define_syscall('growJackpot[A]',						0xFA7D);
+ define_syscall('addBonus_1130',						0xFAA8);
+ define_syscall('addBonus_3330',						0xFAAE);
+ define_syscall('addBonus_5530',						0xFAB4);
+ define_syscall('addBonus_9930',						0xFABA);
+ define_syscall('addBonus[A]',							0xFABE);
 }
 
 # non-global
 
-if ($WMS_System eq 'WPC(DMD)') {
-	define_label('sys_tilt',						0x5921, 0x39);			# T2
+if ($WPCV eq 'WPC(DMD)') {
+	define_label('sys_tilt',							0x5921, 0x39);			# T2
 }
 
-if ($WMS_System eq 'WPC(Alphanumeric)') {
-	$ofs = 1902;
-} elsif ($WMS_System eq 'WPC(DMD)') {
-	$ofs = 0;
-} else {
-	die("WPC.API: $WMS_System not yet implemented\n");
-}
-#define_syscall('sys_rotLeft_AB',						0x66F5+$ofs, '', 3);
-#define_syscall('sys_fill_AB',							0x6706+$ofs, '', 3);
+#if ($WPCV eq 'WPC(Alphanumeric)') {
+#	$VO = 1902;
+#} elsif ($WPCV eq 'WPC(DMD)') {
+#	$VO = 0;
+#} else {
+#	die("WPC.API: $WPCV not yet implemented\n");
+#}
+#define_syscall('sys_rotLeft_AB',						0x66F5+$VO, '', 3);
+#define_syscall('sys_fill_AB',							0x6706+$VO, '', 3);
 
-#define_syscall('A=MBD_ballsFound==all?',				0x7031+$ofs, '', 3);	
-#define_syscall('A=MBD_ballsLocked[A]==1?',				0x7041+$ofs, '', 3);	
-#define_syscall('A=MBD_lockEnabled[A]==1?',				0x704C+$ofs, '', 3);	
-#define_syscall('A=ballsInTrough-troughIdle?',			0x7057+$ofs, '', 3);	
-#define_syscall('A=MBD_ballsMissing-allFound?',			0x7065+$ofs, '', 3);	# 77C8 + 1891
+#define_syscall('A=MBD_ballsFound==all?',				0x7031+$VO, '', 3);	
+#define_syscall('A=MBD_ballsLocked[A]==1?',				0x7041+$VO, '', 3);	
+#define_syscall('A=MBD_lockEnabled[A]==1?',				0x704C+$VO, '', 3);	
+#define_syscall('A=ballsInTrough-troughIdle?',			0x7057+$VO, '', 3);	
+#define_syscall('A=MBD_ballsMissing-allFound?',			0x7065+$VO, '', 3);	# 77C8 + 1891
 
 #----------------------------------------------------------------------
 # System Hooks
@@ -741,7 +693,7 @@ $Error[0x04] = 'ERR_SWI3_caught';
 $Error[0x05] = 'ERR_SWI2_caught';
 $Error[0x06] = 'ERR_NMI_caught';
 $Error[0x07] = 'ERR_stack_too_deep_for_sleep';
-$Error[0x08] = 'ERR_Could_not_allocate_block_for_large_stack!';
+$Error[0x08] = 'ERR_Could_not_allocate_block_for_large_stack';
 $Error[0x09] = 'ERR_free_block_invalid_argument_0';
 $Error[0x0A] = 'ERR_Thread_not_on_list_expected';
 $Error[0x0B] = 'ERR_Request_to_Free_Ram_Block_failed';
@@ -761,7 +713,7 @@ $Error[0x18] = 'ERR_Lamp_string_number_specified_is_too_high';
 $Error[0x19] = 'ERR_End_Bracket_while_NOT_in_lamp_string_if_statement';
 $Error[0x1A] = 'ERR_Lamp_string_operator_out_of_range';
 $Error[0x1B] = 'ERR_Lamp_string_range_op_got_lamps_in_wrong_order';
-$Error[0x1C] = 'ERR_endif_encountered_before_"then"_on_if_in_lamp_string';
+$Error[0x1C] = 'ERR_endif_encountered_before_then_on_if_in_lamp_string';
 $Error[0x1D] = 'ERR_Bitshifter_invalid_buffer_offset';
 $Error[0x1E] = 'ERR_get_switch_bit_munged_its_parameters';
 $Error[0x1F] = 'ERR_Switch_number_passed_to_switch_primitive_too_high';
