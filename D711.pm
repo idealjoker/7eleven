@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu Jun 12 09:18:58 2025
+#					 dlm: Thu Jun 12 10:47:52 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 438 2 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 438 60 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -434,8 +434,8 @@ sub load_ROM($$@)
         @ROM[($saddr+$ofs)..($saddr+$ofs+$nread-1)] = unpack('C*',$buf);
         $eaddr = $saddr + $ofs + $nread - 1;
     }
-##    die("$fn: Invalid ROM image (size mismatch $lenK,$nread)\n")
-##    	unless $lenK==-1 && $nread==1024;
+    die("$fn: Invalid ROM image (size mismatch $lenK,$nread)\n")
+    	unless !defined($RPG) || ($lenK==-1 && $nread==1024);
     close(RF);
     
     $MIN_ROM_ADDR = $saddr unless defined($MIN_ROM_ADDR);
