@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri Jun 13 11:24:31 2025
+#					 dlm: Fri Jun 13 17:43:04 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 310 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 310 21 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -307,7 +307,7 @@
 # END OF HISTORY
 
 # TO-DO:
-#	! follow indirect extended addresses
+#	- use strict vars
 #   - remove all system specific code from this file
 #   - make all def_ routines return values
 #   - add more consistency checks like for predefined OP as in def_byteblock_hex()

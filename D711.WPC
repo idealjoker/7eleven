@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Thu Jun 12 21:36:51 2025
+#                    dlm: Fri Jun 13 17:30:14 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 90 64 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 788 2 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -88,6 +88,9 @@
 #				  - BUG: WPC reference +2 page labels were not created
 #						 unless .DR came after .DB of this ref
 #				  - BUG: define_syscall did not set correct page
+#	Jun 13, 2025: - BUG: _SKIP labels not removed in case of two
+#						 labels with same code addr in 2 different
+#						 pages
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -495,12 +498,12 @@ sub apply_magic_WPC($$)
 ##	$systemAliases{'Lamp#0'} = '$00';											# invalid Lamp#0
 
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
-		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {	# 1) JMP *+3 
+		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {	# 1) JMP *+3
 			undef($OP[$addr]);													# generate postfix tag
 			push(@{$OPA[$addr-3]},'& _SKIP');
 			splice(@{$OPA[$addr]},0,1);
 			my($l) = ($LBL[$addr+3] =~ m{^[0-9A-Fa-f]{2}:(.*)$});
-			undef($LBL[$addr+3])												# should probably also undef Lbl!
+			undef($Lbl{$LBL[$addr+3]}),undef($LBL[$addr+3]),undef($Lbl_refs{$l}),
 				unless ($Lbl_refs{$l}+$Lbl_refs{$LBL[$addr+3]} > 1);			# (this is a hack; all refs should have prefix)
 			undef(@{$OI[$addr]});
 			push(@{$OI[$addr-3]},sprintf('7E%04X',$addr+3));
@@ -789,7 +792,7 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 	if ($decoded[$Address] || $decoded[$Address+2]) {										# already decoded
 ##		printf(STDERR "%04X: def_WPC_ref($pointee_lbl): munging pre-existing analysis $OP[$Address]/$OP[$Address+2]\n",$Address);
 		if ($decoded[$Address]) {
-			die unless ($OP[$Address] eq '.DW');
+			die($OP[$Address]) unless ($OP[$Address] eq '.DW');
 		}
 		if ($decoded[$Address+2]) {
 			die unless ($OP[$Address+2] eq '.DB');
