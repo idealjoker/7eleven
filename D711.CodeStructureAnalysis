@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Thu Jun 12 09:25:56 2025
+#                    dlm: Thu Jun 12 21:34:51 2025
 #                    (c) idealjoker@mailbox.org
-#                    uE-Info: 36 82 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 40 35 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -33,7 +33,11 @@
 #	Jun 11, 2025: - removed unused undo_code_structure()
 #	Jun 12, 2025: - BUG: nested IFs could have bad nesting because ELSE/ENDIF
 #						 were not recognized as implicit labels
-#				  - bug cs_while_loop is used in WVM mode and had to be re-enabled
+#				  - BUG: cs_while_loop is used in WVM mode and had to be re-enabled
+#				  - re-enabled allowing if/else blocks to end with JMP
+#				  - massively cleaned up exit_from_block
+#				  - re-enabled JMP to lex labels, which have not yet been implemented
+#					in the compiler
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -144,6 +148,12 @@ sub same_block($$@)
 
 #----------------------------------------------------------------------
 # finds exits from block
+#	- loops are allowed multiple exits to a single target
+#	- if/else blocks are allowed a JMP as last statement
+#	- structured coding does not allow a JMP at the end of a then
+#	  block if there is also an else block
+#	- for coding simplicity, made possible because the resulting code 
+#	  will compile just fine, a JMP at the end of all if blocks is allowed
 #----------------------------------------------------------------------
 
 sub exit_from_block($$$)
@@ -156,22 +166,31 @@ sub exit_from_block($$$)
 		printf(STDERR "\t%04X: $OP[$a] $OPA[$a][0] (%04X,%04X)\n",$a,$la,$ha)
 			if $trace;
 
-		my($trg);
-		if (defined($OPA[$a][0])) {
-			$trg = $OPA[$a][0];
-			$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
-			next unless numberp($trg);												# LOOPS already decoded => BRA to _ExitLoop and _NextLoop are okay
-		}
+##		my($trg);																	# this does not make sense except for jumps and branches
+##		if (defined($OPA[$a][0])) {
+##			$trg = $OPA[$a][0];
+##			$trg = hex($1) if ($trg =~ m{^\$([0-9A-F]{4})$});
+##			next unless numberp($trg);												# LOOPS already decoded => BRA to _ExitLoop and _NextLoop are okay
+##		}
 
+		my($trg);																	# jump or branch target
 		if ($if_block) {															# _IF/_ELSE/_ENDIF
         	print(STDERR "\ttesting for JMP outside if-block...\n") if $trace;
-        	if ($a<$ha && isMember($OP[$a],'JMP')) {								# _IF/_ENDIF has $ha at _ENDIF where first stmt outside if is
-        		my($trg) = $OPA[$a][0];
+        	if ($OP[$a] eq 'JMP') {													# test for JMP with target outside block
+        		$trg = $OPA[$a][0];													# allowed to end with JMP statement
         		$trg = hex($') if ($trg =~ m{^\$});
-        		return 1 if (numberp($trg) && ($trg<$la || $trg>$ha));
+        		next unless numberp($trg);											# allow _ExitLooop, etc.
+##        		printf(STDERR "Jump to Lex#%04X <$LEX_LABEL[$trg]> at %04X\n",$trg,$a),next if $LEX_LABEL[$trg];											# not an exit if it's a jump to a nearby RTS or ExitThread
+        		return 1 if ($a<$la-2 && ($trg<$la || $trg>$ha));					# a true exit
         	}
-			next unless ($OP[$a] =~ m{^L?B..$}  && !($OP[$a] =~ m{^L?BSR$}));		# not an exit unless it's a branch
+			next unless ($OP[$a] =~ m{^L?B..$}  && !($OP[$a] =~ m{^L?BSR$}));		# not an exit unless it's a branch op
         	print(STDERR "\thandling branches...\n") if $trace;
+			unless (numberp($trg)) {
+	       		$trg = $OPA[$a][0];													# calc trg for branches
+    	   		$trg = hex($') if ($trg =~ m{^\$});
+    	   		next unless numberp($trg);
+        		next if $LEX_LABEL[$trg];
+    	   	}
 			next if $LEX_LABEL[$trg];												# not an exit if it's a branch to a nearby RTS
 			if ($if_block == 1) {													# _IF/_ELSE or _IF/_ENDIF
 				next if $a == $la;													# _IF always starts with conditional branch
@@ -201,9 +220,11 @@ sub exit_from_block($$$)
 	    } else {																	# _LOOP
         	print(STDERR "\ttesting for BRA/JMP outside loop...\n") if $trace;
         	if (isMember($OP[$a],'BRA','JMP')) {
-        		my($trg) = $OPA[$a][0];
+        		$trg = $OPA[$a][0];
         		$trg = hex($') if ($trg =~ m{^\$});
-        		return 1 if (numberp($trg) && ($trg<$la || $trg>$ha));
+        		next unless numberp($trg);
+        		next if $LEX_LABEL[$trg];
+        		return 1 if ($trg<$la || $trg>$ha);
         	}
         	print(STDERR "\ttesting for RTS, RTI...\n") if $trace;
         	return 1 if isMember($OP[$a],'RTS','RTI');								# RTS, RTI are exits
@@ -213,6 +234,13 @@ sub exit_from_block($$$)
 ##			die("$OP[$a] $OPA[$a][0] (== $Lbl{'exitThread'}") if $a == 0x5C58;						
 
 			next unless ($OP[$a] =~ m{^L?B..$} && !($OP[$a] =~ m{^L?BSR$})); 		# branches may be exits (NB: >RTS and <RTS are not!!!)
+
+			unless (numberp($trg)) {
+	       		$trg = $OPA[$a][0];													# calc trg for branches
+    	   		$trg = hex($') if ($trg =~ m{^\$});
+    	   		next unless numberp($trg);
+        		next if $LEX_LABEL[$trg];
+    	   	}
 
 			unless ($IND[$a] == $IND[$ha]) {										# branches are always exit if they are at a different indentation
 				$allowed = $trg unless defined($allowed);							#	(this prevents branches to EXITLOOP of outer loop)
@@ -665,8 +693,7 @@ sub process_code_structure($$)
 	#------------------------------------------------------------
 
 	for (my($addr)=$saddr; $addr<=$eaddr; $addr++) {
-##		next unless (($OP[$addr] eq 'JMP' || $OP[$addr] =~ m{^L?B..$}) && !($OP[$addr] =~ m{^L?BSR$}));
-		next unless ($OP[$addr] =~ m{^L?B..$}) && !($OP[$addr] =~ m{^L?BSR$});
+		next unless (($OP[$addr] eq 'JMP' || $OP[$addr] =~ m{^L?B..$}) && !($OP[$addr] =~ m{^L?BSR$}));
 		my($trg) = ($OPA[$addr][0] =~ m{\$([0-9A-Fa-f]+)$});	
 		$trg = hex($trg);
 		die unless numberp($trg);

@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Thu Jun 12 09:11:54 2025
+#                    dlm: Thu Jun 12 21:40:37 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 40 41 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 43 67 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -40,6 +40,8 @@
 #				  - added VERSION_OFFSETS
 #	Jun  9, 2025: - another ERR alias with illegal character
 #	Jun 10, 2025: - added exitThread
+#	Jun 12, 2025: - added syscall 3B:BYU=MBD_dataRefs[A] to enable disassembly of
+#					the switch table
 # END OF HISTORY
 
 #======================================================================
@@ -598,6 +600,9 @@ if ($WPCV eq 'WPC(DMD)') {
 #define_syscall('A=MBD_lockEnabled[A]==1?',				0x704C+$VO, '', 3);	
 #define_syscall('A=ballsInTrough-troughIdle?',			0x7057+$VO, '', 3);	
 #define_syscall('A=MBD_ballsMissing-allFound?',			0x7065+$VO, '', 3);	# 77C8 + 1891
+
+VERSION_OFFSETS(1916,0);
+define_syscall('3B:BYU=MBD_dataRefs[A]', 	         	0x7076+$VO, '', 3); # 77F2 + 1916
 
 #----------------------------------------------------------------------
 # System Hooks

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Thu Jun 12 15:51:52 2025
+#                    dlm: Thu Jun 12 21:36:51 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 89 62 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 90 64 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -87,6 +87,7 @@
 #	Jun 12, 2025: - BUG: disassemble_sycalls() did not set page
 #				  - BUG: WPC reference +2 page labels were not created
 #						 unless .DR came after .DB of this ref
+#				  - BUG: define_syscall did not set correct page
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -1062,7 +1063,11 @@ sub define_syscall($$@)
 	my($lbl,$addr,$args,$note) = @_;
 	$args = '' unless defined($args);
 
+	my($pg,$nm) = ($lbl =~ m{^([0-9A-Fa-f]{2}):(.*)$});
+	select_WPC_RPG(hex($pg))
+		if defined($pg);
 	define_label($lbl,$addr);
+	
 	push(@SYSCALL,$lbl);
 	$SC_ADDR[$#SYSCALL] = $addr;
 	$SC_ARGS[$#SYSCALL] = $args;

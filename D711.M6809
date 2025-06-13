@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Thu Jun 12 09:05:26 2025
+#                    dlm: Thu Jun 12 21:35:55 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 57 26 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 58 42 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -55,6 +55,7 @@
 #	Jun  2, 2025: - added debug output
 #	Jun 10, 2025: - changed solenoid numbers from hex to dec for consistency with
 #					[C711]
+#	Jun 12, 2025: - improved error message
 # HISTORY END
 
 # NOTES:
@@ -690,7 +691,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		next   if op_EXT(0x7C,$addr,$ind,'INC',1); 	next if op_EXT(0x7D,$addr,$ind,'TST',1); 
 		if ($rv = op_EXT(0x7E,$addr,$ind,'JMP')) {												# handle JMP target syscalls
 			for (my($sc)=0; $sc<@SYSCALL; $sc++) {
-				die("syscall $SYSCALL[$sc] undefined -- replaced by $LBL[$SC_ADDR[$sc]]\n")
+				die("Undefined syscall label <$SYSCALL[$sc]>\n")
 					unless defined($Lbl{$SYSCALL[$sc]}) || ($SC_NOTE[$sc] == 3 && $_cur_RPG != 0x3B);		
 				next unless $SC_NOTE[$sc] == 2;													# NOTE 2: JMP target syscall
 				last if disassemble_syscall($sc,$rv);
@@ -739,7 +740,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			my($oaddr) = $addr - 3;
 			my($sc);
 			for ($sc=0; $sc<@SYSCALL; $sc++) {
-				die("syscall $SYSCALL[$sc] undefined -- replaced by $LBL[$SC_ADDR[$sc]]\n")
+				die("Undefined syscall label <$SYSCALL[$sc]>\n")
 					unless defined($Lbl{$SYSCALL[$sc]}) || ($SC_NOTE[$sc] == 3 && $_cur_RPG != 0x3B);		
 				next if $SC_NOTE[$sc] == 2;														# NOTE 2: JMP target syscall
 				if (disassemble_syscall($sc,$rv)) {

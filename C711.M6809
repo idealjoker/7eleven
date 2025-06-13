@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Thu Jun 12 09:01:56 2025
+#                    dlm: Thu Jun 12 21:33:58 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 22 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 23 46 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -19,6 +19,8 @@
 #                 - BUG: wrong opcodes for 16-bit LD instructions
 #   Jun 10, 2025: - BUG: extended mode postbyte was wrong for reg D
 #                 - BUG: !exitThread did not respect Note (JMP)
+#	Jun 12, 2025: - added support for JMP lexical labels
+#				  - BUG: LBRA had wrong opcode
 # HISTORY END
 
 use strict vars;
@@ -840,14 +842,25 @@ sub asm_6809_op($$@)
         }
 
         if ($am eq 'O') {                                                               # optimizable 2-byte absolute address (2nd default, cannot be
-            die("Invalid lexical label <$OP_ARG[0]> for $OP instruction at input line $.\n")        # combined with s or L); used for syscalls, so no ARG# checking
-                if ($OP_ARG[0] =~ m{^[<>]});
+##          die("Invalid lexical label <$OP_ARG[0]> for $OP instruction at input line $.\n")        # combined with s or L); used for syscalls, so no ARG# checking
+##              if ($OP_ARG[0] =~ m{^[<>]});
             if ($OP eq 'JSR') {
                 $JSR_TRG{$OP_ARG[0]}++;
             } else {
                 die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
                     if (@OP_ARG > 1);
             }
+			if ($OP eq 'JMP') {
+				if ($OP_ARG[0] eq '<RTS') { 												# lexical labels
+					$OP_ARG[0] = code_addr($last_RTS_addr);
+				} elsif ($OP_ARG[0] eq '>RTS') {
+					push(@forward_lexical_RTS_branch,$ADDR+1);
+					$OP_ARG[0] = 'no RTS found after branch to >RTS';
+				} elsif ($OP_ARG[0] eq '>!exitThread') {
+					push(@forward_lexical_exitThread_branch,$ADDR+1);
+					$OP_ARG[0] = 'no !exitThread found after JMP to >!exitThread';
+	            }
+	        }
             store_opc($opc[$i]);
             $ROM[$ADDR++] = "1${OPTIMIZABLE_LABEL_PREFIX}${EIGHT_BIT_LABEL_PREFIX}$OP_ARG[0]";  # NB: 1 is byte offset
             unless ($OP_ARG[$#OP_ARG] =~ m{^[#\$%0-9]}) {                               # set type of jump target
@@ -961,7 +974,9 @@ sub compile_asm()
         	my($a) = pop(@forward_lexical_RTS_branch);
         	if ($a < 0) {																# long branch
 	            $ROM[-$a] = $SIXTEEN_BIT_LABEL_PREFIX . code_addr($ADDR - 1);
-        	} else {																	# short branch
+        	} elsif ($ROM[$a-1] == 0x7E) {												# JMP
+        		$ROM[$a]  = code_addr($ADDR - 1);
+        	} else {																	# short branch 
 	            $ROM[$a]  = $EIGHT_BIT_LABEL_PREFIX . code_addr($ADDR - 1);
 	        }
         }
@@ -1051,7 +1066,7 @@ sub compile_asm()
 	return 1 if asm_6809_op('BGT','s',0x2E) || asm_6809_op('BLE','s',0x2F);
 	return 1 if asm_6809_op('Btrue','s',0x24) || asm_6809_op('Bfalse','s',0x25);
 
-	return 1 if asm_6809_op('LBRA','L',0x1020);
+	return 1 if asm_6809_op('LBRA','L',0x16);
 	return 1 if asm_6809_op('LBHI','L',0x1022) || asm_6809_op('LBLS','L',0x1023);
 	return 1 if asm_6809_op('LBCC','L',0x1024) || asm_6809_op('LBCS','L',0x1025);
 	return 1 if asm_6809_op('LBNE','L',0x1026) || asm_6809_op('LBEQ','L',0x1027);
@@ -1061,24 +1076,28 @@ sub compile_asm()
 	return 1 if asm_6809_op('LBGT','L',0x102E) || asm_6809_op('LBLE','L',0x102F);
 	return 1 if asm_6809_op('LBtrue','L',0x1024) || asm_6809_op('LBfalse','L',0x1025);
 
-	return 1 if asm_6809_op('JMP','DXO',0x0E,0x6E,0x7E);
 	return 1 if asm_6809_op('BSR','s',0x8D);
-
+	return 1 if asm_6809_op('LBSR','L',0x17);
+	return 1 if asm_6809_op('JMP','DXO',0x0E,0x6E,0x7E);
+	
 	if (asm_6809_op('JSR','DXO',0x9D,0xAD,0xBD)) {							# System Call Handling
 
 		return 1 unless defined($SYSCALL{$OP_ARG[0]});
 
-		if ($OP_ARG[0] eq 'exitThread') {
-##			die(sprintf("%X: $OP @OP_ARG",$ADDR));
+		if ($OP_ARG[0] eq 'exitThread') {									# handle !exitThread
+##			printf(STDERR "%X: $OP @OP_ARG\n",code_addr($ADDR-3));
 			die unless $ROM[$ADDR-3] == 0xBD;								# replace JSR (from expand_bangs) with JMP
 			$ROM[$ADDR-3] = 0x7E;
 
 			$last_exitThread_addr = $ADDR-3;
 	        while (@forward_lexical_exitThread_branch) {
 	        	my($a) = pop(@forward_lexical_exitThread_branch);
+##	        	printf(STDERR "fixing %04X\n",code_addr($a));
 	        	if ($a < 0) {
 	        		$ROM[-$a] = $SIXTEEN_BIT_LABEL_PREFIX . code_addr($ADDR-3);
-	        	} else {
+	        	} elsif ($ROM[$a-1] == 0x7E) {								# JMP
+	   	    		$ROM[$a]  = code_addr($ADDR-3);
+	        	} else {													# branch
 	        		$ROM[$a] = $EIGHT_BIT_LABEL_PREFIX . code_addr($ADDR-3);
 	        	}
         	}

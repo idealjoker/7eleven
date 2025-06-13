@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu Jun 12 15:52:59 2025
+#					 dlm: Thu Jun 12 21:38:30 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 303 75 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 305 46 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -301,10 +301,13 @@
 #	Jun 10, 2025: - BUG: compilation options were output for every ROM page
 #	Jun 12, 2025: - moved init_system_11() to [disassemble_s11]
 #				  - BUG: dump_labels() did not deal correctly with WPC page
+#				  - added DMD aliases to output
+#				  - BUG: dump_labels output 00 pg
 # END OF HISTORY
 
 # TO-DO:
-#	! follow indirect extended address
+#	! allow JMP as final instruction in _IF blocks
+#	! follow indirect extended addresses
 #   - remove all system specific code from this file
 #   - make all def_ routines return values
 #   - add more consistency checks like for predefined OP as in def_byteblock_hex()
@@ -3221,6 +3224,7 @@ sub produce_output(@)
         output_aliases('Sound Aliases','Sound#%02X',@Sound);
         if (defined($_cur_RPG)) {
 	        output_aliases('Thread Aliases','Thread#%04X',@Thread);
+	        output_aliases('DMD Aliases','DMD#%02X',@DMD);
         } else {
 	        output_aliases('Thread Aliases','Thread#%02X',@Thread);
 	    }
@@ -3561,7 +3565,8 @@ sub dump_labels($)
 				my($pg) = $LblPg{$lbl};
 				my($laddr) = $Lbl{$lbl};
 				$laddr = hex($') if ($laddr =~ m{:});
-				printf("D711::overwriteLabel('$lbl',0x%04X,0x%02X);\n",$laddr,$LblPg{$lbl});
+				$pg = 0xFF unless ($laddr>=0x4000 && $laddr<0x8000);
+				printf("D711::overwriteLabel('$lbl',0x%04X,0x%02X);\n",$laddr,$pg);
 			} else {
 				printf("D711::overwriteLabel('$lbl',0x%04X);\n",$Lbl{$lbl});
 			}
