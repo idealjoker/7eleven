@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Thu Jun 12 13:50:07 2025
+#					 dlm: Fri Jun 13 09:48:04 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 28 38 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 92 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -26,6 +26,7 @@
 #	Jun  8, 2025: - BUG: D711.pm error messages were suppressed
 #	Jun 10, 2025: - BUG: DMD was not recognized
 #	Jun 12, 2025: - corrected comments
+#				  - added percentages to output
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -152,11 +153,14 @@ for (my($rpg)=$D711::start_page+1; $rpg<0x3E; $rpg++) {						# remaining game pa
 $D711::_cur_RPG = 0xFF;														# allow free space to be found in system code
 $decoded += &D711::produce_output(0x8000,0xFFFF,0);							# WPC System
 
-printf("; %5.1f KB decoded\n",$decoded/1024);
-printf("; %5.1f KB analysis gaps\n",$D711::gapBytes/1024)
-	if ($D711::gapBytes);
-printf("; %5.1f KB free\n",$D711::freeBytes/1024)
-	if ($D711::freeBytes);
+printf("; %5.1f KB (%.1f%%) decoded\n",
+	$decoded/1024,int(0.5+100*$decoded/($decoded+$D711::gapBytes)));
+printf("; %5.1f KB (%.1f%%) analysis gaps\n",
+	$D711::gapBytes/1024,int(0.5+100*$D711::gapBytes/($decoded+$D711::gapBytes)))
+		if ($D711::gapBytes);
+printf("; %5.1f KB (%.1f%%) free space\n",
+	$D711::freeBytes/1024,int(0.5+100*$D711::freeBytes/($decoded+$D711::gapBytes+$D711::freeBytes)))
+		if ($D711::freeBytes);
 
 exit(0);
 

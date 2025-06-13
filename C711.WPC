@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . W P C 
 #                    doc: Mon May 26 08:07:03 2025
-#                    dlm: Tue Jun 10 12:29:48 2025
+#                    dlm: Fri Jun 13 12:09:15 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 92 45 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 17 44 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -14,9 +14,12 @@
 #	Jun  2, 2025: - added unroll_structure() and asm_macros()
 #	Jun  8, 2025: - adapted to %System_Option
 #	Jun 10, 2025: - added ROM_Size option
+#	Jun 13, 2025: - added RPG initialization
 # HISTORY END
 
 use strict vars;
+
+our($RPG) = 0xFF;														# initialize RPG
 
 #----------------------------------------------------------------------
 # System Options

@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu Jun 12 21:38:30 2025
+#					 dlm: Fri Jun 13 11:24:31 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 305 46 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 310 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -303,10 +303,10 @@
 #				  - BUG: dump_labels() did not deal correctly with WPC page
 #				  - added DMD aliases to output
 #				  - BUG: dump_labels output 00 pg
+#				  - BUG: labels with simple arithmethic were output 
 # END OF HISTORY
 
 # TO-DO:
-#	! allow JMP as final instruction in _IF blocks
 #	! follow indirect extended addresses
 #   - remove all system specific code from this file
 #   - make all def_ routines return values
@@ -472,8 +472,8 @@ sub setLabel($$@)
     my($lbl,$addr,$pg) = @_;
 
 #	my($t) = ($lbl =~ m{Error}) || ($lbl =~ m{Panic});
-#	my($t) = ($addr == 0x82B6);
-	printf(STDERR "setLabel($lbl,\$%04X,\$%02X) [_cur_RPG=\$%02X]",$addr,$pg,$_cur_RPG) if $t;
+	my($t) = 0;
+	printf(STDERR "setLabel($lbl,\$%04X,$pg) [_cur_RPG=\$%02X]",$addr,$_cur_RPG) if $t;
 
 #	die(sprintf("trying to define empty label [setLabel($lbl,0x%04X,$allow_multiple)]\n",$addr))
 #		if (length($lbl) == 0);
@@ -532,8 +532,8 @@ sub setLabel($$@)
 sub overwriteLabel($$@)
 {
 	my($lbl,$addr,$pg) = @_;
-##	print(STDERR "overwriteLabel($lbl,$addr,$pg)\n");
-##	die if ($addr == 0x82B6);
+##	printf(STDERR "overwriteLabel($lbl,%04X,$pg)\n",$addr);
+##	die("$LBL[$addr] -> $lbl") if ($addr == 0x5253);
 
 	select_WPC_RPG($pg,12) if defined($pg);
 	undef($Lbl{$LBL[$addr]});
@@ -3157,7 +3157,8 @@ sub output_labels($)
     print(";----------------------------------------------------------------------\n\n");
 
     foreach my $lbl (sort byHexValue keys %Lbl) {
-        next if ($lbl =~ m{(.*)\+[1-9]$} && defined($Lbl{$1}));             # e.g. =Lamps+2
+#       next if ($lbl =~ m{(.*)\+[1-9]$} && defined($Lbl{$1}));             # e.g. =Lamps+2
+		next if ($lbl =~ m{(.*)[\+-]\d+$}); # && defined($Lbl{$1}));             # e.g. =Lamps+2
         my($lv) = $Lbl{$lbl};
         next unless defined($lv);                                           # undefined label?
 
@@ -3297,7 +3298,7 @@ sub produce_output(@)
 			#------------------------------------------------------------------------------------------
 
             my($lbl) = $LBL[$addr];                                                 # then, any labels (NB: multiple possible, required for auto disassembly)
-            if (defined($lbl)) {
+            if (defined($lbl) && !($lbl =~ m{[\+-]\d+$})) {							# don't output lbl+1 labels
 	            $lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:}); 							# strip WPC page prefix
                 $line = "$lbl:";
                 my($ind) = ($EXTRA_IND[$addr][$#{$EXTRA_IND[$addr]}] > 0)           # indent to use

@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Thu Jun 12 21:40:37 2025
+#                    dlm: Fri Jun 13 12:10:57 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 43 67 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 46 64 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -42,6 +42,8 @@
 #	Jun 10, 2025: - added exitThread
 #	Jun 12, 2025: - added syscall 3B:BYU=MBD_dataRefs[A] to enable disassembly of
 #					the switch table
+#	Jun 13, 2025: - added __CHECKSUM labels
+#				  - BUG: _FINDTHREAD_ID+1 had only one leading _
 # END OF HISTORY
 
 #======================================================================
@@ -94,7 +96,7 @@ define_label('^CURRENT_THREAD_DATA',				0x53);
 define_label('_UNKNOWN_THREADLIST_CONDITION',		0x57);
 define_label('__SLEEP_TIME',						0x5B);
 define_label('__FINDTHREAD_ID',						0x5D);
-define_label('_FINDTHREAD_ID+1',					0x5E);
+define_label('__FINDTHREAD_ID+1',					0x5E);
 define_label('__FINDTHREAD_MASK',					0x5F);
 
 define_label('_GI_POWERSAVER_TIMER',				0x6D);		# minutes
@@ -258,7 +260,11 @@ define_label('_SERIAL_CTRL_OUTPUT',					0x3FC4);
 define_label('_SERIAL_BAUD_SELECT',					0x3FC5);	
 
 define_label('_DEBUGGER_DATA',						0x3D60);	# Hardware Debugger
-define_label('_DEBUGGER_CTRL',						0x3D61);	
+define_label('_DEBUGGER_CTRL',						0x3D61);
+
+define_label('__CHECKSUM_CORRECTION',				0xFFEC);	# Checksum Control
+define_label('__CHECKSUM',							0xFFEE);
+define_label('__CHECKSUM+1',						0xFFEF);
 
 #----------------------------------------------------------------------
 # System Calls

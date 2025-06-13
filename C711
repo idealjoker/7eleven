@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu Jun 12 09:23:46 2025
+#                    dlm: Fri Jun 13 12:08:31 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 387 54 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 388 68 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -385,6 +385,7 @@
 #				  - implemented WPC REFERENCEs
 #				  - fixed minor bugs
 #	Jun 12, 2025: - BUG: U26_size needs capitalization
+#	Jun 13, 2025: - BUG: label redefinition warning produced wrongly
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1346,7 +1347,7 @@ sub check_duplicate_label_types()
 								   && !$opt_w											# warnings suppressed
 								   && defined($LBL[$addr])								# already defined label at same address...
 								   && $oPG eq $nPG 										# ... on same ROM page (WPC)
-								   && ($LBL[$addr] ne $lbl)								# ... with a different name
+								   && ($LBL[$addr] ne $nPG.$lbl)						# ... with a different name
 								   && !($lbl =~ m/^auto_label_\d*$/ || $LBL[$addr] =~ m/^auto_label_\d*$/);	# neither is an auto label
 			$last_label_addr = $addr;
 		}
@@ -1447,6 +1448,7 @@ sub eval_label($@)                                                              
 
 	my($lbl,$arg) = ($lexpr =~ m{^([^+-]+)([-+]\d+)$}); 								# constant offsets (e.g. LBL+3)
 	if (defined($lbl) && defined($arg)) {
+##		print(STDERR "larith $lbl $arg\n");
 		return undef if (!defined($LBL{$lbl}) && $suppress_errors);
 		printf("\$D711::Address = 0x%04X; &D711::def_lbl_arith('$lexpr');\n",$addr)
 			if (numberp($addr) && !numberp($lbl) && $opt_x);
@@ -1714,6 +1716,7 @@ sub resolve_labels($)
         # Simple Label Arithmetic
         #----------------------------------------------------------------------
 
+##		printf(STDERR "-> %X\n",$a);
         my($lval) = eval_label($ROM[$a],$a);                                            # label with simple arithmetic
         if (defined($lval)) {
             $ROM[$a] = $lval;
