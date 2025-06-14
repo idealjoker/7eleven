@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri Jun 13 17:43:04 2025
+#					 dlm: Sat Jun 14 08:19:22 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 310 21 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 309 57 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -303,7 +303,10 @@
 #				  - BUG: dump_labels() did not deal correctly with WPC page
 #				  - added DMD aliases to output
 #				  - BUG: dump_labels output 00 pg
-#				  - BUG: labels with simple arithmethic were output 
+#				  - BUG: labels with simple arithmethic were output
+#	Jun 13, 2025: - added support for 6809 [indirect_extended] mode
+#	Jun 14, 2025: - added empty line after gaps
+#				  - BUG: labels in gaps had wrong indents
 # END OF HISTORY
 
 # TO-DO:
@@ -611,6 +614,18 @@ sub substitute_label($$)                                        # replace addres
 
     return $prefix.$opa if ($nolabel[$opaddr]);					# labeling suppressed at this addr
 
+	my($taddr) = ($opa =~ m{^\[\$([0-9A-Fa-f]{4})\]$}); 		# [$xxxx] => indirect extended
+	if (defined($taddr)) {
+		$taddr = hex($taddr);
+		die(sprintf('%02X:%04X',$_cur_RPG,$taddr))
+			unless $taddr>=0x8000 || $taddr<=0x4000;
+		my($lbl) = $LBL[$taddr];									# check if there is a user label (in the correct ROM page)
+		if (defined($lbl)) {										# there is one => use it
+			$Lbl_refs{$lbl}++;										# update reference count ($lbl includes page prefix)
+			return '[' . $lbl . ']';								# return label
+	    }
+	}
+
     my($pf,$taddr,$mark) = ($opa =~ m{^(\#?\$)([0-9A-Fa-f]+)(!?)$}); # hex number ($ followed by hex digits followed by optional !) => potential address
 
     unless (defined($taddr)) {									# not an address (i.e. a label)
@@ -619,7 +634,6 @@ sub substitute_label($$)                                        # replace addres
 				(hex($1)==$_cur_RPG && $opaddr>=0x4000 && $opaddr<0x8000))) {
 			return $prefix.$';
 		} else {												# otherwise, just return original prefix and label
-##			return $prefix.$opa;
 			return $OPA[$opaddr][$ai];
 		}
 	}
@@ -3297,18 +3311,22 @@ sub produce_output(@)
 			# Labels
 			#------------------------------------------------------------------------------------------
 
-            my($lbl) = $LBL[$addr];                                                 # then, any labels (NB: multiple possible, required for auto disassembly)
-            if (defined($lbl) && !($lbl =~ m{[\+-]\d+$})) {							# don't output lbl+1 labels
-	            $lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:}); 							# strip WPC page prefix
-                $line = "$lbl:";
-                my($ind) = ($EXTRA_IND[$addr][$#{$EXTRA_IND[$addr]}] > 0)           # indent to use
-                          ? $EXTRA_IND[$addr][$#{$EXTRA_IND[$addr]}] : $IND[$addr];
+			my($lbl) = $LBL[$addr]; 												# then, any labels (NB: multiple possible, required for auto disassembly)
+			if (defined($lbl) && !($lbl =~ m{[\+-]\d+$})) {							# don't output lbl+1 labels
+				$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:});							# strip WPC page prefix
+				$line = "$lbl:";
+				my($ind);
+				if ($EXTRA_IND[$addr][$#{$EXTRA_IND[$addr]}] > 0) { 				# indent to use
+					$ind = $EXTRA_IND[$addr][$#{$EXTRA_IND[$addr]}];
+				} else {
+					$ind = $IND[$addr];
+				}
 				if (length($line) >= $hard_tab*$ind) {								# long label => separate line
 					$line .= indent($line,$hard_tab*$rem_indent)."\t; ".$REM[$addr],undef($REM[$addr])
 						if defined($REM[$addr]);									# comment
 					print_addr($addr) if ($print_addrs);							# output the line
 					printf('			')	if ($print_code);
-					print("$line\n"),undef($line)							   
+					print("$line\n"),undef($line)							  
 				}
 			}
 
@@ -3489,15 +3507,15 @@ sub produce_output(@)
 				print(";----------------------------------------------------------------------\n");
 				print_addr($addr) if ($print_addrs);
 				print("\n"); print_addr($addr) if ($print_addrs);
-				$LBL[$addr] = 'ANALYSIS_GAP' unless defined($LBL[$addr]);
+				$LBL[$addr] = sprintf('%02X:ANALYSIS_GAP',$_cur_RPG) unless defined($LBL[$addr]);
 				my($lbl) = $LBL[$addr];
-				if ($lbl =~ m{^[0-9A-Fa-f]{2}:}) {							# remove pg encoded in name
+				if ($lbl =~ m{^[0-9A-Fa-f]{2}:}) {									# remove pg encoded in name
 					die("$lbl,$_cur_RPG")
 						unless ($_cur_RPG == 0xFF || hex(substr($lbl,0,2)) == $_cur_RPG);		# sanity check
 					$lbl = $';
                 }
 				printf("$lbl:");
-				printf("%s.DB \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),BYTE($addr));
+				printf("%s.DB \$%02X",indent(substr("$LBL[$addr]:",3),$hard_tab*$data_indent),BYTE($addr));
 				print("[${n}x]") if ($n > 1);
 				my($col) = 1;
                 $addr += $n;
@@ -3518,7 +3536,7 @@ sub produce_output(@)
 			            }
             			printf("\n");
 						print_addr($addr) if ($print_addrs);
-						printf("$lbl:%s.DB  \$%02X",indent("$LBL[$addr]:",$hard_tab*$data_indent),$GB);
+						printf("$lbl:%s.DB \$%02X",indent(substr("$LBL[$addr]:",3),$hard_tab*$data_indent),$GB);
 						print("[${n}x]") if ($n > 1);
 						$col = 1;
 					} elsif ($col >= 8) {											# continue gap on new line
@@ -3537,15 +3555,18 @@ sub produce_output(@)
 				}
 
 				print("\n");
+				push(@{$EXTRA[$addr]},''); push(@{$EXTRA_IND[$addr]},$ind);			# empty line after gap
+				$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+				$EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
 				$addr--;
 ##			} elsif ($print_code && defined($org)) {								# print code in gaps
 ##				print_addr($addr) if ($print_addrs);								# code disabled 07/20 to avoid zillions of single-byte no-code lines
 ##				printf("%02X		  $LBL[$addr]:\n",BYTE($addr));
-			} else {
+			} else {																# not $fill_gaps
 				undef($org);
 				$gapLen++;
-			}
-		}
+			} # $fill_gaps or not
+		} # !decoded
 	}
 #	print(STDERR "decoded/ROMbytes = $decoded/$ROMbytes\n");
 	return $decoded;

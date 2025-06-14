@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Thu Jun 12 21:33:58 2025
+#                    dlm: Fri Jun 13 22:33:57 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 23 46 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 24 43 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -21,6 +21,7 @@
 #                 - BUG: !exitThread did not respect Note (JMP)
 #	Jun 12, 2025: - added support for JMP lexical labels
 #				  - BUG: LBRA had wrong opcode
+#	Jun 13, 2025: - BUG: indirect extended mode did not work
 # HISTORY END
 
 use strict vars;
@@ -703,7 +704,7 @@ sub asm_6809_op($$@)
 		my($am) = substr($aModes,$i,1);
 ##		printf(STDERR "$.: am = $am\n");
 
-		if ($am eq 'B') {																# Immediate Mode 
+		if ($am eq 'B') {																# Immediate Mode Byte
 			next unless ($OP_ARG[0] =~ m{^#});
             die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
                 if (@OP_ARG > 1);
@@ -711,7 +712,7 @@ sub asm_6809_op($$@)
             $ROM[$ADDR++] = $';
             return 1;
         }
-        if ($am eq 'W') { 
+        if ($am eq 'W') { 																# Word
             next unless ($OP_ARG[0] =~ m{^#});
             die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
                 if (@OP_ARG > 1);
@@ -734,7 +735,7 @@ sub asm_6809_op($$@)
 				store_opc($opc[$i]);
 				store_postBytes_IM($1,$2,1);
 				return 1;
-			} elsif ($OP_ARG[0] =~ m{^\[\s*([\$%]?[0-9A-Fa-f]+)\s*\]$}) {				# indirect extended
+			} elsif ($OP_ARG[0] =~ m{^\[(.*)\]$}) {										# indirect extended
 				die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
 					if (@OP_ARG > 1);
 				store_opc($opc[$i]);
