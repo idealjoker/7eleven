@@ -1,20 +1,28 @@
 #!/usr/bin/perl
 #======================================================================
-#                    M K I N D E X 
+#                    M K T O C 
 #                    doc: Wed Sep 29 19:38:02 2021
-#                    dlm: Mon May 27 21:29:39 2024
+#                    dlm: Sun Jun 15 22:44:15 2025
 #                    (c) 2021 idealjoker@mailbox.org
-#                    uE-Info: 6 52 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 18 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Sep 29, 2021: - created
 #	May 27, 2024: - made work with disassembled code containg addresses
+#	Jun 15, 2025: - removed path from usage error
+#				  - made work with WPC labels
+# HISTORY END
+
+$0 =~ s@^.*/(.*)$@\1@;
+die("Usage: $0 [7eleven source file]\n")
+	unless ((@ARGV == 0) && !(-t 0)) ||
+		   ((@ARGV == 1) && (-f "$ARGV[0]"));
 
 my($in_header) = 0;
 
 while (<>) {
-	$in_header = 0,next unless /^(<[0-9A-F]{4}>\t)?;/;
+	$in_header = 0,next unless /^(<[0-9A-F:]{4,7}>\t)?;/;
 	if ($in_header) {
 		print;
 		$in_header = 0 if /[-=]{5}/;

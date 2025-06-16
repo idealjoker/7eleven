@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 1 1 
 #					 doc: Wed May  7 09:51:43 2025
-#					 dlm: Thu Jun 12 09:15:02 2025
+#					 dlm: Sun Jun 15 22:47:01 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 23 57 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 41 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -21,6 +21,7 @@
 #	Jun  5, 2025: - replaced -f option by addl debug output
 #	Jun 10, 2025: - renamed U26_size to U26_Size
 #	Jun 12, 2025: - moved init_system_11() from [D711.pm]
+#	Jun 15, 2025: - removed path from usage error
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -36,7 +37,7 @@ use D711 (11);																# load WMS System 11 disassembler
 #----------------------------------------------------------------------
 
 use Getopt::Std;
-
+$0 =~ s@^.*/(.*)$@\1@;
 die("Usage:\n\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[suppress code-s)tructure analysis]\n\t\t" .

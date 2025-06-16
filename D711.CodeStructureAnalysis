@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Thu Jun 12 21:34:51 2025
+#                    dlm: Sun Jun 15 10:13:55 2025
 #                    (c) idealjoker@mailbox.org
-#                    uE-Info: 40 35 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 643 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -38,6 +38,7 @@
 #				  - massively cleaned up exit_from_block
 #				  - re-enabled JMP to lex labels, which have not yet been implemented
 #					in the compiler
+#	Jun 15, 2025: - added support for __IF, __ELSE, __WHILE, __ENDLOOP
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -600,32 +601,26 @@ sub process_code_structure($$)
 		next unless defined($OP[$addr]);
 		next if defined($unstructured[$addr]);
 
-##
-##		WHILE LOOPS DISABLED Aug 27, 2024 BECAUSE THEY ARE EITHER USED VERY RARELY OR THIS
-##		CODE IS NOT WORKING.
-##
-##		next if cs_while_loop($addr,$eaddr,'BNE','BRA','_UNTIL_NE','_ENDLOOP'); 			# Assembler loops
-##		next if cs_while_loop($addr,$eaddr,'BEQ','BRA','_UNTIL_EQ','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BLE','BRA','_UNTIL_LE','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BGE','BRA','_UNTIL_GE','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BLT','BRA','_UNTIL_LT','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BGT','BRA','_UNTIL_GT','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BHI','BRA','_UNTIL_HI','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BLS','BRA','_UNTIL_LS','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BCC','BRA','_UNTIL_CC','_ENDLOOP'); 	    
-##		next if cs_while_loop($addr,$eaddr,'BCS','BRA','_UNTIL_CS','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BVC','BRA','_UNTIL_VC','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BVS','BRA','_UNTIL_VS','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BMI','BRA','_UNTIL_MI','_ENDLOOP');
-##		next if cs_while_loop($addr,$eaddr,'BPL','BRA','_UNTIL_PL','_ENDLOOP');
+		# [06/15/25] None of the following matches while disassembling FH and T2. 
+		# This can be either because there are no long loops or because the code 
+		# does  not work.
+		next if cs_while_loop($addr,$eaddr,'BNE','BRA','_UNTIL_NE','_ENDLOOP'); 			# Assembler loops
+		next if cs_while_loop($addr,$eaddr,'BEQ','BRA','_UNTIL_EQ','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BLE','BRA','_UNTIL_LE','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BGE','BRA','_UNTIL_GE','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BLT','BRA','_UNTIL_LT','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BGT','BRA','_UNTIL_GT','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BHI','BRA','_UNTIL_HI','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BLS','BRA','_UNTIL_LS','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BCC','BRA','_UNTIL_CC','_ENDLOOP'); 	    
+		next if cs_while_loop($addr,$eaddr,'BCS','BRA','_UNTIL_CS','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BVC','BRA','_UNTIL_VC','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BVS','BRA','_UNTIL_VS','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BMI','BRA','_UNTIL_MI','_ENDLOOP');
+		next if cs_while_loop($addr,$eaddr,'BPL','BRA','_UNTIL_PL','_ENDLOOP');
 
-		unless (defined($_cur_RPG)) {
-			next if cs_loop_while($addr,$saddr,'branch','_Loop','_EndLoop');					# WVM loops 
-			next if cs_loop_while($addr,$saddr,'branchIf','_Loop','_While');
-			next if cs_loop_while($addr,$saddr,'branchUnless','_Loop','_Until');
-		}
-
-		next if cs_loop_while($addr,$saddr,'BRA','_LOOP','_ENDLOOP');						# Assembler loops
+		next if cs_loop_while($addr,$saddr,'BRA','_LOOP','_ENDLOOP');							# M6800/6809 (short) loops
+		next if cs_loop_while($addr,$saddr,'JMP','_LOOP','_ENDLOOOP');							# this matches T2 at 3B:7825
 		next if cs_loop_while($addr,$saddr,'BLE','_LOOP','_WHILE_LE');
 		next if cs_loop_while($addr,$saddr,'BGE','_LOOP','_WHILE_GE');
 		next if cs_loop_while($addr,$saddr,'BLT','_LOOP','_WHILE_LT');
@@ -640,6 +635,46 @@ sub process_code_structure($$)
 		next if cs_loop_while($addr,$saddr,'BVS','_LOOP','_WHILE_VS');
 		next if cs_loop_while($addr,$saddr,'BMI','_LOOP','_WHILE_MI');
 		next if cs_loop_while($addr,$saddr,'BPL','_LOOP','_WHILE_PL');
+
+		# [06/15/25] None of the following matches while disassembling FH and T2. 
+		# This can be either because there are no long loops or because the code 
+		# does  not work.
+		if (defined($_cur_RPG)) {																# M6809 long loop
+			next if cs_while_loop($addr,$eaddr,'LBNE','LBRA','__UNTIL_NE','__ENDLOOP'); 		
+			next if cs_while_loop($addr,$eaddr,'LBEQ','LBRA','__UNTIL_EQ','__ENDLOOP');
+			next if cs_while_loop($addr,$eaddr,'LBLE','LBRA','__UNTIL_LE','__ENDLOOP');
+			next if cs_while_loop($addr,$eaddr,'LBGE','LBRA','__UNTIL_GE','__ENDLOOP');
+			next if cs_while_loop($addr,$eaddr,'LBLT','LBRA','__UNTIL_LT','__ENDLOOP');
+			next if cs_while_loop($addr,$eaddr,'LBGT','LBRA','__UNTIL_GT','__ENDLOOP');
+			next if cs_while_loop($addr,$eaddr,'LBHI','LBRA','__UNTIL_HI','__ENDLOOP');
+			next if cs_while_loop($addr,$eaddr,'LBLS','LBRA','__UNTIL_LS','__ENDLOOP');
+			next if cs_while_loop($addr,$eaddr,'LBCC','LBRA','__UNTIL_CC','__ENDLOOP'); 	    
+			next if cs_while_loop($addr,$eaddr,'LBCS','LBRA','__UNTIL_CS','__ENDLOOP');
+			next if cs_while_loop($addr,$eaddr,'LBVC','LBRA','__UNTIL_VC','__ENDLOOP');
+			next if cs_while_loop($addr,$eaddr,'LBVS','LBRA','__UNTIL_VS','__ENDLOOP');
+			next if cs_while_loop($addr,$eaddr,'LBMI','LBRA','__UNTIL_MI','__ENDLOOP');
+            next if cs_while_loop($addr,$eaddr,'LBPL','LBRA','__UNTIL_PL','__ENDLOOP');
+
+			next if cs_loop_while($addr,$saddr,'LBRA','_LOOP','__ENDLOOP');							
+			next if cs_loop_while($addr,$saddr,'LBLE','_LOOP','__WHILE_LE');
+			next if cs_loop_while($addr,$saddr,'LBGE','_LOOP','__WHILE_GE');
+			next if cs_loop_while($addr,$saddr,'LBLT','_LOOP','__WHILE_LT');
+			next if cs_loop_while($addr,$saddr,'LBGT','_LOOP','__WHILE_GT');
+			next if cs_loop_while($addr,$saddr,'LBEQ','_LOOP','__WHILE_EQ');
+			next if cs_loop_while($addr,$saddr,'LBNE','_LOOP','__WHILE_NE');
+			next if cs_loop_while($addr,$saddr,'LBHI','_LOOP','__WHILE_HI');
+			next if cs_loop_while($addr,$saddr,'LBLS','_LOOP','__WHILE_LS');
+			next if cs_loop_while($addr,$saddr,'LBCC','_LOOP','__WHILE_CC');		    
+			next if cs_loop_while($addr,$saddr,'LBCS','_LOOP','__WHILE_CS');
+			next if cs_loop_while($addr,$saddr,'LBVC','_LOOP','__WHILE_VC');
+			next if cs_loop_while($addr,$saddr,'LBVS','_LOOP','__WHILE_VS');
+			next if cs_loop_while($addr,$saddr,'LBMI','_LOOP','__WHILE_MI');
+            next if cs_loop_while($addr,$saddr,'LBPL','_LOOP','__WHILE_PL');
+		} elsif ($WMS_System>=6 && $WMS_SYstem<=11) {											
+			next if cs_loop_while($addr,$saddr,'branch','_Loop','_EndLoop');					# WVM loops 
+			next if cs_loop_while($addr,$saddr,'branchIf','_Loop','_While');
+			next if cs_loop_while($addr,$saddr,'branchUnless','_Loop','_Until');
+		}
 
 	}
 	die if (@BEGIN_BLOCK);
@@ -659,7 +694,7 @@ sub process_code_structure($$)
 		next unless defined($OP[$addr]);
 		next if defined($unstructured[$addr]);
 
-		next if cs_if_else($addr,$eaddr,'BNE','BRA','_IF_EQ','_ELSE','_ENDIF');				# M6800 if-statements
+		next if cs_if_else($addr,$eaddr,'BNE','BRA','_IF_EQ','_ELSE','_ENDIF');				# M6800/6809 (short) if-statements
 		next if cs_if_else($addr,$eaddr,'BEQ','BRA','_IF_NE','_ELSE','_ENDIF');
 		next if cs_if_else($addr,$eaddr,'BLT','BRA','_IF_GE','_ELSE','_ENDIF');
 		next if cs_if_else($addr,$eaddr,'BGT','BRA','_IF_LE','_ELSE','_ENDIF');
@@ -674,7 +709,59 @@ sub process_code_structure($$)
 		next if cs_if_else($addr,$eaddr,'BPL','BRA','_IF_MI','_ELSE','_ENDIF');
 		next if cs_if_else($addr,$eaddr,'BMI','BRA','_IF_PL','_ELSE','_ENDIF');
 
-		unless (defined($_cur_RPG)) {
+		if (defined($_cur_RPG)) {															# M6809 long if-statements
+			next if cs_if_else($addr,$eaddr,'BNE', 'LBRA', '_IF_EQ','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBNE', 'BRA','__IF_EQ', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBNE','LBRA','__IF_EQ','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BEQ', 'LBRA', '_IF_NE','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBEQ', 'BRA','__IF_NE', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBEQ','LBRA','__IF_NE','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BLT', 'LBRA', '_IF_GE','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBLT', 'BRA','__IF_GE', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBLT','LBRA','__IF_GE','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BLE', 'LBRA', '_IF_LE','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBLE', 'BRA','__IF_LE', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBLE','LBRA','__IF_LE','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BGE', 'LBRA', '_IF_LT','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBGE', 'BRA','__IF_LT', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBGE','LBRA','__IF_LT','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BHI', 'LBRA', '_IF_LS','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBHI', 'BRA','__IF_LS', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBHI','LBRA','__IF_LS','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BLS', 'LBRA', '_IF_HI','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBLS', 'BRA','__IF_HI', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBLS','LBRA','__IF_HI','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BCC', 'LBRA', '_IF_CS','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBCC', 'BRA','__IF_CS', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBCC','LBRA','__IF_CS','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BCS', 'LBRA', '_IF_CC','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBCS', 'BRA','__IF_CC', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBCS','LBRA','__IF_CC','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BVC', 'LBRA', '_IF_VS','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBVC', 'BRA','__IF_VS', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBVC','LBRA','__IF_VS','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BVS', 'LBRA', '_IF_VC','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBVS', 'BRA','__IF_VC', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBVS','LBRA','__IF_VC','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BPL', 'LBRA', '_IF_MI','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBPL', 'BRA','__IF_MI', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBPL','LBRA','__IF_MI','__ELSE','_ENDIF');
+
+			next if cs_if_else($addr,$eaddr,'BMI', 'LBRA', '_IF_PL','__ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBMI', 'BRA','__IF_PL', '_ELSE','_ENDIF');
+			next if cs_if_else($addr,$eaddr,'LBMI','LBRA','__IF_PL','__ELSE','_ENDIF');
+		} elsif ($WMS_System>=6 && $WMS_SYstem<=11) {											
 			next if cs_if_else($addr,$eaddr,'branchUnless','branch','_If','_Else','_EndIf');	# WVM if-statements
 			next if cs_if_else($addr,$eaddr,'branchIf','branch','_Unless','_Else','_EndUnless');
 			next if cs_while_loop($addr,$eaddr,'branchIf','branch','_Until','_EndLoop');		# WVM loops

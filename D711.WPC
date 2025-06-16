@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Fri Jun 13 17:30:14 2025
+#                    dlm: Sun Jun 15 22:25:44 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 788 2 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 95 60 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -91,6 +91,8 @@
 #	Jun 13, 2025: - BUG: _SKIP labels not removed in case of two
 #						 labels with same code addr in 2 different
 #						 pages
+#	Jun 15, 2025: - added support for __IF, etc.
+#				  - greatly improved system pointer decoding
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -417,24 +419,9 @@ sub disassemble_system_pointers()
 	
 	my($ubyte,$uword);
 	
-	$Address = 0x812D;
-	insert_divider($Address,'System Data Pointers');
-	while ($Address < 0x81AE) {
-		def_WPC_ref(sprintf('UNKNOWN_SYSTEM_DATA_%04X',$Address));
-    }
-	
-	$Address = 0x81B6;
+	$Address = 0x81B6;												# first, the execptions
 	$Address = def_WPC_ref('=BITSHIFTER_LAMPMATRIX_LOOKUPTABLE');
 		def_byteblock_hex(65);
-	
-	$Address = 0x8296;
-	def_ptr_hex('^=STATUS_AREA');
-	insert_divider($Address,'System Code');
-}
-
-
-sub disassemble_switch_tables()
-{
 	$Address = 0x81C5;
 	$Address = def_WPC_ref('=SWITCHTABLE');
 		def_WPC_switchTable(undef,'Switch Table',1);				# label already defined, follow code
@@ -442,6 +429,31 @@ sub disassemble_switch_tables()
 	$Address = def_WPC_ref('=AUX_SWITCHTABLE');
 		def_WPC_switchTable(undef,'Switch Table',1)
 	        if defined($Address);
+
+	$Address = 0x812D;
+	insert_divider($Address,'System Data Pointers');
+
+	my(@skipAddr) = (0x81B6,0x81C5,0x821C);								# Switch Tables
+	my(@strRef)   = (0x8133,0x8136,0x8139);							# String References
+	my(@strRefL)  = ('GAME_NAME','GAME_NUMBER','RELEASE_DATE');
+	my(@ptr) 	  = (0x81AE);										# pointers (not refs)
+	
+	my($i);
+	while ($Address < 0x8288) {
+		if (isMember($Address,@skipAddr)) {
+			$Address += 3;
+		} elsif (isMember($Address,@ptr)) {
+		    def_word_hex(sprintf('UNKNOWN_SYSTEM_PTR_%04X',$Address));
+		} elsif ($i=isMember($Address,@strRef)) {
+		    def_WPC_stringRef(sprintf(defined($strRefL[$i]) ? $strRefL[$i] : 'UNKNOWN_SYSTEM_STRREF_%04X',$Address));
+		} else {
+			def_WPC_ref(sprintf('UNKNOWN_SYSTEM_REF_%04X',$Address));
+		}
+    }
+	
+	$Address = 0x8296;
+	def_ptr_hex('^=STATUS_AREA');
+	insert_divider($Address,'System Code');
 }
 
 
@@ -523,7 +535,9 @@ sub apply_magic_WPC($$)
 				die if $noa > 0xFFFF;
 			}
 			if    ($OP[$noa] eq '_IF_CC') { $OP[$noa] = '_IF_true'; }			# _IF_true
+			elsif ($OP[$noa] eq '__IF_CC') { $OP[$noa] = '__IF_true'; }			# __IF_true
 			elsif ($OP[$noa] eq '_IF_CS') { $OP[$noa] = '_IF_false'; }			# _IF_false
+			elsif ($OP[$noa] eq '__IF_CS') { $OP[$noa] = '__IF_false'; }		# __IF_false
 			elsif ($OP[$noa] eq 'BCC') { $OP[$noa] = 'Btrue'; }					# Btrue
 			elsif ($OP[$noa] eq 'BCS') { $OP[$noa] = 'Bfalse'; }				# Bfalse
 			elsif ($OP[$noa] eq 'LBCC') { $OP[$noa] = 'LBtrue'; }				# LBtrue
@@ -789,13 +803,14 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 	select_WPC_RPG($RPG,3)
 		unless ($RPG == 0x00);																# NULL ref
 
-	if ($decoded[$Address] || $decoded[$Address+2]) {										# already decoded
+	if (($decoded[$Address] || $decoded[$Address+2]) &&										# already decoded
+		$OP[$Address] ne '.DR') {
 ##		printf(STDERR "%04X: def_WPC_ref($pointee_lbl): munging pre-existing analysis $OP[$Address]/$OP[$Address+2]\n",$Address);
 		if ($decoded[$Address]) {
 			die($OP[$Address]) unless ($OP[$Address] eq '.DW');
 		}
 		if ($decoded[$Address+2]) {
-			die unless ($OP[$Address+2] eq '.DB');
+ 			die unless ($OP[$Address+2] eq '.DB');
 			undef($OP[$Address+2]);
 			undef(@{$OPA[$Address+2]});
 			die unless defined($AUTO_LBL[$Address+2]);
@@ -874,34 +889,12 @@ sub def_WPC_string(@)
 sub def_WPC_stringRef($@)														# DOES NOT MAINTAIN RPG
 {																			
 	my($str_lbl,$divider_title,$rem) = @_;
-	die unless defined($Address);
 
-    die unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
-    die(sprintf("def_WPC_stringRef(%04X,$str_lbl): addresses below 0x8000 not supported (implementation restriction)"))
-    	unless ($Address >= 0x8000);
-
-	my($str_addr) = WORD($Address);
-	my($RPG) = BYTE($Address+2);
-	select_WPC_RPG($RPG,4);
-
-	$str_lbl = $` if ($str_lbl =~ m{\[[0-9A-F]{2}\]$});            					# remove previous RPG if there is one
-	setLabel("^$str_lbl",$Address);
-	
-	my($usr_lbl) = $LBL[$str_addr];
-	$str_lbl = $usr_lbl if defined($usr_lbl);
-	setLabel($str_lbl,$str_addr);
-
-	$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $codeType_data;
-	#$OPA[$Address][0] = $str_lbl;
-	push(@{$OPA[$Address]},label_address(WORD($Address),$str_lbl,1));        # suppress address suffix in label
-    push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address+2)));
-	$REM[$Address] = $rem unless defined($REM[$Address]); 
-	$decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
-
-	my($sAddr) = $Address;
+	my($str_addr) = def_WPC_ref($str_lbl,$rem);
+	my($oAddr) = $Address;
 	$Address = $str_addr;
 	def_WPC_string($str_lbl,$divider_title);
-	$Address = $sAddr + 3;
+	$Address = $oAddr;
 }
 
 #----------------------------------------------------------------------

@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Jun 14 08:19:22 2025
+#					 dlm: Sun Jun 15 22:26:35 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 309 57 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 310 68 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -307,6 +307,7 @@
 #	Jun 13, 2025: - added support for 6809 [indirect_extended] mode
 #	Jun 14, 2025: - added empty line after gaps
 #				  - BUG: labels in gaps had wrong indents
+#	Jun 15, 2025: - BUG: comments in gaps were not handled correctly
 # END OF HISTORY
 
 # TO-DO:
@@ -2957,10 +2958,11 @@ sub isMember($@)
 {
     my($target,@list) = @_;
 
-    foreach my $le (@list) {
-        return 1 if ($le eq $target);
+	return '0 but true' if $list[0] eq $target;
+	for (my($i)=1; $i<=$#list; $i++) {
+        return $i if ($list[$i] eq $target);
     }
-    return 0;
+    return undef;
 }
 
 sub find_pointers_to_score_routines($$)
@@ -3514,9 +3516,9 @@ sub produce_output(@)
 						unless ($_cur_RPG == 0xFF || hex(substr($lbl,0,2)) == $_cur_RPG);		# sanity check
 					$lbl = $';
                 }
-				printf("$lbl:");
-				printf("%s.DB \$%02X",indent(substr("$LBL[$addr]:",3),$hard_tab*$data_indent),BYTE($addr));
-				print("[${n}x]") if ($n > 1);
+                my($line) = "$lbl:";
+				$line .= sprintf("%s.DB \$%02X",indent(substr("$LBL[$addr]:",3),$hard_tab*$data_indent),BYTE($addr));
+				$line .= sprintf("[${n}x]") if ($n > 1);
 				my($col) = 1;
                 $addr += $n;
 
@@ -3524,37 +3526,53 @@ sub produce_output(@)
 					$n = 1;															# count repeat bytes
 					$GB = BYTE($addr);
 					while ($addr+$n<=$la && !$decoded[$addr+$n] && !defined($LBL[$addr+$n]) && BYTE($addr+$n)==$GB) { $n++; }
-					print("\n"),goto FREE_GAP_SPACE if ($GB==0xFF && $n>20);
+					print("$line\n"),goto FREE_GAP_SPACE if ($GB==0xFF && $n>20);
 
 					$gapBytes += $n;
 					
 					if (defined($LBL[$addr])) {										# pre-existing label in gap
+			            if (defined($REM[$addr-$col])) {
+			            	$line .= indent($line,$hard_tab*($rem_indent+1));
+			            	$line .= "; $REM[$addr-$col]";
+			            	undef($REM[$addr-$col]);
+			            }
+            			print("$line\n"); 
 						my($lbl) = $LBL[$addr];
 						if ($lbl =~ m{^[0-9A-Fa-f]{2}:}) {							# remove pg encoded in name
 							die unless ($_cur_RPG == 0xFF || hex(substr($lbl,0,2)) == $_cur_RPG);		# sanity check
 							$lbl = $';
 			            }
-            			printf("\n");
 						print_addr($addr) if ($print_addrs);
-						printf("$lbl:%s.DB \$%02X",indent(substr("$LBL[$addr]:",3),$hard_tab*$data_indent),$GB);
-						print("[${n}x]") if ($n > 1);
+						$line = "$lbl:";
+						$line .= indent($line,$hard_tab*$data_indent);
+						$line .= sprintf(".DB \$%02X",$GB);
+						$line .= sprintf("[${n}x]") if ($n > 1);
 						$col = 1;
 					} elsif ($col >= 8) {											# continue gap on new line
-						printf("\n");
+			            if (defined($REM[$addr-$col])) {
+			            	$line .= indent($line,$hard_tab*($rem_indent+1));
+			            	$line .= "; $REM[$addr-$col]";
+			            	undef($REM[$addr-$col]);
+			            }
+						printf("$line\n");
 						print_addr($addr) if ($print_addrs);
-						printf("ANALYSIS_GAP:");
-						printf("%s.DB \$%02X",indent("ANALYSIS_GAP:",$hard_tab*$data_indent),$GB);
-						print("[${n}x]") if ($n > 1);
+						$line = "ANALYSIS_GAP:";
+						$line .= sprintf("%s.DB \$%02X",indent($line,$hard_tab*$data_indent),$GB);
+						$line .= sprintf("[${n}x]") if ($n > 1);
 						$col = 1;
 					} else {														# continue gap on current line
-						printf(" \$%02X",$GB);
-						print("[${n}x]"),$col++ if ($n > 1);
+						$line .= sprintf(" \$%02X",$GB);
+						$line .= sprintf("[${n}x]"),$col++ if ($n > 1);
 						$col++;
 					}
 					$addr += $n;
 				}
-
-				print("\n");
+	            if (defined($REM[$addr-$col])) {
+	            	$line .= indent($line,$hard_tab*($rem_indent+1));				# why the f is the +1 needed???
+	            	$line .= "; $REM[$addr-$col]";
+	            	undef($REM[$addr-$col]);
+	            }
+				print("$line\n");
 				push(@{$EXTRA[$addr]},''); push(@{$EXTRA_IND[$addr]},$ind);			# empty line after gap
 				$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
 				$EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;

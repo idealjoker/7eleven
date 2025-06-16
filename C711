@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri Jun 13 12:08:31 2025
+#                    dlm: Sun Jun 15 22:43:07 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 388 68 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 389 49 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -386,6 +386,7 @@
 #				  - fixed minor bugs
 #	Jun 12, 2025: - BUG: U26_size needs capitalization
 #	Jun 13, 2025: - BUG: label redefinition warning produced wrongly
+#	Jun 15, 2026: - removed path from usage error
 # HISTORY END
 
 # RELEASE NOTES:
@@ -495,6 +496,8 @@ my($PATH) = $0; $PATH =~ s{/[^/]*$}{};
 our($opt_1,$opt_2,$opt_a,$opt_A,$opt_c,$opt_C,$opt_d,$opt_D,$opt_f,$opt_F,
 	$opt_g,$opt_i,$opt_I,$opt_J,$opt_k,$opt_L,$opt_l,$opt_m,$opt_o,$opt_O,$opt_r,$opt_R,
 	$opt_s,$opt_S,$opt_t,$opt_T,$opt_v,,$opt_w,$opt_x);
+
+$0 =~ s@^.*/(.*)$@\1@;
 
 use Getopt::Std;
 die("Usage: $0 " .

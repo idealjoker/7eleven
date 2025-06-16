@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Fri Jun 13 22:33:57 2025
+#                    dlm: Sun Jun 15 22:24:16 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 24 43 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 25 57 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -22,6 +22,7 @@
 #	Jun 12, 2025: - added support for JMP lexical labels
 #				  - BUG: LBRA had wrong opcode
 #	Jun 13, 2025: - BUG: indirect extended mode did not work
+#	Jun 15, 2025: - added __IF, __ELSE, __ENDIF, __LOOP, __WHILE, __UNTIL, __ENDLOOP
 # HISTORY END
 
 use strict vars;
@@ -446,6 +447,23 @@ sub unroll_asm_structure()
 	return if macro_IF_6809('_IF_MI','BPL');
 	return if macro_IF_6809('_IF_PL','BMI');
 
+	return if macro_IF_6809('__IF_EQ','LBNE');
+	return if macro_IF_6809('__IF_NE','LBEQ');
+	return if macro_IF_6809('__IF_GE','LBLT');
+	return if macro_IF_6809('__IF_LE','LBGT');
+	return if macro_IF_6809('__IF_GT','LBLE');
+	return if macro_IF_6809('__IF_LT','LBGE');
+	return if macro_IF_6809('__IF_LS','LBHI');
+	return if macro_IF_6809('__IF_HI','LBLS');
+	return if macro_IF_6809('__IF_CS','LBCC');
+	return if macro_IF_6809('__IF_false','LBCC');
+	return if macro_IF_6809('__IF_CC','LBCS');
+	return if macro_IF_6809('__IF_true','LBCS');
+	return if macro_IF_6809('__IF_VS','LBVC');
+	return if macro_IF_6809('__IF_VC','LBVS');
+	return if macro_IF_6809('__IF_MI','LBPL');
+	return if macro_IF_6809('__IF_PL','LBMI');
+
 	if ($OP eq '_ELSE') {
     	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
     		if (@OP_ARG);
@@ -456,7 +474,17 @@ sub unroll_asm_structure()
 		return;
 	}
 
-	if (($OP eq '_ENDIF') || ($OP eq '_ENDUNLESS')) {
+	if ($OP eq '__ELSE') {
+    	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
+    		if (@OP_ARG);
+		$OP = 'LBRA';
+		@OP_ARG = (auto_label(1));
+		define_label(pop(@IF_CONT_LBL),$ADDR+2);
+		push(@IF_CONT_LBL,$OP_ARG[0]);
+		return;
+	}
+
+	if (isMember($OP,'_ENDIF','__ENDIF')) {
     	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
     		if (@OP_ARG);
 		undef($OP);
@@ -468,7 +496,7 @@ sub unroll_asm_structure()
     # M6809 Loop Statements
     #----------------------------------------
 
-	if ($OP eq '_LOOP') {
+	if (isMember($OP,'_LOOP','__LOOP')) {
     	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
     		if (@OP_ARG);
 		undef($OP);
@@ -494,6 +522,21 @@ sub unroll_asm_structure()
 	return if macro_while_6809('_WHILE_MI','BMI');
 	return if macro_while_6809('_WHILE_PL','BPL');
 
+	return if macro_while_6809('__WHILE_NE','LBNE');
+	return if macro_while_6809('__WHILE_EQ','LBEQ');
+	return if macro_while_6809('__WHILE_LE','LBLE');
+	return if macro_while_6809('__WHILE_GE','LBGE');
+	return if macro_while_6809('__WHILE_LT','LBLT');
+	return if macro_while_6809('__WHILE_GT','LBGT');
+	return if macro_while_6809('__WHILE_HI','LBHI');
+	return if macro_while_6809('__WHILE_LS','LBLS');
+	return if macro_while_6809('__WHILE_CC','LBCC');		    
+	return if macro_while_6809('__WHILE_CS','LBCS');
+	return if macro_while_6809('__WHILE_VC','LBVC');
+	return if macro_while_6809('__WHILE_VS','LBVS');
+	return if macro_while_6809('__WHILE_MI','LBMI');
+	return if macro_while_6809('__WHILE_PL','LBPL');
+
 	return if macro_until_6809('_UNTIL_NE','BNE');
 	return if macro_until_6809('_UNTIL_EQ','BEQ');
 	return if macro_until_6809('_UNTIL_LE','BLE');
@@ -509,10 +552,34 @@ sub unroll_asm_structure()
 	return if macro_until_6809('_UNTIL_MI','BMI');
 	return if macro_until_6809('_UNTIL_PL','BPL');
 
+	return if macro_until_6809('__UNTIL_NE','LBNE');
+	return if macro_until_6809('__UNTIL_EQ','LBEQ');
+	return if macro_until_6809('__UNTIL_LE','LBLE');
+	return if macro_until_6809('__UNTIL_GE','LBGE');
+	return if macro_until_6809('__UNTIL_LT','LBLT');
+	return if macro_until_6809('__UNTIL_GT','LBGT');
+	return if macro_until_6809('__UNTIL_HI','LBHI');
+	return if macro_until_6809('__UNTIL_LS','LBLS');
+	return if macro_until_6809('__UNTIL_CC','LBCC');		    
+	return if macro_until_6809('__UNTIL_CS','LBCS');
+	return if macro_until_6809('__UNTIL_VC','LBVC');
+	return if macro_until_6809('__UNTIL_VS','LBVS');
+	return if macro_until_6809('__UNTIL_MI','LBMI');
+	return if macro_until_6809('__UNTIL_PL','LBPL');
+
 	if ($OP eq '_ENDLOOP') {
     	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
     		if (@OP_ARG);
 		$OP = 'BRA';
+		@OP_ARG = (pop(@LOOP_LBL));
+		define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
+		return;
+	}
+
+	if ($OP eq '__ENDLOOP') {
+    	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
+    		if (@OP_ARG);
+		$OP = 'LBRA';
 		@OP_ARG = (pop(@LOOP_LBL));
 		define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
 		return;

@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Fri Jun 13 09:48:04 2025
+#					 dlm: Sun Jun 15 22:44:24 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 92 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 40 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -27,6 +27,8 @@
 #	Jun 10, 2025: - BUG: DMD was not recognized
 #	Jun 12, 2025: - corrected comments
 #				  - added percentages to output
+#	Jun 15, 2025: - adapted to change in [D711.WPC]
+#				  - removed path from usage error
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -34,7 +36,7 @@
 #----------------------------------------------------------------------
 
 use Getopt::Std;
-
+$0 =~ s@^.*/(.*)$@\1@;
 die("Usage:\t$0\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[include -a)ddressses in output] [include -c)ode bytes]\n\t\t" . 
@@ -92,7 +94,6 @@ if (defined($opt_p)) {														# process object file
 &D711::disassemble_syscalls();												# disassemble standard WPC stuff 
 &D711::disassemble_CPU_vectors();
 &D711::disassemble_system_pointers();
-&D711::disassemble_switch_tables();
 &D711::disassemble_lock_table();
 
 #----------------------------------------------------------------------

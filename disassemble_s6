@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Thu May 15 13:46:24 2025
+#					 dlm: Sun Jun 15 22:46:38 2025
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 29 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 30 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -26,6 +26,7 @@
 #	May  9. 2025: - changed defLamp() to conform to manual
 # 	May 13, 2025: - re-enabled old defLamp() for consistency with Pinside thread
 #	May 15, 2025: - moved -i after loadROM() to allow disassembly instructions
+#	Jun 15, 2025: - removed path from usage error
 # HISTORY END
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
@@ -36,7 +37,7 @@ use D711 (6);
 #----------------------------------------------------------------------
 
 use Getopt::Std;
-
+$0 =~ s@^.*/(.*)$@\1@;
 die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[list -a)ddressse in output] [list -c)ode bytes]\n\t\t" . 
