@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Jun 15 22:43:07 2025
+#                    dlm: Mon Jun 16 14:34:40 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 389 49 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2182 12 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -387,6 +387,7 @@
 #	Jun 12, 2025: - BUG: U26_size needs capitalization
 #	Jun 13, 2025: - BUG: label redefinition warning produced wrongly
 #	Jun 15, 2026: - removed path from usage error
+#	Jun 16, 2025: - exported system specific pragmas
 # HISTORY END
 
 # RELEASE NOTES:
@@ -571,6 +572,7 @@ my(@IF_STACK) = (0);                                            		# PRIVATE: con
 
 our(@ROM);																# output buffer
 our($ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR);									# Sys6-11: CPU address space; WPC: 1MB ROM address space
+our($FIRST_ADDR);														# first address used in ROM
 our($RPG);																# Sys6-11: undefined; 		  WPC: current ROM page
 our($DP);																# undefined until .ASSUME_DP is used
 
@@ -657,7 +659,7 @@ if ($WMS_System == 6) {											# System6
 	die;
 }
 
-my($FIRST_ADDR) = $MAX_ROM_ADDR + 1;                            # PRIVATE: first @ROM address used; sentinel (true value set by .ORG)	
+$FIRST_ADDR = $MAX_ROM_ADDR + 1;								# PRIVATE: first @ROM address used; sentinel (true value set by .ORG)	
 
 if (defined($opt_a)) {											# override ROM address range with -a
 	my($mia,$maa) = split(',',$opt_a);
@@ -963,9 +965,11 @@ while (!eof()) {
 
         &unroll_structure;  	                              			# _IF, _Loop, etc.  
         next unless defined($OP);                           			# some structure keywords only generate labels
+    } else {
+		($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
     }
 
-    next if &compile_pragma;                               				# .ORG, .DB, .ENDIF, etc.; also done while not currently compiling code!
+    next if &compile_pragma;                              				# .ORG, .DB, .ENDIF, etc.; also done while not currently compiling code!
 
     if ($IF_STACK[$#IF_STACK] >= 0) {                       			# currently assembling code
     	if ($opt_A && defined($tag_addr)) {								# verify <> address information
@@ -978,7 +982,7 @@ while (!eof()) {
     		}
     	}
 
-		next if &asm_macros;;
+		next if &asm_macros;
 
         if (($MODE==0||$MODE==1) && &compile_asm) {       				# LDA, _IFEQ, etc.
             set_label_type(1);
@@ -1305,7 +1309,7 @@ sub check_duplicate_label_types()
 	sub define_label($@)
 	{
 		my($lbl,$addr,$allow_relabel) = @_;
-		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr($addr)) if $opt_T;
+##		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr($addr)) if $opt_T;
 
 		if ($lbl eq 'ANALYSIS_GAP') {													# ignore gap labels
 			$last_label_addr = -1;
@@ -1505,7 +1509,7 @@ sub eval_label($@)                                                              
 #     sorted 
 #----------------------------------------------------------------------
 
-sub resolve_labels($)
+sub resolve_labels()
 {
     for (my($a)=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {                               # first, substitute all label values
         next unless defined($ROM[$a]);
@@ -1545,7 +1549,7 @@ sub resolve_labels($)
             }
         }
 
-        if (numberp($ROM[$a])) {                                                        # already a number (opcodes, data & immediate args)
+        if (numberp($ROM[$a])) { 					 									# already a number (opcodes, data & immediate args)
             if (defined($opt_r)) {                                                      # check against ROM image if one is provided
                 if ($ROM[$a] <= 0xFF && 
                     ($ROM[$a]&0xFF) != $vROMimage[$a-$MIN_ROM_ADDR+1024*$opt_g] && 
@@ -1559,12 +1563,12 @@ sub resolve_labels($)
         }
 
         next if ($ROM[$a] =~ m{^\@});                                                   # leave resolution of @COMPILER_VARIABLES for later
-        next if isMember($ROM[$a],'16-BIT VALUE','WPC REFERENCE');
+		next if isMember($ROM[$a],'16-BIT VALUE','WPC REFERENCE');
 
         $ROM[$a] = hex($1) if ($ROM[$a] =~ m{^\$([0-9A-Fa-f]+)$});                      # turn $hex and %binary numbers into decimals
         $ROM[$a] = eval('0b' . $1) if ($ROM[$a] =~ m{^%([01]+)$});
         die(sprintf("<%04X> $@\n",$a)) unless defined($ROM[$a]);
-        next if numberp($ROM[$a]);                                                      # we are done, if we have a number
+		next if numberp($ROM[$a]); 														# we are done, if we have a number
 
 		if ($WMS_System =~ m{^WPC}) {
 			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})/ || 								# substitute all system identifiers
@@ -1605,6 +1609,7 @@ sub resolve_labels($)
 				next if numberp($ROM[$a]);                                          
 	        }
 	    }
+
         my($ms) = '^\\' . $EIGHT_BIT_LABEL_PREFIX;                                      # 8-bit relative address
         if ($ROM[$a] =~ m{$ms}) {                                                   
             my($offset) = labelValue($a,$') - code_addr($a) - 1;
@@ -2138,10 +2143,9 @@ sub setROM($$)
     $ROM[$addr] = $val; 
 }
 
-sub compile_pragma()
+sub compile_common_pragma()
 {
-    my($OP,@OP_ARG) = @_;
-    return undef unless ($OP =~ m{^\.});
+##  my($OP,@OP_ARG) = @_;
 
     #---------------------
     # Conditional Assembly
@@ -2228,53 +2232,6 @@ sub compile_pragma()
 		return 1;
 	}
 
-	#------------------------------
-	# Mode Checking
-	#------------------------------
-
-	if (($MODE==0 || $MODE==1) && ($OP eq '.WVM_MODE' || $OP eq '.IVM_MODE')) {    
-		die("Syntax: .WVM_MODE|.IVM_MODE (<@_> at input line $.)\n")
-			unless (@OP_ARG == 0);
-		$MODE = 2;
-		return 1;
-	}
-
-	if (($MODE==0 || $MODE==2) && ($OP eq '.M6800_MODE' || $OP eq '.M6809_MODE')) {    
-		die("Syntax: .M6800_MODE|.M680X_MODE (<@_> at input line $.)\n")
-			unless (@OP_ARG == 0);
-		$MODE = 1;
-		return 1;
-	}
-
-	if ($OP eq '.DATA_MODE') {	  
-		die("Syntax: .DATA_MODE (<@_> at input line $.)\n")
-			unless (@OP_ARG == 0);
-		$MODE = 0;																			# don't set to mode 3, because after any data mode byte, there can be any mode
-		return 1;
-    }
-
-    #------------------------------
-    # IVM: Enabling and Disabling
-    #------------------------------
-
-	if ($OP eq '.DISABLE_IVM') {    
-		die("Syntax: .DISABLE_IVM (<@_> at input line $.)\n")
-			unless (@OP_ARG == 0);
-		die("attempted nesting of .DISABLE_IVM at input line $.\n")
-			if $IVM_DISABLED;
-		$IVM_DISABLED = 1;
-		return 1;
-	}
-
-	if ($OP eq '.ENABLE_IVM') { 
-		die("Syntax: .ENABLE_IVM (<@_> at input line $.)\n")
-			unless (@OP_ARG == 0);
-		die("attempted nesting of .ENABLE_IVM at input line $.\n")
-			unless $IVM_DISABLED;
-		undef($IVM_DISABLED);
-		return 1;
-    }
-
     #---------------------------------
     # Optimizer: Suppress Optimization
     #---------------------------------
@@ -2294,7 +2251,6 @@ sub compile_pragma()
 	if ($OP eq '.LOCK_ROM_PAGE') {											    
 		die("Syntax: .LOCK_ROM_PAGE (<@_> at input line $.)\n")
 			unless (@OP_ARG == 0);
-##		  printf(STDERR "page locked at %04X\n",$ADDR) unless $opt_1;
 		$locked_page = ($ADDR >> 8);
 		return 1;
 	}
@@ -2305,7 +2261,6 @@ sub compile_pragma()
 		die("unexpected .UNLOCK_ROM_PAGE at input line $.\n")
 			unless defined($locked_page);
 		unless ($opt_1) {		    
-##			printf(STDERR "page unlocked at %04X\n",$ADDR-1);
 			die(sprintf("page-lock violation (%02X -> %04X) at input line $.\n",$locked_page,$ADDR-1))
 				unless $locked_page == (($ADDR-1) >> 8);
 		}
@@ -2406,17 +2361,6 @@ sub compile_pragma()
 			return 1;
 		}
 	
-		if ($OP eq '.DR') { 																# .DR (define WPC code ref)
-			die("Syntax: .DR WPC-ref (<@_> at input line $.)\n")
-				unless (@OP_ARG == 2);
-			set_label_type(1);
-			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
-			die(".DBR invalid WPC reference page (<@_> at input line $.)\n")
-				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
-			return 1;
-		}
-	
 		if ($OP eq '.DBW') {																# .DBW (define byte and words)
 			die("Syntax: .DBW byte-val word-val[...] (<@_> at input line $.)\n")
 				unless (@OP_ARG >= 2);
@@ -2429,49 +2373,6 @@ sub compile_pragma()
 				}
 				$ROM[$ADDR++] = $OP_ARG[0]; 
 				$ROM[$ADDR++] = '16-BIT VALUE';
-			}
-			return 1;
-		}
-	
-		if ($OP eq '.DBR') {																# .DBR (define byte followed by WPC ref)
-			die("Syntax: .DBR byte-val WPC-ref (<@_> at input line $.)\n")
-				unless (@OP_ARG == 3);
-			set_label_type(3);
-			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
-			die(".DBR invalid WPC reference page (<@_> at input line $.)\n")
-				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
-			return 1;
-		}
-	
-		if ($OP eq '.DBRB') {																# .DBRB (define byte, WPC ref, followed by bytes)
-			die("Syntax: .DBRB byte-val WPC-ref (<@_> at input line $.)\n")
-				unless (@OP_ARG >= 5);
-			set_label_type(3);
-			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; 
-			die(".DBR invalid WPC reference page (<@_> at input line $.)\n")
-				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
-			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {
-				$ROM[$ADDR++] = $OP_ARG[0]; 
-			}
-			return 1;
-		}
-	
-		if ($OP eq '.DBRWB') {																# .DBRWB (define byte, WPC ref, word, followed by bytes)
-			die("Syntax: .DBRWB byte-val WPC-ref (<@_> at input line $.)\n")
-				unless (@OP_ARG >= 6);
-			set_label_type(3);
-			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
-			die(".DBR invalid WPC reference page (<@_> at input line $.)\n")
-				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
-			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE';
-			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {
-				$ROM[$ADDR++] = $OP_ARG[0]; 
 			}
 			return 1;
 		}
@@ -2509,22 +2410,6 @@ sub compile_pragma()
 			return 1;
 		}
 	
-		if ($OP eq '.DBBRB') {																# .DBBRB (define 2 bytes, WPC ref, followed by bytes)
-			die("Syntax: .DBBRB byte-val byte-vale WPC-ref byte-val[...] (<@_> at input line $.)\n")
-				unless (@OP_ARG >= 5);
-			set_label_type(3);
-			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
-			$ROM[$ADDR++] = $OP_ARG[0]; 
-			die(".DBBRB invalid WPC reference page (<@_> at input line $.)\n")
-				unless ($ROM[$ADDR-1]<=0x3D) || ($ROM[$ADDR-1]==0xFF);
-			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {
-				$ROM[$ADDR++] = $OP_ARG[0];
-			}
-			return 1;
-		}
-	
 		if ($OP eq '.DWB') {																# .DWB (define word and bytes)
 			die("Syntax: .DWB word-val byte-val[...] (<@_> at input line $.)\n")
 				unless (@OP_ARG >= 2);
@@ -2538,284 +2423,6 @@ sub compile_pragma()
 			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {
 				$ROM[$ADDR++] = $OP_ARG[0];
 			}
-			return 1;
-	    }
-
-	    #--------------------------------------------------
-	    # 7-Segment Strings
-	    #   - hard-coded font from the Internet somewhere
-	    #--------------------------------------------------
-
-		if ($OP eq '.S7R') {																# .S7R (define 7-segment string)
-			my($str) = m{\.S7R\s+'(.*)'\s*$};												# extract string from original source line
-			($str) = ($OP_ARG[0] =~ m{^'(.*)'$})											# possibly an ALIAS, in which case OP_ARG[0] is the substituted string
-				if (length($str) == 0);     
-			die("Syntax: .S7R '7-segment string' ((<'$str'> +$_+ at input line $.)\n")
-				unless (@OP_ARG >= 1 && length($str) > 0);
-			set_label_type(3);
-			for (my($i)=my($j)=0; 1; $i++,$j++) {
-				my($c) = substr($str,$i,1);
-				last unless (ord($c) > 0);
-				if ($c eq '0')					{ $ROM[$ADDR++] = 0x3F; }					# this defines the font
-				elsif ($c eq '1' || $c eq  'I') { $ROM[$ADDR++] = 0x06; }
-				elsif ($c eq '2' || $c eq  'Z') { $ROM[$ADDR++] = 0x5B; }
-				elsif ($c eq '3')				{ $ROM[$ADDR++] = 0x4F; }
-				elsif ($c eq '4')				{ $ROM[$ADDR++] = 0x66; }
-				elsif ($c eq '5' || $c eq  'S') { $ROM[$ADDR++] = 0x6D; }
-				elsif ($c eq '6')				{ $ROM[$ADDR++] = 0x7D; }
-				elsif ($c eq '7')				{ $ROM[$ADDR++] = 0x07; }
-				elsif ($c eq '8' || $c eq  'B') { $ROM[$ADDR++] = 0x7F; }
-				elsif ($c eq '9')				{ $ROM[$ADDR++] = 0x6F; }
-				elsif ($c eq 'A')				{ $ROM[$ADDR++] = 0x77; }
-				elsif ($c eq 'b')				{ $ROM[$ADDR++] = 0x7C; }
-				elsif ($c eq 'C' || $c eq  'K') { $ROM[$ADDR++] = 0x39; }
-				elsif ($c eq 'c')				{ $ROM[$ADDR++] = 0x58; }
-				elsif ($c eq 'd')				{ $ROM[$ADDR++] = 0x5E; }
-				elsif ($c eq 'E')				{ $ROM[$ADDR++] = 0x79; }
-				elsif ($c eq 'F')				{ $ROM[$ADDR++] = 0x71; }
-				elsif ($c eq 'G')				{ $ROM[$ADDR++] = 0x3D; }
-				elsif ($c eq 'H')				{ $ROM[$ADDR++] = 0x76; }
-				elsif ($c eq 'h')				{ $ROM[$ADDR++] = 0x74; }
-				elsif ($c eq 'i')				{ $ROM[$ADDR++] = 0x04; }
-				elsif ($c eq 'J')				{ $ROM[$ADDR++] = 0x1E; }
-				elsif ($c eq 'L')				{ $ROM[$ADDR++] = 0x38; }
-				elsif ($c eq 'N')				{ $ROM[$ADDR++] = 0x37; }
-				elsif ($c eq 'n')				{ $ROM[$ADDR++] = 0x54; }
-				elsif ($c eq 'o')				{ $ROM[$ADDR++] = 0x5C; }
-				elsif ($c eq 'P')				{ $ROM[$ADDR++] = 0x73; }
-				elsif ($c eq 'q' || $c eq 'g')	{ $ROM[$ADDR++] = 0x67; }
-				elsif ($c eq 'R')				{ $ROM[$ADDR++] = 0x31; }
-				elsif ($c eq 'r')				{ $ROM[$ADDR++] = 0x50; }
-				elsif ($c eq 't')				{ $ROM[$ADDR++] = 0x78; }
-				elsif ($c eq 'U' || $c eq 'V')	{ $ROM[$ADDR++] = 0x3E; }
-				elsif ($c eq 'u')				{ $ROM[$ADDR++] = 0x1C; }
-				elsif ($c eq 'Y')				{ $ROM[$ADDR++] = 0x6E; }
-				elsif ($c eq ' ')				{ $ROM[$ADDR++] = 0x00; }
-				elsif ($c eq '-')				{ $ROM[$ADDR++] = 0x40; }
-				elsif ($c eq '_')				{ $ROM[$ADDR++] = 0x08; }
-				elsif ($c eq ']')				{ $ROM[$ADDR++] = 0x0F; }
-				elsif ($c eq '~')				{ $ROM[$ADDR++] = 0x01; }
-				elsif ($c eq '=')				{ $ROM[$ADDR++] = 0x48; }
-				elsif ($c eq '"')				{ $ROM[$ADDR++] = 0x22; }
-				elsif ($c eq '`')				{ $ROM[$ADDR++] = 0x02; }
-				elsif ($c eq "'")				{ $ROM[$ADDR++] = 0x20; }
-				elsif ($c eq '/')				{ $ROM[$ADDR++] = 0x52; }
-				elsif ($c eq '|')				{ $ROM[$ADDR++] = 0x30; }
-				elsif ($c eq ')')				{ $ROM[$ADDR++] = 0x43; }
-				elsif ($c eq '(')				{ $ROM[$ADDR++] = 0x61; }
-				elsif ($c eq '*')				{ $ROM[$ADDR++] = 0x63; }
-				elsif ($c eq '&')				{ $ROM[$ADDR++] = 0x5F; }
-				elsif ($c eq '^')				{ $ROM[$ADDR++] = 0x21; }
-				elsif ($c eq '%')				{ $ROM[$ADDR++] = 0x3D; }
-				elsif ($c eq '}')				{ $ROM[$ADDR++] = 0x46; }
-				elsif ($c eq '{')				{ $ROM[$ADDR++] = 0x3D; }
-				elsif ($c eq '?')				{ $ROM[$ADDR++] = 0x4B; }
-				elsif ($c eq '<')				{ $ROM[$ADDR++] = 0x18; }
-				elsif ($c eq '>')				{ $ROM[$ADDR++] = 0x0C; }
-				elsif ($c eq '\\') {
-					$i++;
-					if (substr($str,$i,1) eq '\\') {
-						$ROM[$ADDR++] = 0x64;
-					} else {
-						my($code) = substr($str,$i,2);
-						die("Invalid string escape sequence <\\$code> at input line $.\n")
-							unless (length($code)==2 && hex($code)>=0 && hex($code)<=0xFF);
-						$ROM[$ADDR++] = hex($code);
-						$i++;
-					}
-				} # if \\
-				else {
-					die("Invalid 7-segment string character <$c> at input line $.\n");
-				}
-			} # for
-			return 1;
-	    }
-
-    #------------------------------------------------------------------------------------------
-    # 14-Segment Strings / String Encoding / encode_string / encode_char
-    #
-    # Encoding:
-    #   - bit-7 set:
-    #       48-127                      add a period
-    #   - bit-7 clear:
-    #       $00-$2F 0-47                <space>                     NB: this includes ASCII space and tab, both used in Pinbot
-    #       $30-$39 48-57   176-185     <0>-<9>                     7-segment font; ASCII compatible encoding
-    #       $3A-$40 58-64               <space>     
-    #       $41-$5A 65-90   193-218     <A>-<Z>                     ASCII compatible encoding
-    #       $5B-$62 91-98   219-226     <0>-<3>,<5>-<7>,<9>         14-segment font (fancy)
-    #       $63     99      227         <all segments lit>
-    #       $64-$68 100-104 228-232     <<>,<=>,<>>,<?>,<@>         ASCII block; @ is 7-segment font
-    #       $69-$6B 105-107 233-235     <$>,<%>,<&>                 ASCII block
-    #       $6C-$71 108-113 236-241     <,>,<.>,<+>,<->,</>,<\>     
-    #       $72-$74 114-116 242-244     <]>,<^>,<_>                 ASCII block
-    #       $75-$77 117-119 245-247     <{>,<*>,<}>
-    #       $78     120     248         <">                         quotation start (right-aligned)
-    #       $79     121     249         <[>     
-    #       $7A     122     250         <">                         quotation end (left-aligned)
-    #       $7B     123     251         <@>                         14-segment font
-    #       $7C     124     252         <8+|>
-    #       $7D     125     253         <NE arrow>
-    #       $7E     126     254         <SE arrow>
-    #       $7F     127     255         <SW arrow>
-    #       $80     128                 <NW arrow>
-    #       $81     129                 <overline>
-    #       $82     130                 <'>
-    #       $83-$AF 131-175             <space>
-    #       $B0-$FF 176-255             <0.>,<1.>,...,<SW arrow.>   period added after base symbol
-    #-----------------------------------------------------------------------------------------
-
-		if ($OP =~ m{^.STR}) {																# .STR[len] (define string)
-			my($len) = $';
-			die("Syntax: .STR[len] '14-segment string' at input line $.\n")
-				if numberp($len) && $len<=0;
-			my($str) = m{\.STR\d*\s+'(.*)'\s*$};											# extract string from original source line
-			($str) = ($OP_ARG[0] =~ m{^'(.*)'$})											# possibly an ALIAS, in which case OP_ARG[0] is the substituted string
-				if (length($str) == 0);
-			die("Syntax: .STR[len] '14-segment string' (<'$str'> at input line $.)\n")		# not either
-				unless (length($str) > 0);
-			set_label_type(3);
-			$str = $COMPILATION_TIMESTAMP													# @COMPILER VAR: compilation timestamp
-				if ($str eq '@COMPILATION_TIMESTAMP');
-			$str = $COMPILATION_INFO														# @COMPILER VAR: compilation info
-				if ($str eq '@COMPILATION_INFO');
-			$str = $COMPILATION_INFO77														# @COMPILER VAR: compilation info
-				if ($str eq '@COMPILATION_INFO77');
-			if ($str eq '@FREE_SP') {														# @COMPILER VAR: free space
-				$FREE_SP_ADDR = $ADDR;
-			}
-			if ($len > 0) {
-				my($nop) = $str;
-				$nop =~ s/\.//g; 															# remove periods
-				$nop =~ s/\\../X/g;															# remove octal chars
-				die("Syntax: .STR$len '$len-long 14-segment string' (<'$str'> at input line $.)\n") # regular string
-					unless (@OP_ARG >= 1 && length($nop) == $len);
-			} else {
-				die("Syntax: .STR '14-segment string' (<'$str'> at input line $.)\n")		# regular string
-					unless (@OP_ARG >= 1 && length($str) > 0);
-			}
-			for (my($i)=0; $i<length($str); $i++) {
-				my($c) = substr($str,$i,1);
-				if ($c eq '.') {
-					die("Invalid 14-segment string (<'$str'> at input line $.)\n")
-						unless ($i > 0);
-					$ROM[$ADDR-1] |= 0x80;
-				} else {
-					my($o) = ord($c);
-					if ($o>=ord('0') && $o<=ord('9')) {
-						$ROM[$ADDR++] = $o;
-					} elsif ($o>=ord('A') && $o<=ord('Z')) {
-						$ROM[$ADDR++] = $o;
-					} elsif ($o>=ord('<') && $o<=ord('@')) {
-						$ROM[$ADDR++] = $o - ord('<') + 100;
-					} elsif ($o>=ord('$') && $o<=ord('&')) {
-						$ROM[$ADDR++] = $o - ord('$') + 105;
-					} elsif ($o>=ord(']') && $o<=ord('_')) {
-						$ROM[$ADDR++] = $o - ord(']') + 114;
-					} elsif ($c eq ' ') { $ROM[$ADDR++] = 32;
-					} elsif ($c eq ',') { $ROM[$ADDR++] = 108;
-					} elsif ($c eq '.') { $ROM[$ADDR++] = 109;
-					} elsif ($c eq '+') { $ROM[$ADDR++] = 110;
-					} elsif ($c eq '-') { $ROM[$ADDR++] = 111;
-					} elsif ($c eq '/') { $ROM[$ADDR++] = 112;
-					} elsif ($c eq '{') { $ROM[$ADDR++] = 117;
-					} elsif ($c eq '*') { $ROM[$ADDR++] = 118;
-					} elsif ($c eq '}') { $ROM[$ADDR++] = 119;
-					} elsif ($c eq '[') { $ROM[$ADDR++] = 121;
-					} elsif ($c eq '\\') {
-						$i++;
-						if (substr($str,$i,1) eq '\\') {
-							$ROM[$ADDR++] = 113;
-						} elsif (substr($str,$i,1) eq "'") { 
-							$ROM[$ADDR++] = 130;
-						} else {
-							my($code) = substr($str,$i,2);
-							die("Invalid string escape sequence <\\$code> at input line $.\n")
-								unless (length($code)==2 && hex($code)>=0 && hex($code)<=0xFF);
-							$ROM[$ADDR++] = hex($code);
-							$i++;
-						}
-					} else {
-						die("Invalid character (ord = $o) (<'$str'> at input line $.)\n");
-						$ROM[$ADDR++] = $o;
-					}
-				}
-			}
-			return 1;
-	    }
-
-    #------------------------------------------------------------------------------------------
-    # Compressed 14-Segment Strings (Z-Strings)
-    #
-    #	16-long character strings,
-    #		consisting only of chacaters A-Z, space, 0, 1, 2, 3 and 5, 
-    #		and having a space in the last position
-	#	that are compressed into 10 bytes
-	#
-    # Encoding (before inverting):
-    #       $00                         <space>
-    #       $01-$1A                     <A>-<Z>     
-    #       $1B-$1E                     <0>-<3>     fancy font
-    #       $1F                         <5>         fancy font
-    #
-    # Notes:
-    #   - encoding governed by unpacking efficiency
-	#	- code is inverted to allow checking for space in last position (Z-Strings)
-	#	- regular strings with periods in positions 5-10 are misinterpreted as Z-strings
-	#	  and cannot be displayed
-    #-----------------------------------------------------------------------------------------
-
-		my($str);
-		if ($OP eq '.ZSTR') {
-			($str) = m{\.ZSTR\s+'(.*)'\s*$};											   # extract string from original source line
-			($str) = ($OP_ARG[0] =~ m{^'(.*)'$})											# possibly an ALIAS, in which case OP_ARG[0] is the substituted string
-				if (length($str) == 0);
-			die("Syntax: .ZSTR '16-character string' (<'$str'> at input line $.)\n")    
-				unless (length($str) == 16);
-			die(sprintf("Invalid non-space character <%s> in last positon of z-string (<'$str'> at input line $.)\n",substr($str,15)))
-				unless (substr($str,15) eq ' ');
-	
-			set_label_type(3);
-	
-		ENCODE_PART_2:
-			my(@ZSbit);
-			for (my($i)=0; $i<8; $i++) {
-				my($c) = ($i >= length($str)) ? ' ' : substr($str,$i,1);
-				my($o) = ord($c);
-	
-				if ($c eq ' ') {						$o = 0; }
-				elsif ($o>=ord('0') && $o<=ord('3')) {	$o = $o - ord('0') + 0x1B; }
-				elsif ($o==ord('5'))				 {	$o = ord('4') - ord('0') + 0x1B; }
-				elsif ($o>=ord('A') && $o<=ord('Z')) {	$o = $o - ord('A') + 1; }
-				else { die("Invalid z-string character <$c> (<'$str'> at input line $.)\n"); }
-	
-#			printf(STDERR "bit%d: %08b (%s)\n",$i,$o,$c);
-	
-				$ZSbit[0][$i] = 1 unless ($o>>4)&0x01;
-				$ZSbit[1][$i] = 1 unless ($o>>3)&0x01;
-				$ZSbit[2][$i] = 1 unless ($o>>2)&0x01;
-				$ZSbit[3][$i] = 1 unless ($o>>1)&0x01;
-				$ZSbit[4][$i] = 1 unless ($o>>0)&0x01;
-			}
-	
-			for (my($i)=0; $i<5; $i++) {
-				my($ZSB) = 0;
-				$ZSB |= 0x01 if $ZSbit[$i][0];
-				$ZSB |= 0x02 if $ZSbit[$i][1];
-				$ZSB |= 0x04 if $ZSbit[$i][2];
-				$ZSB |= 0x08 if $ZSbit[$i][3];
-				$ZSB |= 0x10 if $ZSbit[$i][4];
-				$ZSB |= 0x20 if $ZSbit[$i][5];
-				$ZSB |= 0x40 if $ZSbit[$i][6];
-				$ZSB |= 0x80 if $ZSbit[$i][7];
-				$ROM[$ADDR++] = $ZSB;
-			}
-	
-			if (length($str) > 8) {
-				$str = substr($str,8);
-				undef(@ZSbit);
-				goto ENCODE_PART_2;
-			}
-	
 			return 1;
 	    }
 
@@ -2839,79 +2446,7 @@ sub compile_pragma()
 	    }
 	} # MODE == 1
 
-	#-----------------------------------------------------------
-	# Address Management
-	# 	- do not move this to the beginning of the routine
-	#-----------------------------------------------------------
-
-    if ($OP eq '.ORG') {                                                               		# .ORG
-    	$ADDR = $OP_ARG[0];
-    	if ($WMS_System>=6 && $WMS_System<=11) {											# System 6-11: no ROM paging
-			if ($ADDR =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {
-				die("Syntax: .ORG ROM-addr (<@_> at input line $.)\n")
-					unless defined($2);
-				   if ($1 eq '$') { $ADDR = hex($2); }										# decimalize
-				elsif ($1 eq '%') { $ADDR = eval('0b' . $2); }
-				else			  { $ADDR = $2; }
-				die("Cannot decode number <$OP_ARG[0]> at input line $.\n")
-					unless numberp($ADDR);
-				die(sprintf(".ORG address \$%04X out of range [\$%04X-\$%04X] at input line $.\n",$ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
-					unless ($ADDR >= $MIN_ROM_ADDR && $ADDR <= $MAX_ROM_ADDR);
-			} else {
-				die("Syntax: .ORG ROM-addr (<@_> at input line $.)\n");
-	        }
-	    } elsif ($WMS_System =~ /^WPC/) {													# WPC: ROM paging
-			if ($ADDR =~ m{^\$?([0-9A-Fa-f]{2}):\$?([0-9A-Fa-f]{4})$}) {
-				die("Syntax: .ORG PG:ADDR (<@_> at input line $.)\n")
-					unless defined($2);
-				my($pg) = hex($1);
-				my($ad) = hex($2);
-				die("Cannot decode <$OP_ARG[0]> at input line $.\n")
-					unless numberp($pg) && numberp($ad);
-##				$FIRST_RPG = $pg unless defined($FIRST_RPG);								# first .ORG
-				$RPG  = $pg;
-				$ADDR = ($pg == 0xFF) ? (0x3C*0x4000 + $ad)
-									  : ($pg*0x4000 + ($ad - 0x4000));
-				die(sprintf(".ORG ROM address \$%05X out of valid range [\$%05X-\$%05X] at input line $.\n",$ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
-					unless ($ADDR >= $MIN_ROM_ADDR && $ADDR <= $MAX_ROM_ADDR);
-			} else {
-				die("Syntax: .ORG <PG:ADDR> (<@_> at input line $.)\n");
-	        }
-	    } else {
-	    	die;
-	    }
-
-        $FIRST_ADDR = $ADDR if ($ADDR < $FIRST_ADDR);
-
-		if (defined($ROM[$ADDR])) {
-			my($nBytes) = 0;
-			while (defined($ROM[$ADDR + ++$nBytes])) {}
-			if ($opt_v || $opt_t) {
-				printf(STDERR "%5d: WARNING: ROM overflow (<.ORG \$%04X>) at input line $.\n",$LINE[$ADDR],$ADDR);
-			} else {
-				die(sprintf("ROM overflow ($nBytes bytes; <.ORG \$%04X> replacing $ROM[$ADDR]) at input line $.\n",$ADDR))
-					unless $opt_1;
-			}
-		}
-        return 1;
-    }
-
-    if (isMember($OP,'.ASSUME_DP','.DP','.SET_DP')) {									# set direct page register for compiler
-    	die("Invalid compiler pragma <$OP> for WMS System <$WMS_System> at input line $.\n")
-    		unless defined($RPG);
-		if ($OP_ARG[0] =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {
-			   if ($1 eq '$') { $DP = hex($2); }										# decimalize
-			elsif ($1 eq '%') { $DP = eval('0b' . $2); }
-			else			  { $DP = $2; }
-			die("Cannot decode number <$OP_ARG[0]> at input line $.\n")
-	            unless numberp($DP);
-	        return 1;
-	    } else {
-	    	die("Syntax: $OP addr-MSB (<$OP @OP_ARG> at input line $.)\n");
-	    }
-    }
-
-	die("Unknown mode-$MODE .PRAGMA <@_> on line $.\n");
+	return undef;
 }
     
 #----------------------------------------------------------------------

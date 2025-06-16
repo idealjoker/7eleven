@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . W P C 
 #                    doc: Mon May 26 08:07:03 2025
-#                    dlm: Fri Jun 13 12:09:15 2025
+#                    dlm: Mon Jun 16 13:20:59 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 17 44 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 221 45 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -15,6 +15,7 @@
 #	Jun  8, 2025: - adapted to %System_Option
 #	Jun 10, 2025: - added ROM_Size option
 #	Jun 13, 2025: - added RPG initialization
+#	Jun 16, 2025: - added compile_pragma()
 # HISTORY END
 
 use strict vars;
@@ -112,6 +113,162 @@ sub code_ref(@)															# 1MB ROM -> pg:address
 	my($RPG) = int($ROM_addr / 0x4000);
 	return ($RPG <= 0x3D) ? sprintf('$%02X:%04X',$RPG,($ROM_addr % 0x4000) + 0x4000)
 						  : sprintf('$FF:%04X',($ROM_addr - 0x3D*0x4000));
+}
+
+
+sub compile_pragma()
+{
+	our($OP,@OP_ARG);
+    return undef unless ($OP =~ m{^\.});
+	return 1 if compile_common_pragma();
+	
+	our(@ROM,$MIN_ROM_ADDR,$MAX_ROM_ADDR,$MODE,$FIRST_ADDR,$DP,@LINE,$opt_v,$opt_1);
+
+	#------------------------------
+	# Mode Checking
+	#------------------------------
+
+	if ($MODE==0 && $OP eq '.M6809_MODE') {    
+		die("Syntax: .M6809_MODE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$MODE = 1;
+		return 1;
+	}
+
+	if ($OP eq '.DATA_MODE') {	  
+		die("Syntax: .DATA_MODE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$MODE = 0;																			# don't set to mode 3, because after any data mode byte, there can be any mode
+		return 1;
+    }
+
+    #----------------
+    # Data Definition
+    #----------------
+
+   	if (($MODE == 0) || ($MODE == 3)) {
+		if ($OP eq '.DR') { 																# .DR (define WPC code ref)
+			die("Syntax: .DR WPC-ref (<@_> at input line $.)\n")
+				unless (@OP_ARG == 2);
+			set_label_type(1);
+			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			die(".DBR invalid WPC reference page (<@_> at input line $.)\n")
+				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
+			return 1;
+		}
+	
+		if ($OP eq '.DBR') {																# .DBR (define byte followed by WPC ref)
+			die("Syntax: .DBR byte-val WPC-ref (<@_> at input line $.)\n")
+				unless (@OP_ARG == 3);
+			set_label_type(3);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			die(".DBR invalid WPC reference page (<@_> at input line $.)\n")
+				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
+			return 1;
+		}
+	
+		if ($OP eq '.DBRB') {																# .DBRB (define byte, WPC ref, followed by bytes)
+			die("Syntax: .DBRB byte-val WPC-ref (<@_> at input line $.)\n")
+				unless (@OP_ARG >= 5);
+			set_label_type(3);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; 
+			die(".DBR invalid WPC reference page (<@_> at input line $.)\n")
+				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
+			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {
+				$ROM[$ADDR++] = $OP_ARG[0]; 
+			}
+			return 1;
+		}
+	
+		if ($OP eq '.DBRWB') {																# .DBRWB (define byte, WPC ref, word, followed by bytes)
+			die("Syntax: .DBRWB byte-val WPC-ref (<@_> at input line $.)\n")
+				unless (@OP_ARG >= 6);
+			set_label_type(3);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			die(".DBR invalid WPC reference page (<@_> at input line $.)\n")
+				unless ($ROM[$ADDR]<=0x3D) || ($ROM[$ADDR]==0xFF);
+			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE';
+			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {
+				$ROM[$ADDR++] = $OP_ARG[0]; 
+			}
+			return 1;
+		}
+	
+		if ($OP eq '.DBBRB') {																# .DBBRB (define 2 bytes, WPC ref, followed by bytes)
+			die("Syntax: .DBBRB byte-val byte-vale WPC-ref byte-val[...] (<@_> at input line $.)\n")
+				unless (@OP_ARG >= 5);
+			set_label_type(3);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; $ROM[$ADDR++] = '16-BIT VALUE'; shift(@OP_ARG);
+			$ROM[$ADDR++] = $OP_ARG[0]; 
+			die(".DBBRB invalid WPC reference page (<@_> at input line $.)\n")
+				unless ($ROM[$ADDR-1]<=0x3D) || ($ROM[$ADDR-1]==0xFF);
+			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {
+				$ROM[$ADDR++] = $OP_ARG[0];
+			}
+			return 1;
+		}
+	
+		if ($OP =~ m{^.STR}) {																# .STR[len] (define string)
+			die(".STR not yet implemented\n");
+		}
+	}
+
+    if ($OP eq '.ORG') {                                                               		# .ORG
+    	$ADDR = $OP_ARG[0];
+		if ($ADDR =~ m{^\$?([0-9A-Fa-f]{2}):\$?([0-9A-Fa-f]{4})$}) {
+			die("Syntax: .ORG PG:ADDR (<@_> at input line $.)\n")
+				unless defined($2);
+			my($pg) = hex($1);
+			my($ad) = hex($2);
+			die("Cannot decode <$OP_ARG[0]> at input line $.\n")
+				unless numberp($pg) && numberp($ad);
+			$RPG  = $pg;
+			$ADDR = ($pg == 0xFF) ? (0x3C*0x4000 + $ad)
+								  : ($pg*0x4000 + ($ad - 0x4000));
+			die(sprintf(".ORG ROM address \$%05X out of valid range [\$%05X-\$%05X] at input line $.\n",$ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
+				unless ($ADDR >= $MIN_ROM_ADDR && $ADDR <= $MAX_ROM_ADDR);
+		} else {
+			die("Syntax: .ORG <PG:ADDR> (<@_> at input line $.)\n");
+        }
+
+        $FIRST_ADDR = $ADDR if ($ADDR < $FIRST_ADDR);
+
+		if (defined($ROM[$ADDR])) {
+			my($nBytes) = 0;
+			while (defined($ROM[$ADDR + ++$nBytes])) {}
+			if ($opt_v || $opt_t) {
+				printf(STDERR "%5d: WARNING: ROM overflow (<.ORG \$%04X>) at input line $.\n",$LINE[$ADDR],$ADDR);
+			} else {
+				die(sprintf("ROM overflow ($nBytes bytes; <.ORG \$%04X> replacing $ROM[$ADDR]) at input line $.\n",$ADDR))
+					unless $opt_1;
+			}
+		}
+        return 1;
+    }
+
+    if (isMember($OP,'.ASSUME_DP','.DP','.SET_DP')) {									# set direct page register for compiler
+		if ($OP_ARG[0] =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {
+			   if ($1 eq '$') { $DP = hex($2); }										# decimalize
+			elsif ($1 eq '%') { $DP = eval('0b' . $2); }
+			else			  { $DP = $2; }
+			die("Cannot decode number <$OP_ARG[0]> at input line $.\n")
+	            unless numberp($DP);
+	        return 1;
+	    } else {
+	    	die("Syntax: $OP addr-MSB (<$OP @OP_ARG> at input line $.)\n");
+	    }
+    }
+
+	die("Unknown mode-$MODE .PRAGMA <@_> on line $.\n");
 }
 
 1; 

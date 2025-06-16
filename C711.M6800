@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 0 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Thu Jun  5 16:02:39 2025
+#                    dlm: Mon Jun 16 14:33:49 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 43 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 696 2 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -15,6 +15,7 @@
 #	Jun  4, 2025: - adapted to %System_Options
 #				  - debugging output
 #				  - BUG: _SLEEP did not accept hex values any more
+#	Jun 16, 2025: - added support for RTS lex label to JMP
 # HISTORY END
 
 use strict vars;
@@ -23,7 +24,7 @@ our($OP,@OP_ARG,$MODE,%JSR_TRG,@ROM,$ADDR,%LBL,@IF_CONT_LBL,@LOOP_LBL,@LOOP_DONE
 	$EXEC6800_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
 	@newly_defined_label,$WMS_System,%System_Option,$IVM_DISABLED,$opt_T);
 
-my($last_RTS_addr,@forward_lexical_RTS_branch);
+my($last_RTS_addr,@forward_lexical_RTS_branch,@forward_lexical_exitThread_branch);
 
 # TO-DO:
 #	- disallow extra arguments as in [C711.M6809]
@@ -625,10 +626,28 @@ sub asm_6800_op($$@)
 			return 1;
 		}
 		if ($am eq 'O') {																# potentially optimizable 2-byte absolute address
-			die("No lexical label allowed for $OP instruction at input line $.\n")
-				if ($OP_ARG[0] =~ m{^[<>]});
+##			die("No lexical label allowed for $OP instruction at input line $.\n")
+##				if ($OP_ARG[0] =~ m{^[<>]});
 			                    
-			$JSR_TRG{$OP_ARG[0]}++ if ($OP eq 'JSR');			
+            if ($OP eq 'JSR') {
+                $JSR_TRG{$OP_ARG[0]}++;
+            } else {
+                die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+                    if (@OP_ARG > 1);
+            }
+
+			if ($OP eq 'JMP') {
+				if ($OP_ARG[0] eq '<RTS') { 												# lexical labels
+					$OP_ARG[0] = $last_RTS_addr;
+				} elsif ($OP_ARG[0] eq '>RTS') {
+					push(@forward_lexical_RTS_branch,$ADDR+1);
+					$OP_ARG[0] = 'no RTS found after branch to >RTS';
+				} elsif ($OP_ARG[0] eq '>!exitThread') {
+					push(@forward_lexical_exitThread_branch,$ADDR+1);
+					$OP_ARG[0] = 'no !exitThread found after JMP to >!exitThread';
+	            }
+	        }
+
 			$ROM[$ADDR++] = $opc[$i];
 			$ROM[$ADDR++] = ($EXEC6800_BLOCK_ID > 0)									# don't optimize inside begin6800/end6800
 						  ? $OP_ARG[0] 
@@ -674,7 +693,7 @@ sub asm_6800_op($$@)
 
 sub compile_asm()
 {
-	print(STDERR "\tcompile_asm(ADDR=$ADDR MODE=$MODE): $OP @OP_ARG\n") if $opt_T;
+##	printf(STDERR "\tcompile_asm(ADDR=%04X MODE=$MODE): $OP @OP_ARG\n",$ADDR) if $opt_T;
 
 	if ($WMS_System >= 7 && $WMS_System <= 11) {											# WVM instructions in assembler code
 
@@ -756,7 +775,12 @@ sub compile_asm()
 	if (asm_6800_op('RTS','',0x39)) {
 		$last_RTS_addr = $ADDR - 1;
 		while (@forward_lexical_RTS_branch) {
-			$ROM[pop(@forward_lexical_RTS_branch)] = $EIGHT_BIT_LABEL_PREFIX . ($ADDR - 1);
+        	my($a) = pop(@forward_lexical_RTS_branch);
+			if ($ROM[$a-1] == 0x7E) {
+        		$ROM[$a]  = $ADDR - 1;
+            } else {
+				$ROM[$a] = $EIGHT_BIT_LABEL_PREFIX . ($ADDR - 1);
+            }
 		}
 		$MODE = 0;
 		return 1;

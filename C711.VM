@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . V M 
 #                    doc: Wed May 21 21:55:45 2025
-#                    dlm: Wed Jun  4 08:55:37 2025
+#                    dlm: Mon Jun 16 13:25:11 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 1100 0 NIL 0 0 72 8 2 4 NIL ofnI
+#                    uE-Info: 1098 20 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -14,6 +14,7 @@
 #	May 26, 2025: - renamed from C711.WVM
 #				  - renamed some funs
 #	Jun  2, 2025: - corrected header
+#	Jun 16, 2025: - added compile_vm_pragma()
 # HISTORY END
 
 use strict vars;
@@ -1086,6 +1087,64 @@ sub asm_wvm_copyTo($$)																	# copyTo Reg Reg
 	$ROM[$ADDR++] = $opc;
 	$ROM[$ADDR++] = wvm_register_arg(0)<<4 | wvm_register_arg(1);
 	return 1;
+}
+
+#----------------------------------------------------------------------
+# VM Pragmas
+#----------------------------------------------------------------------
+
+sub compile_vm_pragma()
+{
+	our($OP,@OP_ARG);
+
+	#------------------------------
+	# Mode Checking
+	#------------------------------
+
+	if (($MODE==0 || $MODE==1) && ($OP eq '.WVM_MODE' || $OP eq '.IVM_MODE')) {    
+		die("Syntax: .WVM_MODE|.IVM_MODE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$MODE = 2;
+		return 1;
+	}
+
+	if (($MODE==0 || $MODE==2) && ($OP eq '.M6800_MODE')) {    
+		die("Syntax: .M6800_MODE|.M680X_MODE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$MODE = 1;
+		return 1;
+	}
+
+	if ($OP eq '.DATA_MODE') {	  
+		die("Syntax: .DATA_MODE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$MODE = 0;																			# don't set to mode 3, because after any data mode byte, there can be any mode
+		return 1;
+    }
+
+    #------------------------------
+    # IVM: Enabling and Disabling
+    #------------------------------
+
+	if ($OP eq '.DISABLE_IVM') {    
+		die("Syntax: .DISABLE_IVM (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		die("attempted nesting of .DISABLE_IVM at input line $.\n")
+			if $IVM_DISABLED;
+		$IVM_DISABLED = 1;
+		return 1;
+	}
+
+	if ($OP eq '.ENABLE_IVM') { 
+		die("Syntax: .ENABLE_IVM (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		die("attempted nesting of .ENABLE_IVM at input line $.\n")
+			unless $IVM_DISABLED;
+		undef($IVM_DISABLED);
+		return 1;
+    }
+
+	return undef;	
 }
 
 #----------------------------------------------------------------------

@@ -1,13 +1,14 @@
 #======================================================================
 #                    C 7 1 1 . S Y S T E M 6 
 #                    doc: Mon Jun  2 09:55:01 2025
-#                    dlm: Mon Jun  2 09:59:23 2025
+#                    dlm: Mon Jun 16 12:36:14 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 35 97 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 46 38 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jun  2, 2025: - created
+#	Jun 16, 2025: - added compile_pragma()
 # HISTORY END
 
 use strict vars;
@@ -35,7 +36,54 @@ sub define_syscall($$@)
 sub code_addr(@)															# ROM addr = CPU addr
 {
 	return $_[0];
+}
 
+
+sub compile_pragma()
+{
+	our($OP,@OP_ARG);
+    return undef unless ($OP =~ m{^\.});
+	return 1 if compile_common_pragma();
+
+	our($MODE,@ROM,$MIN_ROM_ADDR,$MAX_ROM_ADDR,$opt_v,$opt_t,$opt_1,@LINE,$FIRST_ADDR);
+
+	#-----------------------------------------------------------
+	# Address Management
+	# 	- do not move this to the beginning of the routine
+	#-----------------------------------------------------------
+
+	if ($OP eq '.ORG') {																	# .ORG
+		$ADDR = $OP_ARG[0];
+		if ($ADDR =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {
+			die("Syntax: .ORG ROM-addr (<@_> at input line $.)\n")
+				unless defined($2);
+	   if ($1 eq '$') { $ADDR = hex($2); }										  # decimalize
+			elsif ($1 eq '%') { $ADDR = eval('0b' . $2); }
+			else			  { $ADDR = $2; }
+			die("Cannot decode number <$OP_ARG[0]> at input line $.\n")
+				unless numberp($ADDR);
+			die(sprintf(".ORG address \$%04X out of range [\$%04X-\$%04X] at input line $.\n",$ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR))
+				unless ($ADDR >= $MIN_ROM_ADDR && $ADDR <= $MAX_ROM_ADDR);
+		} else {
+			die("Syntax: .ORG ROM-addr (<@_> at input line $.)\n");
+		}
+
+		$FIRST_ADDR = $ADDR if ($ADDR < $FIRST_ADDR);
+
+		if (defined($ROM[$ADDR])) {
+			my($nBytes) = 0;
+			while (defined($ROM[$ADDR + ++$nBytes])) {}
+			if ($opt_v || $opt_t) {
+				printf(STDERR "%5d: WARNING: ROM overflow (<.ORG \$%04X>) at input line $.\n",$LINE[$ADDR],$ADDR);
+			} else {
+				die(sprintf("ROM overflow ($nBytes bytes; <.ORG \$%04X> replacing $ROM[$ADDR]) at input line $.\n",$ADDR))
+					unless $opt_1;
+			}
+		}
+		return 1;
+	}
+
+	die("Unknown mode-$MODE .PRAGMA <@_> on line $.\n");
 }
 
 1; 
