@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Sun Jun 15 22:44:24 2025
+#					 dlm: Mon Jun 16 14:46:35 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 40 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 32 64 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -29,6 +29,7 @@
 #				  - added percentages to output
 #	Jun 15, 2025: - adapted to change in [D711.WPC]
 #				  - removed path from usage error
+#	Jun 16, 2025: - BUG: usage error change prevented libs from being loaded
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -36,8 +37,11 @@
 #----------------------------------------------------------------------
 
 use Getopt::Std;
-$0 =~ s@^.*/(.*)$@\1@;
-die("Usage:\t$0\n\t\t" .
+use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
+
+my($prog)  = $0;
+$prog =~ s@^.*/(.*)$@\1@;
+die("Usage:\t$prog\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[include -a)ddressses in output] [include -c)ode bytes]\n\t\t" . 
 			"[suppress -g)ap data (readability)]\n\t\t" . 
@@ -47,8 +51,6 @@ die("Usage:\t$0\n\t\t" .
 			"[output -o)bject data <PG|FF> [se-t) <tag>]] [-p)rocess object <file>]\n\t\t" .
 			"<Alphanumeric|DMD> <ROM image>\n")
 	unless &getopts('acgi:lLo:p:Qst:') && @ARGV==2;
-
-use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
 
 my($lbl);
 if ($ARGV[0] =~ m{^[aA][lL]}) {
