@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Jun 13 12:10:57 2025
+#                    dlm: Fri Jun 20 07:13:25 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 46 64 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 48 44 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -44,6 +44,8 @@
 #					the switch table
 #	Jun 13, 2025: - added __CHECKSUM labels
 #				  - BUG: _FINDTHREAD_ID+1 had only one leading _
+#	Jun 19, 2025: - added Hooks & labels
+#				  - changed some label names
 # END OF HISTORY
 
 #======================================================================
@@ -132,7 +134,7 @@ define_label('=GI_BRIGHTNESS',						0x03D6+$VO); 	# 5 bytes
 
 define_label('_PLAYER_UP',							0x040F+$VO);
 define_label('_BALL_IN_PLAY',						0x0410+$VO);
-define_label('_EXTRABALLS_PENDING??',				0x0411+$VO);
+define_label('_EXTRABALLS_PENDING',					0x0411+$VO);
 	define_label('_BACKGROUND_MUSIC_PLAYING',		0x0445+$VO);
 unless ($WPCV eq 'WPC(Alphanumeric)') {
 	define_label('^DMD_PLAYING_ANIMATION_DATA',		0x0481);
@@ -153,13 +155,19 @@ define_label('_TILTWARNINGS_LEFT',					0x04D4+$VO);
 #define_label('_BALLS_IN_TROUGH',					0x0CCF+$VO);
 #define_label('_BALLS_INSTALLED_IN_GAME',			0x0CD0+$VO);
 
+define_label('=SCOREBUF_p1',						0x1730);
+define_label('=SCOREBUF_p2',						0x1736);
+define_label('=SCOREBUF_p3',						0x173C);
+define_label('=SCOREBUF_p4',						0x1742);
+
 define_label('_RND_1',								0x1790);
 define_label('_RND_2',								0x1791);
 define_label('_RND_3',								0x1792);
+define_label('_DIAGNOSTICS_MODE',					0x1793);
 
 VERSION_OFFSETS(-6,0);
 ##define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$VO);
-##define_label('_BALLS_ACCOUNTED_FOR_COMPL',			0x1ED1+$VO);
+##define_label('_BALLS_ACCOUNTED_FOR_COMPL',		0x1ED1+$VO);
 
 #----------------------------------------------------------------------
 # ASIC
@@ -232,16 +240,16 @@ define_label('_TICKET_DISPENSER',					0x3FC6);	# Ticket Dispenser
 define_label('_ASIC_IRQ_CTRL', 						0x3FFF);	
 define_label('_ASIC_PERIPH_TMR_FIRQ_CLEAR',			0x3FF8);	# clear or disable?
 
-define_label('_CLOCK_HOURS',						0x3FFA);	# Time-of-day clock; R/W 
-define_label('_CLOCK_MINUTES',						0x3FFB);	
+define_label('_ASIC_CLOCK_HOURS',					0x3FFA);	# Time-of-day clock; R/W 
+define_label('_ASIC_CLOCK_MINUTES',					0x3FFB);	
 
-define_label('_ROM_LOCK',							0x3FF9);	# Not used
-define_label('_ROM_PAGE',							0x3FFC);	# R/W
+define_label('_ASIC_ROM_LOCK',						0x3FF9);	# Not used
+define_label('_ASIC_ROM_PAGE',						0x3FFC);	# R/W
 
-define_label('_RAM_LOCK',							0x3FFD);	
-define_label('_RAM_LOCKSIZE',						0x3FFE);	
+define_label('_ASIC_RAM_LOCK',						0x3FFD);	
+define_label('_ASIC_RAM_LOCKSIZE',					0x3FFE);	
 if ($WPCV eq 'WPC(95)') {
-	define_label('_RAM_PAGE',						0x3FF3); 	# W
+	define_label('_ASIC_RAM_PAGE',					0x3FF3); 	# W
 }
 
 define_label('_MPU_JUMPERS',						0x3FE7);	# 7-0: R: Jumper/DIP switch inputs
@@ -504,6 +512,7 @@ define_syscall('A=ballInPlay_lastBall?',				0xB1D1+$VO);	# B12E
 define_syscall('serveBall_and_exit',					0xB213+$VO);	# B170
 define_syscall('serveBall',								0xB218+$VO);	# B175
 define_syscall('ballServe_displayFX',					0xB224+$VO);
+define_syscall('nextBall_success?',						0xB24E+$VO);
 define_syscall('qualifyPlayfield',						0xB2C7+$VO);	# B224
 define_syscall('playfieldQualified?',					0xB2DF+$VO);
 
@@ -563,6 +572,7 @@ if ($WPCV eq 'WPC(Alphanumeric)') {
 }
 
 if ($WPCV eq 'WPC(DMD)') {
+ define_syscall('award_Extraball',						0xB383);
  define_syscall('A=EBpending', 			      			0xB3CA);
  define_syscall('printString[BXY]',						0xB97B);
  define_syscall('lampFX[A]',							0xCC3A);
@@ -612,11 +622,32 @@ define_syscall('3B:BYU=MBD_dataRefs[A]', 	         	0x7076+$VO, '', 3); # 77F2 +
 
 #----------------------------------------------------------------------
 # System Hooks
+#	_override means that if CC (true) on return, the system default
+#    		  code is NOT executed
 #----------------------------------------------------------------------
 
-$Hook[11]		= 'playfieldQualified';
-$Hook[13]		= 'ballServed';
+$Hook[0] 		= 'MBD_resetBallAccounting??_override';
+$Hook[1]		= 'debugger???';
+$Hook[2]		= 'score_override';
+$Hook[3]		= 'gameStart_override';
+$Hook[5] 		= 'ballStart_override??';
+$Hook[6]		= 'lastBall';
+$Hook[7]		= 'gameOver_override';
+$Hook[8]		= 'gameOver_complete';
+$Hook[9]		= 'startButton_override_1';
+
+$Hook[11]		= 'qualify_playfield';
+$Hook[12]		= 'awardEB_override';
+$Hook[13]		= 'ballServe_override';
+$Hook[15]		= 'player_gameStart';
+$Hook[16]		= 'prepare_nextBall';
+$Hook[19]		= 'tilt_override';
+
+$Hook[20]		= 'tiltWarning_override';
+$Hook[28]		= 'startButton_override_2';
+
 $Hook[45]		= 'endOfBall';
+
 $Hook[91]		= 'IRQtimer';
 
 #----------------------------------------------------------------------
@@ -687,7 +718,7 @@ $Adj[0x9E]		= 'AD_GI_powersaver_brightness';
 
 $Audit[0x801B] = 'AU_extraBalls';							# Standard Audit #13
 $Audit[0x801D] = 'AU_minutesOn??';							# Standard Audit #22
-$Audit[0x801E] = 'AU_gamesStarted';							# Standard Audit #01
+$Audit[0x801E] = 'AU_totalPlays';							# Standard Audit #02
 $Audit[0x801F] = 'AU_tilts';								# Standard Audit #24
 
 $Audit[0x802B] = 'AU_left_drains';							# Standard Audit #17

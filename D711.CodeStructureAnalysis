@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Sun Jun 15 10:13:55 2025
+#                    dlm: Mon Jun 16 15:51:23 2025
 #                    (c) idealjoker@mailbox.org
-#                    uE-Info: 643 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 298 106 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -39,6 +39,8 @@
 #				  - re-enabled JMP to lex labels, which have not yet been implemented
 #					in the compiler
 #	Jun 15, 2025: - added support for __IF, __ELSE, __WHILE, __ENDLOOP
+#	Jun 16, 2025: - BUG: _EndIf immediately before _If did not work (_If was not
+#						 correctly detected)
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -58,8 +60,9 @@ sub same_block($$@)
 {
 	my($la,$ha,$if_block) = @_;												# low and high
 
-#	local($trace) = ($la == 0xDDCD6 && $ha == 0xDDEC2) ? 1 : 0;				# SET TO TRACE IF AND LOOP BLOCK LOGIC
-#	local($trace) = 1;
+#	local($trace) = 1;														# SET TO TRACE IF AND LOOP BLOCK LOGIC
+	local($trace) = ($la == 0xDDCD6 && $ha == 0xDDEC2) ? 1 : 0;				# WPC example
+##	local($trace) = ($la == 0x5283 && $ha == 0x5288) ? 1 : 0;				# Sys 11 
 
 	my($block_ind) = $IND[$la];
 	for (my($i)=0; $i<@{$EXTRA[$la]}; $i++) {
@@ -286,11 +289,13 @@ sub bad_nesting_in_block($$$)
 	return undef unless $if_block;													
 	
 	for (my($a)=$la; $a<=$ha; $a++) {
+		printf(STDERR "nesting-testing at %04X\n",$a) if $trace;
 		next unless defined($OP[$a]);
 
 		if ($if_block) {															# IF-ELSE-ENDIF / If-Else-EndIf / Unless-Else-EndUnless
 			return 1 if isMember($OP[$a],'_ELSE','_Else');
-			return 1 if $EXTRA[$a][$#{$EXTRA[$a]}] &&
+			next if $a==$la && $if_block==1;										# endif allowed at same address as if
+			return 1 if $EXTRA[$a][$#{$EXTRA[$a]}] &&								# no endif allowed in block
 					    isMember($EXTRA[$a][$#{$EXTRA[$a]}],'_ENDIF','_EndIf','_EndUnless');
 		} else {																	# LOOP-WHILE / LOOP-ENDLOOP / Loop-While / Loop-Until / Loop-EndLoop
 			## NOT YET IMPLEMENTED

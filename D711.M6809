@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Fri Jun 13 17:40:15 2025
+#                    dlm: Tue Jun 17 21:12:55 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 59 74 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 60 60 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -57,6 +57,7 @@
 #					[C711]
 #	Jun 12, 2025: - improved error message
 #	Jun 13, 2025: - added code following for indirect extended JMP and JSR
+#	Jun 17, 2025: - changed to continue disassmbly after SWI
 # HISTORY END
 
 # NOTES:
@@ -662,7 +663,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 		}
 		return if op_INH(0x39,$addr,$ind,'RTS');	next if op_INH(0x3A,$addr,$ind,'ABX');
 		return if op_INH(0x3B,$addr,$ind,'RTI');	next if op_INH(0x3C,$addr,$ind,'CWAI'); 
-		next   if op_INH(0x3D,$addr,$ind,'MUL'); 	return if op_INH(0x3F,$addr,$ind,'SWI'); 
+		next   if op_INH(0x3D,$addr,$ind,'MUL'); 	next if op_INH(0x3F,$addr,$ind,'SWI'); 
 
 		next   if op_INH(0x40,$addr,$ind,'NEGA'); 	next if op_INH(0x43,$addr,$ind,'COMA');
 		next   if op_INH(0x44,$addr,$ind,'LSRA'); 	next if op_INH(0x46,$addr,$ind,'RORA');
@@ -825,7 +826,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			next if op_LREL(0x2E,$addr-1,$ind,'LBGT',$lbl_root,$follow_code);
 			next if op_LREL(0x2F,$addr-1,$ind,'LBLE',$lbl_root,$follow_code);
 	
-			return if op_INH(0x3F,$addr-1,$ind,'SWI2'); 
+			next if op_INH(0x3F,$addr-1,$ind,'SWI2'); 
 	
 			next if op_IMM2(0x83,$addr-1,$ind,'CMPD');	next if op_IMM2(0x8C,$addr-1,$ind,'CMPY');
 			next if op_IMM2(0x8E,$addr-1,$ind,'LDY');
@@ -857,7 +858,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			push(@{$OI[$addr]},'11');
 			$decoded[$addr++] = 1;
 
-			return if op_INH(0x3F,$addr-1,$ind,'SWI3'); 
+			next if op_INH(0x3F,$addr-1,$ind,'SWI3'); 
 		    
 			next if op_IMM2(0x83,$addr-1,$ind,'CMPU');	next if op_IMM2(0x8C,$addr-1,$ind,'CMPS');
 			next if op_DIR(0x93,$addr-1,$ind,'CMPU');	next if op_DIR(0x9C,$addr-1,$ind,'CMPS');

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Jun 15 22:25:44 2025
+#                    dlm: Thu Jun 19 11:47:31 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 95 60 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 940 35 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -429,13 +429,21 @@ sub disassemble_system_pointers()
 	$Address = def_WPC_ref('=AUX_SWITCHTABLE');
 		def_WPC_switchTable(undef,'Switch Table',1)
 	        if defined($Address);
+	$Address = 0x81C2;
+	$Address = def_WPC_ref('=BITGROUP_TABLE');
+		def_WPC_bitgroup_table(undef,'Bitgroup Table');
 
 	$Address = 0x812D;
 	insert_divider($Address,'System Data Pointers');
 
-	my(@skipAddr) = (0x81B6,0x81C5,0x821C);								# Switch Tables
+	my(@skipAddr) = (0x81B6,0x81C5,0x821C,0x81C2);							# Switch Tables
+
 	my(@strRef)   = (0x8133,0x8136,0x8139);							# String References
 	my(@strRefL)  = ('GAME_NAME','GAME_NUMBER','RELEASE_DATE');
+
+	my(@known)	  = (0x8151);
+	my(@knownL)	  = ('BALLSEARCH_TIMER');
+
 	my(@ptr) 	  = (0x81AE);										# pointers (not refs)
 	
 	my($i);
@@ -446,8 +454,10 @@ sub disassemble_system_pointers()
 		    def_word_hex(sprintf('UNKNOWN_SYSTEM_PTR_%04X',$Address));
 		} elsif ($i=isMember($Address,@strRef)) {
 		    def_WPC_stringRef(sprintf(defined($strRefL[$i]) ? $strRefL[$i] : 'UNKNOWN_SYSTEM_STRREF_%04X',$Address));
+		} elsif ($i=isMember($Address,@known)) {
+		    def_WPC_ref($knownL[$i]);
 		} else {
-			def_WPC_ref(sprintf('UNKNOWN_SYSTEM_REF_%04X',$Address));
+			def_WPC_ref(sprintf('UNKNOWN_SYSTEM_PARAM_%04X',$Address));
 		}
     }
 	
@@ -640,6 +650,175 @@ sub select_WPC_RPG($@)
     return $oRPG;
 }
 
+#======================================================================
+# WPC Tables
+#	- header:
+#		- number of entries (word)
+#		- number of bytes per entry (byte)
+#======================================================================
+
+#----------------------------------------------------------------------
+# Generic Table
+#----------------------------------------------------------------------
+
+sub def_WPC_table(@)
+{
+	my($lbl,$divider_label) = @_;
+#	print(STDERR "def_WPC_table(@_)\n");
+
+	die unless defined($Address);
+	return if ($decoded[$Address]);												
+	return if defined($OP[$Address]);
+
+	if (defined($lbl)) {
+		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
+	    setLabel($lbl,$Address);
+	}
+    
+	insert_divider($Address,$divider_label);
+
+	$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	$OP[$Address] = '.DWB';
+	my($rows,$cols) = (WORD($Address),BYTE($Address+2));
+	push(@{$OPA[$Address]},$rows);
+	push(@{$OPA[$Address]},$cols);
+	$REM[$Address] = 'number of switches, bytes per switch' unless defined($REM[$Address]);
+	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+
+	for (my($r)=0; $r<$rows; $r++) {
+		my($opaddr) = $Address;
+		$IND[$opaddr] = $data_indent; $TYPE[$opaddr] =  $CodeType_data;
+		$REM[$opaddr] = sprintf('Row#%d',$r+1);
+		if ($cols%2 == 0) {
+			$OP[$opaddr] = '.DW';
+			for (my($c)=0; $c<$cols; $c+=2) {
+				push(@{$OPA[$opaddr]},sprintf('$%04X!',WORD($Address)));
+				$decoded[$Address++] = $decoded[$Address++] = 1;
+	        }
+		} else {
+			$OP[$opaddr] = '.DB';
+			for (my($c)=0; $c<$cols; $c++) {
+				push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
+	        }
+	    }
+	}
+    insert_empty_line($Address-11);
+}   
+
+#----------------------------------------------------------------------
+# Generic Table
+#----------------------------------------------------------------------
+
+sub def_WPC_bitgroup_table(@)
+{
+	my($lbl,$divider_label) = @_;
+#	print(STDERR "def_WPC_table(@_)\n");
+
+	die unless defined($Address);
+	return if ($decoded[$Address]);												
+	return if defined($OP[$Address]);
+
+	if (defined($lbl)) {
+		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
+	    setLabel($lbl,$Address);
+	}
+    
+	insert_divider($Address,$divider_label);
+
+	$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	$OP[$Address] = '.DWB';
+	my($rows,$cols) = (WORD($Address),BYTE($Address+2));
+	push(@{$OPA[$Address]},$rows);
+	push(@{$OPA[$Address]},$cols);
+	$REM[$Address] = 'number of bitgroups, bytes per bitgroup' unless defined($REM[$Address]);
+	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+
+	for (my($r)=0; $r<$rows; $r++) {
+		my($opaddr) = $Address;
+		$IND[$opaddr] = $data_indent; $TYPE[$opaddr] =  $CodeType_data;
+		$REM[$opaddr] = sprintf('Row#%d',$r+1);
+		if ($cols%2 == 0) {
+			$OP[$opaddr] = '.DW';
+			for (my($c)=0; $c<$cols; $c+=2) {
+				my($ta) = WORD($Address);
+				push(@{$OPA[$opaddr]},sprintf('$%04X',$ta));
+				$decoded[$Address++] = $decoded[$Address++] = 1;
+
+				my($tl) = $LBL[$tar];
+				$tl = sprintf('.bitgroup#%02X',$r) unless defined($tl);
+	            setLabel($tl,$ta);
+
+				$IND[$ta] = $data_indent; $TYPE[$ta] =  $CodeType_data;
+				$OP[$ta] = '.DWB';
+				my($nextDta) = WORD($ta);
+				push(@{$OPA[$ta]},sprintf('$%04X',WORD($ta)));
+				$decoded[$ta] = $decoded[$ta+1] = 1;
+
+				my($t) = 0;
+				printf(STDERR "%04X: bitgroup def\n",$ta) if $t;
+				my($state) = 0; 											# 0: init; 1: def (FA); 2: rangeb1 (85); 3: rangeb2; 4: range done
+				for (my($i)=2; $ta+$i<$nextDta; $i++) {						# 5: flag? (81); 10-15: (F8->F9)
+					if (BYTE($ta+$i) == 0xFA) {
+						print(STDERR "\tS$state: Byte FA\n") if $t;
+						if ($state == 0) { $state = 1; }
+						elsif ($state == 1) { $state = 0; }
+						else { printf(STDERR "WARNING: Unexpected state <$state> in =BITGROUP_TABLE row#$r\n"); }
+						push(@{$OPA[$ta]},sprintf('$%02X!',BYTE($ta+$i)));
+					} elsif (BYTE($ta+$i) == 0x85) {
+						print(STDERR "\tS$state: Byte 85\n") if $t;
+						if ($state == 1) { $state = 2; }
+						elsif ($state == 2) { $state = 1; }
+						elsif ($state == 4) { $state = 1; }
+						else { printf(STDERR "WARNING: Unexpected state <$state> in =BITGROUP_TABLE row#$r\n"); }
+						push(@{$OPA[$ta]},sprintf('$%02X!',BYTE($ta+$i)));
+					} elsif (BYTE($ta+$i) == 0x81) {
+						print(STDERR "\tS$state: Byte 81\n") if $t;
+						if ($state == 1) { $state = 5; }
+						elsif ($state == 5) { $state = 1; }
+						else { die; }
+						push(@{$OPA[$ta]},sprintf('$%02X!',BYTE($ta+$i)));
+					} elsif (BYTE($ta+$i) == 0xF8) {
+						print(STDERR "\tS$state: Byte F8\n") if $t;
+						if ($state == 1) { $state = 10; }
+						else { printf(STDERR "WARNING: Unexpected state <$state> in =BITGROUP_TABLE row#$r\n"); }
+						push(@{$OPA[$ta]},sprintf('$%02X!',BYTE($ta+$i)));
+					} elsif (BYTE($ta+$i) == 0xF9) {
+						print(STDERR "\tS$state: Byte F9\n") if $t;
+						if ($state == 15) { $state = 1; }
+						else { printf(STDERR "WARNING: Unexpected state <$state> in =BITGROUP_TABLE row#$r\n"); }
+						push(@{$OPA[$ta]},sprintf('$%02X!',BYTE($ta+$i)));
+					} elsif (BYTE($ta+$i) >= 0x80) {
+						printf(STDERR "\tS$state: Byte %02X\n",BYTE($ta+$i)) if $t;
+						printf(STDERR "WARNING: Unexpected byte <%02X> in =BITGROUP_TABLE in =BITGROUP_TABLE row#$r\n",BYTE($ta+$i));
+						push(@{$OPA[$ta]},sprintf('$%02X!',BYTE($ta+$i)));
+					} else {
+						printf(STDERR "\tS$state: Byte %02X\n",BYTE($ta+$i)) if $t;
+						if ($state == 1) 	{ $state = 1; }
+						elsif ($state == 2) { $state = 3; }
+						elsif ($state == 3) { $state = 4; }
+						elsif ($state>=10 && $state<=14) { $state++; }
+						
+						if (isMember($state,1,3,4)) {
+							push(@{$OPA[$ta]},sprintf("Lamp#%d",BYTE($ta+$i)));
+						} else {
+							push(@{$OPA[$ta]},sprintf('$%02X!',BYTE($ta+$i)));
+						}
+                    }
+					$decoded[$ta+$i] = 1;
+					last if $state == 0;
+				}
+				printf(STDERR "WARNING: Unexpected state <$state> at end of =BITGROUP_TABLE\n") unless $state == 0;
+	        }
+		} else {
+			$OP[$opaddr] = '.DB';
+			for (my($c)=0; $c<$cols; $c++) {
+				push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
+	        }
+	    }
+	}
+    insert_empty_line($Address-11);
+}   
+
 #----------------------------------------------------------------------
 # Lock Table / Multiball Device Table
 #----------------------------------------------------------------------
@@ -748,7 +927,7 @@ sub def_WPC_switchTable(@)
     
 	insert_divider($Address,$divider_label);
 
-	$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
 	$OP[$Address] = '.DWB';
 	my($rows,$cols) = (WORD($Address),BYTE($Address+2));
 	push(@{$OPA[$Address]},$rows);
@@ -758,7 +937,7 @@ sub def_WPC_switchTable(@)
 
 	for (my($sw)=0; $sw<$rows; $sw++) {
 		my($opaddr) = $Address;
-		$IND[$opaddr] = $data_indent; $TYPE[$opaddr] =  $CodeType_data;
+		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
 		$OP[$opaddr] = '.DBBRB';
 		$REM[$opaddr] = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('Switch#%02X',$sw);
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
