@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Jun 15 22:26:35 2025
+#					 dlm: Fri Jun 20 13:43:06 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 310 68 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 365 81 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -362,7 +362,7 @@ my($unrealistic_score_limit) = 1e6;
 #----------------------------------------------------------------------
 # Interface
 #   use D711 (sys[,opts])
-#       sys     = 6, 7, 11, WPC(DMD); to-do: 9, WPC(Alphanumeric,Fliptronics,DCS,Security,95)
+#       sys     = 6, 7, 11, WPC(alpha,89); to-do: 9, WPC(fliptronics,DCS,security,95)
 #		opts 	expression to eval, e.g. '$opt_Q = 1' to suppress splash
 #----------------------------------------------------------------------
 

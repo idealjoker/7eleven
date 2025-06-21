@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Mon Jun 16 14:46:35 2025
+#					 dlm: Fri Jun 20 15:24:30 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 32 64 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 34 27 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -30,6 +30,8 @@
 #	Jun 15, 2025: - adapted to change in [D711.WPC]
 #				  - removed path from usage error
 #	Jun 16, 2025: - BUG: usage error change prevented libs from being loaded
+#	Jun 20, 2025: - added -v, reversed -s, and adapted to alpha and 89
+#					version ids
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -45,28 +47,26 @@ die("Usage:\t$prog\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[include -a)ddressses in output] [include -c)ode bytes]\n\t\t" . 
 			"[suppress -g)ap data (readability)]\n\t\t" . 
-			"[disable code-s)tructure analysis (debugging)]\n\t\t" .
+			"[produce -s)tructured code]\n\t\t" .
 			"[output -L)abel table]\n\t\t" .
 			"[output -l)abel definitions]\n\t\t" .
 			"[output -o)bject data <PG|FF> [se-t) <tag>]] [-p)rocess object <file>]\n\t\t" .
-			"<Alphanumeric|DMD> <ROM image>\n")
-	unless &getopts('acgi:lLo:p:Qst:') && @ARGV==2;
+			"-v <alpha|89> <ROM image>\n")
+	unless &getopts('acgi:lLo:p:Qst:v:') && defined($opt_v) && @ARGV==1;
 
 my($lbl);
-if ($ARGV[0] =~ m{^[aA][lL]}) {
-	$lbl = 'Alphanumeric';
-	$D711::compilation_options .= '-SWPC:WPC_Version=Alphanumeric:ROM_Size=256KB';
-} elsif ($ARGV[0] =~ m{^[dD][mM]}) {
-	$lbl = 'DMD';
-	$D711::compilation_options .= '-SWPC:WPC_Version=DMD:ROM_Size=512KB';
+if ($opt_v =~ m{^[aA]}) {
+	$lbl = 'alpha';
+	$D711::compilation_options .= '-SWPC:WPC_Version=alpha:ROM_Size=256KB';
+} elsif ($opt_v =~ m{^8}) {
+	$lbl = '89';
+	$D711::compilation_options .= '-SWPC:WPC_Version=89:ROM_Size=512KB';
 } else {
-	die("Invalid WPC subtype <$ARGV[0]>\n");
+	die("Invalid WPC version <$opt_v>\n");
 }
 
 require "D711.pm";
 D711->import("WPC($lbl)","\$opt_Q = $opt_l;");
-
-shift;
 
 $D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
@@ -76,7 +76,7 @@ $D711::fill_gaps	= !$opt_g;												# -g) exclude gap data
 # Load ROM
 #----------------------------------------------------------------------
 
-$D711::start_page = ($D711::WMS_System eq 'WPC(Alphanumeric)') ? 0x30 : 0x20;
+$D711::start_page = ($D711::WMS_System eq 'WPC(alpha)') ? 0x30 : 0x20;
 &D711::load_ROM($ARGV[0],0x4000,$D711::start_page,16);						# Load ROM: first game page (256KB ROM)
 &D711::load_ROM($ARGV[0],0x8000,0x3E,32);									# Load ROM: System pages
 #printf(STDERR "Address Range = %04X - %04X\n",$D711::MIN_ROM_ADDR,$D711::MAX_ROM_ADDR);
@@ -103,7 +103,7 @@ if (defined($opt_p)) {														# process object file
 #----------------------------------------------------------------------
 
 &D711::process_code_structure(0x8000,0xFFFF)								# if, while, ...
-	unless ($opt_s);
+	if ($opt_s);
 &D711::substitute_labels(0x8000,0xFFFF); 									# resolve labels
 &D711::substitute_identifiers(0x8000,0xFFFF);								# rename game-specific ids
 &D711::apply_magic_WPC(0x8000,0xFFFF); 		 	                            # e.g. &skip
@@ -111,7 +111,7 @@ if (defined($opt_p)) {														# process object file
 for (my($rpg)=$D711::start_page; $rpg<0x3E; $rpg++) {
 	&D711::select_WPC_RPG($rpg,20);
 	&D711::process_code_structure(0x4000,0x7FFF)							# if, while, ...
-		unless ($opt_s);
+		if ($opt_s);
 	&D711::substitute_labels(0x4000,0x7FFF); 								# resolve labels
 	&D711::substitute_identifiers(0x4000,0x7FFF);							# rename game-specific ids
 	&D711::apply_magic_WPC(0x4000,0x7FFF); 									# e.g. &skip

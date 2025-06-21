@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Jun 20 07:13:25 2025
+#                    dlm: Fri Jun 20 14:50:01 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 48 44 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 61 49 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -46,6 +46,7 @@
 #				  - BUG: _FINDTHREAD_ID+1 had only one leading _
 #	Jun 19, 2025: - added Hooks & labels
 #				  - changed some label names
+#	Jun 20, 2025: - updated versions to "official" names (DMD -> 89)
 # END OF HISTORY
 
 #======================================================================
@@ -56,23 +57,23 @@ my($WPCV) = $WMS_System;													# WPC version in D711 notation
 
 if (%System_Option) {
 	if ($System_Option{WPC_Version} =~ m{^[Aa][Ll]}) {						# alphanumeric
-		$WPCV = "WPC(Alphanumeric)";
-	} elsif ($System_Option{WPC_Version} =~ m{^[Dd][Mm]}) { 				# DMD
-		$WPCV = "WPC(DMD)";
+		$WPCV = "WPC(alpha)";
+	} elsif ($System_Option{WPC_Version} =~ m{^8}) { 						# WPC89
+		$WPCV = "WPC(89)";
 	} else {
 		die("WPC.API: WPC_Version <$System_Option{'WPC_Version'}> not yet implemented\n");
     }
 }
 	
-my($VO);																	# byte offset from DMD nominal address
+my($VO);																	# byte offset from 89 nominal address
 
 sub VERSION_OFFSETS($$) 
 {
 	my($alpha,$DMD) = @_;
 
-	if ($WPCV eq 'WPC(Alphanumeric)') {										# D711.pm
+	if ($WPCV eq 'WPC(alpha)') {										# D711.pm
 		$VO = $alpha;
-	} elsif ($WPCV eq 'WPC(DMD)') {
+	} elsif ($WPCV eq 'WPC(89)') {
 		$VO = $DMD;
 	} else {
 		die("WPC.API: $WPCV not yet implemented\n");
@@ -136,7 +137,7 @@ define_label('_PLAYER_UP',							0x040F+$VO);
 define_label('_BALL_IN_PLAY',						0x0410+$VO);
 define_label('_EXTRABALLS_PENDING',					0x0411+$VO);
 	define_label('_BACKGROUND_MUSIC_PLAYING',		0x0445+$VO);
-unless ($WPCV eq 'WPC(Alphanumeric)') {
+unless ($WPCV eq 'WPC(alpha)') {
 	define_label('^DMD_PLAYING_ANIMATION_DATA',		0x0481);
 	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
 	define_label('_LAST_DMD_ANIMATION_PLAYED??',	0x0487);
@@ -184,7 +185,7 @@ define_label('_LAMP_ROW_OUTPUT',					0x3FE4);	# 7-0: W: Lamp matrix row output
 
 define_label('_RELAYS_TRIAC',						0x3FE6);	# 7: W: Flipper enable relay 5: W: Coin door enable relay 4-0: W: General illumination enables
 
-if (isMember($WPCV,'WPC(Alphanumeric)','WPC(DMD)','WPC(Fliptronic)','WPC(DCS)')) {	# Pre-security
+if (isMember($WPCV,'WPC(alpha)','WPC(89)','WPC(fliptronic)','WPC(DCS)')) {	# Pre-security
 	define_label('_SW_COLUMN_STROBE',				0x3FEA);	# W: exactly one bit must be set
 	define_label('_SW_ROW_INPUT',					0x3FE9); 	# Pre-security;	7-0: R: Readings for the currently selected switch column. Bit 0 corresponds to row 1, bit 1 to row 2, and so on. A '1' indicates active voltage level. For a mechanical switch, this means the switch is closed. For an optical switch, this means the switch is open.
 } else {
@@ -200,7 +201,7 @@ define_label('_SOL_GENERAL_ENABLE',	       			0x3FE0);	# 7-0: W: Enables for sol
 define_label('_SOUNDCARD_DATA',						0x3FDC);	# 7-0: R/W: Send/receive a byte of data to/from the sound board.
 define_label('_SOUNDCARD_STATUS',					0x3FDD);	# 7: R: WPC sound board read ready 0: R: DCS sound board read ready
 
-if ($WPCV eq 'WPC(Alphanumeric)') {						# Display
+if ($WPCV eq 'WPC(alpha)') {						# Display
 	define_label('_ALPHANUMERIC_POS',				0x3FEB); 	# ALPHAnumeric display
 	define_label('_ALPHANUMERIC_ROW1',				0x3FEC); 	
 	define_label('_ALPHANUMERIC_ROW2',				0x3FEE); 	
@@ -226,7 +227,7 @@ if ($WPCV eq 'WPC(Alphanumeric)') {						# Display
 	define_label('_EXTBOARD_3',						0x3FED); 	
 }
 
-if (isMember($WPCV,'WPC(Fliptronic)','WPC(DCS)','WPC(Security)','WPC(95)')) {
+if (isMember($WPCV,'WPC(fliptronic)','WPC(DCS)','WPC(security)','WPC(95)')) {
 	define_label('_FLIPTRONIC',						0x3FD4);	
 	define_label('_FLIPTRONIC_UNUSED',				0x3FD5);	# Not used.
 	if ($WPCV eq 'WPC(95)') {
@@ -300,7 +301,7 @@ define_label('__CHECKSUM+1',						0xFFEF);
 
 #----------------------------------------------------------------------
 # Group 1: 
-#	- identical for Alphanumeric and DMD
+#	- identical for alpha and DMD
 #----------------------------------------------------------------------
 
 define_syscall('Panic',								0x8298,'E',1);			# NOTE 1: does not return
@@ -401,7 +402,7 @@ define_syscall('syscall_8EFD',						0x8EFD);
 
 #----------------------------------------------------------------------
 # Group 2: 
-#	- constant offset between Alphanumeric and DMD
+#	- constant offset between alpha and DMD
 #	- address labels of unknown syscalls refer to DMD location
 #----------------------------------------------------------------------
 
@@ -537,9 +538,9 @@ VERSION_OFFSETS(-273,0);
 define_syscall('abortDisplayFX[A]??',					0xC6E0+$VO);	# C5CF -273
 define_syscall('displayFX[A]',							0xC791+$VO);
 
-#if ($WPCV eq 'WPC(Alphanumeric)') {							# clashes with obj-based migration
+#if ($WPCV eq 'WPC(alpha)') {							# clashes with obj-based migration
 #	$VO = -248;
-#} elsif ($WPCV eq 'WPC(DMD)') {
+#} elsif ($WPCV eq 'WPC(89)') {
 #	$VO = 0;
 #} else {
 #	die("WPC.API: $WPCV not yet implemented\n");
@@ -562,7 +563,7 @@ define_syscall('switchActive[B]?',						0xFE0D+$VO);
 #	- different syscalls in different subversions
 #----------------------------------------------------------------------
 
-if ($WPCV eq 'WPC(Alphanumeric)') {
+if ($WPCV eq 'WPC(alpha)') {
  define_syscall('A=ballInPlay',			       			0xB327);
  define_syscall('ISR_lampMatrix_MUX',	       			0xD4E5);
  define_syscall('syscall_DD3B',							0xDD3B,'B');			# FH
@@ -571,7 +572,7 @@ if ($WPCV eq 'WPC(Alphanumeric)') {
  define_syscall('syscall_F389',							0xF389,'W');			# FH
 }
 
-if ($WPCV eq 'WPC(DMD)') {
+if ($WPCV eq 'WPC(89)') {
  define_syscall('award_Extraball',						0xB383);
  define_syscall('A=EBpending', 			      			0xB3CA);
  define_syscall('printString[BXY]',						0xB97B);
@@ -597,13 +598,13 @@ if ($WPCV eq 'WPC(DMD)') {
 
 # non-global
 
-if ($WPCV eq 'WPC(DMD)') {
+if ($WPCV eq 'WPC(89)') {
 	define_label('sys_tilt',							0x5921, 0x39);			# T2
 }
 
-#if ($WPCV eq 'WPC(Alphanumeric)') {
+#if ($WPCV eq 'WPC(alpha)') {
 #	$VO = 1902;
-#} elsif ($WPCV eq 'WPC(DMD)') {
+#} elsif ($WPCV eq 'WPC(89)') {
 #	$VO = 0;
 #} else {
 #	die("WPC.API: $WPCV not yet implemented\n");

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Mon Jun 16 15:51:23 2025
+#                    dlm: Sat Jun 21 08:23:05 2025
 #                    (c) idealjoker@mailbox.org
-#                    uE-Info: 298 106 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 47 32 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -41,6 +41,10 @@
 #	Jun 15, 2025: - added support for __IF, __ELSE, __WHILE, __ENDLOOP
 #	Jun 16, 2025: - BUG: _EndIf immediately before _If did not work (_If was not
 #						 correctly detected)
+#	Jun 20, 2025: - BUG: disassembly sometimes created lex label even though there
+#						 was a closer potential target
+#	Jun 21, 2025: - BUG: disassembly of lex labels got confused because the same
+#						 target can serve both as fwd and backward ref
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -519,6 +523,7 @@ sub process_code_structure($$)
 	for (my($addr)=$eaddr; $addr>=$saddr; $addr--) {						# >RTS
 		next unless defined($OP[$addr]);									# skip addresses w/o operations
 
+##		printf(STDERR "RTS at %04X\n",$addr),
 		$RTSa=$addr,next if ($OP[$addr] eq 'RTS');
 		next unless defined($RTSa);											# do not continue unless there is an address
 		next if ($OP[$addr] =~ m{L?BSR}) ||									# skip non-branch/jump operations
@@ -529,13 +534,13 @@ sub process_code_structure($$)
 		$trg = hex($trg);
 		die unless numberp($trg);
 		next unless ($trg == $RTSa);
+##		printf(STDERR ">RTS branch at %04X hit\n",$addr);
 
 		if (substr($OP[$addr],0,1) eq 'L') {								# skip branch ops that are too far away
 			next if ($trg > $addr+32768);
 		} else {
 			next if ($trg > $addr+128);
 		}
-##		if ($addr == 0x629A && $trg == 0x62BA) { die; }
 			     
 		$LEX_LABEL[$trg] = '>RTS';											# otherwise, we have a valid lexical label
 		$nLex++;
@@ -543,6 +548,7 @@ sub process_code_structure($$)
 	for (my($addr)=$eaddr; $addr>=$saddr; $addr--) {						# >!exitThread (LEXICAL BRANCH)
 		next unless defined($OP[$addr]);									# skip addresses w/o operations
 
+#		printf(STDERR "!exitThread at %04X\n",$addr),
 		$ETa=$addr,next if ($OP[$addr] eq '!') && hex(substr($OPA[$addr][0],1,4)) == $Lbl{exitThread};
 		next unless defined($ETa);											# do not continue unless there is an address
 		next if ($OP[$addr] =~ m{L?BSR}) ||									# skip non-branch/jump operations
@@ -552,15 +558,17 @@ sub process_code_structure($$)
 		my($trg) = ($OPA[$addr][$#{$OPA[$addr]}] =~ m{\$([0-9A-Fa-f]+)$});	# skip branch ops that do not target an !exitThread
 		$trg = hex($trg);
 		die unless numberp($trg);
+#		printf(STDERR "branch at %04X skipped\n",$addr),
 		next unless ($trg == $ETa);
+##		printf(STDERR "branch at %04X hit\n",$addr);
 
 		if (substr($OP[$addr],0,1) eq 'L') {								# skip branch ops that are too far away
 			next if ($trg > $addr+32768);
 		} elsif (substr($OP[$addr],0,1) eq 'B') {
 			next if ($trg > $addr+128);
 		} 
-#		die("$trg,$addr,$OP[$trg]") if $addr == 0x4FD9 && $_cur_RPG == 0x31;
 			     
+##		printf(STDERR "LEX_LABEL[%04X] = '>!exitThread'\n",$trg);
 		$LEX_LABEL[$trg] = '>!exitThread';									# otherwise, we have a valid lexical label
 		$nLex++;
 	}
@@ -576,6 +584,7 @@ sub process_code_structure($$)
 		$trg = hex($trg);
 		die unless numberp($trg);
 		next unless ($trg == $RTSa);
+##		printf(STDERR "%04X: $OP[$addr] $OPA[$addr][$#{$OPA[$addr]}] targetting %04X\n",$addr,$trg);
 
 		if (substr($OP[$addr],0,1) eq 'L') {								# skip branch ops that are too far away
 			next if ($trg < $addr-32767);
@@ -784,15 +793,35 @@ sub process_code_structure($$)
 	#   this probability but it does not completely avoid it.
 	#------------------------------------------------------------
 
+	undef($RTSa); undef($ETa);
+ADDR:
 	for (my($addr)=$saddr; $addr<=$eaddr; $addr++) {
+		next unless defined($OP[$addr]);
+		$RTSa=$addr,next if ($OP[$addr] eq 'RTS');
+		$ETa=$addr,next if ($OP[$addr] eq '!') && hex(substr($OPA[$addr][0],1,4)) == $Lbl{exitThread};
+
 		next unless (($OP[$addr] eq 'JMP' || $OP[$addr] =~ m{^L?B..$}) && !($OP[$addr] =~ m{^L?BSR$}));
 		my($trg) = ($OPA[$addr][0] =~ m{\$([0-9A-Fa-f]+)$});	
 		$trg = hex($trg);
 		die unless numberp($trg);
 
 		next unless $LEX_LABEL[$trg];
-		next if ($trg>$addr && substr($LEX_LABEL[$trg],0,1) ne '>');
-		next if ($trg<$addr && substr($LEX_LABEL[$trg],0,1) ne '<');
+
+		if ($trg > $addr) {											# forward ref
+			substr($LEX_LABEL[$trg],0,1) = '>';						# labels can be both fwd and bwd ref
+			for (my($sa)=$addr+1; $sa<$trg; $sa++) {					# make sure there is no closer lex target
+				next ADDR if ($LEX_LABEL[$trg] eq '>!exitThread' &&
+							  $OP[$sa] eq '!' &&
+							  hex(substr($OPA[$sa][0],1,4)) == $Lbl{exitThread}) ||
+							 ($LEX_LABEL[$trg] eq '>RTS' &&
+							  $OP[$sa] eq 'RTS');
+	        }
+	    } else {													# backward ref
+			substr($LEX_LABEL[$trg],0,1) = '<';
+			next ADDR if ($LEX_LABEL[$trg] eq '<!exitThread' && $trg != $ETa) ||
+						 ($LEX_LABEL[$trg] eq '<RTS' && $trg != $RTSa);
+	    }
+
 		$OPA[$addr][0] = $LEX_LABEL[$trg];
     }
 }
