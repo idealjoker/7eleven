@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Fri Jun 20 15:24:30 2025
+#					 dlm: Sat Jun 21 09:54:02 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 34 27 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 36 73 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -27,11 +27,13 @@
 #	Jun 10, 2025: - BUG: DMD was not recognized
 #	Jun 12, 2025: - corrected comments
 #				  - added percentages to output
+#	Jun 14, 2025: - added inCode ref detection
 #	Jun 15, 2025: - adapted to change in [D711.WPC]
 #				  - removed path from usage error
 #	Jun 16, 2025: - BUG: usage error change prevented libs from being loaded
 #	Jun 20, 2025: - added -v, reversed -s, and adapted to alpha and 89
 #					version ids
+#	Jun 21, 2025: - merged with studio version, had to re-do -s inversion
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -64,6 +66,7 @@ if ($opt_v =~ m{^[aA]}) {
 } else {
 	die("Invalid WPC version <$opt_v>\n");
 }
+die if $@;
 
 require "D711.pm";
 D711->import("WPC($lbl)","\$opt_Q = $opt_l;");
@@ -85,11 +88,11 @@ $D711::start_page = ($D711::WMS_System eq 'WPC(alpha)') ? 0x30 : 0x20;
 # Disassemble ROM
 #----------------------------------------------------------------------
 
-&D711::init_WPC(split(',',$opt_i));											# load API & -i args
+D711::init_WPC(split(',',$opt_i));											# load API & -i args
 $D711::verbose = !$opt_l;													# suppress disassembly abort output on -l (allLbls)
 
 if (defined($opt_p)) {														# process object file
-	&D711::process_object_file($opt_p);			
+	D711::process_object_file($opt_p);			
 	exit(0);
 }
 
@@ -102,19 +105,21 @@ if (defined($opt_p)) {														# process object file
 # Make Human Readable
 #----------------------------------------------------------------------
 
-&D711::process_code_structure(0x8000,0xFFFF)								# if, while, ...
-	if ($opt_s);
-&D711::substitute_labels(0x8000,0xFFFF); 									# resolve labels
-&D711::substitute_identifiers(0x8000,0xFFFF);								# rename game-specific ids
-&D711::apply_magic_WPC(0x8000,0xFFFF); 		 	                            # e.g. &skip
+D711::disassemble_inCode_refs(0xFF,0x8000,0xFFFF);							# LDX/B, LDY/A
+D711::process_code_structure(0x8000,0xFFFF)									# if, while, ...
+	if($opt_s);
+D711::substitute_labels(0x8000,0xFFFF); 									# resolve labels
+D711::substitute_identifiers(0x8000,0xFFFF);								# rename game-specific ids
+D711::apply_magic_WPC(0x8000,0xFFFF); 		 	                            # e.g. &skip
 
 for (my($rpg)=$D711::start_page; $rpg<0x3E; $rpg++) {
-	&D711::select_WPC_RPG($rpg,20);
-	&D711::process_code_structure(0x4000,0x7FFF)							# if, while, ...
+	D711::select_WPC_RPG($rpg,20);
+	D711::disassemble_inCode_refs($rpg,0x4000,0x7FFF);						# LDX/B, LDY/A
+	D711::process_code_structure(0x4000,0x7FFF)								# if, while, ...
 		if ($opt_s);
-	&D711::substitute_labels(0x4000,0x7FFF); 								# resolve labels
-	&D711::substitute_identifiers(0x4000,0x7FFF);							# rename game-specific ids
-	&D711::apply_magic_WPC(0x4000,0x7FFF); 									# e.g. &skip
+	D711::substitute_labels(0x4000,0x7FFF); 								# resolve labels
+	D711::substitute_identifiers(0x4000,0x7FFF);							# rename game-specific ids
+	D711::apply_magic_WPC(0x4000,0x7FFF); 									# e.g. &skip
 }
 
 #----------------------------------------------------------------------
@@ -122,12 +127,12 @@ for (my($rpg)=$D711::start_page; $rpg<0x3E; $rpg++) {
 #----------------------------------------------------------------------
 
 if ($opt_L) {																# dump label information
-	&D711::dump_labels(0);	
-	exit(0);				
+	D711::dump_labels(0);													# fmt == 1 generates code that can be used with -u
+	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 
 if ($opt_l) {																# dump label information
-	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
+	D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 
@@ -147,14 +152,14 @@ if (defined($opt_o)) {														# dump obj information from single page (or 
 # Default C711 Source Output
 #------------------------------
 
-&D711::select_WPC_RPG($D711::start_page,21);								# 1st game pg with headers
-my($decoded) = &D711::produce_output(0x4000,0x7FFF,1);
+D711::select_WPC_RPG($D711::start_page,21);								# 1st game pg with headers
+my($decoded) = D711::produce_output(0x4000,0x7FFF,1);
 for (my($rpg)=$D711::start_page+1; $rpg<0x3E; $rpg++) {						# remaining game pages without headers
-	&D711::select_WPC_RPG($rpg,22);		
-	$decoded += &D711::produce_output(0x4000,0x7FFF,0);
+	D711::select_WPC_RPG($rpg,22);		
+	$decoded += D711::produce_output(0x4000,0x7FFF,0);
 }
 $D711::_cur_RPG = 0xFF;														# allow free space to be found in system code
-$decoded += &D711::produce_output(0x8000,0xFFFF,0);							# WPC System
+$decoded += D711::produce_output(0x8000,0xFFFF,0);							# WPC System
 
 printf("; %5.1f KB (%.1f%%) decoded\n",
 	$decoded/1024,int(0.5+100*$decoded/($decoded+$D711::gapBytes)));

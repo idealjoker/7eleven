@@ -360,9 +360,54 @@ sub process_object_file($)													# execute this early on, because it defin
 }
 
 
-#----------------------------------------------------------------------
+#======================================================================
 # WPC Disassembly Routines
-#----------------------------------------------------------------------
+#======================================================================
+
+sub disassemble_inCode_refs($$$)
+{
+	my($RPG,$fa,$la) = @_;
+##	printf(STDERR "disassemble_inCode_refs(%02X,%04X,%04X)\n",@_);
+
+	for (my($addr)=$fa; $addr<=$la-5; $addr++) {
+		next unless BYTE($addr)   == 0x8E &&								# LDX #
+					BYTE($addr+3) == 0xC6 &&								# LDB #
+					BYTE($addr+4)>=$start_page &&
+						(BYTE($addr+4)==0xFF && WORD($addr+1)>=0x8000 &&  WORD($addr+1)<=0xFFFF ||
+						 BYTE($addr+4)<=0x3D && WORD($addr+1)>=0x4000 &&  WORD($addr+1)<=0x7FFF);
+
+		my($pointee_addr) = WORD($addr+1);
+		my($pointee_pg)	  = BYTE($addr+4);
+		my($type) 		  = ($pointee_addr>=0x8000) ? 'SYSTEM_XB' : 'GAME_XB';
+		my($pointee_lbl)  = sprintf('UNKNOWN_%s_REF_%04X',$type,$addr);
+		select_WPC_RPG($pointee_pg);
+		my($usr_lbl) 	  = $LBL[$pointee_addr];
+		$pointee_lbl 	  = $usr_lbl if defined($usr_lbl);
+		setLabel($pointee_lbl,$pointee_addr,$pointee_pg);
+		$REM[$addr] = $rem unless defined($REM[$addr]);
+		select_WPC_RPG($RPG);
+    }
+
+	for (my($addr)=$fa; $addr<=$la-5; $addr++) {
+		next unless WORD($addr)   == 0x108E &&								# LDY #
+					BYTE($addr+4) == 0x86 &&								# LDA #
+					BYTE($addr+5)>=$start_page &&
+						(BYTE($addr+5)==0xFF && WORD($addr+2)>=0x8000 &&  WORD($addr+2)<=0xFFFF ||
+						 BYTE($addr+5)<=0x3D && WORD($addr+2)>=0x4000 &&  WORD($addr+2)<=0x7FFF);
+
+		my($pointee_addr) = WORD($addr+2);
+		my($pointee_pg)	  = BYTE($addr+5);
+		my($type) 		  = ($pointee_addr>=0x8000) ? 'SYSTEM_YA' : 'GAME_YA';
+		my($pointee_lbl)  = sprintf('UNKNOWN_%s_REF_%04X',$type,$addr);
+		select_WPC_RPG($pointee_pg);
+		my($usr_lbl) 	  = $LBL[$pointee_addr];
+		$pointee_lbl 	  = $usr_lbl if defined($usr_lbl);
+		setLabel($pointee_lbl,$pointee_addr,$pointee_pg);
+		$REM[$addr] = $rem unless defined($REM[$addr]);
+		select_WPC_RPG($RPG);
+    }
+}
+
 
 sub disassemble_syscalls()													# execute this after all syscalls have been defined
 {
@@ -504,13 +549,13 @@ sub disassemble_DMD_table()
 	def_WPC_DMDTable('sys_DMDtable','DMD Table');
 }
 
-#----------------------------------------------------------------------
+#======================================================================
 # Post Disassembly Magic
 #	- replace JMP *+3 by &skip postfix tag of preceding JSR instruction
 #	- make sleep arguments decimal
 #	- add empty lines after RTS, JMP, etc.
 #	- handle WPC truth values (CC=true) after predicates marked with ?
-#----------------------------------------------------------------------
+#======================================================================
 
 sub apply_magic_WPC($$)
 {
@@ -532,7 +577,6 @@ sub apply_magic_WPC($$)
 		} elsif ($OP[$addr] eq '!' && $OPA[$addr][0] =~ m{leep$}) {				# 2) decimalize sleep arguments
 			$OPA[$addr][1] = hex(substr($OPA[$addr][1],1,4));
 		} elsif ($IND[$addr] == $code_base_indent &&							# 3) add extra space after top-level "exit" instructions
-##				 (isMember($OP[$addr],'RTS','BRA','LBRA','JMP','_ENDLOOP') ||
 				 (isMember($OP[$addr],'RTS','LBRA','JMP') ||
 				  ($OP[$addr] eq '!' && $OPA[$addr][0] eq 'exitThread') ||
 				  $REM[$addr] eq 'RTS')) {
