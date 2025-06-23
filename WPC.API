@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Jun 20 14:50:01 2025
+#                    dlm: Mon Jun 23 09:19:00 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 61 49 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 540 62 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -47,6 +47,7 @@
 #	Jun 19, 2025: - added Hooks & labels
 #				  - changed some label names
 #	Jun 20, 2025: - updated versions to "official" names (DMD -> 89)
+#	Jun 23, 2025: - added 3 new system calls
 # END OF HISTORY
 
 #======================================================================
@@ -371,6 +372,7 @@ define_syscall('setBit',							0x8715,'LB');			# <bit number> <buffer offset>; o
 define_syscall('clearBit',							0x8722,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
 define_syscall('syscall_872F',						0x872F,'LB');			# FH
 define_syscall('bitSet?',							0x873C,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
+define_syscall('setAll',							0x87B1,'GB');
 define_syscall('clearAll',							0x87BE,'GB');
 define_syscall('allSet?',							0x87CB,'GB');
 define_syscall('allClear?',							0x87D8,'GB');
@@ -535,6 +537,7 @@ define_syscall('changeBackgroundMusic[A]',  			0xC0DB+$VO);
 define_syscall('soundCardCmd[AB]',						0xC0ED+$VO);
 
 VERSION_OFFSETS(-273,0);
+define_syscall('endFX',									0xC65F+$VO);	# C5CF -273
 define_syscall('abortDisplayFX[A]??',					0xC6E0+$VO);	# C5CF -273
 define_syscall('displayFX[A]',							0xC791+$VO);
 
@@ -555,6 +558,7 @@ define_syscall('rotLeft',								0xFDA2+$VO,'GB');
 define_syscall('fill', 									0xFDB4+$VO,'GB');
 define_syscall('unknownBitgroupOp1',					0xFDC6+$VO,'GB');
 define_syscall('unknownBitgroupOp2',					0xFDD8+$VO,'GB');
+define_syscall('unknownBitgroupOp3',					0xFDEA+$VO,'GB');
 define_syscall('MBD_callHandler[A]',               		0xFDFC+$VO,'B',3);          # NOTE 3: must only be called from PG#3B
 define_syscall('switchActive[B]?',						0xFE0D+$VO);
 
