@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . W P C 
 #                    doc: Mon May 26 08:07:03 2025
-#                    dlm: Fri Jun 20 14:47:28 2025
+#                    dlm: Sun Jun 22 10:09:50 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 28 26 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 20 47 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -17,6 +17,7 @@
 #	Jun 13, 2025: - added RPG initialization
 #	Jun 16, 2025: - added compile_pragma()
 #				  - added .STR
+#	Jun 22, 2025: - BUG: opt_t was not declared
 # HISTORY END
 
 use strict vars;
@@ -123,7 +124,7 @@ sub compile_pragma()
     return undef unless ($OP =~ m{^\.});
 	return 1 if compile_common_pragma();
 	
-	our(@ROM,$MIN_ROM_ADDR,$MAX_ROM_ADDR,$MODE,$FIRST_ADDR,$DP,@LINE,$opt_v,$opt_1);
+	our(@ROM,$MIN_ROM_ADDR,$MAX_ROM_ADDR,$MODE,$FIRST_ADDR,$DP,@LINE,$opt_v,$opt_1,$opt_t);
 
 	#------------------------------
 	# Mode Checking
