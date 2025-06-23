@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Jun 17 21:12:55 2025
+#                    dlm: Sun Jun 22 22:24:16 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 60 60 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 127 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -58,6 +58,7 @@
 #	Jun 12, 2025: - improved error message
 #	Jun 13, 2025: - added code following for indirect extended JMP and JSR
 #	Jun 17, 2025: - changed to continue disassmbly after SWI
+#	Jun 22, 2025: - BUG: JMP did not labelize
 # HISTORY END
 
 # NOTES:
@@ -122,6 +123,7 @@ sub op_EXT($$$$@)																	# operation with extended addressing (similar 
 	return undef unless (BYTE($addr) == $opc);
 	my($trg_addr) = WORD($addr+1);
 	if ($trg_addr >= 0x4000) {														# WPC ROM address
+		label_address($trg_addr,'label');
 		if (!$decoded[$trg_addr]) {													# not yet decoded
 			if ($data_bytes == 2) {													# data word (not code)
 				label_address($trg_addr,'!data');									
@@ -138,12 +140,12 @@ sub op_EXT($$$$@)																	# operation with extended addressing (similar 
 				$OPA[$trg_addr][0] = sprintf('$%02X!',BYTE($trg_addr));				# don't label
 				push(@{$OI[$trg_addr]},sprintf('%02X',BYTE($trg_addr)));
 				$decoded[$trg_addr] = 1;
-	        } else {																# code
-	        	if ($trg_addr >= 0x8000) {											# WPC prime realestate
-	        		label_address($trg_addr,'syscall')
-	        	} else {															# WPC non-prime
-	        		label_address($trg_addr,'library')
-	        	}
+###	        } else {																# code
+###	        	if ($trg_addr >= 0x8000) {											# WPC prime realestate
+###	        		label_address($trg_addr,'syscall')
+###	        	} else {															# WPC non-prime
+###	        		label_address($trg_addr,'library')
+###	        	}
 	        }
 	    }
 	} else {																		# RAM or IO address
@@ -704,7 +706,7 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 				last if disassemble_syscall($sc,$rv);
 			}
 			disassemble_asm($ind,$rv,$lbl_root,undef,$follow_code)								# disassemble JMP target (syscall or not)
-				if $follow_code;
+				if ($rv>=0x4000 && $follow_code);
 			return;
         }
 		next   if op_EXT(0x7F,$addr,$ind,'CLR',1);
