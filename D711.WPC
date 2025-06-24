@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Jun 23 09:31:43 2025
+#                    dlm: Tue Jun 24 08:58:34 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 100 61 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 101 35 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -98,6 +98,7 @@
 #	Jun 23, 2025: - added def_WPC_FXtable()
 #				  - re-added goood bitgroup table decoding
 #				  - reduced WPC table indents to same as code
+#	Jun 24, 2025: - added WPC stuff
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -500,7 +501,7 @@ sub disassemble_system_pointers()
 	my(@ptr) 	  = (0x81AE);										# pointers (not refs)
 	
 	my($i);
-	while ($Address < 0x8288) {
+	while ($Address < 0x828E) {
 		if (isMember($Address,@skipAddr)) {
 			$Address += 3;
 		} elsif (isMember($Address,@ptr)) {
@@ -513,8 +514,11 @@ sub disassemble_system_pointers()
 			def_WPC_ref(sprintf('UNKNOWN_SYSTEM_PARAM_%04X',$Address));
 		}
     }
-	
-	$Address = 0x8296;
+
+    while ($Address < 0x8296) {
+	    def_ptr_hex_alt(sprintf('^UNKNOWN_SYSTEM_PARAM_%04X',$Address),sprintf('UNKNOWN_SYSTEM_PARAM_%04X',$Address));
+	}
+
 	def_ptr_hex('^=STATUS_AREA');
 	insert_divider($Address,'System Code');
 }

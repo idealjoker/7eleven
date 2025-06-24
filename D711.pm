@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri Jun 20 13:43:06 2025
+#					 dlm: Tue Jun 24 08:57:43 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 365 81 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 311 50 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -308,6 +308,7 @@
 #	Jun 14, 2025: - added empty line after gaps
 #				  - BUG: labels in gaps had wrong indents
 #	Jun 15, 2025: - BUG: comments in gaps were not handled correctly
+#	Jun 24, 2025: - disabled unused (I think) code
 # END OF HISTORY
 
 # TO-DO:
@@ -1861,19 +1862,19 @@ sub def_ptr_hex(@)                                                              
     $decoded[$Address] = $decoded[$Address+1] = 1; $Address += 2;
 }
 
-sub def_ptr_hex_alt(@)                                                              # pointer (not data word)
+sub def_ptr_hex_alt(@)																# pointer (not data word)
 {
-    my($lbl,$pointee_lbl,$divider_label,$rem) = @_;
-    die unless defined($Address);
-    die if ($decoded[$Address] || $decoded[$Address+1]);
-    setLabel($lbl,$Address);
-    $Address+=2,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
-    setLabel($pointee_lbl,WORD($Address));
-    $OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] = $CodeType_data;
-    $OPA[$Address][0] = sprintf('$%04X',WORD($Address));
-    $REM[$Address] = $rem unless defined($REM[$Address]);
-    insert_divider($Address,$divider_label);
-    $decoded[$Address] = $decoded[$Address+1] = 1; $Address += 2;
+	my($lbl,$pointee_lbl,$divider_label,$rem) = @_;
+	die unless defined($Address);
+	die if ($decoded[$Address] || $decoded[$Address+1]);
+	setLabel($lbl,$Address);
+	$Address+=2,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
+	setLabel($pointee_lbl,WORD($Address));
+	$OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] = $CodeType_data;
+	$OPA[$Address][0] = sprintf('$%04X',WORD($Address));
+	$REM[$Address] = $rem unless defined($REM[$Address]);
+	insert_divider($Address,$divider_label);
+	$decoded[$Address] = $decoded[$Address+1] = 1; $Address += 2;
 }
 
 sub def_byte_hex(@)
@@ -3447,15 +3448,16 @@ sub produce_output(@)
 	            }
 				
 				if ($print_code) {
-					for (my($a)=$addr+1; $a<=$MAX_ROM_ADDR; $a++) {
-						die(sprintf("$0: cannot print code at address %04X with gap auto filling enabled (implementation restriction)\n",$addr))
-							if ($decoded[$a]);
-                    }
+##					CODE REMOVED JUN 2025 BECAUSE THIS SHOULD NOT BE POSSIBLE WITH OPTIONS CHECK
+##					for (my($a)=$addr+1; $a<=$MAX_ROM_ADDR; $a++) {
+##						die(sprintf("$0: cannot print code at address %04X with gap auto filling enabled (implementation restriction)\n",$addr))
+##							if ($decoded[$a]);
+##                  }
 					last;															# gap extends to end of ROM
                 }
 				my($n) = 1;															# count repeat bytes
 				my($GB) = BYTE($addr);
-				while ($addr+$n<=$la && !$decoded[$addr+$n] && BYTE($addr+$n)==$GB) { $n++; }
+				while ($addr+$n<=$la && !$decoded[$addr+$n] && !defined($LBL[$addr+$n]) && BYTE($addr+$n)==$GB) { $n++; }
 				
 				#------------------------------------------------------------------------------------------
 				# Free Space
@@ -3500,6 +3502,7 @@ sub produce_output(@)
 				# Not Free Space
 				#------------------------------------------------------------------------------------------
 
+##				die($LBL[0xF578]) if $addr == 0xF576;
 				print_addr($addr) if ($print_addrs);
 				print("\n"); print_addr($addr) if ($print_addrs);					# new gap
 				print(";----------------------------------------------------------------------\n");

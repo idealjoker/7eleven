@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Jun 23 19:54:34 2025
+#                    dlm: Tue Jun 24 08:55:38 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 389 26 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 53 62 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -49,6 +49,8 @@
 #	Jun 20, 2025: - updated versions to "official" names (DMD -> 89)
 #	Jun 23, 2025: - added 3 new system calls for T2 FX
 #				  - added 8 new syscall for FH FX
+#	Jun 24, 2025: - added a bunch of new core syscalls
+#				  - BUG: another error label with special char
 # END OF HISTORY
 
 #======================================================================
@@ -390,27 +392,50 @@ define_syscall('bitop_8770',						0x8770,'LB');
 define_syscall('bitop_877D',						0x877D,'LB');
 define_syscall('bitop_878A',						0x878A,'LB');
 define_syscall('bitop_8797',						0x8797,'LB');
+define_syscall('bitop_87A4',						0x87A4,'LB');
 define_syscall('setAll',							0x87B1,'GB');
 define_syscall('clearAll',							0x87BE,'GB');
 define_syscall('allSet?',							0x87CB,'GB');
 define_syscall('allClear?',							0x87D8,'GB');
 define_syscall('syscall_87E5',						0x87E5,'W');
 define_syscall('syscall_880C',						0x880C,'W');
+define_syscall('syscall_8819',						0x8819,'W');
+define_syscall('syscall_8826',						0x8826,'W');
+define_syscall('syscall_8833',						0x8833,'W');
+define_syscall('syscall_8840',						0x8840,'W');
+define_syscall('syscall_884D',						0x884D,'W');
+define_syscall('syscall_885D',						0x885D,'W');
+define_syscall('syscall_886A',						0x886A,'W');
+define_syscall('syscall_8877',						0x8877,'W');
 define_syscall('syscall_8885',						0x8885,'W');
 define_syscall('syscall_8895',						0x8895,'W');
+define_syscall('syscall_88A5',						0x88A5,'W');
 define_syscall('syscall_88B5',						0x88B5,'W');
+define_syscall('syscall_88C5',						0x88C5,'W');
 define_syscall('updateAudit',						0x88D5,'U');
+define_syscall('syscall_88E5',						0x88E5,'W');
 define_syscall('longJSR',							0x88F5,'R');
 define_syscall('longJMP',							0x892F,'R',1);			# NOTE 1: does not return
 define_syscall('unknown_spawnThread_1',				0x8948,'R');
+define_syscall('unknown_spawnThread_2',				0x8983,'R');
 define_syscall('memCopy_to_X',						0x89BE,'PB');
 define_syscall('memCopy_from_Y',					0x89CE,'PB');
 define_syscall('syscall_89DD',						0x89DD,'WB');
 define_syscall('syscall_89F8',						0x89F8,'WB');
+define_syscall('syscall_8A2B',						0x8A2B,'WB');
+define_syscall('syscall_8A3F',						0x8A3F,'WB');
+define_syscall('syscall_8A4E',						0x8A4E,'WB');
+define_syscall('syscall_8A60',						0x8A60,'WB');
+define_syscall('syscall_8A72',						0x8A72,'WB');
 define_syscall('killThreads_withMask',				0x8A9A,'TW');
 define_syscall('findThread?',						0x8AAA,'TW');
 define_syscall('memClear',							0x8ABA,'PW');
 define_syscall('memSet',							0x8ACA,'PBB');
+define_syscall('syscall_8ADA',						0x8ADA,'WW');
+define_syscall('syscall_8AF5',						0x8AF5,'WW');
+define_syscall('syscall_8B07',						0x8B07,'WW');
+define_syscall('syscall_8B19',						0x8B19,'WW');
+define_syscall('syscall_8B2B',						0x8B2B,'WW');
 define_syscall('spawnLowPriorityThread',			0x8B3D,'TR');
 define_syscall('spawnHighPriorityThread',			0x8B5A,'TR');
 define_syscall('killSpawnLowPriorityThread',		0x8B77,'TR');			# kill threads first, then spawn new one
@@ -418,7 +443,11 @@ define_syscall('killSpawnHighPriorityThread',		0x8B9D,'TR');
 define_syscall('spawnLowPriorityThreadIfNeeded',	0x8BC3,'TR');			# don't spaawn if thread id already in use
 define_syscall('spawnHighPriorityThreadIfNeeded',	0x8BF7,'TR');
 define_syscall('memCopy',							0x8C2B,'WWB');
+define_syscall('syscall_8C3D',						0x8C3D,'WWW');
+define_syscall('syscall_8C60',						0x8C60,'WWW');
+define_syscall('syscall_8C72',						0x8C72,'WW');
 define_syscall('syscall_8EE2',						0x8EE2);
+define_syscall('syscall_8EF6',						0x8EF6);
 define_syscall('syscall_8EFD',						0x8EFD);
 
 #----------------------------------------------------------------------
@@ -787,7 +816,7 @@ $Error[0x20] = 'ERR_Cksum_init_call_to_region_that_is_not_Prime';
 $Error[0x21] = 'ERR_long_binary_to_bcd_passed_0_length';
 $Error[0x22] = 'ERR_Hook_indicated_by_U_in_apfixed_must_be_in_prime';
 $Error[0x23] = 'ERR_Score_req._w_player_up_invalid_tilt_go_or_diag';
-$Error[0x24] = 'ERR_Product_of_local_and_global_score_multipliers_>_255';
+$Error[0x24] = 'ERR_Product_of_local_and_global_score_multipliers_exceeds_255';
 $Error[0x25] = 'ERR_Thread_that_just_slept_wrote_to_1st_8_bytes_of_ram';
 $Error[0x26] = 'ERR_Bad_score_multiplier_specified';
 $Error[0x27] = 'ERR_Table_item_out_of_range_beyond_end_of_table';
