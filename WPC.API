@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Jun 23 09:19:00 2025
+#                    dlm: Mon Jun 23 19:54:34 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 540 62 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 389 26 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -47,7 +47,8 @@
 #	Jun 19, 2025: - added Hooks & labels
 #				  - changed some label names
 #	Jun 20, 2025: - updated versions to "official" names (DMD -> 89)
-#	Jun 23, 2025: - added 3 new system calls
+#	Jun 23, 2025: - added 3 new system calls for T2 FX
+#				  - added 8 new syscall for FH FX
 # END OF HISTORY
 
 #======================================================================
@@ -340,8 +341,11 @@ define_syscall('setFlag',							0x8480,'F');
 define_syscall('clearFlag',							0x848F,'F');
 define_syscall('toggleFlag',						0x849E,'F');
 define_syscall('flagSet?',							0x84AD,'F');
-define_syscall('syscall_84E9',						0x84E9,'B');			# FH
-define_syscall('syscall_84BC',						0x84BC,'B');			# FH
+define_syscall('blinkLamp',							0x84BC,'L');			# FH
+define_syscall('unblinkLamp',						0x84CB,'L');			# gap
+define_syscall('toggleBlink',						0x84DA,'L');			# FH
+define_syscall('lampBlinking?',						0x84E9,'L');			# FH
+define_syscall('syscall_84F8',						0x84F8,'B');
 define_syscall('syscall_8505',						0x8505,'B');
 define_syscall('syscall_8512',						0x8512,'B');
 define_syscall('addScore',							0x851F,'B');
@@ -349,6 +353,10 @@ define_syscall('syscall_852C',						0x852C,'B');
 define_syscall('syscall_8539',						0x8539,'B');
 define_syscall('playSound',							0x8546,'B');
 define_syscall('DMDanimation',						0x8553,'D');
+define_syscall('syscall_8562',						0x8562,'B');
+define_syscall('syscall_8572',						0x8572,'B');
+define_syscall('syscall_8582',						0x8582,'B');
+define_syscall('syscall_8592',						0x8592,'B');
 define_syscall('lampFX',							0x85B2,'B');
 define_syscall('syscall_85A2',						0x85A2,'B');
 define_syscall('syscall_85C1',						0x85C1,'B');			# FH
@@ -367,15 +375,26 @@ define_syscall('killThreads',						0x869E,'T');
 define_syscall('setThreadId',						0x86AC,'T');
 define_syscall('becomeThread_ifNotRunning',			0x86BA,'T');
 define_syscall('becomeOnlyThread',					0x86D0,'T');
+define_syscall('memSet[Y]',							0x86E1,'BB');			# gap
+define_syscall('syscall_86EE',						0x86EE,'W');			# FH
 define_syscall('syscall_86FB',						0x86FB,'W');			# FH
+define_syscall('syscall_8708',						0x8708,'LB');
 define_syscall('setBit',							0x8715,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
-define_syscall('clearBit',							0x8722,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
-define_syscall('syscall_872F',						0x872F,'LB');			# FH
-define_syscall('bitSet?',							0x873C,'LB');			# <bit number> <buffer offset>; only used with blink offset $40
+define_syscall('clearBit',							0x8722,'LB');
+define_syscall('toggleBit',							0x872F,'LB');			# FH
+define_syscall('bitSet?',							0x873C,'LB');
+define_syscall('bitop_8749',						0x8749,'LB');
+define_syscall('bitop_8756',						0x8756,'LB');
+define_syscall('bitop_8763',						0x8763,'LB');
+define_syscall('bitop_8770',						0x8770,'LB');
+define_syscall('bitop_877D',						0x877D,'LB');
+define_syscall('bitop_878A',						0x878A,'LB');
+define_syscall('bitop_8797',						0x8797,'LB');
 define_syscall('setAll',							0x87B1,'GB');
 define_syscall('clearAll',							0x87BE,'GB');
 define_syscall('allSet?',							0x87CB,'GB');
 define_syscall('allClear?',							0x87D8,'GB');
+define_syscall('syscall_87E5',						0x87E5,'W');
 define_syscall('syscall_880C',						0x880C,'W');
 define_syscall('syscall_8885',						0x8885,'W');
 define_syscall('syscall_8895',						0x8895,'W');
