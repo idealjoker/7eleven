@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Jun 24 08:58:34 2025
+#                    dlm: Wed Jun 25 17:08:37 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 101 35 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 102 39 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -99,6 +99,7 @@
 #				  - re-added goood bitgroup table decoding
 #				  - reduced WPC table indents to same as code
 #	Jun 24, 2025: - added WPC stuff
+#	Jun 25, 2025: - added =SOLCMD_TABLE
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -470,27 +471,31 @@ sub disassemble_system_pointers()
 	
 	my($ubyte,$uword);
 	
-	$Address = 0x81B6;												# first, the execptions
+	#------------------------------
+	# Exceptions
+	#------------------------------
+
+	my(@skipAddr) = (0x81A2,0x81B6,0x81C2,0x81C5,0x81CE,0x821C);	# System Tables
+
+	$Address = 0x81A2;
+	$Address = def_WPC_ref('=SOLCMD_TABLE');
+		def_WPC_table(undef,'Solenoid Command Table',1);
+	$Address = 0x81B6;												# first, the exceptions
 	$Address = def_WPC_ref('=BITSHIFTER_LAMPMATRIX_LOOKUPTABLE');
 		def_byteblock_hex(65);
+	$Address = 0x81C2;
+	$Address = def_WPC_ref('=BITGROUP_TABLE');
+		def_WPC_bitgroup_table(undef,'Bitgroup Table');
 	$Address = 0x81C5;
 	$Address = def_WPC_ref('=SWITCHTABLE');
 		def_WPC_switchTable(undef,'Switch Table',1);				# label already defined, follow code
+	$Address = 0x81CE;
+	$Address = def_WPC_ref('=FX_TABLE');
+		def_WPC_FXtable(undef,'FX Table',1);
 	$Address = 0x821C;
 	$Address = def_WPC_ref('=AUX_SWITCHTABLE');
 		def_WPC_switchTable(undef,'Switch Table',1)
 	        if defined($Address);
-	$Address = 0x81C2;
-	$Address = def_WPC_ref('=BITGROUP_TABLE');
-		def_WPC_bitgroup_table(undef,'Bitgroup Table');
-	$Address = 0x81CE;
-	$Address = def_WPC_ref('=FX_TABLE');
-		def_WPC_FXtable(undef,'FX Table',1);
-
-	$Address = 0x812D;
-	insert_divider($Address,'System Data Pointers');
-
-	my(@skipAddr) = (0x81B6,0x81C5,0x821C,0x81C2);							# Switch Tables
 
 	my(@strRef)   = (0x8133,0x8136,0x8139);							# String References
 	my(@strRefL)  = ('GAME_NAME','GAME_NUMBER','RELEASE_DATE');
@@ -500,6 +505,9 @@ sub disassemble_system_pointers()
 
 	my(@ptr) 	  = (0x81AE);										# pointers (not refs)
 	
+	$Address = 0x812D;
+	insert_divider($Address,'System Data Pointers');
+
 	my($i);
 	while ($Address < 0x828E) {
 		if (isMember($Address,@skipAddr)) {

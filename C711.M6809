@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Sun Jun 15 22:24:16 2025
+#                    dlm: Wed Jun 25 17:04:54 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 25 57 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 655 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -23,6 +23,7 @@
 #				  - BUG: LBRA had wrong opcode
 #	Jun 13, 2025: - BUG: indirect extended mode did not work
 #	Jun 15, 2025: - added __IF, __ELSE, __ENDIF, __LOOP, __WHILE, __UNTIL, __ENDLOOP
+#	Jun 25, 2025: - added warnings and errors about forced offsets
 # HISTORY END
 
 use strict vars;
@@ -629,7 +630,7 @@ sub store_postBytes_IM($$$)																# copy indexed-mode postbyte and offs
 ##	printf(STDERR "%4X: store_postBytes_IM($ofs,$IR,$indirect)\n",code_addr());
 
 	my($f8,$f16);
-	if ($ofs =~ m{^>}) {																# forced 8-/16-bint offset
+	if ($ofs =~ m{^>}) {																# forced 8-/16-bit offset (for 5- or 8-bit offsets)
 		$f16 = 1;
 		$ofs = $';
 	} elsif ($ofs =~ m{^<}) {
@@ -646,12 +647,16 @@ sub store_postBytes_IM($$$)																# copy indexed-mode postbyte and offs
 	if ($IR eq 'PCR') {																	# ofs,PCR
 		die("Invalid PC-relative indirect mode <$OP_ARG[0]> at input line $.\n")
 			if $indirect;
-		die("Invalid PC-relative 8-bit (forced) offset <$OP_ARG[0]> at input line $.\n")
+		die("Invalid PC-relative forced (8-bit) offset <$OP_ARG[0]> at input line $.\n")
 			if $f8;
-		if ($ofs>=-128 && $ofs<=127) {
+		if (!$f16 && $ofs>=-128 && $ofs<=127) {
+	    	printf(STDERR "WARNING: Unnecessary forced (8-bit) offset <$OP_ARG[0]> at input line $.\n")
+	    		if $f8 && ($ofs<-16 || $ofs>15);
 			$PB = 0b10001000;
 	        $OB1 = ($ofs & 0xFF);
 	    } elsif ($ofs>=-32768 && $ofs<=32767) {
+	    	printf(STDERR "WARNING: Unnecessary forced (16-bit) offset <$OP_ARG[0]> at input line $.\n")
+	    		if $f16 && ($ofs<-128 || $ofs>127);
 			$PB = 0b10001001;
 			$OB1 = ($ofs & 0xFF00) >> 8;
 			$OB2 = ($ofs & 0xFF);
@@ -659,7 +664,7 @@ sub store_postBytes_IM($$$)																# copy indexed-mode postbyte and offs
 			die("Invalid PC-relative offset <$OP_ARG[0]> at input line $.\n");
 	    }
 	} elsif (isMember($ofs,'A','B','D')) {												# register offset
-		die("Invalid (forced) register offset <$OP_ARG[0]> at input line $.\n")
+		die("Invalid forced register offset <$OP_ARG[0]> at input line $.\n")
 			if ($f8 || $f16);
 		if ($ofs eq 'A') {																    
 			$PB = 0b10000110;
@@ -673,6 +678,8 @@ sub store_postBytes_IM($$$)																# copy indexed-mode postbyte and offs
 	} elsif ($IR =~ m{\+{1,2}$} || $IR =~ m{^-{1,2}}) {									# auto inc/dec
 		die("Invalid non-zero auto-increment/-decrement offset <$OP_ARG[0]> at input line $.\n")
 			if defined($ofs) && $ofs!=0;
+		die("Invalid forced register offset <$OP_ARG[0]> at input line $.\n")
+			if ($f8 || $f16);
 		if ($IR =~ m{\+{2}$}) { 														# 2-byte post increment
 			$IR = $`;
 			$PB = 0b10000001;
@@ -698,9 +705,13 @@ sub store_postBytes_IM($$$)																# copy indexed-mode postbyte and offs
 		} elsif (!$indirect && !$f8 && !$f16 && $ofs>=-16 && $ofs<=15) {				# short offset in postbyte
 			$PB = $ofs & 0x1F;
 		} elsif (!$f16 && $ofs>=-128 && $ofs<=127) {									# 1 postbyte offset 
+	    	printf(STDERR "WARNING: Unnecessary forced (8-bit) offset <$OP_ARG[0]> at input line $.\n")
+	    		if $f8 && ($ofs<-16 || $ofs>15);
 			$PB = 0b10001000;
 			$OB1 = $ofs & 0xFF;
 		} elsif ($ofs>=-32768 && $ofs<=32767) {											# 2 postbytes offset
+	    	printf(STDERR "WARNING: Unnecessary forced (16-bit) offset <$OP_ARG[0]> at input line $.\n")
+	    		if $f16 && ($ofs<-128 || $ofs>127);
 			$PB = 0b10001001;
 			$OB1 = ($ofs & 0xFF00) >> 8;
 			$OB2 = ($ofs & 0xFF);

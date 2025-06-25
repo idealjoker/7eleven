@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Jun 24 08:55:38 2025
+#                    dlm: Wed Jun 25 17:09:18 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 53 62 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 54 45 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -51,6 +51,7 @@
 #				  - added 8 new syscall for FH FX
 #	Jun 24, 2025: - added a bunch of new core syscalls
 #				  - BUG: another error label with special char
+#	Jun 25, 2025: - added __SOLCMD_TABLE_ADDR
 # END OF HISTORY
 
 #======================================================================
@@ -107,6 +108,9 @@ define_label('__FINDTHREAD_ID+1',					0x5E);
 define_label('__FINDTHREAD_MASK',					0x5F);
 
 define_label('_GI_POWERSAVER_TIMER',				0x6D);		# minutes
+
+define_label('__SOLCMD_TABLE_ADDR',					0x7C);	
+define_label('__SOLCMD_TABLE_ADDR+1',				0x7D);	
 
 define_label('_BALLTILTED??',						0x86);	
 define_label('_GAMEOVER??',							0x87);	
@@ -532,6 +536,7 @@ VERSION_OFFSETS(-145,0);
 define_syscall('memCopy[AXY]',							0xA6B9+$VO);	# A628
 define_syscall('memClear[AY]',							0xA6C4+$VO);
 define_syscall('memClear[XY]',							0xA6D1+$VO);
+define_syscall('memSet[ABY]',							0xA6E3+$VO);
 define_syscall('addEntropy',							0xA6EC+$VO);
 define_syscall('CS=randomBit',							0xA70B+$VO);
 define_syscall('A=100xGetRandom<[A]?',					0xA713+$VO);
@@ -539,15 +544,17 @@ define_syscall('A=getRandom', 							0xA725+$VO);
 define_syscall('A=getRandom[A]',          				0xA75B+$VO);
 define_syscall('solCmd[A]_wait',						0xA84D+$VO);
 define_syscall('solCmd[A]', 							0xA895+$VO);
-define_syscall('memSet[ABY]',							0xA6E3+$VO);
 define_syscall('pulseFlasher[A]',						0xA9EC+$VO);	# A95B
+
 define_syscall('setGIbrightness80[A]',					0xAB43+$VO);
 define_syscall('setGIbrightness81[A]',					0xAB4B+$VO);
 define_syscall('setGIbrightness[AB]',     				0xAB53+$VO);
 define_syscall('sys_setGIbrightness[AB]',				0xAB56+$VO);
+
 define_syscall('X=^tableElt[AX]',						0xAC5B+$VO);
 define_syscall('X=^tableElt[ABX]',						0xAC5E+$VO);
 define_syscall('X=^tableElt[AXY]',						0xAC89+$VO);
+
 define_syscall('bitgroup[D]_clearAll',					0xAE09+$VO);
 define_syscall('bitgroup[D]_allSet?',					0xAE19+$VO);
 define_syscall('bitgroup[D]_allOff?',					0xAE29+$VO);
