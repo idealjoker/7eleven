@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Jun 25 22:43:52 2025
+#                    dlm: Thu Jun 26 09:59:28 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 103 59 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 104 68 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -101,6 +101,7 @@
 #	Jun 24, 2025: - added WPC stuff
 #	Jun 25, 2025: - added =SOLCMD_TABLE
 #				  - added more tables and a couple of lists
+#	Jun 26, 2025: - added support for list tables in def_WPC_table()
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -774,6 +775,34 @@ sub def_WPC_table($@)
 	$REM[$Address] = 'number of table rows, bytes per row' unless defined($REM[$Address]);
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
+	my($TSA) = $Address;												# Table Start Address
+
+	if ($cols == 2) {													# check for list table
+		my($okay) = !$decoded[WORD($TSA)] && (WORD($TSA) == $TSA+2*$rows);
+		for (my($r)=1; $okay && $r<$rows; $r++) {
+			$okay = (WORD($TSA+2*$r) >= WORD($TSA)) &&
+					(WORD($TSA+2*$r)-WORD($TSA) <= 50*$rows);
+		}
+		if ($okay) {													# valid list table
+			my($lbase) = defined($lbl) ? $lbl : $LBL[$TSA-3];
+			$lbase = $' if ($lbase =~ m{^[0-9A-Fa-f]{2}:});
+			for (my($r)=0; $r<$rows; $r++) {
+				my($opaddr) = $Address;
+				$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
+				$REM[$opaddr] = sprintf('Row#%d',$r+1) if ($r+1)==1 || ($r+1)%10==0;
+				$OP[$opaddr] = '.DW';
+				push(@{$OPA[$opaddr]},sprintf('$%04X',WORD($Address)));
+				$decoded[$Address++] = $decoded[$Address++] = 1;
+
+				my($sA) = $Address;
+				$Address = WORD($TSA+2*$r);
+				def_byte_hex(sprintf('%s_%d',$lbase,$r));
+				$Address = $sA;
+			}
+			return;
+		}
+	}
+
 	for (my($r)=0; $r<$rows; $r++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
@@ -783,15 +812,15 @@ sub def_WPC_table($@)
 			for (my($c)=0; $c<$cols; $c+=2) {
 				push(@{$OPA[$opaddr]},sprintf('$%04X!',WORD($Address)));
 				$decoded[$Address++] = $decoded[$Address++] = 1;
-	        }
+			}
 		} else {
 			$OP[$opaddr] = '.DB';
 			for (my($c)=0; $c<$cols; $c++) {
 				push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
-	        }
-	    }
+			}
+		}
 	}
-    insert_empty_line($Address-11);
+	insert_empty_line($Address-11);
 }
 
 #----------------------------------------------------------------------
