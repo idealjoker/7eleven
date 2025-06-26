@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Jun 25 17:08:37 2025
+#                    dlm: Wed Jun 25 22:43:52 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 102 39 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 103 59 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -100,6 +100,7 @@
 #				  - reduced WPC table indents to same as code
 #	Jun 24, 2025: - added WPC stuff
 #	Jun 25, 2025: - added =SOLCMD_TABLE
+#				  - added more tables and a couple of lists
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -475,11 +476,22 @@ sub disassemble_system_pointers()
 	# Exceptions
 	#------------------------------
 
-	my(@skipAddr) = (0x81A2,0x81B6,0x81C2,0x81C5,0x81CE,0x821C);	# System Tables
+	my(@skipAddr) = (0x81A2,0x81B6,0x81C2,0x81C5,0x81CE,0x821C,		# System Tables
+					 0x81A5,0x81AB,0x81B0,
+					 0x8219,0x8216);
 
 	$Address = 0x81A2;
 	$Address = def_WPC_ref('=SOLCMD_TABLE');
-		def_WPC_table(undef,'Solenoid Command Table',1);
+		def_WPC_table(undef,'Solenoid Command Table');
+	$Address = 0x81A5;
+	$Address = def_WPC_ref('=SOLCMD_TABLE_ALT');
+		def_WPC_table(undef,'Solenoid Command Table1');
+	$Address = 0x81AB;
+	$Address = def_WPC_ref('=FLASHER_TABLE_1'); 
+		def_WPC_table(undef,'Flasher Command Table');
+	$Address = 0x81B0;
+	$Address = def_WPC_ref('=FLASHER_TABLE_2');
+		def_WPC_table(undef,'Flasher Command Table');
 	$Address = 0x81B6;												# first, the exceptions
 	$Address = def_WPC_ref('=BITSHIFTER_LAMPMATRIX_LOOKUPTABLE');
 		def_byteblock_hex(65);
@@ -491,7 +503,13 @@ sub disassemble_system_pointers()
 		def_WPC_switchTable(undef,'Switch Table',1);				# label already defined, follow code
 	$Address = 0x81CE;
 	$Address = def_WPC_ref('=FX_TABLE');
-		def_WPC_FXtable(undef,'FX Table',1);
+		def_WPC_FXtable(undef,'FX Table');
+	$Address = 0x8216;
+	$Address = def_WPC_ref('SOLCMD_LIST_1');
+		def_wordlist_hex(0x0000,undef);
+	$Address = 0x8219;
+	$Address = def_WPC_ref('SOLCMD_LIST_2');
+		def_wordlist_hex(0x0000,undef);
 	$Address = 0x821C;
 	$Address = def_WPC_ref('=AUX_SWITCHTABLE');
 		def_WPC_switchTable(undef,'Switch Table',1)
@@ -502,6 +520,8 @@ sub disassemble_system_pointers()
 
 	my(@known)	  = (0x8151);
 	my(@knownL)	  = ('BALLSEARCH_TIMER');
+
+	my(@tblRef) = (0x81F2,0x81F5);
 
 	my(@ptr) 	  = (0x81AE);										# pointers (not refs)
 	
@@ -516,6 +536,11 @@ sub disassemble_system_pointers()
 		    def_word_hex(sprintf('UNKNOWN_SYSTEM_PTR_%04X',$Address));
 		} elsif ($i=isMember($Address,@strRef)) {
 		    def_WPC_stringRef(sprintf(defined($strRefL[$i]) ? $strRefL[$i] : 'UNKNOWN_SYSTEM_STRREF_%04X',$Address));
+		} elsif ($i=isMember($Address,@tblRef)) {
+			my($sA) = $Address;
+			$Address = def_WPC_ref(sprintf('UNKNOWN_WPC_TABLE_%04X',$Address));
+		    def_WPC_table(undef,'Unknown System WPC Table');
+		    $Address = $sA + 3;
 		} elsif ($i=isMember($Address,@known)) {
 		    def_WPC_ref($knownL[$i]);
 		} else {
@@ -725,7 +750,7 @@ sub select_WPC_RPG($@)
 # Generic Table
 #----------------------------------------------------------------------
 
-sub def_WPC_table(@)
+sub def_WPC_table($@)
 {
 	my($lbl,$divider_label) = @_;
 #	print(STDERR "def_WPC_table(@_)\n");
@@ -1086,7 +1111,7 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 	die unless defined($Address);
 
     die unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
-    die(sprintf("def_WPC_ref(%04X,$lbl): addresses below 0x8000 not supported (implementation restriction)",$Address))
+    die(sprintf("def_WPC_ref(%04X,$pointee_lbl): addresses below 0x8000 not supported (implementation restriction)",$Address))
     	unless ($Address >= 0x8000);
 
 	my($pointee_addr) = WORD($Address);

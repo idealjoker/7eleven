@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Tue Jun 24 08:57:43 2025
+#					 dlm: Wed Jun 25 22:36:09 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 311 50 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1871 42 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -309,6 +309,7 @@
 #				  - BUG: labels in gaps had wrong indents
 #	Jun 15, 2025: - BUG: comments in gaps were not handled correctly
 #	Jun 24, 2025: - disabled unused (I think) code
+#	Jun 25, 2025: - added def_wordlist_hex
 # END OF HISTORY
 
 # TO-DO:
@@ -1847,6 +1848,29 @@ sub def_word_hex(@)                                                             
     $REM[$Address] = $rem unless defined($REM[$Address]);
     insert_divider($Address,$divider_label);
     $decoded[$Address] = $decoded[$Address+1] = 1; $Address += 2;
+}
+
+sub def_wordlist_hex(@) 														# value-terminated list
+{
+	my($EOL,$lbl,$divider_label,$rem) = @_;
+	die unless defined($Address);
+	setLabel($lbl,$Address);
+	return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
+	insert_divider($Address,$divider_label) if defined($divider_label);
+
+	do {
+		$OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		$REM[$Address]=$rem,undef($rem) unless defined($REM[$Address]);
+		my($bAddress) = $Address;
+		for (my($col)=0; WORD($Address)!=$EOL && $col<6; $col++) {
+			push(@{$OPA[$bAddress]},sprintf('$%04X!',WORD($Address)));
+			$decoded[$Address++] = $decoded[$Address++] = 1;
+		}
+	} while (WORD($Address)!=$EOL);
+	$OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	push(@{$OPA[$Address]},sprintf('$%04X!',WORD($Address)));
+	$decoded[$Address++] = $decoded[$Address++] = 1;
+	insert_empty_line($Address-2);
 }
 
 sub def_ptr_hex(@)                                                                  # pointer (not data word)
