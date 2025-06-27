@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Fri Jun 27 13:35:56 2025
+#                    dlm: Fri Jun 27 14:08:21 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 522 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1006 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -1042,18 +1042,19 @@ sub def_WPC_unknownSystem_table($@)
 			my($opaddr) = $Address;
 			$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
 	        $OP[$opaddr] = '.DR';
-			push(@{$OPA[$opaddr]},sprintf('$%04X',WORD($Address)));
+#			push(@{$OPA[$opaddr]},sprintf('$%04X',WORD($Address)));
+			push(@{$OPA[$opaddr]},label_address(WORD($Address),sprintf('%s_%d_1',$lbase,$r)));
 			push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address+2)));
 			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 			my($sA) = $Address;
 			my($sP) = $_cur_RPG;
-			$Address = WORD($TSA+12*$r+9);
+			$Address = WORD($TSA+12*$r+6);
 			if ($Address < 0x8000) {
-				select_WPC_RPG(BYTE($TSA+12*$r+11));
+				select_WPC_RPG(BYTE($TSA+12*$r+8));
 			}
-##			printf(STDERR "@%02X:%04X: def_code('%s_%d')\n",$_cur_RPG,$Address,$lbase,$r);
-			def_code(sprintf('%s_%d_1',$lbase,$r));
+##			printf(STDERR "@%02X:%04X: def_word_hex('%s_%d_1')\n",$_cur_RPG,$Address,$lbase,$r);
+			def_word_hex(sprintf('%s_%d_1',$lbase,$r));
 			select_WPC_RPG($sP);
 	        $Address = $sA;
 
@@ -1067,7 +1068,8 @@ sub def_WPC_unknownSystem_table($@)
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
         $OP[$opaddr] = '.DR';
-		push(@{$OPA[$opaddr]},sprintf('$%04X',WORD($Address)));
+#		push(@{$OPA[$opaddr]},sprintf('$%04X',WORD($Address)));
+		push(@{$OPA[$opaddr]},label_address(WORD($Address),sprintf('%s_%d_2',$lbase,$r)));
 		push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address+2)));
 		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
@@ -1077,7 +1079,7 @@ sub def_WPC_unknownSystem_table($@)
 		if ($Address < 0x8000) {
 			select_WPC_RPG(BYTE($TSA+12*$r+11));
 		}
-##		printf(STDERR "@%02X:%04X: def_code('%s_%d')\n",$_cur_RPG,$Address,$lbase,$r);
+##		printf(STDERR "@%02X:%04X: def_code('%s_%d_2')\n",$_cur_RPG,$Address,$lbase,$r);
 		def_code(sprintf('%s_%d_2',$lbase,$r));
 		select_WPC_RPG($sP);
 		$Address = $sA;
