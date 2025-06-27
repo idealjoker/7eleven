@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . W P C 
 #                    doc: Mon May 26 08:07:03 2025
-#                    dlm: Sun Jun 22 10:09:50 2025
+#                    dlm: Fri Jun 27 12:42:40 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 20 47 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 21 56 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -18,6 +18,7 @@
 #	Jun 16, 2025: - added compile_pragma()
 #				  - added .STR
 #	Jun 22, 2025: - BUG: opt_t was not declared
+#	Jun 27, 2025: - BUG: .STR were not encoded correctly
 # HISTORY END
 
 use strict vars;
@@ -229,7 +230,15 @@ sub compile_pragma()
 			die("Syntax: .STR 'string' (<'$str'> at input line $.)\n")						# regular string
 				unless (@OP_ARG >= 1 && length($str) > 0);
 			for (my($i)=0; $i<length($str); $i++) {
-				$ROM[$ADDR++] = ord(substr($str,$i,1));
+				if (substr($str,$i,2) eq '\\\\') {
+					$ROM[$ADDR++] = ord('\\');
+					$i += 1;
+				} elsif (substr($str,$i,1) eq '\\') {
+					$ROM[$ADDR++] = hex(substr($str,$i+1,2));
+					$i += 2;
+				} else {
+					$ROM[$ADDR++] = ord(substr($str,$i,1));
+				}
 			}
 			$ROM[$ADDR++] = 0x00;															# terminate it
 			return 1;
