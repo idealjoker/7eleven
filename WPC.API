@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Jun 25 17:09:18 2025
+#                    dlm: Sat Jun 28 14:19:54 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 54 45 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 647 62 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -320,7 +320,7 @@ define_syscall('Y=adjustment',						0x82F2,'A');
 define_syscall('A=adjustment',						0x82FF,'A');
 define_syscall('B=adjustment',						0x830C,'A');
 define_syscall('switchClosed?',						0x8319,'S');
-define_syscall('syscall_8329',						0x8329);
+define_syscall('syscall_8329',						0x8329,'S');
 define_syscall('switchBroken??',					0x8339,'S');
 define_syscall('sleep',								0x8346,'B');
 define_syscall('memCopy_XY',						0x835E,'B');
@@ -531,6 +531,7 @@ define_syscall('lampOn[A]',								0xA03A+$VO);	# 9F6D
 define_syscall('lampOnBlinkOff[A]',						0xA055+$VO);
 define_syscall('lampOff[A]',							0xA063+$VO);
 define_syscall('lamp[A]On?',							0xA0B9+$VO);
+define_syscall('syscall_A3D7',							0xA3D7+$VO);
 
 VERSION_OFFSETS(-145,0);
 define_syscall('memCopy[AXY]',							0xA6B9+$VO);	# A628
@@ -641,7 +642,9 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('setDMDfunction[A]', 					0xCABD);
  define_syscall('A=lastDMDanimation_played??',			0xCADE);
  define_syscall('replay_last_DMDanimation??',			0xCAE2);
+ define_syscall('syscall_D77D',							0xD77D,'WBW');
  define_syscall('syscall_D799',							0xD799,'WBW');
+ define_syscall('syscall_D7B4',							0xD7B4,'WBW');
  define_syscall('ISR_lampMatrix_MUX',	       			0xDAC6);
  define_syscall('IRQ_timer_handler??',					0xECCA);
  define_syscall('NE=gameDisabled',						0xF759);

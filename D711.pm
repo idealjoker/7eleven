@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Jun 25 22:36:09 2025
+#					 dlm: Fri Jun 27 17:03:14 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 1871 42 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 313 49 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -310,6 +310,7 @@
 #	Jun 15, 2025: - BUG: comments in gaps were not handled correctly
 #	Jun 24, 2025: - disabled unused (I think) code
 #	Jun 25, 2025: - added def_wordlist_hex
+#	Jun 27, 2025: - improved free space reporting
 # END OF HISTORY
 
 # TO-DO:
@@ -3494,7 +3495,11 @@ sub produce_output(@)
 					print("\n"); print_addr($addr) if ($print_addrs);
 					print(";----------------------------------------------------------------------\n");
 					print_addr($addr) if ($print_addrs);
-					printf("; FREE SPACE (%.1f KB)\n",$n/1024);
+					if ($n > 999) {
+						printf("; FREE SPACE (%.1f KB)\n",$n/1024);
+					} else {
+						printf("; FREE SPACE (%d bytes)\n",$n);
+					}
 					print_addr($addr) if ($print_addrs);
 					print(";----------------------------------------------------------------------\n");
 					print_addr($addr) if ($print_addrs);
