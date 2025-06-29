@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Fri Jun 27 14:08:21 2025
+#                    dlm: Sun Jun 29 13:00:37 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 1006 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 106 38 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -103,6 +103,7 @@
 #				  - added more tables and a couple of lists
 #	Jun 26, 2025: - added support for list tables in def_WPC_table()
 #	Jun 27, 2025: - BUG fixes and improvements
+#	Jun 29, 2025: - added gap warnings
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -1443,11 +1444,11 @@ sub def_WPC_FXtable(@)
     insert_empty_line($Address);
 }   
 		    
-#----------------------------------------------------------------------
+#======================================================================
 # References
 #	- loads RPG
 #	- needs to deal with partially decoded references
-#----------------------------------------------------------------------
+#======================================================================
 
 sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 {																			
@@ -1507,9 +1508,9 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 	return $pointee_addr;
 }
 
-#----------------------------------------------------------------------
+#======================================================================
 # Strings
-#----------------------------------------------------------------------
+#======================================================================
 
 sub decode_WPC_STR_char($)
 {
@@ -1562,9 +1563,9 @@ sub def_WPC_stringRef($@)														# DOES NOT MAINTAIN RPG
 	$Address = $oAddr;
 }
 
-#----------------------------------------------------------------------
+#======================================================================
 # Code
-#----------------------------------------------------------------------
+#======================================================================
 
 sub WPC_codeRef($@)															# label and disassemble 3-byte code reference
 {
@@ -1599,6 +1600,46 @@ sub def_WPC_codeRef($@)
 	WPC_codeRef($code_lbl,$divider_title,1);
 
 	$Address = $na;
+}
+
+
+#======================================================================
+# Gap Warnings
+#======================================================================
+
+sub produce_gap_warnings($$)
+{
+	my($fa,$la) = @_;
+
+	my($lwa);
+	for (my($a)=$fa; $a<=$la; $a++) {
+		next if $decoded[$a];
+		next if WORD($a)==0xFFFF && BYTE($a+2)==0xFF;
+	    my($pg) = ($a>=0x8000) ? 0xFF : $_cur_RPG;
+		if ((BYTE($a+2)==0xFF && WORD($a)>=0x8000 && WORD($a)<=0xFFFF) ||
+		    (BYTE($a+2)>=$start_page && BYTE($a+2)<=0x3D &&  WORD($a)>=0x4000 && WORD($a)<=0x7FFF)) {
+		    	my($lbl);
+		    	if (BYTE($a+2)==0xFF || WORD($a)>=0x8000) {
+		    		$lbl = $LBL[WORD($a)];
+		    		next if !defined($lbl) && $decoded[WORD($a)];
+		    	} else {
+		    		my($oRPG) = select_WPC_RPG(BYTE($a+2));
+		    		$lbl = $LBL[WORD($a)];
+		    		select_WPC_RPG($oRPG),next if !defined($lbl) && $decoded[WORD($a)];
+		    		select_WPC_RPG($oRPG);
+		    	}
+		    	$lbl = sprintf('$%02X:%04X',BYTE($a+2),WORD($a))
+		    		unless defined($lbl);
+		    	if ($a-$lwa < 30) {
+			   		printf(STDERR "GAP WARNING: possible reference to $lbl at \$%02X:%04X (+ %d)\n",
+			   			$pg,$a,$a-$lwa);
+		    	} else {
+			   		printf(STDERR "GAP WARNING: possible reference to $lbl at \$%02X:%04X\n",
+			   			$pg,$a);
+			   	}
+			   	$lwa = $a;
+		}
+	}
 }
 
 

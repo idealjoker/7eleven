@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Jun 28 14:19:54 2025
+#                    dlm: Sun Jun 29 13:00:01 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 647 62 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 55 34 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -52,6 +52,7 @@
 #	Jun 24, 2025: - added a bunch of new core syscalls
 #				  - BUG: another error label with special char
 #	Jun 25, 2025: - added __SOLCMD_TABLE_ADDR
+#	Jun 29, 2025: - added syscalls
 # END OF HISTORY
 
 #======================================================================
@@ -635,18 +636,24 @@ if ($WPCV eq 'WPC(alpha)') {
 if ($WPCV eq 'WPC(89)') {
  define_syscall('award_Extraball',						0xB383);
  define_syscall('A=EBpending', 			      			0xB3CA);
+ define_syscall('syscall_B8BA',							0xB8BC,'WWW');
+ define_syscall('syscall_B8D5',							0xB8D5,'WWW');
  define_syscall('printString[BXY]',						0xB97B);
  define_syscall('lampFX[A]',							0xCC3A);
+ define_syscall('syscall_C923',							0xC923,'B');
  define_syscall('setDMDanimation_playing[A]',			0xCAB0);
  define_syscall('A==DMDanimation_playing?',				0xCAB4);
  define_syscall('setDMDfunction[A]', 					0xCABD);
  define_syscall('A=lastDMDanimation_played??',			0xCADE);
  define_syscall('replay_last_DMDanimation??',			0xCAE2);
+ define_syscall('syscall_D6BC',							0xD6BC,'WB');
+ define_syscall('syscall_D730',							0xD730,'BBB');
  define_syscall('syscall_D77D',							0xD77D,'WBW');
  define_syscall('syscall_D799',							0xD799,'WBW');
  define_syscall('syscall_D7B4',							0xD7B4,'WBW');
  define_syscall('ISR_lampMatrix_MUX',	       			0xDAC6);
  define_syscall('IRQ_timer_handler??',					0xECCA);
+ define_syscall('syscall_F647',							0xF647,'W');			
  define_syscall('NE=gameDisabled',						0xF759);
  define_syscall('wait4_Thread#0041_not_running',		0xF766);
  define_syscall('lastBall?',							0xF7EF,'');
@@ -656,6 +663,7 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('addBonus_5530',						0xFAB4);
  define_syscall('addBonus_9930',						0xFABA);
  define_syscall('addBonus[A]',							0xFABE);
+ define_syscall('syscall_FE3C',							0xFE3C,'S');
 }
 
 # non-global
