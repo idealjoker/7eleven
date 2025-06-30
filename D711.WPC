@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Jun 29 22:46:21 2025
+#                    dlm: Mon Jun 30 16:19:55 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 107 45 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 108 45 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -105,6 +105,7 @@
 #	Jun 27, 2025: - BUG fixes and improvements
 #	Jun 29, 2025: - added gap warnings
 #				  - added font and DMD tables
+#	Jun 30, 2025: - improved gap ref warnings
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -1745,25 +1746,30 @@ sub produce_gap_warnings($$)
 		next if $decoded[$a];
 		next if WORD($a)==0xFFFF && BYTE($a+2)==0xFF;
 	    my($pg) = ($a>=0x8000) ? 0xFF : $_cur_RPG;
-		if ((BYTE($a+2)==0xFF && WORD($a)>=0x8000 && WORD($a)<=0xFFFF) ||
-		    (BYTE($a+2)>=$start_page && BYTE($a+2)<=0x3D &&  WORD($a)>=0x4000 && WORD($a)<=0x7FFF)) {
+    	my($ta) = WORD($a);
+    	my($tp) = BYTE($a+2);
+		if (($tp==0xFF 					   && $ta>=0x8000 && $ta<=0xFFFF) ||
+		    ($tp>=$start_page && $tp<=0x3D && $ta>=0x4000 && $ta<=0x7FFF)) {
 		    	my($lbl);
-		    	if (BYTE($a+2)==0xFF || WORD($a)>=0x8000) {
-		    		$lbl = $LBL[WORD($a)];
-		    		next if !defined($lbl) && $decoded[WORD($a)];
+		    	if ($tp==0xFF || $ta>=0x8000) {
+		    		$lbl = $LBL[$ta];
+		    		next if !defined($lbl) && $decoded[$ta];
 		    	} else {
-		    		my($oRPG) = select_WPC_RPG(BYTE($a+2));
-		    		$lbl = $LBL[WORD($a)];
-		    		select_WPC_RPG($oRPG),next if !defined($lbl) && $decoded[WORD($a)];
+		    		my($oRPG) = select_WPC_RPG($tp);
+		    		$lbl = $LBL[$ta];
+		    		if (!defined($lbl) && ($decoded[$ta] || WORD($ta)==0xFFFF)) {
+		    			select_WPC_RPG($oRPG);
+						next;
+					}
 		    		select_WPC_RPG($oRPG);
 		    	}
-		    	$lbl = sprintf('$%02X:%04X',BYTE($a+2),WORD($a))
+		    	$lbl = sprintf('%02X:%04X',$tp,$ta)
 		    		unless defined($lbl);
 		    	if ($a-$lwa < 30) {
-			   		printf(STDERR "GAP WARNING: possible reference to $lbl at \$%02X:%04X (+ %d)\n",
+			   		printf(STDERR "<%02X:%04X> gap reference to $lbl (+ %d)\n",
 			   			$pg,$a,$a-$lwa);
 		    	} else {
-			   		printf(STDERR "GAP WARNING: possible reference to $lbl at \$%02X:%04X\n",
+			   		printf(STDERR "<%02X:%04X> gap reference to $lbl\n",
 			   			$pg,$a);
 			   	}
 			   	$lwa = $a;
