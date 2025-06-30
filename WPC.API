@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Jun 29 13:00:01 2025
+#                    dlm: Sun Jun 29 22:47:39 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 55 34 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 57 60 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -53,6 +53,8 @@
 #				  - BUG: another error label with special char
 #	Jun 25, 2025: - added __SOLCMD_TABLE_ADDR
 #	Jun 29, 2025: - added syscalls
+#				  - BUG: Panic was marked as non-returning
+#				  - BUG: one syscall had wrong offset for FH
 # END OF HISTORY
 
 #======================================================================
@@ -313,7 +315,7 @@ define_label('__CHECKSUM+1',						0xFFEF);
 #	- identical for alpha and DMD
 #----------------------------------------------------------------------
 
-define_syscall('Panic',								0x8298,'E',1);			# NOTE 1: does not return
+define_syscall('Panic',								0x8298,'E');			# NOTE 1: does not return
 define_syscall('Error',								0x82B6,'E');
 define_syscall('syscall_82CB',						0x82CB,'E');
 define_syscall('addToAudit??',						0x82E2,'B');
@@ -532,9 +534,9 @@ define_syscall('lampOn[A]',								0xA03A+$VO);	# 9F6D
 define_syscall('lampOnBlinkOff[A]',						0xA055+$VO);
 define_syscall('lampOff[A]',							0xA063+$VO);
 define_syscall('lamp[A]On?',							0xA0B9+$VO);
-define_syscall('syscall_A3D7',							0xA3D7+$VO);
 
 VERSION_OFFSETS(-145,0);
+define_syscall('syscall_A3D7',							0xA3D7+$VO);
 define_syscall('memCopy[AXY]',							0xA6B9+$VO);	# A628
 define_syscall('memClear[AY]',							0xA6C4+$VO);
 define_syscall('memClear[XY]',							0xA6D1+$VO);
