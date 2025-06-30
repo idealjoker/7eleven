@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Jun 29 13:00:37 2025
+#                    dlm: Mon Jun 30 16:19:55 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 106 38 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 108 45 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -104,6 +104,8 @@
 #	Jun 26, 2025: - added support for list tables in def_WPC_table()
 #	Jun 27, 2025: - BUG fixes and improvements
 #	Jun 29, 2025: - added gap warnings
+#				  - added font and DMD tables
+#	Jun 30, 2025: - improved gap ref warnings
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -703,19 +705,24 @@ sub disassemble_lock_table()
 
 sub disassemble_font_table()
 {
-	die("disassemble_font_table(): not yet implemented\n");
 	$Address = 0x8285;
-	my($addr) = def_ptr('^sys_fontTable');
-	def_WPC_fontTable('sys_fontTable','Font Table');
-}
+	$Address = def_WPC_ref('=FONTS',undef,1);							# overwrite existing label
+	my($nFonts) = (WORD(0x828B)-WORD(0x8285)) / 3;
+	def_WPC_fontTable($nFonts,'=FONTS','Font Table');
 
+	$Address = 0x828B;
+	$Address = def_WPC_ref('=FONTS_ANCIL',undef,1);
+	def_WPC_fontAncilTable('=FONTS_ANCIL','Font Ancillary Table');
+}
 
 sub disassemble_DMD_table()
 {
-	die("disassemble_DMD_table(): not yet implemented\n");
 	$Address = 0x8288;
-	my($addr) = def_ptr('^sys_DMDtable');
-	def_WPC_DMDTable('sys_DMDtable','DMD Table');
+	my($pg) = BYTE($Address+2);
+	$Address = def_WPC_ref('=DMD_ANIMATIONS',undef,1);
+	my($opg) = select_WPC_RPG($pg);
+	def_WPC_DMDtable('=DMD_ANIMATIONS','DMD Table');
+	select_WPC_RPG($opg);
 }
 
 #======================================================================
@@ -1337,6 +1344,129 @@ sub def_WPC_lockTable(@)
 }
 
 #----------------------------------------------------------------------
+# Font Table / Sprite Table
+#----------------------------------------------------------------------
+
+sub def_WPC_fontTable(@)
+{
+	my($nFonts,$lbl,$divider_label) = @_;
+##	print(STDERR "def_WPC_fontTable(@_)\n");
+
+	die unless defined($Address);
+	return if ($decoded[$Address]);												
+	return if defined($OP[$Address]);
+
+	if (defined($lbl)) {
+		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
+	    setLabel($lbl,$Address);
+	}
+    
+	insert_divider($Address,$divider_label);
+
+	for (my($fnt)=0; $fnt<$nFonts; $fnt++) {
+		$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
+		$OP[$Address] = '.DR';
+		my($daddr) = WORD($Address);
+		my($dpg) = BYTE($Address+2);
+			my($opg) = select_WPC_RPG($dpg);
+			my($dlbl) = $LBL[$daddr];
+			$dlbl = sprintf('%02X:Font#%02X_data',BYTE($Address+2),$fnt) unless defined($dlbl);
+		    setLabel($dlbl,$daddr);
+		    select_WPC_RPG($opg);
+		push(@{$OPA[$Address]},sprintf('$%04X',$daddr));
+		push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address+2)));
+		$REM[$Address] = 'pointer to font/sprite definition data' if !defined($REM[$Address]) && $fnt==0;
+	    $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+    }
+
+    insert_empty_line($Address-3);
+}
+
+sub def_WPC_fontAncilTable(@)
+{
+	my($lbl,$divider_label) = @_;
+##	print(STDERR "def_WPC_fontAncilTable(@_)\n");
+
+	die unless defined($Address);
+	return if ($decoded[$Address]);												
+	return if defined($OP[$Address]);
+
+	if (defined($lbl)) {
+		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
+	    setLabel($lbl,$Address);
+	}
+    
+	insert_divider($Address,$divider_label);
+
+	for (my($fnt)=0; WORD($Address)>=0x4000 && WORD($Address)<0x8000 &&
+					 (BYTE($Address+2)==0xFF || (BYTE($Address+2)>=$start_page&&BYTE($Address+2)<=0x3D)); $fnt++) {
+		$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
+		$OP[$Address] = '.DR';
+		my($daddr) = WORD($Address);
+		my($dpg) = BYTE($Address+2);
+			my($opg) = select_WPC_RPG($dpg);
+			my($dlbl) = $LBL[$daddr];
+			$dlbl = sprintf('%02X:FontAncil#%02X_data',BYTE($Address+2),$fnt) unless defined($dlbl);
+		    setLabel($dlbl,$daddr);
+		    unless ($decoded[$daddr]) {
+				my($oa) = $Address;
+				$Address = $daddr;
+				my($pa) = def_ptr_hex();
+				setLabel(sprintf('FontAncil#%02X_ptr',$fnt),$pa)
+					unless defined($LBL[$pa]);
+				def_byteblock_hex(2,undef,undef,'unknown length');
+	            $Address = $oa;
+	        }
+		    select_WPC_RPG($opg);
+		push(@{$OPA[$Address]},sprintf('$%04X',$daddr));
+		push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address+2)));
+		$REM[$Address] = 'pointer to font/sprite definition data' if !defined($REM[$Address]) && $fnt==0;
+	    $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+    }
+
+    insert_empty_line($Address-3);
+}
+
+#----------------------------------------------------------------------
+# DMD Table
+#----------------------------------------------------------------------
+
+sub def_WPC_DMDtable(@)
+{
+	my($lbl,$divider_label) = @_;
+##	print(STDERR "def_WPC_DMDtable(@_)\n");
+
+	die unless defined($Address);
+	return if ($decoded[$Address]);												
+	return if defined($OP[$Address]);
+
+	if (defined($lbl)) {
+		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
+	    setLabel($lbl,$Address);
+	}
+    
+	insert_divider($Address,$divider_label);
+
+	for (my($DMD)=0; WORD($Address)!=0xFFFF; $DMD++) {
+		$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
+		$OP[$Address] = '.DR';
+		my($daddr) = WORD($Address);
+		my($dpg) = BYTE($Address+2);
+			my($opg) = select_WPC_RPG($dpg);
+			my($dlbl) = $LBL[$daddr];
+			$dlbl = sprintf('%02X:DMD#%02X_data',BYTE($Address+2),$DMD) unless defined($dlbl);
+		    setLabel($dlbl,$daddr);
+		    select_WPC_RPG($opg);
+		push(@{$OPA[$Address]},sprintf('$%04X',$daddr));
+		push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address+2)));
+		$REM[$Address] = 'pointer to DMD animation data' if !defined($REM[$Address]) && $DMD==0;
+	    $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+    }
+
+    insert_empty_line($Address-3);
+}
+
+#----------------------------------------------------------------------
 # Switch Table
 #----------------------------------------------------------------------
 
@@ -1452,7 +1582,7 @@ sub def_WPC_FXtable(@)
 
 sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 {																			
-	my($pointee_lbl,$rem) = @_;
+	my($pointee_lbl,$rem,$overwrite_existing_label) = @_;
 	die unless defined($Address);
 
     die unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
@@ -1467,7 +1597,7 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 
 	if (($decoded[$Address] || $decoded[$Address+2]) &&										# already decoded
 		$OP[$Address] ne '.DR') {
-##		printf(STDERR "%04X: def_WPC_ref($pointee_lbl): munging pre-existing analysis $OP[$Address]/$OP[$Address+2]\n",$Address);
+##		printf(STDERR "\t%04X: def_WPC_ref($pointee_lbl): munging pre-existing analysis $OP[$Address]/$OP[$Address+2]\n",$Address);
 		if ($decoded[$Address]) {
 			die($OP[$Address]) unless ($OP[$Address] eq '.DW');
 		}
@@ -1476,8 +1606,6 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 			undef($OP[$Address+2]);
 			undef(@{$OPA[$Address+2]});
 			die unless defined($AUTO_LBL[$Address+2]);
-##			undef($AUTO_LBL[$Address+2]);													# maybe LBL should be cleared as well?
-##			$AUTO_LBL[$Address+2] = sprintf("^$pointee_lbl+2");
         }
     }
 
@@ -1492,13 +1620,15 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 		$OPA[$Address][0] = '$0000';
 		$OPA[$Address][1] = '$00';
 	} else {
-		my($usr_lbl) = $LBL[$pointee_addr];
-		$pointee_lbl = $usr_lbl if defined($usr_lbl);
+		unless ($overwrite_existing_label) {
+			my($usr_lbl) = $LBL[$pointee_addr];
+			$pointee_lbl = $usr_lbl if defined($usr_lbl);
+		}
 		setLabel($pointee_lbl,$pointee_addr);
 		$OPA[$Address][0] = $LBL[$pointee_addr]; #$pointee_lbl; 
 		$OPA[$Address][1] = sprintf('$%02X',$RPG);
     }
-##    printf(STDERR "%04X: $OP[$Address] @{$OPA[$Address]}\n",$Address);
+##  printf(STDERR "\t%04X: $OP[$Address] @{$OPA[$Address]} [setLabel($pointee_lbl,%04X);]\n",$Address,$pointee_addr);
 
 	$REM[$Address] = $rem unless defined($REM[$Address]); 
 	$decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
@@ -1616,25 +1746,30 @@ sub produce_gap_warnings($$)
 		next if $decoded[$a];
 		next if WORD($a)==0xFFFF && BYTE($a+2)==0xFF;
 	    my($pg) = ($a>=0x8000) ? 0xFF : $_cur_RPG;
-		if ((BYTE($a+2)==0xFF && WORD($a)>=0x8000 && WORD($a)<=0xFFFF) ||
-		    (BYTE($a+2)>=$start_page && BYTE($a+2)<=0x3D &&  WORD($a)>=0x4000 && WORD($a)<=0x7FFF)) {
+    	my($ta) = WORD($a);
+    	my($tp) = BYTE($a+2);
+		if (($tp==0xFF 					   && $ta>=0x8000 && $ta<=0xFFFF) ||
+		    ($tp>=$start_page && $tp<=0x3D && $ta>=0x4000 && $ta<=0x7FFF)) {
 		    	my($lbl);
-		    	if (BYTE($a+2)==0xFF || WORD($a)>=0x8000) {
-		    		$lbl = $LBL[WORD($a)];
-		    		next if !defined($lbl) && $decoded[WORD($a)];
+		    	if ($tp==0xFF || $ta>=0x8000) {
+		    		$lbl = $LBL[$ta];
+		    		next if !defined($lbl) && $decoded[$ta];
 		    	} else {
-		    		my($oRPG) = select_WPC_RPG(BYTE($a+2));
-		    		$lbl = $LBL[WORD($a)];
-		    		select_WPC_RPG($oRPG),next if !defined($lbl) && $decoded[WORD($a)];
+		    		my($oRPG) = select_WPC_RPG($tp);
+		    		$lbl = $LBL[$ta];
+		    		if (!defined($lbl) && ($decoded[$ta] || WORD($ta)==0xFFFF)) {
+		    			select_WPC_RPG($oRPG);
+						next;
+					}
 		    		select_WPC_RPG($oRPG);
 		    	}
-		    	$lbl = sprintf('$%02X:%04X',BYTE($a+2),WORD($a))
+		    	$lbl = sprintf('%02X:%04X',$tp,$ta)
 		    		unless defined($lbl);
 		    	if ($a-$lwa < 30) {
-			   		printf(STDERR "GAP WARNING: possible reference to $lbl at \$%02X:%04X (+ %d)\n",
+			   		printf(STDERR "<%02X:%04X> gap reference to $lbl (+ %d)\n",
 			   			$pg,$a,$a-$lwa);
 		    	} else {
-			   		printf(STDERR "GAP WARNING: possible reference to $lbl at \$%02X:%04X\n",
+			   		printf(STDERR "<%02X:%04X> gap reference to $lbl\n",
 			   			$pg,$a);
 			   	}
 			   	$lwa = $a;

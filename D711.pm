@@ -312,6 +312,7 @@
 #	Jun 25, 2025: - added def_wordlist_hex
 #	Jun 27, 2025: - improved free space reporting
 #	Jun 29, 2025: - added allowed-labeling option to def_wordlist_hex
+#	Jun 29, 2025: - made def_ptr_hex() return pointee address
 # END OF HISTORY
 
 # TO-DO:
@@ -1886,6 +1887,7 @@ sub def_ptr_hex(@)                                                              
     $REM[$Address] = $rem unless defined($REM[$Address]);
     insert_divider($Address,$divider_label);
     $decoded[$Address] = $decoded[$Address+1] = 1; $Address += 2;
+    return WORD($Address-2);
 }
 
 sub def_ptr_hex_alt(@)																# pointer (not data word)
@@ -2622,8 +2624,8 @@ sub def_byteblock_hex(@)
 
 	my($bAddress);
     do {
-        printf(STDERR "def_byteblock_hex(@_) operator already defined ($OP[$Address],$decoded[$Address]) at \$%04X\n",$Address)
-            if (defined($OP[$Address]));
+        printf(STDERR "def_byteblock_hex(@_) operator already defined ($OP[$Address],$decoded[$Address]) at \$%04X (RPG = %02X)\n",$Address,$_cur_RPG)
+            if (defined($OP[$Address])); # && $OP[$Address] ne '.DB');
         $OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
         $REM[$Address]=$rem,undef($rem) unless defined($REM[$Address]);
         $bAddress = $Address;

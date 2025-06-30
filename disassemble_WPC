@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Sun Jun 29 13:00:18 2025
+#					 dlm: Sun Jun 29 22:57:02 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 37 43 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 39 63 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -35,6 +35,8 @@
 #					version ids
 #	Jun 21, 2025: - merged with studio version, had to re-do -s inversion
 #	Jun 25, 2025: - added -w (gap warnings)
+#	Jun 29, 2025: - added font  & DMD tables
+#				  - BUG: alpha disassembled font and DMD tables
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -102,6 +104,10 @@ if (defined($opt_p)) {														# process object file
 &D711::disassemble_CPU_vectors();
 &D711::disassemble_system_pointers();
 &D711::disassemble_lock_table();
+unless ($D711::WMS_System eq 'WPC(alpha)') {
+	&D711::disassemble_font_table();
+	&D711::disassemble_DMD_table()
+}
 
 #----------------------------------------------------------------------
 # Make Human Readable
