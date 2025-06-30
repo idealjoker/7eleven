@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Fri Jun 27 17:03:14 2025
+#					 dlm: Mon Jun 30 17:22:50 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 313 49 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 314 69 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -311,6 +311,7 @@
 #	Jun 24, 2025: - disabled unused (I think) code
 #	Jun 25, 2025: - added def_wordlist_hex
 #	Jun 27, 2025: - improved free space reporting
+#	Jun 29, 2025: - added allowed-labeling option to def_wordlist_hex
 # END OF HISTORY
 
 # TO-DO:
@@ -1853,7 +1854,7 @@ sub def_word_hex(@)                                                             
 
 sub def_wordlist_hex(@) 														# value-terminated list
 {
-	my($EOL,$lbl,$divider_label,$rem) = @_;
+	my($EOL,$lbl,$divider_label,$rem,$allow_labeling) = @_;
 	die unless defined($Address);
 	setLabel($lbl,$Address);
 	return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
@@ -1864,7 +1865,7 @@ sub def_wordlist_hex(@) 														# value-terminated list
 		$REM[$Address]=$rem,undef($rem) unless defined($REM[$Address]);
 		my($bAddress) = $Address;
 		for (my($col)=0; WORD($Address)!=$EOL && $col<6; $col++) {
-			push(@{$OPA[$bAddress]},sprintf('$%04X!',WORD($Address)));
+			push(@{$OPA[$bAddress]},$allow_labeling ? sprintf('$%04X',WORD($Address)) : sprintf('$%04X!',WORD($Address)));
 			$decoded[$Address++] = $decoded[$Address++] = 1;
 		}
 	} while (WORD($Address)!=$EOL);
@@ -2532,6 +2533,7 @@ sub def_code_ptr(@)
     $code_lbl = $usr_lbl if defined($usr_lbl);
     setLabel($code_lbl,$code_addr);
 
+	$code_lbl = sprintf('$%04X',$code_addr) unless defined($code_lbl);
     $OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
     $OPA[$Address][0] = $code_lbl; $REM[$Address] = $rem unless defined($REM[$Address]); 
     $decoded[$Address] = $decoded[$Address+1] = 1;
