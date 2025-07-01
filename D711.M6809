@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Sun Jun 22 22:24:16 2025
+#                    dlm: Tue Jul  1 09:16:25 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 127 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 62 46 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -59,6 +59,7 @@
 #	Jun 13, 2025: - added code following for indirect extended JMP and JSR
 #	Jun 17, 2025: - changed to continue disassmbly after SWI
 #	Jun 22, 2025: - BUG: JMP did not labelize
+#	Jul  1, 2025: - BUG: Lamp#0 was disallowed
 # HISTORY END
 
 # NOTES:
@@ -484,7 +485,7 @@ sub disassemble_syscall($$)
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'L') {											# L: Lamp
 			die(sprintf("Invalid lamp argument Lamp#%d",BYTE($addr)))
-				unless (BYTE($addr)>=1 && BYTE($addr)<=65);
+				unless (BYTE($addr)>=0 && BYTE($addr)<=65);
 			push(@{$OPA[$oaddr]},sprintf('Lamp#%d',BYTE($addr)));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;

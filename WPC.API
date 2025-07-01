@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Jun 29 22:47:39 2025
+#                    dlm: Tue Jul  1 17:21:27 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 57 60 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 58 42 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -55,6 +55,7 @@
 #	Jun 29, 2025: - added syscalls
 #				  - BUG: Panic was marked as non-returning
 #				  - BUG: one syscall had wrong offset for FH
+#	Jul  1, 2025: - defined 2 new syscalls
 # END OF HISTORY
 
 #======================================================================
@@ -405,6 +406,8 @@ define_syscall('clearAll',							0x87BE,'GB');
 define_syscall('allSet?',							0x87CB,'GB');
 define_syscall('allClear?',							0x87D8,'GB');
 define_syscall('syscall_87E5',						0x87E5,'W');
+define_syscall('syscall_87F2',						0x87F2,'W');
+define_syscall('syscall_87FF',						0x87FF,'W');
 define_syscall('syscall_880C',						0x880C,'W');
 define_syscall('syscall_8819',						0x8819,'W');
 define_syscall('syscall_8826',						0x8826,'W');

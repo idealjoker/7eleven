@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon Jun 16 14:34:40 2025
+#                    dlm: Tue Jul  1 17:20:03 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 2182 12 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 391 64 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -388,6 +388,7 @@
 #	Jun 13, 2025: - BUG: label redefinition warning produced wrongly
 #	Jun 15, 2026: - removed path from usage error
 #	Jun 16, 2025: - exported system specific pragmas
+#	Jul  1, 2025: - BUG: & in strings were not handled correctly
 # HISTORY END
 
 # RELEASE NOTES:
@@ -926,12 +927,16 @@ while (!eof()) {
     
     @_ = split;                                             			# tokenize (separate into operator and operands)
 
-	for (my($i)=0; $i<@_; $i++) {										# handle addtional statements on same line
+	for (my($i)=0; $i<@_; $i++) {										# handle additional statements on same line
 		next unless $_[$i] eq '&';
+		for (my($j)=0; $j<$i; $j++) {
+			goto NO_ADDL if $_[$j] =~ m{^'};							# ignore & in strings
+		}
 		$EXTRA = "@_[$i+1..$#_]";
 		splice(@_,$i);
 	}
-		
+NO_ADDL:		
+
     next unless (@_ > 0);                                   			# empty line => nothing to compile
 
     $MODE = 0 if $opt_f;												# force compilation of "dirty" source files
