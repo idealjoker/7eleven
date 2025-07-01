@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Jun 30 16:19:55 2025
+#                    dlm: Tue Jul  1 07:59:54 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 108 45 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1674 67 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -1657,7 +1657,8 @@ sub decode_WPC_STR_char($)
 
 sub def_WPC_string(@)
 {
-	my($lbl,$divider_label,$rem) = @_;
+	my($lbl,$divider_label,$rem,$maxlen) = @_;
+	$maxlen = 9e99 unless defined($maxlen);
 
 	die unless defined($Address);
 	return if ($decoded[$Address]);												
@@ -1666,14 +1667,14 @@ sub def_WPC_string(@)
 	insert_divider($Address,$divider_label);
 	$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$});             					# remove previous RPG if there is one
 	setLabel($lbl,$Address);
-    $Address+=$len,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
-    
+    return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
+
 	$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
 	$REM[$Address] = $rem unless defined($REM[$Address]); 
-	$OP[$Address] = '.STR';
+	$OP[$Address] = ($maxlen < 9e99) ? sprintf('.STR%d',$maxlen) : '.STR';
 	my($o);
 	$OPA[$Address][0] = "'";
-	for ($o=0; BYTE($Address+$o)!=0; $o++) {
+	for ($o=0; BYTE($Address+$o)!=0 && $o<$maxlen; $o++) {
 		$OPA[$Address][0] .= decode_WPC_STR_char($Address+$o);
 		$decoded[$Address+$o] = 1;
 	}
