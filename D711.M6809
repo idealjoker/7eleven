@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Jul  1 09:16:25 2025
+#                    dlm: Thu Jul  3 19:07:27 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 62 46 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 63 18 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -60,6 +60,8 @@
 #	Jun 17, 2025: - changed to continue disassmbly after SWI
 #	Jun 22, 2025: - BUG: JMP did not labelize
 #	Jul  1, 2025: - BUG: Lamp#0 was disallowed
+#	Jul  3, 2025: - BUG: spawn thread syscalls did not mark the thread
+#						 handlers as such
 # HISTORY END
 
 # NOTES:
@@ -543,9 +545,14 @@ sub disassemble_syscall($$)
 			my($orpg) = select_WPC_RPG($trpg);
 			my($tlbl) = sprintf('library_%04X',$taddr);
 			my($divider);
-			if ($LBL[hex(substr($OPA[$oaddr][0],1,4))] =~ m{^[^_]*[sS]pawnThread}) {			# spawnThread system calls
-#				printf(STDERR "tlbl = $tlbl ($LBL[hex(substr($OPA[$oaddr][0],1,4))])\n");
-				$tlbl = sprintf('Thread#%s_handler',substr($OPA[$oaddr][1],-4));
+			if ($LBL[hex(substr($OPA[$oaddr][0],1,4))] =~ m{[sS]pawn.*[tT]hread}) {				# spawnThread system calls
+##				printf(STDERR "tlbl = $tlbl ($LBL[hex(substr($OPA[$oaddr][0],1,4))]))\n");
+				if (@{$OPA[$oaddr]} == 1) {														# no  explicit thread id
+					$tlbl = sprintf('thread_handler_%04X',$taddr);
+				} else {
+					$tlbl = sprintf('Thread_%s_handler_%04X',substr($OPA[$oaddr][1],-4),$taddr);
+				}
+##				printf(STDERR "\ttlbl = $tlbl ($OPA[$oaddr][1]))\n");
 				$divider = 'Thread Handler';
 			}
 			$tlbl = $LBL[$taddr] if defined($LBL[$taddr]);
