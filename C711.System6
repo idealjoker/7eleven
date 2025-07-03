@@ -1,19 +1,26 @@
 #======================================================================
 #                    C 7 1 1 . S Y S T E M 6 
 #                    doc: Mon Jun  2 09:55:01 2025
-#                    dlm: Mon Jun 16 12:36:14 2025
+#                    dlm: Thu Jul  3 10:36:45 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 46 38 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 25 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jun  2, 2025: - created
 #	Jun 16, 2025: - added compile_pragma()
+#	Jul  3, 2025: - added compilation_magic()
 # HISTORY END
 
 use strict vars;
 
 our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE,$ADDR);
+
+#----------------------------------------------------------------------
+# Compilation Magic
+#----------------------------------------------------------------------
+
+sub compilation_magic() {}
 
 sub unroll_structure()
 {

@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . S Y S T E M 1 1 
 #                    doc: Mon Jun  2 09:55:01 2025
-#                    dlm: Mon Jun 16 13:47:08 2025
+#                    dlm: Thu Jul  3 10:37:48 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 60 2 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 60 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -13,9 +13,16 @@
 #	Jun 10, 2025: - BUG: %System_Option parsing had errors
 #	Jun 12, 2025: - BUG: U26_size needs capitalization
 #	Jun 16, 2025: - added compile_pragma()
+#	Jul  3, 2025: - added compilation_magic()
 # HISTORY END
 
 use strict vars;
+
+#----------------------------------------------------------------------
+# Compilation Magic
+#----------------------------------------------------------------------
+
+sub compilation_magic() {}
 
 #----------------------------------------------------------------------
 # Structured Programming

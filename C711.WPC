@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . W P C 
 #                    doc: Mon May 26 08:07:03 2025
-#                    dlm: Wed Jul  2 16:37:13 2025
+#                    dlm: Thu Jul  3 10:34:41 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 23 39 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 24 26 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -21,6 +21,7 @@
 #	Jun 27, 2025: - BUG: .STR were not encoded correctly
 #	Jul  1, 2025: - added .STR## for strings w/o 0 termination
 #	Jul  2, 2025: - added checkSumWPC()
+#	Jul  3, 2025: - added compilation_magic()
 # HISTORY END
 
 use strict vars;
@@ -43,6 +44,15 @@ if (defined($opt_S)) {
 			unless isMember($k,'WPC_Version','ROM_Size');
 		$System_Option{$k} = defined($v) ? $v : 1;
 	}
+}
+
+#----------------------------------------------------------------------
+# Compilation Magic
+#----------------------------------------------------------------------
+
+sub compilation_magic()
+{
+	s{\@CHECKSUM_INFO}{\@CHECKSUM_INFO 0 0};								# make sure 3 bytes are allocated for CHECKSUM_INFO
 }
 
 #----------------------------------------------------------------------

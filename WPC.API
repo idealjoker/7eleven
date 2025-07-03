@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Jul  1 17:21:27 2025
+#                    dlm: Thu Jul  3 09:28:23 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 58 42 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 59 45 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -56,6 +56,7 @@
 #				  - BUG: Panic was marked as non-returning
 #				  - BUG: one syscall had wrong offset for FH
 #	Jul  1, 2025: - defined 2 new syscalls
+#	Jul  3, 2025: - adapted to @CHECKSUM_INFO
 # END OF HISTORY
 
 #======================================================================
@@ -280,12 +281,13 @@ define_label('_SERIAL_DATA_OUTPUT',					0x3FC3);
 define_label('_SERIAL_CTRL_OUTPUT',					0x3FC4);	
 define_label('_SERIAL_BAUD_SELECT',					0x3FC5);	
 
-define_label('_DEBUGGER_DATA',						0x3D60);	# Hardware Debugger
-define_label('_DEBUGGER_CTRL',						0x3D61);
+define_label('DEBUGGER_DATA',						0x3D60);	# Hardware Debugger
+define_label('DEBUGGER_CTRL',						0x3D61);
 
-define_label('__CHECKSUM_CORRECTION',				0xFFEC);	# Checksum Control
-define_label('__CHECKSUM',							0xFFEE);
-define_label('__CHECKSUM+1',						0xFFEF);
+define_label('CHECKSUM_INFO',						0xFFEC);	# Checksum Control
+define_label('CHECKSUM_INFO+1',						0xFFED);	
+define_label('CHECKSUM_INFO+2',						0xFFEE);
+define_label('ROM_VERSION',							0xFFEF);
 
 #----------------------------------------------------------------------
 # System Calls

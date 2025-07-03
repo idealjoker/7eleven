@@ -1,19 +1,31 @@
 #======================================================================
 #                    C 7 1 1 . S Y S T E M 7 
 #                    doc: Mon Jun  2 09:55:01 2025
-#                    dlm: Fri Jun  6 08:05:28 2025
+#                    dlm: Thu Jul  3 10:37:41 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 12 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 66 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jun  2, 2025: - created
 #	Jun  6, 2025: - BUG: rom_addr() returned 0 on empty args
+#	Jul  3, 2025: - added compilation_magic()
 # HISTORY END
 
 use strict vars;
 
 our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE,$ADDR);
+
+#----------------------------------------------------------------------
+# Compilation Magic
+#----------------------------------------------------------------------
+
+sub compilation_magic() {}
+
+
+#----------------------------------------------------------------------
+# Structured Programming
+#----------------------------------------------------------------------
 
 sub unroll_structure()
 {
@@ -21,6 +33,9 @@ sub unroll_structure()
 	unroll_wvm_structure();													# in [C711.VM]
 }
 
+#----------------------------------------------------------------------
+# Macro Support
+#----------------------------------------------------------------------
 
 sub asm_macros()
 {
@@ -29,12 +44,18 @@ sub asm_macros()
     return asm_wvm_macros();
 }
 
+#----------------------------------------------------------------------
+# System Calls
+#----------------------------------------------------------------------
 
 sub define_syscall($$@)
 {
 	die("define_syscall() not implemented for Sytstem 6");
 }
 
+#----------------------------------------------------------------------
+# ROM to CPU Address Mapping
+#----------------------------------------------------------------------
 
 sub code_addr(@)															# ROM addr = CPU addr
 {

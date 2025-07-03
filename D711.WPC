@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Jul  1 07:59:54 2025
+#                    dlm: Thu Jul  3 09:27:45 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 1674 67 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 109 45 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -106,6 +106,7 @@
 #	Jun 29, 2025: - added gap warnings
 #				  - added font and DMD tables
 #	Jun 30, 2025: - improved gap ref warnings
+#	Jul  3, 2025: - adapted to @CHECKSUM_INFO
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -680,6 +681,11 @@ sub disassemble_system_pointers()
 
 	def_ptr_hex('^=STATUS_AREA');
 	insert_divider($Address,'System Code');
+
+	$Address = 0xFFEC;													# checksum
+    $OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	$OPA[$Address][0] = '@CHECKSUM_INFO';
+	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1; 
 }
 
 
@@ -738,7 +744,11 @@ sub apply_magic_WPC($$)
 	my($fa,$la) = @_;
 
 	$systemAliases{_SKIP} = 'JMP .+3';											# _SKIP macro
-##	$systemAliases{'Lamp#0'} = '$00';											# invalid Lamp#0
+
+	if ($la >= 0x8000) {
+		die unless ($OP[0xFFEC] eq '.DB' && $OPA[0xFFEC][0] eq '@CHECKSUM_INFO');
+		undef($LBL[0xFFEE]); undef($OP[0xFFEE]);
+	}
 
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
 		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {	# 1) JMP *+3

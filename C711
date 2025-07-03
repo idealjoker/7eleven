@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Jul  2 20:43:37 2025
+#                    dlm: Thu Jul  3 10:34:17 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 393 30 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 395 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -391,6 +391,7 @@
 #	Jul  1, 2025: - BUG: & in strings were not handled correctly
 #	Jul  2, 2025: - added experimental WPC checksum handling
 #				  - added .NOP
+#	Jul  3, 2025: - adapted to @CHECKSUM_INFO, compilation_magic()
 # HISTORY END
 
 # RELEASE NOTES:
@@ -872,6 +873,8 @@ while (!eof()) {
 			$_ = $';
 			$NO_OPT[$ADDR] = 1;
 		}
+
+		compilation_magic();
 	
 		if ($opt_2) {													# Optimizer: Pass 2: Implement instructions
 			die("Invalid optimization information for line $next_statement_to_optimize\n")
@@ -1783,33 +1786,33 @@ sub resolve_labels()
 sub calc_checksums()                                                                    # replace @CHECKSUM_BYTE with checksum value
 {
 	if ($WMS_System =~ m{^WPC}) {
-		my($a) = 0xFFFEE;
-		if (isMember($ROM[$a],'@CHECKSUM','@CHECKSUM_WORD')) {
-			$ROM[$a]   = $ROM[$a-2] = 0x00;
-			$ROM[$a-1] = $ROM[$a+1] = 0xFF;
+		my($a) = 0xFFFEC;
+		if ($ROM[$a] eq '@CHECKSUM_INFO') {
+			my($ROM_version) = $ROM[$a+3];
+			$ROM[$a]   = $ROM[$a+2] = 0x00;
+			$ROM[$a+1] = $ROM[$a+3] = 0xFF;
 			my($sum) = checkSumWPC();
 			my($lsb) = $sum & 0xFF;
 			my($msb) = ($sum >> 8) & 0xFF;
-			$ROM[$a-1] = 0xFF - $lsb;
-			$ROM[$a+1] = 0x08;
-			$ROM[$a]   = $msb;
-	        $ROM[$a-2] = 0xFF - $msb;
+			$ROM[$a  ] = 0xFF - $lsb;
+			$ROM[$a+3] = $ROM_version;
+			$ROM[$a+2] = $msb;
+	        $ROM[$a+1] = 0xFF - $msb;
+	    } else {
+	    	die($ROM[$a]);
 	    }
-		printf(STDERR "<FF:FFEE> \@CHECKSUM = \$%04X\n",($ROM[$a]<<8)|$ROM[$a+1])
-			if defined($opt_c);
+		printf(STDERR "<FF:FFEE> CHECKSUM = \$%04X\n",($ROM[$a+2]<<8)|$ROM[$a+3])
+				if defined($opt_c);
 		return; 	   	
 	}
 		    
-
     for (my($a)=$FIRST_ADDR; $a<=$MAX_ROM_ADDR; $a++) {  
-        next unless isMember($ROM[$a],'@CHECKSUM','@CHECKSUM_BYTE','@CHECKSUM_WORD');
+        next unless ($ROM[$a] eq '@CHECKSUM_BYTE');
 
         printf("\$D711::Address = 0x%04X;\n&D711::def_checksum_byte();\n",$a)
             if ($opt_x);
 
 		if ($WMS_System == 6) {
-        	die("Compiler variable <$ROM[$a]> invalid for WPC\n")
-        		if ($ROM[$a] eq '@CHECKSUM_WORD');
 	    	$ROM[$a] = checkSumS6();
 	        printf(STDERR "<%04X> \@CHECKSUM_BYTE = \$%02X\n",$a,$ROM[$a])
 	            if defined($opt_c);
