@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Jul  2 16:36:57 2025
+#                    dlm: Wed Jul  2 20:43:37 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 392 60 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 393 30 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -390,6 +390,7 @@
 #	Jun 16, 2025: - exported system specific pragmas
 #	Jul  1, 2025: - BUG: & in strings were not handled correctly
 #	Jul  2, 2025: - added experimental WPC checksum handling
+#				  - added .NOP
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2473,6 +2474,9 @@ sub compile_common_pragma()
 			}
 			return 1;
 	    }
+
+	    return 1 if  ($OP eq '.NOP') 														# don't create any code
+
 	} # MODE == 1
 
 	return undef;
