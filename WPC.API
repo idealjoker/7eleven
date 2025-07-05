@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Thu Jul  3 09:28:23 2025
+#                    dlm: Sat Jul  5 17:07:33 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 59 45 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 60 33 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -57,6 +57,7 @@
 #				  - BUG: one syscall had wrong offset for FH
 #	Jul  1, 2025: - defined 2 new syscalls
 #	Jul  3, 2025: - adapted to @CHECKSUM_INFO
+#	Jul  5, 2025: - added syscall
 # END OF HISTORY
 
 #======================================================================
@@ -660,6 +661,7 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('syscall_D7B4',							0xD7B4,'WBW');
  define_syscall('ISR_lampMatrix_MUX',	       			0xDAC6);
  define_syscall('IRQ_timer_handler??',					0xECCA);
+ define_syscall('syscall_EF47',							0xEF47,'B');
  define_syscall('syscall_F647',							0xF647,'W');			
  define_syscall('NE=gameDisabled',						0xF759);
  define_syscall('wait4_Thread#0041_not_running',		0xF766);

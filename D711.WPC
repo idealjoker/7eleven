@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Jul  5 09:13:12 2025
+#                    dlm: Sat Jul  5 17:08:36 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 114 53 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 115 73 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -112,6 +112,7 @@
 #				  - removed .DxRy data definitions because they
 #					mess up gap warnings
 #	Jul  5, 2025: - further improved gap warning code
+#				  - debugged and re-enabled def_WPC_unknownSystem_table_1
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -523,9 +524,9 @@ sub disassemble_system_pointers()
 	$Address = 0x81CE; push(@skipAddr,$Address);
 	$Address = def_WPC_ref('=FX_TABLE');
 		def_WPC_FXtable(undef,'FX Table');
-#	$Address = 0x81D1; push(@skipAddr,$Address);
-#	$Address = def_WPC_ref(sprintf('=UNKNOWN_SYSTEM_TABLE_%04X',$Address));
-#		def_WPC_unknownSystem_table_1(undef,'Unknown System Table');
+	$Address = 0x81D1; push(@skipAddr,$Address);
+	$Address = def_WPC_ref(sprintf('=UNKNOWN_SYSTEM_TABLE_%04X',$Address));
+		def_WPC_unknownSystem_table_1(undef,'Unknown System Table');
 	$Address = 0x81EC; push(@skipAddr,$Address);
 	$Address = def_WPC_ref(sprintf('=UNKNOWN_SYSTEM_TABLE_%04X',$Address));
 		def_WPC_unknownSystem_table(undef,'Unknown System Table');
@@ -652,7 +653,7 @@ sub disassemble_system_pointers()
 	my(@known)	  = (0x8151,0x8193);
 	my(@knownL)	  = ('BALLSEARCH_TIMER','STARTBUTTON_LAMP');
 
-	my(@tblRef) = (0x81A8,0x81B9,0x81BC,0x81BF,0x81C8,0x81CB,0x81D1,
+	my(@tblRef) = (0x81A8,0x81B9,0x81BC,0x81BF,0x81C8,0x81CB,
 				   0x81D4,0x81D7,0x81DA,0x81DD,0x81E0,0x81E3,0x81E6,
 				   0x81E9,0x81F2,0x81F5,0x81F8,0x81FB,
 				   0x81FE,0x8201,0x8204,0x8207,0x820A,0x820D,0x8210,
@@ -1168,7 +1169,8 @@ sub def_WPC_unknownSystem_table_1($@)
 			select_WPC_RPG(BYTE($TSA+5*$r+4))
 				if ($Address < 0x8000);
 ##			printf(STDERR "@%02X:%04X: def_word_hex('%s_%d_1')\n",$_cur_RPG,$Address,$lbase,$r);
-			def_word_hex(sprintf('%s_%d_1',$lbase,$r));
+##			def_word_hex(sprintf('%s_%d_1',$lbase,$r));
+			def_code(sprintf('%s_%d_1',$lbase,$r));
 			select_WPC_RPG($sP);
 	        $Address = $sA;
 		} else {
