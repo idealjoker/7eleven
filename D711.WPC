@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Thu Jul  3 09:27:45 2025
+#                    dlm: Sat Jul  5 09:13:12 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 109 45 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 114 53 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -107,6 +107,11 @@
 #				  - added font and DMD tables
 #	Jun 30, 2025: - improved gap ref warnings
 #	Jul  3, 2025: - adapted to @CHECKSUM_INFO
+#	Jul  4, 2025: - improved produce_gap_warnings to add data refs
+#				  - added def_WPC_unknownSystem_table_1
+#				  - removed .DxRy data definitions because they
+#					mess up gap warnings
+#	Jul  5, 2025: - further improved gap warning code
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -475,7 +480,7 @@ sub disassemble_system_pointers()
 	insert_divider($Address,'Bank Id');
 	def_byte_hex('_ROMPG_SYS1_ID');
 	
-	insert_divider($Address,'Game Event Hooks');
+	insert_divider($Address,'Game Event Hooks');							# Game Event Hooks
 	for (my($h)=0; $Address<0x812D; $h++) {
 		my($taddr) = sprintf('%04X',WORD($Address));
 		my($trpg) = sprintf('%02X',BYTE($Address+2));
@@ -488,7 +493,7 @@ sub disassemble_system_pointers()
 	my($ubyte,$uword);
 	
 	#------------------------------
-	# Exceptions
+	# System Pointers
 	#------------------------------
 
 	$Address = 0x81A2; push(@skipAddr,$Address);
@@ -518,6 +523,9 @@ sub disassemble_system_pointers()
 	$Address = 0x81CE; push(@skipAddr,$Address);
 	$Address = def_WPC_ref('=FX_TABLE');
 		def_WPC_FXtable(undef,'FX Table');
+#	$Address = 0x81D1; push(@skipAddr,$Address);
+#	$Address = def_WPC_ref(sprintf('=UNKNOWN_SYSTEM_TABLE_%04X',$Address));
+#		def_WPC_unknownSystem_table_1(undef,'Unknown System Table');
 	$Address = 0x81EC; push(@skipAddr,$Address);
 	$Address = def_WPC_ref(sprintf('=UNKNOWN_SYSTEM_TABLE_%04X',$Address));
 		def_WPC_unknownSystem_table(undef,'Unknown System Table');
@@ -1015,7 +1023,7 @@ sub def_WPC_byteList_table($@)
 }
 
 #----------------------------------------------------------------------
-# Unknown System Table with code refs
+# Unknown System Tables with code refs
 #----------------------------------------------------------------------
 
 sub def_WPC_unknownSystem_table($@)
@@ -1105,6 +1113,81 @@ sub def_WPC_unknownSystem_table($@)
     return;
 
 ##	insert_empty_line($Address-2);
+}
+
+sub def_WPC_unknownSystem_table_1($@)
+{
+	my($lbl,$divider_label) = @_;
+##	printf(STDERR "def_WPC_unknownSystem_table_1(@_) @%02X:%04X\n",$_cur_RPG,$Address);
+
+	die unless defined($Address);
+	return if ($decoded[$Address]);												
+	return if defined($OP[$Address]);
+
+	if (defined($lbl)) {
+		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
+	    setLabel($lbl,$Address);
+	}
+    
+	insert_divider($Address,$divider_label);
+
+	$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
+	$OP[$Address] = '.DWB';
+	my($rows,$cols) = (WORD($Address),BYTE($Address+2));
+	push(@{$OPA[$Address]},$rows);
+	push(@{$OPA[$Address]},$cols);
+	$REM[$Address] = 'number of table rows, bytes per row' unless defined($REM[$Address]);
+	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+
+	my($TSA) = $Address;												# Table Start Address
+	die unless $cols == 5;
+
+	my($lbase) = defined($lbl) ? $lbl : $LBL[$TSA-3];
+	$lbase = $' if ($lbase =~ m{^[0-9A-Fa-f]{2}:});
+	for (my($r)=0; $r<$rows; $r++) {
+		my($opaddr) = $Address;
+		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
+		$REM[$opaddr] = sprintf('Row#%d',$r+1) if ($r+1)==1 || ($r+1)%10==0;
+		$OP[$opaddr] = '.DB';
+		for (my($i)=0; $i<2; $i++) {
+			push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address)));
+			$decoded[$Address++] = 1;
+		}
+		if (VALID_ROMREF()) {
+			my($opaddr) = $Address;
+			$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
+	        $OP[$opaddr] = '.DR';
+			push(@{$OPA[$opaddr]},label_address(WORD($Address),sprintf('%s_%d_1',$lbase,$r)));
+			push(@{$OPA[$opaddr]},sprintf('$%02X',BYTE($Address+2)));
+			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+
+			my($sA) = $Address;
+			my($sP) = $_cur_RPG;
+			$Address = WORD($TSA+5*$r+2);
+			
+			select_WPC_RPG(BYTE($TSA+5*$r+4))
+				if ($Address < 0x8000);
+##			printf(STDERR "@%02X:%04X: def_word_hex('%s_%d_1')\n",$_cur_RPG,$Address,$lbase,$r);
+			def_word_hex(sprintf('%s_%d_1',$lbase,$r));
+			select_WPC_RPG($sP);
+	        $Address = $sA;
+		} else {
+			for (my($i)=0; $i<3; $i++) {
+				push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address)));
+				$decoded[$Address++] = 1;
+	        }
+	    }
+		my($sA) = $Address;
+		my($sP) = $_cur_RPG;
+		$Address = WORD($TSA+5*$r+2);
+		select_WPC_RPG(BYTE($TSA+5*$r+4)) if ($Address < 0x8000);
+##		printf(STDERR "@%02X:%04X: def_code('%s_%d_2')\n",$_cur_RPG,$Address,$lbase,$r);
+		def_code(sprintf('%s_%d_2',$lbase,$r));
+		select_WPC_RPG($sP);
+		$Address = $sA;
+	}
+    return;
+
 }
 
 #----------------------------------------------------------------------
@@ -1310,30 +1393,35 @@ sub def_WPC_lockTable(@)
 		my($taddr,$trpg);
 		$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
 		$REM[$Address] = sprintf('Lock#%02X',$lck) if !defined($REM[$Address]);
-		$OP[$Address] = '.DBR';
+		$OP[$Address] = '.DB';
 		push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address)));
-		push(@{$OPA[$Address]},sprintf('$%04X',$taddr=WORD($Address+1)));
-		push(@{$OPA[$Address]},sprintf('$%02X',$trpg=BYTE($Address+3)));
-	    $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+		$decoded[$Address++] = 1;
+		$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
+		$OP[$Address] = '.DR';
+		push(@{$OPA[$Address]},sprintf('$%04X',$taddr=WORD($Address)));
+		push(@{$OPA[$Address]},sprintf('$%02X',$trpg=BYTE($Address+2)));
+	    $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 		if ($lck == 1) {
-			$OP[$Address-4] = '.DBRWB';
-			push(@{$OPA[$Address-4]},sprintf('$%04X',WORD($Address)));
-			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+2)));
-			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+3)));
-			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+4)));
-			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+5)));
-			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+6)));
+		  	$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
+			$OP[$Address] = '.DWB';
+			push(@{$OPA[$Address]},sprintf('$%04X',WORD($Address)));
+			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+2)));
+			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+3)));
+			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+4)));
+			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+5)));
+			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+6)));
 			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 			$decoded[$Address++] = 1;
 		} elsif ($lck > 1) {
-			$OP[$Address-4] = '.DBRB';
-			push(@{$OPA[$Address-4]},sprintf('Switch#%02X',BYTE($Address)));
-			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+1)));
-			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+2)));
-			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+3)));
-			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+4)));
-			push(@{$OPA[$Address-4]},sprintf('$%02X!',BYTE($Address+5)));
+		  	$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
+			$OP[$Address] = '.DB';
+			push(@{$OPA[$Address]},sprintf('Switch#%02X',BYTE($Address)));
+			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+1)));
+			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+2)));
+			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+3)));
+			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+4)));
+			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+5)));
 			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 		}
@@ -1507,11 +1595,15 @@ sub def_WPC_switchTable(@)
 	for (my($sw)=0; $sw<$rows; $sw++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
-		$OP[$opaddr] = '.DBBRB';
+#		$OP[$opaddr] = '.DBBRB';
+		$OP[$opaddr] = '.DB';
 		$REM[$opaddr] = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('Switch#%02X',$sw);
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 
+		$opaddr = $Address;
+		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
+		$OP[$opaddr] = '.DR';
 		my($ta,$tp) = (WORD($Address),BYTE($Address+2));
 		my($swn) = defined($Switch[$sw]) ? $Switch[$sw] : sprintf('Switch#%02X',$sw);
 		push(@{$OPA[$opaddr]},label_address($ta,$swn.'_handler',1));						# suppress address suffix in label
@@ -1519,8 +1611,10 @@ sub def_WPC_switchTable(@)
 		WPC_codeRef($swn.'_handler',"Switch Handler ($swn)",$follow_code);
 		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
+		$opaddr = $Address;
+		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
+		$OP[$opaddr] = '.DB';
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
-##		push(@{$OPA[$opaddr]},sprintf('Lamp#%d',BYTE($Address))); $decoded[$Address++] = 1;			# incorrect in FH at least
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
@@ -1625,7 +1719,7 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 	$AUTO_LBL[$Address+2] = sprintf("^$pointee_lbl+2");
 ##	print(STDERR "AUTO_LBL[$Address+2] = $AUTO_LBL[$Address+2] <$LBL[$Address+2]>\n");
 	
-	$OP[$Address] = '.DR'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $codeType_data;
+	$OP[$Address] = '.DR'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
 	if ($pointee_addr == 0x0000) {															# FH.WPC $FF:821C
 		$OPA[$Address][0] = '$0000';
 		$OPA[$Address][1] = '$00';
@@ -1754,9 +1848,19 @@ sub produce_gap_warnings($$)
 
 	my($lwa);
 	for (my($a)=$fa; $a<=$la; $a++) {
-		next if $decoded[$a];
 		next if WORD($a)==0xFFFF && BYTE($a+2)==0xFF;
-	    my($pg) = ($a>=0x8000) ? 0xFF : $_cur_RPG;
+##		next if $OP[$a] eq '.DR';
+		if ($decoded[$a]) {												# potential data reference
+			my($oa) = $a;
+			$oa-- while !defined($OP[$oa]);
+			die(sprintf("%02X:%04X ($OP[$oa]/$TYPE[$oa])",$_cur_RPG,$oa)) unless defined($TYPE[$oa]);
+			next unless $TYPE[$oa] == $CodeType_data;					# not a data reference
+			next if $OP[$oa] =~ m{^\.STR};								# ignore potential refs in strings
+			next if $OP[$oa] =~ m{^\.DR};								# ignore potential refs in strings
+		} else {
+			next if $decoded[$a+1] || $decoded[$a+2];					# ignore partially decoded ref candidates
+		}
+		my($pg) = ($a>=0x8000) ? 0xFF : $_cur_RPG;
     	my($ta) = WORD($a);
     	my($tp) = BYTE($a+2);
 		if (($tp==0xFF 					   && $ta>=0x8000 && $ta<=0xFFFF) ||
@@ -1776,11 +1880,12 @@ sub produce_gap_warnings($$)
 		    	}
 		    	$lbl = sprintf('%02X:%04X',$tp,$ta)
 		    		unless defined($lbl);
+		    	my($tl) = ($decoded[$a]) ? 'data' : 'gap';
 		    	if ($a-$lwa < 30) {
-			   		printf(STDERR "<%02X:%04X> gap reference to $lbl (+ %d)\n",
+			   		printf(STDERR "<%02X:%04X> $tl reference to $lbl (+ %d)\n",
 			   			$pg,$a,$a-$lwa);
 		    	} else {
-			   		printf(STDERR "<%02X:%04X> gap reference to $lbl\n",
+			   		printf(STDERR "<%02X:%04X> $tl reference to $lbl\n",
 			   			$pg,$a);
 			   	}
 			   	$lwa = $a;
