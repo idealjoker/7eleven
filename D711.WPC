@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Jul  5 17:08:36 2025
+#                    dlm: Sun Jul  6 10:38:05 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 115 73 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 116 52 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -113,6 +113,7 @@
 #					mess up gap warnings
 #	Jul  5, 2025: - further improved gap warning code
 #				  - debugged and re-enabled def_WPC_unknownSystem_table_1
+#	Jul  6, 2025: - added def_WPC_codeRef_nonPrime()
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -1742,6 +1743,53 @@ sub def_WPC_ref($@)														# DOES NOT MAINTAIN RPG
 	$Address += 3;
 
 	return $pointee_addr;
+}
+
+sub def_WPC_codeRef_nonPrime($@)															# MAINTAINS RPG, WORKS IN NON PRIME RE
+{																			
+	my($pointee_lbl,$rem,$overwrite_existing_label) = @_;
+	die unless defined($Address);
+
+    die unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
+
+	my($pointee_addr) = WORD($Address);
+	my($RPG) = BYTE($Address+2);
+
+	if (($decoded[$Address] || $decoded[$Address+2]) &&										# already decoded
+		$OP[$Address] ne '.DR') {
+		if ($decoded[$Address]) {
+			die($OP[$Address]) unless ($OP[$Address] eq '.DW');
+		}
+		if ($decoded[$Address+2]) {
+ 			die unless ($OP[$Address+2] eq '.DB');
+			undef($OP[$Address+2]);
+			undef(@{$OPA[$Address+2]});
+			die unless defined($AUTO_LBL[$Address+2]);
+        }
+    }
+
+	$OP[$Address] = '.DR'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	if ($pointee_addr == 0x0000) {															# FH.WPC $FF:821C
+		$OPA[$Address][0] = '$0000';
+		$OPA[$Address][1] = '$00';
+	} else {
+		my($orpg) = select_WPC_RPG($RPG);
+		unless ($overwrite_existing_label) {
+			my($usr_lbl) = $LBL[$pointee_addr];
+			$pointee_lbl = $usr_lbl if defined($usr_lbl);
+		}
+		setLabel($pointee_lbl,$pointee_addr);
+		disassemble_asm($code_base_indent,$pointee_addr,$pointee_lbl,undef,1);
+		select_WPC_RPG($orpg);
+		$pointee_lbl = $' if ($pointee_lbl =~ m{^[0-9A-Fa-f]{2}:});            				# remove previous RPG if there is one
+		$OPA[$Address][0] = sprintf("%02X:$pointee_lbl",$RPG); 
+		$OPA[$Address][1] = sprintf('$%02X',$RPG);
+    }
+
+	$REM[$Address] = $rem unless defined($REM[$Address]); 
+	$decoded[$Address] = $decoded[$Address+1] = $decoded[$Address+2] = 1;
+
+	$Address += 3;
 }
 
 #======================================================================
