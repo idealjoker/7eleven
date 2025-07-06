@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Tue Jun 17 20:36:41 2025
+                    dlm: Sun Jul  6 19:51:42 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 361 0 NIL 0 0 72 0 2 4 NIL ofnI
+                    uE-Info: 152 11 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -113,24 +113,13 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 	$80-$BF 		illegal
 	$C0-$FF         Flag#40-7F (Flag#40 is not usable?)
 
-	NOTES:
-		- 
-
-
-
--Blinking-
-
-- use setBit, bitSet? syscalls with blink buffer offset ($40)
-	!setBit L_Lock_left $40
-	!bitSet? L_EscapeRoute_10M $40
-
 
 -Bit Buffers / Lamp Matrices-
 
 	offset	meaning
 	------------------------------------------------------------
 	$00 	logical matrix
-	$08 	primary lamp matrix (used for blinking?)
+	$08 	primary lamp matrix (used for blinking)
 	$10 	masked from primary ($08)
 	$18 	override data
 	$20 	masked from previous ($08,$18)
@@ -140,6 +129,45 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 	$40 	blink matrix
 	$48 	Flag#00-3F
 	$50     Flag#40-7F
+
+- turn on lamps:
+	- setBit[AB]_withBlink with B_in = $00 
+		- turn on logical lamp
+		- turn on physical lamp
+	- setBit[AB]_withBlink with B_in = $40
+		- turn on blink bit
+		- set physical lamp in accordance with other blinking lamps
+	- setBit <Lamp> <LM>
+
+- turn off lamps
+	- clearBit[AB]_withBlink with B_in = $00
+		- turn off logical lamp bit
+		- turn off physical lamp, unless lamp is blinking
+	- clearBit[AB]_withBlink with B_in = $40
+		- turn off blink bit
+		- set physical lamp in accordance with logical bit
+	- clearBit <Lamp> <LM>
+	- turns off lamp completely
+		- lampOff[A]
+		- !lampOff_blinkOff <Lamp>
+
+- test for lamp state:
+	- logical state:
+		- lamp[A]isSet? 
+		- bitSet[AB]? with B_in = $00
+		- !lampOn? <Lamp>
+	- blink state:
+		- bitSet[AB]? with B_in = $40
+
+- Blinking:
+	- use setBit, bitSet? syscalls with blink buffer offset ($40)
+		!setBit L_Lock_left $40
+	    !bitSet? L_EscapeRoute_10M $40
+	- does not change logical lamp state
+		- turning off blinking returns physical lamp to logical state
+
+- Masking:
+	- for masking usage see T2 FX_HunterShipTarget_1_hit_handler
 
 ----------------------------------------------------------------------
 

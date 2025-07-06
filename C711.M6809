@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Wed Jun 25 17:04:54 2025
+#                    dlm: Sun Jul  6 19:40:30 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 655 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 27 42 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -24,6 +24,7 @@
 #	Jun 13, 2025: - BUG: indirect extended mode did not work
 #	Jun 15, 2025: - added __IF, __ELSE, __ENDIF, __LOOP, __WHILE, __UNTIL, __ENDLOOP
 #	Jun 25, 2025: - added warnings and errors about forced offsets
+#	Jul  6, 2025: - improved error message
 # HISTORY END
 
 use strict vars;
@@ -1184,7 +1185,7 @@ sub compile_asm()
 
 		my($SCA) = $SC_ARGS[$SYSCALL{$OP_ARG[0]}];
 ##		print(STDERR "potential syscall at input line $. [$OP @OP_ARG <$SCA>]\n");
-		die("Extraneous syscall $OP_ARG[0] $SCA argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
+		die("Invalid number of arguments for syscall <$OP_ARG[0] @OP_ARG[1..$#OP_ARG]> at input line $.\n")
 			unless length($SCA) == @OP_ARG-1;
 
 		return 1 unless length($SCA)>0;

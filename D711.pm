@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Jul  6 13:15:06 2025
+#					 dlm: Sun Jul  6 15:26:11 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 317 50 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 318 38 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -315,6 +315,7 @@
 #	Jun 29, 2025: - made def_ptr_hex() return pointee address
 #	Jul  6, 2025: - tentatively removed anchor of Bitgroup# alias substitution and
 #					enabled substitution in labels
+#				  - added WPC FX# type
 # END OF HISTORY
 
 # TO-DO:
@@ -3121,6 +3122,8 @@ sub substitute_identifiers(@)                                                   
                 $OPA[$addr][$i] = $Audit[hex($1)] . $' if defined($Audit[hex($1)]);
             } elsif ($OPA[$addr][$i] =~ m{^DMD#([0-9A-F]{2})}) {                          	# DMD animations (WPC)
                 $OPA[$addr][$i] = $DMD[hex($1)] . $' if defined($DMD[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{^FX#([0-9A-F]{2})}) {                          	# FX animations (WPC)
+                $OPA[$addr][$i] = $FX[hex($1)] . $' if defined($FX[hex($1)]);
             } 
         }
     }
@@ -3281,6 +3284,7 @@ sub produce_output(@)
         if (defined($_cur_RPG)) {
 	        output_aliases('Thread Aliases','Thread#%04X',@Thread);
 	        output_aliases('DMD Aliases','DMD#%02X',@DMD);
+	        output_aliases('FX Aliases','FX#%02X',@FX);
         } else {
 	        output_aliases('Thread Aliases','Thread#%02X',@Thread);
 	    }

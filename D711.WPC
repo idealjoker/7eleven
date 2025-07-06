@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Jul  6 13:18:16 2025
+#                    dlm: Sun Jul  6 15:26:30 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 117 78 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 118 33 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -115,6 +115,7 @@
 #				  - debugged and re-enabled def_WPC_unknownSystem_table_1
 #	Jul  6, 2025: - added def_WPC_codeRef_nonPrime()
 #				  - replaced byte between $81 in bitgroup definition with lamp
+#				  - added FX type
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -2054,6 +2055,15 @@ sub defDMD($$)
 	die("defDMD: invalid DMD animation\n")
 		unless ($no>0 && $no<=0xFFFF);
 	$DMD[$no] = $name;
+}
+
+sub defFX($$)
+{
+	my($no,$name) = @_;
+
+	die("defFX: invalid FX number\n")
+		unless ($no>0 && $no<=0xFFFF);
+	$FX[$no] = $name;
 }
 
 #----------------------------------------------------------------------

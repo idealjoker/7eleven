@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Jul  5 17:07:33 2025
+#                    dlm: Sun Jul  6 19:42:57 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 60 33 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 62 41 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -55,9 +55,11 @@
 #	Jun 29, 2025: - added syscalls
 #				  - BUG: Panic was marked as non-returning
 #				  - BUG: one syscall had wrong offset for FH
-#	Jul  1, 2025: - defined 2 new syscalls
+#	Jul  1, 2025: - defined 2 new T2 syscalls
 #	Jul  3, 2025: - adapted to @CHECKSUM_INFO
-#	Jul  5, 2025: - added syscall
+#	Jul  5, 2025: - added T2 syscall
+#	Jul  6, 2025: - added FH syscalls
+#				  - renamed some syscalls
 # END OF HISTORY
 
 #======================================================================
@@ -526,14 +528,14 @@ define_syscall('twiddle_BitShifter_for_flags',			0x9EAF+$VO);
 define_syscall('twiddle_BitShifter_success',			0x9EBF+$VO);
 define_syscall('twiddle_BitShifter_failure',			0x9EC3+$VO);
 define_syscall('toggleBit[AB]',							0x9ECA+$VO);
-define_syscall('bit[AB]Set?',							0x9EDD+$VO);
+define_syscall('bit[AB]isSet?',							0x9EDD+$VO);
 define_syscall('sys_setBit[AB]',						0x9EF1+$VO);
 define_syscall('sys_toggleBit[AB]',						0x9F11+$VO);
 define_syscall('sys_clearBit[AB]',						0x9F18+$VO);
 define_syscall('BitShifter_setBit[AB]',					0x9F47+$VO);
 define_syscall('BitShifter_clearBit[AB]',				0x9F73+$VO);
-define_syscall('BitShifter_testBit[AB]',				0x9FA0+$VO);
-define_syscall('sys_lampOp',							0x9FD7+$VO);
+define_syscall('BitShifter_bit[AB]isSet?',				0x9FA0+$VO);
+##define_syscall('sys_lampOp',							0x9FD7+$VO);	# not a syscall, just a utility subroutine routine
 
 VERSION_OFFSETS(-332,0);
 define_syscall('lampOn[A]',								0xA03A+$VO);	# 9F6D
@@ -638,6 +640,11 @@ if ($WPCV eq 'WPC(alpha)') {
  define_syscall('syscall_DD3B',							0xDD3B,'B');			# FH
  define_syscall('syscall_F365',							0xF365,'B');			# FH
  define_syscall('syscall_F377',							0xF377,'B');			# FH
+ define_syscall('syscall_F456',							0xF456,'WW');			# FH
+ define_syscall('syscall_F47E',							0xF47E,'WW');			# FH
+ define_syscall('syscall_F492',							0xF492,'WW');			# FH
+ define_syscall('syscall_F4D9',							0xF4D9,'WWW');			# FH
+ define_syscall('syscall_F4F0',							0xF4F0,'WWW');			# FH
  define_syscall('syscall_F389',							0xF389,'W');			# FH
 }
 
