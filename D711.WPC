@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Jul  6 10:38:05 2025
+#                    dlm: Sun Jul  6 13:18:16 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 116 52 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 117 78 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -114,6 +114,7 @@
 #	Jul  5, 2025: - further improved gap warning code
 #				  - debugged and re-enabled def_WPC_unknownSystem_table_1
 #	Jul  6, 2025: - added def_WPC_codeRef_nonPrime()
+#				  - replaced byte between $81 in bitgroup definition with lamp
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -1270,7 +1271,8 @@ sub dasm_bitgroup_def($$$)
 		    
 	if (BYTE($a) == 0x81) { 												# ??? (single byte)
 		push(@{$OPA[$opa]},'$81'); $decoded[$a++] = 1;
-		push(@{$OPA[$opa]},sprintf('$%02X!',BYTE($a))); $decoded[$a++] = 1;
+		push(@{$OPA[$opa]},sprintf("Lamp#%d",BYTE($a))); $decoded[$a++] = 1;
+##		push(@{$OPA[$opa]},sprintf('$%02X!',BYTE($a))); $decoded[$a++] = 1;
 		die unless BYTE($a) == 0x81;
 		push(@{$OPA[$opa]},'$81'); $decoded[$a++] = 1;
 		return ($opa,$a);
@@ -1337,7 +1339,7 @@ sub def_WPC_bitgroup_table(@)
 		$decoded[$Address++] = $decoded[$Address++] = 1;
 
 		my($tl) = $LBL[$ta];
-		$tl = sprintf('.bitgroup#%02X',$r) unless defined($tl);
+		$tl = sprintf('.Bitgroup#%02X',$r) unless defined($tl);
 		setLabel($tl,$ta);
 
 		$IND[$ta] = $code_base_indent; $TYPE[$ta] =	$CodeType_data;

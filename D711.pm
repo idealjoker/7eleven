@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Jun 30 17:22:50 2025
+#					 dlm: Sun Jul  6 13:15:06 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 314 69 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 317 50 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -313,6 +313,8 @@
 #	Jun 27, 2025: - improved free space reporting
 #	Jun 29, 2025: - added allowed-labeling option to def_wordlist_hex
 #	Jun 29, 2025: - made def_ptr_hex() return pointee address
+#	Jul  6, 2025: - tentatively removed anchor of Bitgroup# alias substitution and
+#					enabled substitution in labels
 # END OF HISTORY
 
 # TO-DO:
@@ -3081,6 +3083,11 @@ sub substitute_identifiers(@)                                                   
 
     for (my($addr)=$fa; $addr<=$la; $addr++) {
         next unless defined($OP[$addr]);
+        if (defined($LBL[$addr])) {
+			if ($LBL[$addr] =~ m{Bitgroup#([0-9A-Fa-f]{2,4})}) {                  			# bitgroups
+                $LBL[$addr] = $` . $BitGroup[hex($1)] . $' if defined($BitGroup[hex($1)]);
+            }
+        }
         for (my($i)=0; $i<@{$OPA[$addr]}; $i++) {
             if ($OPA[$addr][$i] =~ m{^Adj#([0-9A-Fa-f]{2,4})}) {                            # adjustments
                 $OPA[$addr][$i] = $Adj[hex($1)] . $' if defined($Adj[hex($1)]);
@@ -3098,8 +3105,10 @@ sub substitute_identifiers(@)                                                   
 	            }
             } elsif ($OPA[$addr][$i] =~ m{^Flag#([0-9A-F]{2})}) { 							# flags
                 $OPA[$addr][$i] = $Flag[hex($1)] . $' if defined($Flag[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{^Bitgroup#([0-9A-Fa-f]{2,4})}) {                  # bitgroups
-                $OPA[$addr][$i] = $BitGroup[hex($1)] . $' if defined($BitGroup[hex($1)]);
+##          } elsif ($OPA[$addr][$i] =~ m{^Bitgroup#([0-9A-Fa-f]{2,4})}) {                  # bitgroups
+##              $OPA[$addr][$i] = $BitGroup[hex($1)] . $' if defined($BitGroup[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{Bitgroup#([0-9A-Fa-f]{2,4})}) {                  # bitgroups
+                $OPA[$addr][$i] = $` . $BitGroup[hex($1)] . $' if defined($BitGroup[hex($1)]);
             } elsif ($OPA[$addr][$i] =~ m{^Sound#([0-9A-Fa-f]{2,4})}) {                     # sounds
                 $OPA[$addr][$i] = $Sound[hex($1)] . $' if defined($Sound[hex($1)]);
             } elsif ($OPA[$addr][$i] =~ m{^Switch#([0-9A-F]{2})}) { 						# switches
