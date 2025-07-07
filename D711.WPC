@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Jul  7 16:10:00 2025
+#                    dlm: Mon Jul  7 16:12:15 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 120 33 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1344 56 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -950,7 +950,7 @@ sub def_WPC_table($@)
 			for (my($r)=0; $r<$rows; $r++) {
 				my($opaddr) = $Address;
 				$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
-				$REM[$opaddr] = sprintf('Row#%d',$r) if $r==1 || $r%10==0;
+				$REM[$opaddr] = sprintf('Row#%d',$r) if $r%10==0;
 				$OP[$opaddr] = '.DW';
 				push(@{$OPA[$opaddr]},sprintf('$%04X',WORD($Address)));
 				$decoded[$Address++] = $decoded[$Address++] = 1;
@@ -967,7 +967,7 @@ sub def_WPC_table($@)
 	for (my($r)=0; $r<$rows; $r++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
-		$REM[$opaddr] = sprintf('Row#%d',$r) if $r==1 || $r%10==0;
+		$REM[$opaddr] = sprintf('Row#%d',$r) if $r%10==0;
 		if ($cols%2 == 0) {
 			$OP[$opaddr] = '.DW';
 			for (my($c)=0; $c<$cols; $c+=2) {
@@ -1020,7 +1020,7 @@ sub def_WPC_byteList_table($@)
 	for (my($r)=0; $r<$rows; $r++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
-		$REM[$opaddr] = sprintf('Row#%d',$r) if $r==1 || $r%10==0;
+		$REM[$opaddr] = sprintf('Row#%d',$r) if $r%10==0;
 		$OP[$opaddr] = '.DW';
 		push(@{$OPA[$opaddr]},sprintf('$%04X',WORD($Address)));
 		$decoded[$Address++] = $decoded[$Address++] = 1;
@@ -1071,7 +1071,7 @@ sub def_WPC_unknownSystem_table($@)
 	for (my($r)=0; $r<$rows; $r++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
-		$REM[$opaddr] = sprintf('Row#%d',$r) if $r==1 || $r%10==0;
+		$REM[$opaddr] = sprintf('Row#%d',$r) if $r%10==0;
 		$OP[$opaddr] = '.DB';
 		for (my($i)=0; $i<6; $i++) {
 			push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address)));
@@ -1160,7 +1160,7 @@ sub def_WPC_unknownSystem_table_1($@)
 	for (my($r)=0; $r<$rows; $r++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
-		$REM[$opaddr] = sprintf('Row#%d',$r) if $r==1 || $r%10==0;
+		$REM[$opaddr] = sprintf('Row#%d',$r) if $r%10==0;
 		$OP[$opaddr] = '.DB';
 		for (my($i)=0; $i<2; $i++) {
 			push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address)));
@@ -1240,7 +1240,7 @@ sub def_WPC_stringTable($@)
 	for (my($r)=0; $r<$rows; $r++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
-		$REM[$opaddr] = sprintf('Row#%d',$r) if $r==1 || $r%10==0;
+		$REM[$opaddr] = sprintf('Row#%d',$r) if $r%10==0;
 		$OP[$opaddr] = '.DW';
 		push(@{$OPA[$opaddr]},sprintf('$%04X',WORD($Address)));
 		$decoded[$Address++] = $decoded[$Address++] = 1;
@@ -1341,7 +1341,7 @@ sub def_WPC_bitgroup_table(@)
 	for (my($r)=0; $r<$rows; $r++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =	$CodeType_data;
-		$REM[$opaddr] = sprintf('Row#%d',$r) if $r==1 || $r%10==0;
+		$REM[$opaddr] = sprintf('Row#%d',$r) if $r%10==0;
 
 		$OP[$opaddr] = '.DW';
 		my($ta) = WORD($Address);
