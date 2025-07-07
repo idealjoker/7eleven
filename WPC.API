@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Jul  6 19:42:57 2025
+#                    dlm: Sun Jul  6 20:51:25 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 62 41 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 554 24 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -538,10 +538,20 @@ define_syscall('BitShifter_bit[AB]isSet?',				0x9FA0+$VO);
 ##define_syscall('sys_lampOp',							0x9FD7+$VO);	# not a syscall, just a utility subroutine routine
 
 VERSION_OFFSETS(-332,0);
-define_syscall('lampOn[A]',								0xA03A+$VO);	# 9F6D
-define_syscall('lampOnBlinkOff[A]',						0xA055+$VO);
-define_syscall('lampOff[A]',							0xA063+$VO);
-define_syscall('lamp[A]On?',							0xA0B9+$VO);
+define_syscall('lamp[A]on',								0xA03A+$VO);	# 9F6D
+define_syscall('lamp[A]off',							0xA043+$VO);	
+define_syscall('toggleLamp[A]',							0xA04C+$VO);	
+define_syscall('lamp[A]on_blinkOff',					0xA055+$VO);
+define_syscall('lamp[A]off_blinkOff',					0xA063+$VO);
+define_syscall('setFlag[A]',							0xA071+$VO);
+define_syscall('clearFlag[A]',							0xA07A+$VO);
+define_syscall('toggleFlag[A]',							0xA083+$VO);
+define_syscall('flag[A]isSet?',							0xA08C+$VO);
+define_syscall('blinklamp[A]',							0xA095+$VO);
+define_syscall('unblinklamp[A]',						0xA09E+$VO);
+define_syscall('toggle_blinklamp[A]',					0xA0A7+$VO);
+define_syscall('lamp[A]blinking?',						0xA0B0+$VO);
+define_syscall('lamp[A]on?',							0xA0B9+$VO);
 
 VERSION_OFFSETS(-145,0);
 define_syscall('syscall_A3D7',							0xA3D7+$VO);

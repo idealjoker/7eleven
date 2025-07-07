@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sun Jul  6 19:51:42 2025
+                    dlm: Sun Jul  6 20:51:58 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 152 11 NIL 0 0 72 0 2 4 NIL ofnI
+                    uE-Info: 180 57 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -126,45 +126,58 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 	$28 	override data
 	$30 	masked from previous ($08,$18,$28)
 	$38 	override data
-	$40 	blink matrix
+	$40 	blink matrix (indepedent of locical state)
 	$48 	Flag#00-3F
 	$50     Flag#40-7F
 
-- turn on lamps:
-	- setBit[AB]_withBlink with B_in = $00 
+- turn on lamps / set flags:
+	1) Lamp: 			!lampOn <Lamp> 
+			   			!setBit <Lamp> $00 
+			   			JSR lamp[A]on
+			   			JSR setBit[AB] with B_in = $00
+			   			JSR lamp[A]on_blinkOff
 		- turn on logical lamp
 		- turn on physical lamp
-	- setBit[AB]_withBlink with B_in = $40
+	2) Blinker: 		!blinkLamp <Lamp>
+			     		!setBit <Lamp> $40 
+				 		JSR blinkLamp[A]
+				 		JSR setBit[AB] with B_in = $40 
 		- turn on blink bit
-		- set physical lamp in accordance with other blinking lamps
-	- setBit <Lamp> <LM>
+		- set physical lamp in sync with other blinking lamps
+	3) Flags:			!setFlag <Flag>
+						!setBit <Flag> $48
+					    JSR setBit[AB] with B_in = $48
 
-- turn off lamps
-	- clearBit[AB]_withBlink with B_in = $00
+- turn off lamps / clear flags:
+	1) Lamp: 			!lampOff <Lamp>
+			   			!clearBit <Lamp> $00
+			   			JSR lamp[A]off
+			   			JSR lamp[A]off_blinkOff
+			   			JSR clearBit[AB] with B_in = $00
 		- turn off logical lamp bit
 		- turn off physical lamp, unless lamp is blinking
-	- clearBit[AB]_withBlink with B_in = $40
+	2) Blinker: 		!unblinkLamp <Lamp>
+				 		!clearBit <Lamp> $40
+				 		JSR unblinkLamp[A]
+                 		JSR clearBit[AB] with B_in = $40
 		- turn off blink bit
 		- set physical lamp in accordance with logical bit
-	- clearBit <Lamp> <LM>
-	- turns off lamp completely
-		- lampOff[A]
-		- !lampOff_blinkOff <Lamp>
+	3) Completely: 		!lampOff_blinkOff <Lamp>
+						JSR lamp[A]Off_blinkOff
 
-- test for lamp state:
-	- logical state:
-		- lamp[A]isSet? 
-		- bitSet[AB]? with B_in = $00
-		- !lampOn? <Lamp>
-	- blink state:
-		- bitSet[AB]? with B_in = $40
+- toggle lamps / flags:
+	1) Lamp: 			JSR	toggleLamp[A]
+	2) Blinker: 		JSR toggle_blinkLamp[A]
+	3) Flag:			JSR toggleFlag[A]
 
-- Blinking:
-	- use setBit, bitSet? syscalls with blink buffer offset ($40)
-		!setBit L_Lock_left $40
-	    !bitSet? L_EscapeRoute_10M $40
-	- does not change logical lamp state
-		- turning off blinking returns physical lamp to logical state
+- test for lamp / flag state:
+	1) logical state: 	!lampOn? <Lamp>
+					  	JSR lamp[A]on? 
+					  	JSR bit[AB]isSet? with B_in = $00
+	2) blink state: 	JSR lamp[A]blinking?
+						JSR bit[AB]isSet? with B_in = $40
+	3) flag state: 		JSR flag[A]isSet?
+						JSR bit[AB]isSet? with B_in = $48
 
 - Masking:
 	- for masking usage see T2 FX_HunterShipTarget_1_hit_handler
