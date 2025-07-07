@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Jul  7 07:43:55 2025
+#                    dlm: Mon Jul  7 16:08:46 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 63 46 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 64 46 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -61,6 +61,7 @@
 #	Jul  6, 2025: - added FH syscalls
 #				  - renamed some syscalls
 #	Jul  7, 2025: - added FX# syscall arg type
+#	Jul  7, 2025: - added Sound# argument type
 # END OF HISTORY
 
 #======================================================================
@@ -367,7 +368,7 @@ define_syscall('syscall_8512',						0x8512,'B');
 define_syscall('addScore',							0x851F,'B');
 define_syscall('syscall_852C',						0x852C,'B');
 define_syscall('syscall_8539',						0x8539,'B');
-define_syscall('playSound',							0x8546,'B');
+define_syscall('playSound',							0x8546,'N');
 define_syscall('DMDanimation',						0x8553,'D');
 define_syscall('syscall_8562',						0x8562,'B');
 define_syscall('syscall_8572',						0x8572,'B');

@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Mon Jul  7 07:44:34 2025
+#                    dlm: Mon Jul  7 16:10:43 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 66 42 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 67 40 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -64,6 +64,7 @@
 #						 handlers as such
 #	Jul  4, 2025: - BUG: op_IDX indirect extended had 4000 instead of 0x4000
 #	Jul  7, 2027: - added FX# syscall arg type support
+#				  - added Sound# support
 # HISTORY END
 
 # NOTES:
@@ -485,6 +486,12 @@ sub disassemble_syscall($$)
 			die(sprintf("Invalid solenoid Sol#%d",BYTE($addr)))
 				unless (BYTE($addr)>=1 && BYTE($addr)<=65);
 			push(@{$OPA[$oaddr]},sprintf('Sol#%02X',BYTE($addr)));
+			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
+			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'N') {											# N: souNd
+			die(sprintf("Invalid sound Sound#%d",BYTE($addr)))
+				unless (BYTE($addr)>=1 && BYTE($addr)<=255);
+			push(@{$OPA[$oaddr]},sprintf('Sound#%02X',BYTE($addr)));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'L') {											# L: Lamp

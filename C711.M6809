@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Mon Jul  7 07:50:31 2025
+#                    dlm: Mon Jul  7 15:07:51 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 28 37 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1208 86 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -26,6 +26,7 @@
 #	Jun 25, 2025: - added warnings and errors about forced offsets
 #	Jul  6, 2025: - improved error message
 #	Jul  7, 2027: - added FX# support
+#				  - added Sound# support
 # HISTORY END
 
 use strict vars;
@@ -1203,6 +1204,8 @@ sub compile_asm()
 			} elsif (substr($SCA,$i,1) eq 'S') {							# S: switch
 				$ROM[$ADDR++] = $OP_ARG[$i+1];
 			} elsif (substr($SCA,$i,1) eq 'O') {							# O: sOlenoid
+				$ROM[$ADDR++] = $OP_ARG[$i+1];
+			} elsif (substr($SCA,$i,1) eq 'N') {							# N: souNd
 				$ROM[$ADDR++] = $OP_ARG[$i+1];
 			} elsif (substr($SCA,$i,1) eq 'L') {							# L: Lamp
 				$ROM[$ADDR++] = $OP_ARG[$i+1];
