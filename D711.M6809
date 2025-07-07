@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Fri Jul  4 22:30:59 2025
+#                    dlm: Mon Jul  7 07:44:34 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 609 2 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 66 42 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -63,6 +63,7 @@
 #	Jul  3, 2025: - BUG: spawn thread syscalls did not mark the thread
 #						 handlers as such
 #	Jul  4, 2025: - BUG: op_IDX indirect extended had 4000 instead of 0x4000
+#	Jul  7, 2027: - added FX# syscall arg type support
 # HISTORY END
 
 # NOTES:
@@ -503,7 +504,7 @@ sub disassemble_syscall($$)
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'F') {											# F: Flag
 			my($fno) = BYTE($addr) - 0x40;														# Flag#00-3F
 			$fno -= 0x40 if $fno > 0x40; 														# Flag#40-7F
-			die(sprintf("Invalid flag argument Flag#%02X",$fno))
+			die(sprintf("Invalid flag argument Flag#%02X at %02X:%04X",$fno,$_cur_RPG,$addr))
 				unless ($fno>=0x00 && $fno<0x80);
 			push(@{$OPA[$oaddr]},sprintf('Flag#%02X',$fno));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
@@ -524,6 +525,10 @@ sub disassemble_syscall($$)
 			$decoded[$addr++] = $decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'D') {											# D: DMD animation
 			push(@{$OPA[$oaddr]},sprintf('DMD#%02X',BYTE($addr)));
+			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
+			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'X') {											# X: lamp FX
+			push(@{$OPA[$oaddr]},sprintf('FX#%02X',BYTE($addr)));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'C') {											# C: code ptr (W)

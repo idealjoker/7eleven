@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Jul  6 20:51:25 2025
+#                    dlm: Mon Jul  7 07:43:55 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 554 24 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 63 46 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -60,6 +60,7 @@
 #	Jul  5, 2025: - added T2 syscall
 #	Jul  6, 2025: - added FH syscalls
 #				  - renamed some syscalls
+#	Jul  7, 2025: - added FX# syscall arg type
 # END OF HISTORY
 
 #======================================================================
@@ -372,7 +373,7 @@ define_syscall('syscall_8562',						0x8562,'B');
 define_syscall('syscall_8572',						0x8572,'B');
 define_syscall('syscall_8582',						0x8582,'B');
 define_syscall('syscall_8592',						0x8592,'B');
-define_syscall('lampFX',							0x85B2,'B');
+define_syscall('lampFX',							0x85B2,'X');
 define_syscall('syscall_85A2',						0x85A2,'B');
 define_syscall('syscall_85C1',						0x85C1,'B');			# FH
 define_syscall('syscall_85D1',						0x85D1,'B');			# FH
@@ -744,6 +745,8 @@ $Hook[20]		= 'tiltWarning_override';
 $Hook[28]		= 'startButton_override_2';
 
 $Hook[45]		= 'endOfBall';
+
+$Hook[78]		= 'lampFX_override';
 
 $Hook[91]		= 'IRQtimer';
 

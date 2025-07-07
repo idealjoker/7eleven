@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu Jul  3 10:34:17 2025
+#                    dlm: Mon Jul  7 07:51:01 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 395 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 395 37 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -392,6 +392,7 @@
 #	Jul  2, 2025: - added experimental WPC checksum handling
 #				  - added .NOP
 #	Jul  3, 2025: - adapted to @CHECKSUM_INFO, compilation_magic()
+#	Jul  7, 2025: - added FX# support
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1590,6 +1591,7 @@ sub resolve_labels()
 				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})/ ||
 				$ROM[$a] =~ m/^Error#([0-9A-Fa-f]{2})/ ||
 				$ROM[$a] =~ m/^DMD#([0-9A-Fa-f]{2})/ ||
+				$ROM[$a] =~ m/^FX#([0-9A-Fa-f]{2})/ ||
 				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})/ ||
 				$ROM[$a] =~ m/^Audit#([0-9A-Fa-f]{4})/) {
 					$ROM[$a] = hex($1) . $';											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)

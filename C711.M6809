@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Sun Jul  6 19:40:30 2025
+#                    dlm: Mon Jul  7 07:50:31 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 27 42 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 28 37 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -25,6 +25,7 @@
 #	Jun 15, 2025: - added __IF, __ELSE, __ENDIF, __LOOP, __WHILE, __UNTIL, __ENDLOOP
 #	Jun 25, 2025: - added warnings and errors about forced offsets
 #	Jul  6, 2025: - improved error message
+#	Jul  7, 2027: - added FX# support
 # HISTORY END
 
 use strict vars;
@@ -1220,6 +1221,8 @@ sub compile_asm()
 				$ROM[$ADDR++] = $OP_ARG[$i+1];              
 	            $ROM[$ADDR++] = '16-BIT VALUE';
 			} elsif (substr($SCA,$i,1) eq 'D') {							# D: DMD animation
+				$ROM[$ADDR++] = $OP_ARG[$i+1];              
+			} elsif (substr($SCA,$i,1) eq 'X') {							# X: lamp FX
 				$ROM[$ADDR++] = $OP_ARG[$i+1];              
 			} elsif (substr($SCA,$i,1) eq 'C') {							# C: code ptr (W)
 				$ROM[$ADDR++] = $OP_ARG[$i+1];              
