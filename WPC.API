@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Jul  8 07:25:47 2025
+#                    dlm: Tue Jul  8 14:52:32 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 65 40 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 67 42 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -64,6 +64,7 @@
 #	Jul  7, 2025: - added Sound# argument type
 #				  - added/improved scoring syscalls
 #				  - added sleep syscalls
+#	Jul  8, 2025: - added bitgroup syscall
 # END OF HISTORY
 
 #======================================================================
@@ -586,6 +587,7 @@ define_syscall('X=^tableElt[AX]',						0xAC5B+$VO);
 define_syscall('X=^tableElt[ABX]',						0xAC5E+$VO);
 define_syscall('X=^tableElt[AXY]',						0xAC89+$VO);
 
+define_syscall('bitgroup[D]_setAll',					0xADF9+$VO);
 define_syscall('bitgroup[D]_clearAll',					0xAE09+$VO);
 define_syscall('bitgroup[D]_allSet?',					0xAE19+$VO);
 define_syscall('bitgroup[D]_allOff?',					0xAE29+$VO);

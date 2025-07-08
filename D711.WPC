@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Jul  7 16:21:54 2025
+#                    dlm: Tue Jul  8 14:51:46 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 121 50 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 122 54 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -119,6 +119,7 @@
 #	Jul  7, 2025: - BUG: WPC tables started with Row 1
 #				  - added custom labels for WPC tables
 #				  - BUG: custom labels were broken
+#	Jul  8, 2025: - BUG: lamp group range is too short
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -1988,7 +1989,7 @@ sub defGroup($$)
 	my($no,$name) = @_;
 
 	die("defGroup: invalid group number $no\n")
-		unless ($no>0 && $no<=64);
+		unless ($no>0 && $no<=255);
 	$BitGroup[$no] = $name;
 }
 
