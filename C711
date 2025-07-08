@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon Jul  7 07:51:01 2025
+#                    dlm: Tue Jul  8 08:18:02 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 395 37 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1622 88 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -393,6 +393,7 @@
 #				  - added .NOP
 #	Jul  3, 2025: - adapted to @CHECKSUM_INFO, compilation_magic()
 #	Jul  7, 2025: - added FX# support
+#	Jul  8, 2025: - tightened system-id replacement
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1584,41 +1585,41 @@ sub resolve_labels()
 		next if numberp($ROM[$a]); 														# we are done, if we have a number
 
 		if ($WMS_System =~ m{^WPC}) {
-			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})/ || 								# substitute all system identifiers
-				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^Error#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^DMD#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^FX#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})/ ||
-				$ROM[$a] =~ m/^Audit#([0-9A-Fa-f]{4})/) {
+			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})([-+|&].*)?$/ || 							# substitute all system identifiers
+				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Error#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^DMD#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^FX#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Audit#([0-9A-Fa-f]{4})([-+|&].*)?$/) {
 					$ROM[$a] = hex($1) . $';											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 					next if numberp($ROM[$a]);											# we are done, if we have a number
 	        }
-			if ($ROM[$a] =~ m/^Lamp#(\d{1,3})/) {
+			if ($ROM[$a] =~ m/^Lamp#(\d{1,3})([-+|&].*)?$/) {
 				$ROM[$a] = $1 . $';														# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 				next if numberp($ROM[$a]);												# we are done, if we have a number
 			}
-	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})/) {	                            # flags are lamps with bit 6 set
+	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})([-+|&].*)?$/) {					# flags are lamps with bit 6 set
 	        	my($fno) = hex($1);
     	        $ROM[$a] = ($fno >= 0x40) ? $fno + 0x80 . $'
     	        						  : $fno + 0x40 . $';
 				next if numberp($ROM[$a]);                                          
 	        }
 		} else {
-			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})/ || 								# substitute all system identifiers
-				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^Lamp#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})/ ||
-				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})/) {
+			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})([-+|&].*)?$/ || 					# substitute all system identifiers
+				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Lamp#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})([-+|&].*)?$/) {
 					$ROM[$a] = hex($1) . $';											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 					next if numberp($ROM[$a]);											# we are done, if we have a number
 	        }
-	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})/) {	                            # flags are lamps with bit 6 set 
+	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})([-+|&].*)?$/) {	                # flags are lamps with bit 6 set 
     	        $ROM[$a] = hex($1) + 64 . $';
 				next if numberp($ROM[$a]);                                          
 	        }

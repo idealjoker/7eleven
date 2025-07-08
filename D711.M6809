@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Mon Jul  7 16:10:43 2025
+#                    dlm: Tue Jul  8 10:59:51 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 67 40 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 68 80 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -63,8 +63,9 @@
 #	Jul  3, 2025: - BUG: spawn thread syscalls did not mark the thread
 #						 handlers as such
 #	Jul  4, 2025: - BUG: op_IDX indirect extended had 4000 instead of 0x4000
-#	Jul  7, 2027: - added FX# syscall arg type support
+#	Jul  7, 2025: - added FX# syscall arg type support
 #				  - added Sound# support
+#	Jul  8, 2025: - modified thread handler labels to allow Thread# substitution
 # HISTORY END
 
 # NOTES:
@@ -563,7 +564,7 @@ sub disassemble_syscall($$)
 				if (@{$OPA[$oaddr]} == 1) {														# no  explicit thread id
 					$tlbl = sprintf('thread_handler_%04X',$taddr);
 				} else {
-					$tlbl = sprintf('Thread_%s_handler_%04X',substr($OPA[$oaddr][1],-4),$taddr);
+					$tlbl = sprintf('Thread#%s_handler_%04X',substr($OPA[$oaddr][1],-4),$taddr);
 				}
 ##				printf(STDERR "\ttlbl = $tlbl ($OPA[$oaddr][1]))\n");
 				$divider = 'Thread Handler';

@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sun Jul  6 20:51:58 2025
+                    dlm: Tue Jul  8 10:13:07 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 180 57 NIL 0 0 72 0 2 4 NIL ofnI
+                    uE-Info: 65 47 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -62,30 +62,32 @@ $8000-$FFFF 	32KB system ROM
 
 -ROM Map-
 
+8Mb ROM									4Mb ROM
+----------------------------------------------------------------------
 $00000-$03FFF		PG#00
 $04000-$07FFF		PG#01
 $08000-$0CFFF		PG#02
 $0D000-$0FFFF		PG#03
 
-$1xxxx				PG#04-07
-$2xxxx				PG#08-0B
-$3xxxx				PG#0C-0F
-$4xxxx				PG#10-13
-$5xxxx				PG#14-17
-$6xxxx				PG#18-1B
-$7xxxx				PG#1C-1F
-$8xxxx				PG#20-23
-$9xxxx				PG#24-27
-$Axxxx				PG#28-2B
-$Bxxxx				PG#2C-2F
-$Cxxxx				PG#30-33
-$Dxxxx				PG#34-37
-$Exxxx				PG#38-3B
+$1xxxx				PG#04-07			
+$2xxxx				PG#08-0B			
+$3xxxx				PG#0C-0F			
+$4xxxx				PG#10-13			
+$5xxxx				PG#14-17			
+$6xxxx				PG#18-1B			
+$7xxxx				PG#1C-1F			
+$8xxxx				PG#20-23			$0xxxx
+$9xxxx				PG#24-27			$1xxxx
+$Axxxx				PG#28-2B			$2xxxx
+$Bxxxx				PG#2C-2F			$3xxxx
+$Cxxxx				PG#30-33			$4xxxx
+$Dxxxx				PG#34-37			$5xxxx
+$Exxxx				PG#38-3B			$6xxxx
 
-$F0000-$F3FFF		PG#3C
-$F4000-$F7FFF		PG#3D
-$F8000-$FCFFF		PG#FF
-$FD000-$FFFFF		PG#FF
+$F0000-$F3FFF		PG#3C				$70000-73FFF
+$F4000-$F7FFF		PG#3D				$74000-77FFF
+$F8000-$FCFFF		PG#FF				$78000-7CFFF
+$FD000-$FFFFF		PG#FF				$7D000-7FFFF
 
 PG 		= int(ROM_addr / 0x4000)
 ADDR	= (ROM_addr % 0x4000) + 0x4000
