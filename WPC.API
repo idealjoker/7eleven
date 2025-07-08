@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Jul  7 16:08:46 2025
+#                    dlm: Tue Jul  8 07:25:47 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 64 46 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 65 40 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -62,6 +62,7 @@
 #				  - renamed some syscalls
 #	Jul  7, 2025: - added FX# syscall arg type
 #	Jul  7, 2025: - added Sound# argument type
+#				  - added sleep syscalls
 # END OF HISTORY
 
 #======================================================================
@@ -113,6 +114,7 @@ define_label('_PREVIOUS_THREAD_EXEC_TIMESTAMP??',	0x52);
 define_label('^CURRENT_THREAD_DATA',				0x53);
 define_label('_UNKNOWN_THREADLIST_CONDITION',		0x57);
 define_label('__SLEEP_TIME',						0x5B);
+define_label('__SLEEP_TIME+1',						0x5C);
 define_label('__FINDTHREAD_ID',						0x5D);
 define_label('__FINDTHREAD_ID+1',					0x5E);
 define_label('__FINDTHREAD_MASK',					0x5F);
@@ -505,7 +507,11 @@ define_syscall('X=^spawnThread_2_myId??_codeRef[BX]', 	0x982E+$VO);	# 9738 -246
 define_syscall('X=^spawnThread_1_myId??_codeRef[BX]', 	0x983D+$VO);
 
 VERSION_OFFSETS(-270,0);
-define_syscall('exitThread',							0x99A2+$VO,'',2);	# 9894
+define_syscall('sys_sleep[A]',							0x9894+$VO,'',2);	# 9894
+define_syscall('sys_sleep[B]',							0x9898+$VO,'',2);
+define_label('.sys_sleep_common',						0x989C+$VO,'',2);
+define_syscall('sys_sleep',								0x989E+$VO,'',2);
+define_syscall('exitThread',							0x99A2+$VO,'',2);
 
 VERSION_OFFSETS(-314,0);
 define_syscall('killAllThreads_Y',						0x9AEB+$VO);	# 99B1 
@@ -537,7 +543,6 @@ define_syscall('sys_clearBit[AB]',						0x9F18+$VO);
 define_syscall('BitShifter_setBit[AB]',					0x9F47+$VO);
 define_syscall('BitShifter_clearBit[AB]',				0x9F73+$VO);
 define_syscall('BitShifter_bit[AB]isSet?',				0x9FA0+$VO);
-##define_syscall('sys_lampOp',							0x9FD7+$VO);	# not a syscall, just a utility subroutine routine
 
 VERSION_OFFSETS(-332,0);
 define_syscall('lamp[A]on',								0xA03A+$VO);	# 9F6D
