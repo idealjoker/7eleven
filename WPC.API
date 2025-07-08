@@ -62,6 +62,7 @@
 #				  - renamed some syscalls
 #	Jul  7, 2025: - added FX# syscall arg type
 #	Jul  7, 2025: - added Sound# argument type
+#				  - added/improved scoring syscalls
 #				  - added sleep syscalls
 # END OF HISTORY
 
@@ -156,7 +157,8 @@ define_label('=GI_BRIGHTNESS',						0x03D6+$VO); 	# 5 bytes
 define_label('_PLAYER_UP',							0x040F+$VO);
 define_label('_BALL_IN_PLAY',						0x0410+$VO);
 define_label('_EXTRABALLS_PENDING',					0x0411+$VO);
-	define_label('_BACKGROUND_MUSIC_PLAYING',		0x0445+$VO);
+define_label('_SCORE_MULTIPLIER',					0x0441+$VO);
+define_label('_BACKGROUND_MUSIC_PLAYING',			0x0445+$VO);
 unless ($WPCV eq 'WPC(alpha)') {
 	define_label('^DMD_PLAYING_ANIMATION_DATA',		0x0481);
 	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
@@ -604,12 +606,16 @@ define_syscall('qualifyPlayfield',						0xB2C7+$VO);	# B224
 define_syscall('playfieldQualified?',					0xB2DF+$VO);
 
 VERSION_OFFSETS(-213,0);
+define_syscall('unknown_addScore[ABXU]',				0xBA53+$VO);
+define_syscall('.X=^score[A]tableEntry_Y=4',			0xBA8B+$VO);
 define_syscall('addScore[A]',							0xBA99+$VO);
-define_syscall('addScore_unknown_2',					0xBABB+$VO);
+define_syscall('addScore[A]_withLocalMultiplier[B]',	0xBAA4+$VO);
+define_syscall('addScore[A]_with1xLocalMultiplier',		0xBABB+$VO);
+define_syscall('addScore[AB]]',							0xBAC5+$VO);
 define_syscall('addScore[ABX]',							0xBACD+$VO);
-define_syscall('scoreMultiplier_error',					0xBADA+$VO);
-define_syscall('addScore_AXY',							0xBAE0+$VO);
-define_syscall('addScore_done',							0xBAE8+$VO);
+define_label('.scoreMultiplier_error',					0xBADA+$VO);
+define_label('.addScore_continue',						0xBAE0+$VO);
+define_label('.addScore_done',							0xBAE8+$VO);
 define_syscall('addScore[ABXY]',						0xBAEA+$VO);	# BA15 -213
 define_syscall('playSound[Y]',							0xBDE8+$VO);
 define_syscall('playSound[A]',							0xBDFB+$VO);
