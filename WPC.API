@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Jul  8 14:52:32 2025
+#                    dlm: Tue Jul  8 21:51:31 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 67 42 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 489 24 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -165,8 +165,8 @@ unless ($WPCV eq 'WPC(alpha)') {
 	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
 	define_label('_LAST_DMD_ANIMATION_PLAYED??',	0x0487);
 }
-define_label('=PLAYER_MEM_DATA??',					0x04AC+$VO);
-define_label('_SIZE_PLAYER_MEM_DATA??',				0x04AE+$VO);
+define_label('=PLAYER_MEM_DATA',					0x04AC+$VO);
+define_label('_SIZE_PLAYER_MEM_DATA',				0x04AE+$VO);
 define_label('_CRON_MINUTE_COUNTER_1',				0x04B4+$VO);
 define_label('_CRON_MINUTE_COUNTER_2',				0x04B5+$VO);
 define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$VO);
@@ -483,12 +483,12 @@ VERSION_OFFSETS(-205,0);
 define_syscall('setBank=3D',							0x90B4+$VO);  # 0x8FE7 in FH
 define_syscall('setBank[B]',							0x90BC+$VO);
 define_syscall('longJSR[BX]',							0x90D1+$VO);
-define_syscall('A=[XB]==1?_INX',						0x90E7+$VO);
+define_syscall('A=[X+B]==1?',							0x90E7+$VO);
 define_syscall('A=[XB]==1?',							0x90EC+$VO);
 define_syscall('BX=loadRef[X]',							0x90C5+$VO);
-define_syscall('Y=[XB]_INXINX',							0x910E+$VO);
-define_syscall('Y=[XB]',								0x9113+$VO);    
-define_syscall('Y=indexed[X]==1?X',						0x9117+$VO);
+define_syscall('Y=[X++B]==1?',							0x910E+$VO);
+define_syscall('Y=[XB]==1?',							0x9113+$VO);    
+define_syscall('Y=indexed[X]==1?',						0x9117+$VO);
 define_syscall('memCopy[ABXY]',							0x9139+$VO);
 define_syscall('^memCopy[AXY]',							0x913D+$VO);
 define_syscall('memCopy[ABXY]_otherbank',				0x9141+$VO);
@@ -742,7 +742,8 @@ $Hook[0] 		= 'MBD_resetBallAccounting??_override';
 $Hook[1]		= 'debugger???';
 $Hook[2]		= 'score_override';
 $Hook[3]		= 'gameStart_override';
-$Hook[5] 		= 'ballStart_override??';
+$Hook[4]		= 'gameStart_post_initBallEvent';
+$Hook[5] 		= 'initBall_override';
 $Hook[6]		= 'lastBall';
 $Hook[7]		= 'gameOver_override';
 $Hook[8]		= 'gameOver_complete';
@@ -759,6 +760,7 @@ $Hook[20]		= 'tiltWarning_override';
 $Hook[28]		= 'startButton_override_2';
 
 $Hook[45]		= 'endOfBall';
+$Hook[46]		= 'gameStart_pre_initBallEvent';
 
 $Hook[78]		= 'lampFX_override';
 
