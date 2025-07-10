@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Mon Jul  7 15:07:51 2025
+#                    dlm: Thu Jul 10 08:57:35 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 1208 86 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 30 33 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -25,8 +25,12 @@
 #	Jun 15, 2025: - added __IF, __ELSE, __ENDIF, __LOOP, __WHILE, __UNTIL, __ENDLOOP
 #	Jun 25, 2025: - added warnings and errors about forced offsets
 #	Jul  6, 2025: - improved error message
-#	Jul  7, 2027: - added FX# support
+#	Jul  7, 2025: - added FX# support
 #				  - added Sound# support
+#	Jul 10, 2025: - BUG: __ELSE, __WHILE_*, __ENDLOOP and _ENDLOOP
+#						 generated labels that were 1 off because the longer
+#						 branches and jump instructions take 3 bytes instead
+#						 of two
 # HISTORY END
 
 use strict vars;
@@ -413,14 +417,14 @@ sub macro_until_6809($$)                                        # _UNTIL_EQ ... 
     return undef;
 }
 
-sub macro_while_6809($$)										# _LOOP ... _WHILE_EQ
+sub macro_while_6809($$$)										# _LOOP ... _WHILE_EQ
 {
-    my($mac,$cop) = @_;
+    my($mac,$cop,$obt) = @_;
     if ($OP eq $mac) {
     	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
     		if (@OP_ARG);
         $OP = $cop; @OP_ARG = (pop(@LOOP_LBL));
-        define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
+        define_label(pop(@LOOP_DONE_LBL),$ADDR+$obt);
         return 1;
     }
     return undef;
@@ -483,12 +487,12 @@ sub unroll_asm_structure()
     		if (@OP_ARG);
 		$OP = 'LBRA';
 		@OP_ARG = (auto_label(1));
-		define_label(pop(@IF_CONT_LBL),$ADDR+2);
+		define_label(pop(@IF_CONT_LBL),$ADDR+3);
 		push(@IF_CONT_LBL,$OP_ARG[0]);
 		return;
 	}
 
-	if (isMember($OP,'_ENDIF','__ENDIF')) {
+	if (isMember($OP,'_ENDIF','__ENDIF')) {								# __ENDIF is just a convenient alias
     	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
     		if (@OP_ARG);
 		undef($OP);
@@ -500,7 +504,7 @@ sub unroll_asm_structure()
     # M6809 Loop Statements
     #----------------------------------------
 
-	if (isMember($OP,'_LOOP','__LOOP')) {
+	if (isMember($OP,'_LOOP','__LOOP')) {								# __LOOP is just a convenient alias
     	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
     		if (@OP_ARG);
 		undef($OP);
@@ -511,35 +515,35 @@ sub unroll_asm_structure()
 		return;
 	}
 
-	return if macro_while_6809('_WHILE_NE','BNE');
-	return if macro_while_6809('_WHILE_EQ','BEQ');
-	return if macro_while_6809('_WHILE_LE','BLE');
-	return if macro_while_6809('_WHILE_GE','BGE');
-	return if macro_while_6809('_WHILE_LT','BLT');
-	return if macro_while_6809('_WHILE_GT','BGT');
-	return if macro_while_6809('_WHILE_HI','BHI');
-	return if macro_while_6809('_WHILE_LS','BLS');
-	return if macro_while_6809('_WHILE_CC','BCC');		    
-	return if macro_while_6809('_WHILE_CS','BCS');
-	return if macro_while_6809('_WHILE_VC','BVC');
-	return if macro_while_6809('_WHILE_VS','BVS');
-	return if macro_while_6809('_WHILE_MI','BMI');
-	return if macro_while_6809('_WHILE_PL','BPL');
+	return if macro_while_6809('_WHILE_NE','BNE',2);
+	return if macro_while_6809('_WHILE_EQ','BEQ',2);
+	return if macro_while_6809('_WHILE_LE','BLE',2);
+	return if macro_while_6809('_WHILE_GE','BGE',2);
+	return if macro_while_6809('_WHILE_LT','BLT',2);
+	return if macro_while_6809('_WHILE_GT','BGT',2);
+	return if macro_while_6809('_WHILE_HI','BHI',2);
+	return if macro_while_6809('_WHILE_LS','BLS',2);
+	return if macro_while_6809('_WHILE_CC','BCC',2);		    
+	return if macro_while_6809('_WHILE_CS','BCS',2);
+	return if macro_while_6809('_WHILE_VC','BVC',2);
+	return if macro_while_6809('_WHILE_VS','BVS',2);
+	return if macro_while_6809('_WHILE_MI','BMI',2);
+	return if macro_while_6809('_WHILE_PL','BPL',2);
 
-	return if macro_while_6809('__WHILE_NE','LBNE');
-	return if macro_while_6809('__WHILE_EQ','LBEQ');
-	return if macro_while_6809('__WHILE_LE','LBLE');
-	return if macro_while_6809('__WHILE_GE','LBGE');
-	return if macro_while_6809('__WHILE_LT','LBLT');
-	return if macro_while_6809('__WHILE_GT','LBGT');
-	return if macro_while_6809('__WHILE_HI','LBHI');
-	return if macro_while_6809('__WHILE_LS','LBLS');
-	return if macro_while_6809('__WHILE_CC','LBCC');		    
-	return if macro_while_6809('__WHILE_CS','LBCS');
-	return if macro_while_6809('__WHILE_VC','LBVC');
-	return if macro_while_6809('__WHILE_VS','LBVS');
-	return if macro_while_6809('__WHILE_MI','LBMI');
-	return if macro_while_6809('__WHILE_PL','LBPL');
+	return if macro_while_6809('__WHILE_NE','LBNE',3);
+	return if macro_while_6809('__WHILE_EQ','LBEQ',3);
+	return if macro_while_6809('__WHILE_LE','LBLE',3);
+	return if macro_while_6809('__WHILE_GE','LBGE',3);
+	return if macro_while_6809('__WHILE_LT','LBLT',3);
+	return if macro_while_6809('__WHILE_GT','LBGT',3);
+	return if macro_while_6809('__WHILE_HI','LBHI',3);
+	return if macro_while_6809('__WHILE_LS','LBLS',3);
+	return if macro_while_6809('__WHILE_CC','LBCC',3);		    
+	return if macro_while_6809('__WHILE_CS','LBCS',3);
+	return if macro_while_6809('__WHILE_VC','LBVC',3);
+	return if macro_while_6809('__WHILE_VS','LBVS',3);
+	return if macro_while_6809('__WHILE_MI','LBMI',3);
+	return if macro_while_6809('__WHILE_PL','LBPL',3);
 
 	return if macro_until_6809('_UNTIL_NE','BNE');
 	return if macro_until_6809('_UNTIL_EQ','BEQ');
@@ -580,21 +584,21 @@ sub unroll_asm_structure()
 		return;
 	}
 
-	if ($OP eq '__ENDLOOP') {
+	if ($OP eq '__ENDLOOP') {									# long loop with LBRA
     	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
     		if (@OP_ARG);
 		$OP = 'LBRA';
 		@OP_ARG = (pop(@LOOP_LBL));
-		define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
+		define_label(pop(@LOOP_DONE_LBL),$ADDR+3);
 		return;
 	}
 
-	if ($OP eq '_ENDLOOOP') {									# long loop
+	if ($OP eq '_ENDLOOOP') {									# long loop with JMP
     	die("Extraneous argument(s) <@OP_ARG> at input line $.\n")
     		if (@OP_ARG);
 		$OP = 'JMP';
 		@OP_ARG = (pop(@LOOP_LBL));
-		define_label(pop(@LOOP_DONE_LBL),$ADDR+2);
+		define_label(pop(@LOOP_DONE_LBL),$ADDR+3);
 		return;
     }
 }
