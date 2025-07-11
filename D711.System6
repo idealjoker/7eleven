@@ -107,7 +107,10 @@ sub def_switch_script($$@)
 	$slen += 4 if ($SC & 0b0001);								# extended script
 	$slen += ($SC >> 4);										# pinops
 	def_byte_dec('',undef,'debounce timer') if ($SC & 0b0100);	# debounce timer
-	def_byteblock_hex(2,'',undef,'solenoid op') if ($SC & 0b1000);	# solenoid command & timer
+	if ($SC & 0b1000) {	# solenoid command & timer
+	 	def_byteblock_hex(2,'',undef,'solenoid op');
+		$OPA[$Address-2][0] = sprintf('Sol#%02X:%X-tics{SolCmd.s6}', BYTE($Address-2) & 0x0F, BYTE($Address-2) >> 4);
+	}
 	def_switch_conditional($slen);
 
 	if ($stripBang) {
