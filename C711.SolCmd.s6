@@ -10,6 +10,8 @@
 #	Oct 29, 2024: - created
 #	Oct 30, 2024: - added line numbers to errors
 
+# eg  Sol#02:3-tics{SolCmd.s6}  
+
 sub SolCmd_s6($$)
 {
 	my($str,$src_line) = @_;
@@ -17,16 +19,21 @@ sub SolCmd_s6($$)
 	return 0x80
 		if ($str eq 'NOP');
 
-	my($sol,$tics) = ($str =~ m{^(.*):([1-7])-tics?$});
+	my($sol,$tics) = ($str =~ m{^([^:]+):([1-7])-tics?$});
 #	print(STDERR "SolCmd_s6: $sol,$tics)\n");
 
 	die("SolCmd: cannot decode '$str' at input line $src_line\n")
 		unless ($tics > 0 && $tics < 8);
 
-	$sol = hex($sol) 
-		if ($sol =~ m/^Sol#([0-9A-Fa-f]{2})/);
-	die("SolCmd: invalid solenoid number '$sol' at input line $src_line\n")
-		unless ($sol >= 0 && $sol <= 16);
+	if ($sol =~ m/^Sol#[0-1]?([0-9A-Fa-f])$/) {
+		$sol = hex($1);
+			
+		die("SolCmd: invalid solenoid number '$sol' at input line $src_line\n")
+			unless ($sol > 0 && $sol < 16);
+	}
+	else {
+		die("SolCmd: invalid solenoid '$sol' at input lie $src_line\n");
+	}
 
 	return $sol + ($tics * 0x10);
 }
