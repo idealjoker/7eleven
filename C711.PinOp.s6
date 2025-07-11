@@ -13,6 +13,8 @@
 #				  - BUG: fill had been alias for advance before
 #	Mar  1, 2025: - renamed empty() to clear() again
 
+#eg blink(L_name){PinOp}
+
 sub PinOp_s6($$)
 {
 	my($str,$src_line) = @_;

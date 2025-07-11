@@ -163,7 +163,28 @@ sub def_switch_conditional($)
 #	}
 
 	while ($Address < $bAddress+$slen) {
-		push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
+		my($op) = BYTE($Address);
+		my($sop) = sprintf('$%02X!',$op);
+
+
+		if ($op == 0) {	$sop = "nop";	}
+		elsif ($op <= 0x3F) { $sop = sprintf("setBit(Lamp#%02X){PinOp}", $op & 0x3F); }
+		elsif ($op <= 0x4F) { $sop = sprintf("setBit(Flag#%02X){PinOp}", ($op - 0x40) & 0x0F); }
+		elsif ($op & ~0x07 == 0x58) { $sop = sprintf("rotRight(Bitgroup#%02X){PinOp}", $op & 0x07); }
+		elsif ($op & ~0x07 == 0x5F) { $sop = sprintf("rotLeft(Bitgroup#%02X){PinOp}", $op & 0x07); }
+		elsif ($op & ~0x07 == 0x60) { $sop = sprintf("advance(Bitgroup#%02X){PinOp}", $op & 0x07); }
+		elsif ($op <= 0x6F) {  } # unknown
+		elsif ($op & ~0x07 == 0x78) { $sop = sprintf("clear(Bitgroup#%02X){PinOp}", $op & 0x07); }
+		elsif ($op & ~0x07 == 0x7F) { $sop = sprintf("fill(Bitgroup#%02X){PinOp}", $op & 0x07); }
+		elsif ($op & ~0x3F == 0x80) { $sop = sprintf("clearBit(Lamp#%02X){PinOp}", $op & 0x3F); }
+		elsif ($op & ~0x0F == (0x80|0x40)) { $sop = sprintf("clearBit(Flag#%02X){PinOp}", $op & 0x0F); }
+		elsif ($op <= 0xDF) { } # unknown
+		elsif ($op & ~0x07 == 0xE0) { $sop = sprintf("drain(Flag#%02X){PinOp}", $op & 0x07); }
+		elsif ($op <= 0xEF) { } # unknown
+		elsif ($op & ~0x07 == 0xF0) { $sop = sprintf("blink(Scriptlamp#%02X){PinOp}", $op & 0x07); }
+		elsif ($op & ~0x07 == 0xF8) { $sop = sprintf("toggle(Scriptlamp#%02X){PinOp}", $op & 0x07); }
+
+		push(@{$OPA[$bAddress]},$sop);
 		$decoded[$Address++] = 1;
 	}
 
@@ -182,6 +203,7 @@ sub disassemble_System6($)
 	our($opt_A) = @_;														# export into def_switch_script
 
 	$systemAliases{SS_DEFAULT} = 0;											# Switch Script conditional
+	$systemAliases{nop} = 0;											# Switch Script conditional
 
 	$Address = 0x6000;														# Game Definition Table
 	def_byte_hex('GAMEROM_CHECKSUM');

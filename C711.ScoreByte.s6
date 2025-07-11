@@ -20,13 +20,13 @@ sub ScoreByte_s6($$)
 		$expo = length($2)-1;
 		die("ScoreByte.s6: invalid score-value <$str> at input line $src_line") 	# range check
 			unless ($expo >= 0) && ($expo <= 5);
-    } else {																	# short form
+	} else {																	# short form
 		my($mult) = ($str =~ m{([^0]*)});
 		my($expo) = length($');
 		die("ScoreByte.s6: invalid score-value <$str> at input line $src_line") 
 			unless ($str =~ m{[1-9]0*}) && ($expo >= 0) && ($expo <= 5);
-    }
-    return ($mult<<4)|$expo;
+	}
+	return ($mult<<4)|$expo;
 }
 
 1;
