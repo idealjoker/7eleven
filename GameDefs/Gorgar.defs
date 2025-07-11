@@ -80,3 +80,25 @@ $D711::Lamp[0x2B] = 'L_eject_10k';
 $D711::Lamp[0x2C] = 'L_eject_15k';
 $D711::Lamp[0x2D] = 'L_eject_eb';
 $D711::Lamp[0x2F] = 'L_spinner';
+
+$D711::BitGroup[0x00] = 'B_bonus';
+$D711::BitGroup[0x01] = 'B_X';
+$D711::BitGroup[0x02] = 'B_1_4_target';
+$D711::BitGroup[0x03] = 'B_snake';
+$D711::BitGroup[0x04] = 'B_eject';
+$D711::BitGroup[0x05] = 'B_ABC';
+$D711::BitGroup[0x06] = 'B_flag0_1';
+$D711::BitGroup[0x07] = 'B_1_4_arrow';
+
+$D711::Sol[0] = 'S_outhole';
+$D711::Sol[1] = 'S_eject';
+$D711::Sol[2] = 'S_gar';
+$D711::Sol[3] = 'S_gor';
+$D711::Sol[4] = 'S_magnet';
+$D711::Sol[5] = 'S_snake_lamps';
+$D711::Sol[8] = 'S_sound_1';
+$D711::Sol[9] = 'S_sound_2';
+$D711::Sol[10] = 'S_sound_3';
+$D711::Sol[11] = 'S_sound_4';
+$D711::Sol[12] = 'S_sound_5';
+$D711::Sol[13] = 'S_knocker';
