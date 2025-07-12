@@ -1,0 +1,200 @@
+# Switch Events
+
+The OS expects a listing of switch handlers to tart at $60F5, in order staring with switch 0 (the tilt bob).  Each listing consists of two words: the address of the code to call when the witch is hit, and two bytes of parameters to pass along, allowing the handler to be re-used.
+
+The first 8 standard switches also have standard sys_ calls, but the rest can be whatever you desire, as long as they RTS (?) at the end.
+
+In most situations, however, it is common to use "switch scripts" to save rom space.
+
+# Switch Scripts
+
+Switch scripts are a precursor to WVM, designed to perform a limited range of common operations with minimal rom usage.
+
+To use them,  point your switch handler at sys_switch_script, and then fill the parameters with the address of your script.
+
+Your script will start with a configuration byte, and then at least one branch.
+
+Example: 
+<623E>	SW_spinner_script:              .DB $04                             	; control byte [short]
+<61FB>	                                .DB 44                              	; debounce timer
+<61F4>	                                .DB S_gor:3-tics{SolCmd.s6} $10     	; solenoid op
+<623F>	                                .DB L_spinner 1x1K{ScoreByte_noSound.s6} 
+<6241>	                                .DB SS_DEFAULT 1x100{ScoreByte_noSound.s6} 
+
+## Configuration Byte
+
+Scripts have a minimum of 1 op per branch, and all branches must have the same number
+
+(todo: make configuration byte encoder)
+
+- bit 0: adds 4 to the length of the script
+- bit 1: (?)
+- bit 2: the next byte contains debounce settings (todo: make debounce encoder)
+- bit 3: fires a solenoid (see SolCmd) 
+- bits 4-7: this number is added to the length of the script
+
+## Debounce Config
+
+How does this work (?)
+
+todo: make an encoder
+
+## Solenoid Config
+
+Two bytes, the first (SolCmd) specifies which solenoid to fire (lower nibble) and how long to fire it for (upper nibble).  The second is related to timing somehow (?).
+
+### SolCmd encoder
+
+(see C711.SolCmd.s6)
+
+## Branches
+
+Branches are evaluated in order until one's condition is met, and the final one is considered the default if none above it match.
+
+The condition may be a lamp or a flag (or something else(?)), and if that lamp is on/flag is set, then the branch will execute.  The final condition is SS_DEFAULT.
+
+### Script
+
+Scripts are made of a sequence of one byte PinOps.  
+
+The first one is (always(?)) a ScoreByte, specifying how many points to score.
+
+The rest can be any PinOp (are there other options(?)), or nop can be used to fill in unneeded slots.
+
+Is there some sort of delay involved in each step of the script (?)  I see some scripts that turn a light on and then off again..
+
+## ScoreByte encoder
+
+(see C711.ScoreByte.s6)
+
+## PinOp encoder
+
+(see C711.PinOp.s6 for a list)
+
+(what are $Ec and $EA (?))
+
+## SoundCmd encoder
+
+(?)
+Plays a sound, presumably.  What is the syntax?  Is it part of a switch script, or used somewhere else?
+
+todo: generate these when decompiling
+
+# Solenoid Tables
+
+## PINOP_SOLCMD_TABLE
+
+Seems to be a list of SolCmds (?).  Not sure what for
+
+## PINOP_SOLOP_TABLE
+
+What is this for (?)
+
+# Sounds
+
+Some sounds are automatically tied to certain scoring (?)  somehow (?)
+
+## SOUND_TABLE
+
+What is this for (?)
+
+## Sound Scripts
+
+Some way to script a sequence of sound calls and maybe timing and solenoids too (?)
+
+example:
+
+<6393>	highScore_sndList:              .DB $42 
+<6394>	                                .DB $99 $FF $FF $FF 
+<6398>	                                .DB $00 
+<6398>	
+<6399>	gameOver_sndList:               .DB $30 
+<639A>	                                .DB $93 $9A $9A $9A $9A $9A $93 
+<63A1>	                                .DB $00 
+
+# Lamps and Flags
+
+# Blink
+
+How does the blink matrix work (?)
+
+## Lamp/Flag Initialization and Memory Data
+
+What is the difference between INITDATA and MEMDATA (?)
+
+
+## Bit Groups
+
+Bit groups are variable length sequences of bits in the lamp and flag matrices, allowing for common bulk operations such as advancing and rotating sets of lights (see PinOps)
+
+System 6 supports 8 different bit groups, configered in the BITGROUP_TABLE via a start and end range (inclusive)
+
+## Script Lamps
+
+What are these (?)  Something to do with blinking lamps, but not the blink matrix?  The name implies you can do a more complicated action than just blinking, but I don't see any configuration?  
+Why are toggle and blink PinOps only allowed on script lamps (?)
+Why do some games (eg Gorgar) have the same lamp in 4 slots (?)
+
+
+# Game Logic
+
+The OS has a concept of game logic, which does (?)
+
+You can configure a number of them at the address specified by GAMELOGIC_TABLE and GAMELOGIC_TABLE_END
+
+Each one is 8 bytes, and each byte... (?)
+
+The logic is triggered by (?)
+
+# Game Events
+
+You can tie event listeners in to the state of lamps (?) and flags.
+
+Do these trigger when the flag turns on (and off(?)), or repeatedly while the flag is set (?)
+
+Each one is made of 3 parts, the flag that controls it, a second byte which ...(?), and the address of the handler to be run.  
+
+example:
+<6350>	gameEvents_table:               .DB Flag#03 
+<6351>	                                .DB 0 
+<6352>	                                .DW gameEvent_1_handler 
+
+<6354>	                                .DB Flag#0A 
+<6355>	                                .DB 0 
+<6356>	                                .DW gameEvent_2_handler 
+
+## Unique Events
+
+The os also has some pre-specified events:
+
+### Ball Start
+
+Configured via BALLSTART_EVENT
+Details: (?)
+
+### Ball End
+
+Configured via END_OF_BALL_EVENT
+Details: (?)
+is this when the ball hits the outhole, after it settles, after bonus is counted (?)
+
+### Bonus X Countdown
+
+Configured via BONUSX_COUNTDOWN_EVENT
+Details: (?)
+
+### Background Processing
+
+Configured via GAME_BACKGROUND_HANDLER
+
+Does this run every tick or something like that, sorta like a main game loop (?)
+
+# Timers
+
+There are two (or more(?)) gameEvent timers, along with a soundAndDelay timer and solenoids timer.
+
+They each have a one byte _timer field in memory, that counts down (?) until (?) it reaches zero, at a rate of... (?), and a _handler field which can be pointed at some code to run when they reach zero (?).
+
+# Threads
+
+Are there threads at all (?)
