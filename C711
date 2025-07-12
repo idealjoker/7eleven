@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Tue Jul  8 08:18:02 2025
+#                    dlm: Sat Jul 12 12:47:40 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1622 88 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 398 79 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -394,6 +394,8 @@
 #	Jul  3, 2025: - adapted to @CHECKSUM_INFO, compilation_magic()
 #	Jul  7, 2025: - added FX# support
 #	Jul  8, 2025: - tightened system-id replacement
+#	Jul 12, 2025: - BUG: Lamp#xx|$40 did not work any more
+#				  - BUG: COMPILATION_INFO etc. not exported (my instead of our)
 # HISTORY END
 
 # RELEASE NOTES:
@@ -730,7 +732,7 @@ if (defined($opt_D)) { 											# define symbol from command line
 
 load_vROM(split(/,/,$opt_t)) if defined($opt_t);
 
-my($MERCURIAL_RELEASE,$COMPILATION_INFO,$COMPILATION_INFO77,$COMPILATION_TIMESTAMP);
+our($MERCURIAL_RELEASE,$COMPILATION_INFO,$COMPILATION_INFO77,$COMPILATION_TIMESTAMP);
 
 chop($MERCURIAL_RELEASE =                                       # Compilation Information
     `hg log 2>/dev/null | awk -F: '/^ch/{if (NR == 1) print "R."\$2+1}'`);
@@ -974,6 +976,7 @@ NO_ADDL:
         &decimalize;                                        			# convert all numbers to decimal (e.g. for .ORG); NB: does not deal with #$numbers
         ($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
         $OP[$ADDR] = $OP;                                   			# make available to OPTIMIZER
+        printf(STDERR "\tOP[%04X] = ",$ADDR), print(STDERR "$OP @OP_ARG\n") if $opt_T;
 
         &unroll_structure;  	                              			# _IF, _Loop, etc.  
         next unless defined($OP);                           			# some structure keywords only generate labels
@@ -981,7 +984,11 @@ NO_ADDL:
 		($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
     }
 
-    next if &compile_pragma;                              				# .ORG, .DB, .ENDIF, etc.; also done while not currently compiling code!
+##  next if &compile_pragma;                              				# .ORG, .DB, .ENDIF, etc.; also done while not currently compiling code!
+	if (compile_pragma()) {
+        printf(STDERR "\tROM[%04X] = $ROM[$ADDR-1]\n",$ADDR-1) if $opt_T;
+		next;
+    }
 
     if ($IF_STACK[$#IF_STACK] >= 0) {                       			# currently assembling code
     	if ($opt_A && defined($tag_addr)) {								# verify <> address information
@@ -1180,7 +1187,7 @@ sub set_label_type($)
 {
     my($lt) = @_;
 
-	print(STDERR "\tset_label_type($lt) [@newly_defined_label]\n") if $opt_T;
+##	print(STDERR "\tset_label_type($lt) [@newly_defined_label]\n") if $opt_T;
 	foreach my $l (@newly_defined_label) {
 		if ($opt_f) {
 	  		$LBL_TYPE{$l} = 0;
@@ -1585,7 +1592,7 @@ sub resolve_labels()
 		next if numberp($ROM[$a]); 														# we are done, if we have a number
 
 		if ($WMS_System =~ m{^WPC}) {
-			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})([-+|&].*)?$/ || 							# substitute all system identifiers
+			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})([-+|&].*)?$/ || 					# substitute all system identifiers
 				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
@@ -1595,17 +1602,17 @@ sub resolve_labels()
 				$ROM[$a] =~ m/^FX#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Audit#([0-9A-Fa-f]{4})([-+|&].*)?$/) {
-					$ROM[$a] = hex($1) . $';											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
+					$ROM[$a] = hex($1) . $2;											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 					next if numberp($ROM[$a]);											# we are done, if we have a number
 	        }
 			if ($ROM[$a] =~ m/^Lamp#(\d{1,3})([-+|&].*)?$/) {
-				$ROM[$a] = $1 . $';														# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
+				$ROM[$a] = $1 . $2;														# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 				next if numberp($ROM[$a]);												# we are done, if we have a number
 			}
 	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})([-+|&].*)?$/) {					# flags are lamps with bit 6 set
 	        	my($fno) = hex($1);
-    	        $ROM[$a] = ($fno >= 0x40) ? $fno + 0x80 . $'
-    	        						  : $fno + 0x40 . $';
+    	        $ROM[$a] = ($fno >= 0x40) ? $fno + 0x80 . $2
+    	        						  : $fno + 0x40 . $2;
 				next if numberp($ROM[$a]);                                          
 	        }
 		} else {
@@ -1616,11 +1623,11 @@ sub resolve_labels()
 				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})([-+|&].*)?$/) {
-					$ROM[$a] = hex($1) . $';											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
+					$ROM[$a] = hex($1) . $2;											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 					next if numberp($ROM[$a]);											# we are done, if we have a number
 	        }
 	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})([-+|&].*)?$/) {	                # flags are lamps with bit 6 set 
-    	        $ROM[$a] = hex($1) + 64 . $';
+    	        $ROM[$a] = hex($1) + 64 . $2;
 				next if numberp($ROM[$a]);                                          
 	        }
 	    }
