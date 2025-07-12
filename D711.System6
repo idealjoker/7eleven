@@ -151,6 +151,8 @@ sub def_switch_conditional($)
 								? 'SS_DEFAULT' 
 								: (BYTE($Address) < 0x40) 
 									? sprintf('Lamp#%02X',BYTE($Address)) 
+									: (BYTE($Address) & 0b10000000)
+									 ? sprintf('$%02X!',BYTE($Address)) # todo: handle LMC adjustment checks
 									: sprintf('Flag#%02X',BYTE($Address)-0x40));
 	$decoded[$Address++] = 1;
 
