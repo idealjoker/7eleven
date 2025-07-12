@@ -2,7 +2,7 @@
 
 The OS expects a listing of switch handlers to tart at $60F5, in order staring with switch 0 (the tilt bob).  Each listing consists of two words: the address of the code to call when the switch is hit, and two bytes of parameters to pass along (in both __switch_params and X), allowing the handler to be re-used.
 
-The first 8 standard switches also have standard sys_ calls, but the rest can be whatever you desire, as long as they RTS (?) at the end, or `JMP sys_switch_script` to let a switch script handle the rest.  (There is no option for a switch script to switch back to assembly)
+The first 8 standard switches also have standard sys_ calls, but the rest can be whatever you desire, as long as they `JMP 	sys_updateGameLogic_and_runGameEvents` at the end, or `JMP sys_switch_script` to let a switch script handle the rest.  (There is no option for a switch script to switch back to assembly)
 
 In most situations, however, it is common to use "switch scripts" to save rom space.
 
@@ -78,6 +78,15 @@ One byte, determining, specifying how many points to score (or 0 for no score).
 
 @Slochar has partial notes
 
+  EB1_testBit			EXT: condition byte		0 means FALSE!!!
+	EB2_sound			EXT: sound
+	EB3_pinOp			EXT: pinOp
+	EB4_control			EXT: Flags				1X	award EB
+												2X	award SPECIAL
+                        4X (?)
+                        8X (?)
+						EXT: score mult.		X
+
 #### PinOps
 
 Length = the high nibble of the config byte.  Each byte is a PinOp (are there other options(?)), or nop can be used to fill in unneeded slots.
@@ -116,11 +125,22 @@ Some sounds are automatically tied to certain scoring (?)  somehow (?)
 
 ## SOUND_TABLE
 
-What is this for (?)
+Table of 16 configurable sounds and how long they last (will block other sounds until it finishes)
+
+First byte: 5 bits for what command to send to the sound board, ORed with 0x80 (lower would be a SolCmd (are these allowed here too (?)))
+Second byte: sound length in tics
+
+(todo: decode these)
 
 ## Sound Scripts
 
-Some way to script a sequence of sound calls and maybe timing and solenoids too (?)
+Allows configuring a sequence of sounds to play.  
+First byte: length in tics (of the whole sequence (?)  per sound?  how does it know how long to wait between each sound?)
+Rest of the bytes: sound to play (see SOUND_TABLE), FF for no sound, or 00 to end the script
+
+The sounds to play can also be SolCmds
+
+(todo: decode these)
 
 example:
 
@@ -131,6 +151,10 @@ example:
 <6399>	gameOver_sndList:               .DB $30 
 <639A>	                                .DB $93 $9A $9A $9A $9A $9A $93 
 <63A1>	                                .DB $00 
+
+## Background Sounds
+
+(?)
 
 # Lamps and Flags
 
@@ -182,6 +206,14 @@ You can configure a number of them at the address specified by GAMELOGIC_TABLE a
 
 (todo: make an encoder for these based on @Slochar's "background script" notes)
 
+	- 9  bytes per entry:
+		B1=XY	adjustment condition, true if adX == Y; 0 means ignore
+		B2		1st lamp/flag condition, 0 means ignore
+		B3		2nd lamp/flag condition
+		B4,B7	1st condition/pinop pair, cond or PinOp=0 means ignore
+		B5,B8	1st condition/pinop pair
+    B6,B9   1st condition/pinop pair
+
 # Game Events
 
 After a switch script runs, any configured game events will also trigger, based on the state of its lamp/flag.
@@ -227,12 +259,120 @@ Configured via GAME_BACKGROUND_HANDLER
 
 Does this run every tick or something like that, sorta like a main game loop (?)
 
+Needs to preserve all registers
+
 # Timers
 
 There are two (or more(?)) gameEvent timers, along with a soundAndDelay timer and solenoids timer.
 
 They each have a one byte _timer field in memory, that counts down (?) until (?) it reaches zero, at a rate of... (?), and a _handler field which can be pointed at some code to run when they reach zero (?).
 
+Associated with the last four flags (?)  do they turn the flag on when they reach zero?  or are 'cycle counters' a different thing?
+
 # Threads
 
 Are there threads at all (?)
+
+# Memory Map
+
+## data_p1-4
+18 bytes per player of RAM to store information in
+
+(?) how is this accessed, is there some way that the code accesses it for the current player automatically, or does it need to get the player number from somewhere and compute the address?  sys_load_playerData ?
+
+## _GameVarE0-N
+Freely available memory at the top of stack, at least 3 available
+
+## _gameStatusFlags
+01: gameOver 
+02:gameTilted  
+04:EBpending 
+08: EBearned 
+10:balltimeOverflow(1min passed) 
+80:playfield qualified
+
+# Sys Calls
+
+## sys_reset_game
+## sys_gameOver
+## sys_background_loop
+## sys_enter_audits_and_adjustments
+## sys_solCmdOrPlaySound[A]
+## sys_solCmd[A]
+## sys_exec_switchSolCmd
+## sys_B=RAM[X+B]
+## sys_award_SPECIAL
+## sys_switch_script
+## sys_lampStatusUpdate_then_run_timedScripts
+## sys_clearScoreQueue_outhole_handler
+## sys_outhole_handler
+## sys_start_ball
+## sys_ball_kickout
+## sys_end_of_game
+## sys_match_handler
+## sys_endOfGame_noMatch
+## sys_load_playerData
+## sys_X=playerData
+## sys_creditButton_handler
+## sys_add_player_to_game
+## sys_init_ball
+## sys_clear_scoreQueue
+## sys_coinLeft_handler
+## sys_coinCenter_handler
+## sys_coinRight_handler
+## sys_award_freeGame
+## sys_delay[B]
+## sys_delay[AB]
+## sys_copyRAM
+## sys_lampStatusUpdate
+## sys_pinOp_solCmd
+## sys_exitOnGameOverOrTilt
+## sys_exit
+## sys_play_soundScript
+## sys_execGameLogicUpdate[X]
+whenever a change to the lamps has been made, sys_updateGameLogic must be called
+- automatically called at the end of every switch script and handler (?)
+## sys_testBit[A]
+(?) how is data returned
+		00		NE
+		01-3F	EQ when lamp lit but not blinking
+		40-4F	EQ when flag set but not suppressed in __dontUse
+		50-7F	invalid?
+		80		NE (weirdly, this is not the opposite of 00)
+		81-BF	NE when lamp lit but not blinking
+		C0-CF	NE when flag set but not suppressed in __dontUse
+		50-7F	invalid?
+## sys_run_timedScripts
+## sys_play_sound
+## sys_light_EBlamp
+## sys_setBitgroup
+## sys_pinOp[A]
+## sys_bitgroupOp[A]_until[B]
+## sys_checkAdjustment
+## sys_setBit[A]
+		- sets main buffer
+		- clears blink buffer
+## sys_clearBit[A]
+		- clears both main and blink buffers
+## sys_blinkLamp[A]
+		- sets blink buffer
+		- does not affect main buffer (current lamp state)
+		- lamps do NOT link in sync
+## sys_BX=lampMask[A]
+## sys_bobTilt_handler
+## sys_ballTilt_handler
+## sys_tilt_sound
+## sys_score[A]
+## sys_score[A]_now
+## sys_clear_displays
+## sys_fill_displays
+## sys_clear_BB_RAM
+## sys_bookkeeping_menu
+## sys_start_game
+## sys_mergeCopy_[X]_to_[Xptr]
+## sys_splitCopy_[X]_to_[Xptr]
+## sys_B=shiftLeft4[X,X+1]
+## sys_splitStore[B]
+## sys_HSreset_handler
+## sys_IRQ_handler
+## sys_IRQ_handler_display[A]

@@ -60,7 +60,7 @@ sub PinOp_s6($$)
         }
     }
 
-	if ($op eq 'advance') {  # like rotate, but doesn't carry over back to the start (?)
+	if ($op eq 'advance') {  # what is fill?  like rotate, but doesn't carry over back to the start (?)
 		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
 			return hex($1) | 0x60;
         } else {
@@ -78,7 +78,7 @@ sub PinOp_s6($$)
         }
     }
 
-	if ($op eq 'fill') {
+	if ($op eq 'fill') {  # what is 'fill' is this actaully 'set' ?
 		if ($arg =~ m/^Bitgroup#(0?[0-7])/) {
 			return hex($1) | 0x78;
         } else {
@@ -90,7 +90,7 @@ sub PinOp_s6($$)
 
 	# D0 + D8: not user per @Slochar
 
-	if ($op eq 'drain') {
+	if ($op eq 'drain') { # what is 'drain' ?
 		if ($arg =~ m/^Bitgroup#(0?[0-7])/) {
 			return hex($1) | 0xE0;
         } else {
