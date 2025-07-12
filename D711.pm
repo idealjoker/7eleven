@@ -3184,7 +3184,7 @@ sub indent($$)
 {
     my($line,$col) = @_;
     my($ind) = '';
-    $ind .= "\t" while (strlen($line.$ind) < $col);
+    $ind .= " " while (strlen($line.$ind) < $col);
     $ind = ' ' if (length($ind)==0 && length($line)>0 && !($line =~ m{\s$}));
     return $ind;
 }
@@ -3429,7 +3429,11 @@ sub produce_output(@)
 ##				$opa = $1.$' if ($opa =~ m{^(#)?([0-9A-F]{2}):}) && (hex($2)==$_cur_RPG);	# remove PG prefix of same-page labels 
 ##				$line .= $opa . ' ';
 ##			}
+            my($len2nd) = 0;
+            my($printNextAddr) = 1;
 			for (my($i)=0; $i<@{$OPA[$addr]}; $i++) {
+                if ($i == 1) { $len2nd = length($line); }
+
 				if ($i>0 && $TYPE[$addr]==$CodeType_data && defined($LBL[$addr+$i])) {			# label inside data block
 					die("stray label <$LBL[$addr+$i]> disallowed outside .DB block (implementation restricton)\n")
 						unless ($OP[$addr] eq '.DB');
@@ -3439,7 +3443,14 @@ sub produce_output(@)
 				}
 				my($opa) = $OPA[$addr][$i];
 				$opa = $1.$' if ($opa =~ m{^(#)?([0-9A-F]{2}):}) && (hex($2)==$_cur_RPG);	# remove PG prefix of same-page labels 
-				$line .= $opa . ' ';
+				if ($opa =~ /\n$/) {
+                    $line .= $opa;
+                    print("$line"); undef($line);
+                    $line .= indent($line,$len2nd);	
+                    $printNextAddr = 0;
+                } else {
+                    $line .= $opa . ' ';
+                }
 			}
 
 			#------------------------------------------------------------------------------------------
@@ -3453,7 +3464,7 @@ sub produce_output(@)
 			# Address (optional), Code (optional) and Source (mandatory) Output
 			#------------------------------------------------------------------------------------------
 
-			print_addr($addr) if ($print_addrs);
+			print_addr($addr) if ($print_addrs && $printNextAddr);
 			if ($print_code) {
 				printf('%02X ',BYTE($addr));
 				my($i);
