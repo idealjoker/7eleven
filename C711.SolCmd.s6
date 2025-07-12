@@ -11,6 +11,7 @@
 #	Oct 30, 2024: - added line numbers to errors
 
 # eg  Sol#02:3-tics{SolCmd.s6}  
+# can these fire controlled solenoids too(?)
 
 sub SolCmd_s6($$)
 {
