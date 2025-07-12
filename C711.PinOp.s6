@@ -24,22 +24,6 @@ sub PinOp_s6($$)
 		unless defined($arg);
 ##	print(STDERR "PinOp_s6: $op($arg)\n");
 
-	if ($op eq 'blink') {
-		if ($arg =~ m/^Scriptlamp#(0?[0-7])/) {
-			return hex($1) | 0xF0;
-        } else {
-			die("PinOp_s6: cannot decode Scriptlamp argument '$arg' at input line $src_line\n");
-        }
-	} 
-
-	if ($op eq 'toggle') {
-		if ($arg =~ m/^Scriptlamp#(0?[0-7])/) {
-			return hex($1) | 0xF8;
-        } else {
-			die("PinOp_s6: cannot decode Scriptlamp argument '$arg' at input line $src_line\n");
-        }
-	} 
-
 	if ($op eq 'setBit') {
 		if ($arg =~ m/^Lamp#([0-9A-Fa-f]{2})/) {
 			return hex($1);
@@ -60,22 +44,6 @@ sub PinOp_s6($$)
         }
     }
 
-	if ($op eq 'advance') {
-		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
-			return hex($1) | 0x60;
-        } else {
-			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
-        }
-    }
-
-	if ($op eq 'drain') {
-		if ($arg =~ m/^Bitgroup#(0?[0-7])/) {
-			return hex($1) | 0xE0;
-        } else {
-			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
-        }
-    }
-
 	if ($op eq 'rotRight') {
 		if ($arg =~ m/^Bitgroup#(0?[0-7])/) {
 			return hex($1) | 0x50;
@@ -92,6 +60,16 @@ sub PinOp_s6($$)
         }
     }
 
+	if ($op eq 'advance') {  # like rotate, but doesn't carry over back to the start (?)
+		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
+			return hex($1) | 0x60;
+        } else {
+			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
+        }
+    }
+
+	# 6F ?  probably the opposite of advance
+
 	if ($op eq 'clear') {
 		if ($arg =~ m/^Bitgroup#(0?[0-7])/) {
 			return hex($1) | 0x70;
@@ -107,6 +85,46 @@ sub PinOp_s6($$)
 			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
         }
     }
+
+	# 80-CF: clearBit (above)
+
+	# D0 + D8: not user per @Slochar
+
+	if ($op eq 'drain') {
+		if ($arg =~ m/^Bitgroup#(0?[0-7])/) {
+			return hex($1) | 0xE0;
+        } else {
+			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
+        }
+    }
+
+	# todo: E8
+	# @Slochar: 
+	# 	Fire a solenoid string from solenoid string table. The lower 3 bits from the
+	# string function control byte determine the offset in the solenoid string table to process. This is
+	# useful to fire multiple solenoids (for example, a drop bank with 2 separate reset coils) as a single
+	# operation. Most significant nibble of the solenoid table entry is the # of coils to fire in a row,
+	# traversing down the table. Least significant nibble of the solenoid table entry is the solenoid
+	# offset to start firing at.
+	# example:
+	# $E9 ;fire solenoid string table entry #1, entry #1 holds 20. This decodes to fire
+	# 2 solenoids starting at solenoid_0. So would fire Solenoid_0, wait, then fire Solenoid_1.
+
+	if ($op eq 'blink') {
+		if ($arg =~ m/^Scriptlamp#(0?[0-7])/) {
+			return hex($1) | 0xF0;
+        } else {
+			die("PinOp_s6: cannot decode Scriptlamp argument '$arg' at input line $src_line\n");
+        }
+	} 
+
+	if ($op eq 'toggle') {  # note: toggle blinking, not toggle the light itself
+		if ($arg =~ m/^Scriptlamp#(0?[0-7])/) {
+			return hex($1) | 0xF8;
+        } else {
+			die("PinOp_s6: cannot decode Scriptlamp argument '$arg' at input line $src_line\n");
+        }
+	} 
 
 	die("PinOps_s6: cannot decode '$str'\n");
 }
