@@ -1,8 +1,8 @@
 # Switch Events
 
-The OS expects a listing of switch handlers to tart at $60F5, in order staring with switch 0 (the tilt bob).  Each listing consists of two words: the address of the code to call when the witch is hit, and two bytes of parameters to pass along, allowing the handler to be re-used.
+The OS expects a listing of switch handlers to tart at $60F5, in order staring with switch 0 (the tilt bob).  Each listing consists of two words: the address of the code to call when the switch is hit, and two bytes of parameters to pass along (in both __switch_params and X), allowing the handler to be re-used.
 
-The first 8 standard switches also have standard sys_ calls, but the rest can be whatever you desire, as long as they RTS (?) at the end.
+The first 8 standard switches also have standard sys_ calls, but the rest can be whatever you desire, as long as they RTS (?) at the end, or `JMP sys_switch_script` to let a switch script handle the rest.  (There is no option for a switch script to switch back to assembly)
 
 In most situations, however, it is common to use "switch scripts" to save rom space.
 
@@ -27,17 +27,15 @@ Scripts have a minimum of 1 op per branch, and all branches must have the same n
 
 (todo: make configuration byte encoder)
 
-- bit 0: adds 4 to the length of the script
-- bit 1: (?)
+- bit 0: enables Extended Scripting
+- bit 1: allows solenoids triggered by script to fire in tilt/game over
 - bit 2: the next byte contains debounce settings (todo: make debounce encoder)
 - bit 3: fires a solenoid (see SolCmd) 
-- bits 4-7: this number is added to the length of the script
+- bits 4-7: amount of PinOp script bytes at the end of each branch
 
 ## Debounce Config
 
-How does this work (?)
-
-todo: make an encoder
+Number of milliseconds to debounce for, x 16
 
 ## Solenoid Config
 
@@ -51,27 +49,42 @@ Two bytes, the first (SolCmd) specifies which solenoid to fire (lower nibble) an
 
 Branches are evaluated in order until one's condition is met, and the final one is considered the default if none above it match.
 
-The condition may be a lamp or a flag (or something else(?)), and if that lamp is on/flag is set, then the branch will execute.  The final condition is SS_DEFAULT.
+The condition may be a lamp, flag, or adjustment check (or something else(?)), and if that lamp is on/flag is set, then the branch will execute.  The final condition is SS_DEFAULT.
+
+## LMC Adjustment check
+
+(todo, clean this up and make an encoder)
+
+@Slochar says: 
+    LMC stands for Liberal-Moderate-Conservative - as in settings. If bit 7 of the LMC byte is set,
+    bits 654 will contain which game adjust setting to check. There is no bounds checking for
+    settings 36 or 37, which (stock) do not exist but the OS could be modified to support them. The
+    lower nibble is the value you are expecting to be &#39;true&#39; - $90 would be adjustment 1 (31 in
+    audits), when set for 0, process the script. $a2 would be adjustment 2, when value 2, do script.
 
 ### Script
 
-Scripts are made of a sequence of one byte PinOps.  
+Scripts consist of 3 parts: the score, the optional Complex Script, and then Pinops
 
-The first one is (always(?)) a ScoreByte, specifying how many points to score.
+#### ScoreByte 
 
-The rest can be any PinOp (are there other options(?)), or nop can be used to fill in unneeded slots.
-
-Is there some sort of delay involved in each step of the script (?)  I see some scripts that turn a light on and then off again..
-
-## ScoreByte encoder
+One byte, determining, specifying how many points to score (or 0 for no score).
 
 (see C711.ScoreByte.s6)
 
-## PinOp encoder
+#### Extended/Complex Script
 
-(see C711.PinOp.s6 for a list)
+(?)
 
-(what are $Ec and $EA (?))
+@Slochar has partial notes
+
+#### PinOps
+
+Length = the high nibble of the config byte.  Each byte is a PinOp (are there other options(?)), or nop can be used to fill in unneeded slots.
+
+Is there some sort of delay involved in each step of the script (?)  I see some scripts that turn a light on and then off again..
+
+(see C711.PinOp.s6 for a list of PinOps)
 
 ## SoundCmd encoder
 
@@ -80,15 +93,22 @@ Plays a sound, presumably.  What is the syntax?  Is it part of a switch script, 
 
 todo: generate these when decompiling
 
+
 # Solenoid Tables
+
+These two tables combined allow a sequence of coils to be fired via a single PinOp
 
 ## PINOP_SOLCMD_TABLE
 
-Seems to be a list of SolCmds (?).  Not sure what for
+List of 8 SolCmds, referenced by SolOp table below
+
+(todo: decompile this)
 
 ## PINOP_SOLOP_TABLE
 
-What is this for (?)
+This table is referenced by the solenoid PinOp.   Each entry contains an index in the SolCmd table to start at (lower nibble), and a count of how many SolCmds to run (higher nibble).  (useful for, eg, resetting drop target banks)
+
+(todo: make an encoder)
 
 # Sounds
 
@@ -114,9 +134,25 @@ example:
 
 # Lamps and Flags
 
+The OS has 8 columns of lamps, and another 2 columns of flags, which operate like lamps but aren't physically present in the machine- these can be useful for easily storing simple game state
+
 # Blink
 
-How does the blink matrix work (?)
+There is also a 'blink' matrix that corresponds to the lamp matrix- if you turn on a cell in the blink matrix it will cause that lamp to flash.  The blink speed is hardcoded as BLINK_DELAY (is this value in tics(?)), and cannot be changed during gameplay (?)
+
+How is the blink matrix controlled (?)  I see there's a sys_blinkLamp but no 'stop blink', and no pin op either?
+
+Per @slochar, 
+
+    Lamps are used as status indicators in a game to save memory. It is important to note that during
+    a blink cycle in which a lamp is off, the game considers its status off as well. The routines that
+    concern themselves with checking lamps take this into consideration and OR the information
+    from the blink matrix with the main lamp matrix when determining status. A lamp is considered
+    ON if its bit is set in the lamp matrix.
+
+(?): This is a bit unclear- is the bit in the lamp matrix memory actually being toggled when the blink is on?  Or does the lamp matrix driver code check both?  (this is what my custom OS does, and feels like it makes more sense)  
+
+(?): he also says that "a lamp is ON if its bit is set", but then also "the routines that check lamps OR the blink matrix"... so, which is it?
 
 ## Lamp/Flag Initialization and Memory Data
 
@@ -133,26 +169,28 @@ System 6 supports 8 different bit groups, configered in the BITGROUP_TABLE via a
 
 What are these (?)  Something to do with blinking lamps, but not the blink matrix?  The name implies you can do a more complicated action than just blinking, but I don't see any configuration?  
 Why are toggle and blink PinOps only allowed on script lamps (?)
-Why do some games (eg Gorgar) have the same lamp in 4 slots (?)
+Why do some games (eg Gorgar) have the same lamp in 4 slots (?)  Maybe just a decompiler error and these are really 0 = unused
+
+Conjecture: there's not enough bits available for a PinOp to blink any lamp, so this is just a small lookup table?
 
 
 # Game Logic
 
-The OS has a concept of game logic, which does (?)
+After a switch script runs, the OS will also run any Game Logic PinOp scripts whose conditions are met.  This is useful to do common processing.
 
 You can configure a number of them at the address specified by GAMELOGIC_TABLE and GAMELOGIC_TABLE_END
 
-Each one is 8 bytes, and each byte... (?)
-
-The logic is triggered by (?)
+(todo: make an encoder for these based on @Slochar's "background script" notes)
 
 # Game Events
 
-You can tie event listeners in to the state of lamps (?) and flags.
+After a switch script runs, any configured game events will also trigger, based on the state of its lamp/flag.
 
-Do these trigger when the flag turns on (and off(?)), or repeatedly while the flag is set (?)
+(?) is this before or after game logic?
 
-Each one is made of 3 parts, the flag that controls it, a second byte which ...(?), and the address of the handler to be run.  
+Each one is made of 3 parts, the lamp/flag that controls it, a delay in 16ms units, and the address of the handler to be run.  
+
+(note the delay uses one of the two timers, if available, and if not, bad things can happen...)
 
 example:
 <6350>	gameEvents_table:               .DB Flag#03 
