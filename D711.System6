@@ -99,9 +99,9 @@ sub def_switch_script($$@)
 
 	$Address = $addr;
 	my($SC) = BYTE($Address);
-	def_byte_hex($sn . '_script','Switch Script',				# script control byte
-					'control byte [' . (($SC & 0b0001) ? 'long' : 'short')
-									 . (($SC >> 4) ? sprintf(' with %d pinops',($SC >> 4)) : '')
+	def_byte_hex($sn . '_script','Switch Script',				# script config byte
+					'config byte [' . (($SC & 0b0001) ? ' extended ' : '')
+									 . (($SC >> 4) ? sprintf('with %d pinops ',($SC >> 4)) : '')
 									 . ']');	    
 	my($slen) = 2;												# script statement length
 	$slen += 4 if ($SC & 0b0001);								# extended script
@@ -111,7 +111,7 @@ sub def_switch_script($$@)
 	 	def_byteblock_hex(2,'',undef,'solenoid op');
 		$OPA[$Address-2][0] = sprintf('Sol#%02X:%X-tics{SolCmd.s6}', BYTE($Address-2) & 0x0F, BYTE($Address-2) >> 4);
 	}
-	def_switch_conditional($slen);
+	def_switch_conditional($slen, $SC);
 
 	if ($stripBang) {
 		for (my($a)=$addr; $a<$Address; $a++) {
@@ -128,7 +128,7 @@ sub grow_switch_scripts()
 		$Address = $SSaddr[$i];
 		my($slen) = $SSslen[$i];
 		while (!$decoded[$Address]) {
-			def_switch_conditional($slen);
+			def_switch_conditional($slen, $SS_SC[$i]);
 			for (my($a)=$SSaddr[$i]; $a<$Address; $a++) {					# remove bangs
 				foreach my $opa (@{$OPA[$a]}) {
 					$opa =~ s/(.*)!/\1/;
@@ -141,7 +141,7 @@ sub grow_switch_scripts()
 
 sub def_switch_conditional($)
 {
-	my($slen) = @_;
+	my($slen, $SC) = @_;
 
 	my($bAddress) = $Address;
 	$OP[$bAddress] = '.DB';
@@ -159,13 +159,18 @@ sub def_switch_conditional($)
 	push(@{$OPA[$bAddress]},score_str(BYTE($Address),$Address,$opt_A) . ($Address+1 < $bAddress+$slen ? " \\\n" : ''));
 	$decoded[$Address++] = 1;
 
-#	if ($SC & 0b0001) { 													# extended script (code unnecessary)
-#		for (my($i)=0; $i<4; $i++) {
-#			push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
-#		$decoded[$Address++] = 1;
-#		}
-#	}
+	if ($SC & 0b0001) { 													# extended script 
+		for (my($i)=0; $i<4; $i++) {
+			my($cmd) = sprintf('$%02X',BYTE($Address));   # todo: encode these or at least make them not get hit by label finder
+			if ($i == 3) {
+				$cmd .= " \\\n";
+			}
+			push(@{$OPA[$bAddress]}, $cmd);
+			$decoded[$Address++] = 1;
+		}
+	}
 
+	# PinOps
 	while ($Address < $bAddress+$slen) {
 		my($op) = BYTE($Address);
 		my($sop) = sprintf('$%02X!',$op);
@@ -201,6 +206,7 @@ sub def_switch_conditional($)
 	if (BYTE($Address-$slen) != 0) {										# other conditional exist, save info for later processing
 		push(@SSaddr,$Address);
 		push(@SSslen,$slen);
+		push(@SS_SC,$SC);
     }
 }
 
