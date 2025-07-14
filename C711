@@ -396,6 +396,7 @@
 #	Jul  8, 2025: - tightened system-id replacement
 #	Jul 12, 2025: - BUG: Lamp#xx|$40 did not work any more
 #				  - BUG: COMPILATION_INFO etc. not exported (my instead of our)
+#				  - BUG: FREE_SP_ADDR also not exported
 #	Jul 14, 2025: - BUG: $SRC had directory encoded
 #				  - modified to always produce default .OPTINFO file on -1 (STDOUT
 #					no longer an option)
@@ -740,6 +741,7 @@ if (defined($opt_D)) { 											# define symbol from command line
 
 load_vROM(split(/,/,$opt_t)) if defined($opt_t);
 
+our($FREE_SP_ADDR);
 our($MERCURIAL_RELEASE,$COMPILATION_INFO,$COMPILATION_INFO77,$COMPILATION_TIMESTAMP);
 
 chop($MERCURIAL_RELEASE =                                       # Compilation Information
@@ -1060,7 +1062,6 @@ check_duplicate_label_types()								# make sure duplicate labels have same type
 resolve_labels();                                           # resolve labels; writes OPTIMIZER instructions during 1st pass
 my($bytesFree) = find_free_space();                             # scan/report free space
 
-my($FREE_SP_ADDR);
 if (defined($FREE_SP_ADDR)) {                               # handle @FREE_SP (compiler variable)
     my($freestr) = sprintf('%5d BF',$bytesFree);
 #   print(STDERR "[$freestr]\n") unless defined($opt_1);
