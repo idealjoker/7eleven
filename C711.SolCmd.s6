@@ -1,14 +1,16 @@
 #======================================================================
 #                    C 7 1 1 . S O L C M D . S 6 
 #                    doc: Tue Oct 29 19:54:45 2024
-#                    dlm: Wed Oct 30 08:51:53 2024
+#                    dlm: Mon Jul 14 14:18:07 2025
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 11 48 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 13 65 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Oct 29, 2024: - created
 #	Oct 30, 2024: - added line numbers to errors
+#	Jul 14, 2025: - BUG: changes in C711 imply that Sol# are not 
+#					  	 substituted any more when this is called
 
 sub SolCmd_s6($$)
 {
@@ -23,7 +25,7 @@ sub SolCmd_s6($$)
 	die("SolCmd: cannot decode '$str' at input line $src_line\n")
 		unless ($tics > 0 && $tics < 8);
 
-	$sol = hex($sol) 
+	$sol = hex($1) 
 		if ($sol =~ m/^Sol#([0-9A-Fa-f]{2})/);
 	die("SolCmd: invalid solenoid number '$sol' at input line $src_line\n")
 		unless ($sol >= 0 && $sol <= 16);

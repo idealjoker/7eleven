@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Jul 12 12:47:40 2025
+#                    dlm: Mon Jul 14 14:58:00 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 398 79 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 402 46 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -396,6 +396,10 @@
 #	Jul  8, 2025: - tightened system-id replacement
 #	Jul 12, 2025: - BUG: Lamp#xx|$40 did not work any more
 #				  - BUG: COMPILATION_INFO etc. not exported (my instead of our)
+#	Jul 14, 2025: - BUG: $SRC had directory encoded
+#				  - modified to always produce default .OPTINFO file on -1 (STDOUT
+#					no longer an option)
+#				  - made -O work for -1 and -2
 # HISTORY END
 
 # RELEASE NOTES:
@@ -513,7 +517,7 @@ die("Usage: $0 " .
 		"\n\t[-S)ystem <type[6,7,11,WPC][:option[...]]>" .										# source type and options
 		"\n\t[-D)EFINE <symbol>]" . 															# conditional compilation
 		"\n\t[-1)st pass [-F)ind optimizable statements <from-addr,to-addr>]]" .				# code optimization
-		"\n\t[-2)nd pass [-O)ptimization info <file>]]" .
+		"\n\t[-2)nd pass] [-O)ptimization info <file>]" .
 		"\n\t[system -i)nterface <API file>] [-l)ink system <code file> (s6)]" .				# game code compilation/linker
 		"\n\t[output -I)nterface on stdout (s6)]" . 											# system code compilation/linker
 		"\n\t[-o)utput <file> (s6)] [prepend image with -g)ap of <x> KB of FF bytes (s6)]" .	# linker output control
@@ -538,7 +542,8 @@ my($EXTRA);																# additional statements on the current line
 
 die("$ARGV[0]: No such file or directory\n")                    		# check input file (STDIN does not work because of .OPTINFO)
     unless (-r $ARGV[0]);
-my($SRC) = $ARGV[0];
+#my($SRC) = $ARGV[0];
+my($SRC) = "$basename.$ext";
 
 $_ = <>;																# process hash-bang options
 if (m{^;!.*C711\s+}) {
@@ -693,14 +698,17 @@ if (defined($opt_F)) {
     die("cannot decode -f $opt_F\n")
         unless ($opt_F_to > $opt_F_from);
 }
-if ($opt_1 && -t 1) {                                           # open optimization output file
-    open(OPTF,">.OPTINFO_$SRC")
-        || die(".OPTINFO_$SRC: $!\n");
+if ($opt_1) {   												# open optimization output file
+	if (defined($opt_O)) {
+	    open(OPTF,">$opt_O")
+    	    || die("$opt_O: $!\n");
+	} else {
+	    open(OPTF,">.OPTINFO_$SRC")
+    	    || die(".OPTINFO_$SRC: $!\n");
+    }
 }
 
-die("-o requires -2 (2nd pass)\n")                              # OPTIMIZER 2nd pass)
-    if ($opt_O && !$opt_2);
-my($next_statement_to_optimize);
+my($next_statement_to_optimize);								# OPTIMIZER 2nd pass)	
 if ($opt_2) {
     if (defined($opt_O)) {
         open(OF,$opt_O) || die("$opt_O: $!\n");
@@ -1565,8 +1573,7 @@ sub resolve_labels()
                 (($System_Option{IVM} >= 5) &&                   
                     ($OP[$a] eq '_SLEEP'))) {
                         my($opt) = "$LINE[$a] $SRC[$a]\n";
-                        if (! -t 1) { print($opt); }
-                        else        { print(OPTF $opt); }
+                        print(OPTF $opt);
             }
         }
 
@@ -1679,8 +1686,7 @@ sub resolve_labels()
                            && ($a-$bo)         >= $opt_F_from && ($a-$bo)         <= $opt_F_to
                            && ($offset+$a+$bo) >= $opt_F_from && ($offset+$a+$bo) <= $opt_F_to) {
                     my($opt) = "$LINE[$a-$bo] $SRC[$a-$bo]\n";
-                    if (! -t 1) { print($opt); }
-                    else        { print(OPTF $opt); }									# Optimizer pass 1
+                    print(OPTF $opt); 													# Optimizer pass 1
                 }
             }
             $ROM[$a] = labelValue($a,$lbl);
@@ -1698,8 +1704,7 @@ sub resolve_labels()
                            && ($a-1)            >= $opt_F_from && ($a-1)         <= $opt_F_to
                            && ($offset+$a+1)    >= $opt_F_from && ($offset+$a+1) <= $opt_F_to) {
                     my($opt) = "$LINE[$a-1] $SRC[$a-1]\n";
-                    if (! -t 1) { print($opt); }
-                    else        { print(OPTF $opt); }									# Optimizer pass 1
+                    print(OPTF $opt);													# Optimizer pass 1
                 }
             }
             $ROM[$a] = labelValue($a,$lbl);

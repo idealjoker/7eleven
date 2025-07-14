@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . B I T M A S K 
 #                    doc: Fri May 31 11:52:25 2024
-#                    dlm: Sun Feb 16 12:55:03 2025
+#                    dlm: Mon Jul 14 13:51:29 2025
 #                    (c) 2023 idealjoker@mailbox.orgXSxsq
-#                    uE-Info: 31 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 16 64 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -12,10 +12,12 @@
 #	Jun 26, 2024: - BUG: BITB #L_2x{BitMask} did not work
 #	Feb 16, 2025: - added support for multiple arguments
 #				  - BUG: Lamp and Flag code did not work
+#	Jul 14, 2025: - BUG: changes in C711 mean that the Lamps, Flags, Switches
+#						 have not been substituted yet any more!
 
 # NOTES:
 #	- when this routine is called, lamps and flags have already
-#	  been substituted
+#	  been substituted (Jul 14, 2025; not sure this is true any more)
 #	- the code here is only for arguments #2, #3, etc.
 
 sub BitMask($$)
@@ -38,6 +40,12 @@ sub BitMask($$)
 			my($byte,$bit) = (substr($1,0,1),substr($1,1,1));
 			$bit = hex($bit); $bit-=8 if ($bit > 7);
 			die("Invalid flag number at input line $line\n")
+				if ($byte > 3 || $bit > 7);
+			$mask |= (1<<$bit);
+		} elsif ($str =~ m{^Switch#([0-9A-Fa-f]{2})$}) {
+			my($byte,$bit) = (substr($1,0,1),substr($1,1,1));
+			$bit = hex($bit); $bit-=8 if ($bit > 7);
+			die("Invalid switch number at input line $line\n")
 				if ($byte > 3 || $bit > 7);
 			$mask |= (1<<$bit);
 		} else {
