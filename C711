@@ -899,7 +899,7 @@ while (!eof()) {
 					$suppress=1,last if m{^\s*$s};
 				}
 				unless ($suppress) {
-#				print(STDERR "[Optimizer: optimizing $_]\n");
+ 					#print(STDERR "[Optimizer: optimizing $_]\n");
 					my($subst) = 0; 									# optimize this statement
 				    
 					$subst += s/\bJMP\b/BRA/g;							# JMP
@@ -960,38 +960,39 @@ NO_ADDL:
 
     $MODE = 0 if $opt_f;												# force compilation of "dirty" source files
 
-	printf(STDERR "$. \[ADDR=%04X MODE=$MODE IF_STACK=$IF_STACK[$#IF_STACK]]: %s (@newly_defined_label)\n",$ADDR,"@_")
-		if $opt_T;														# trace compilation
+		printf(STDERR "$. \[ADDR=%04X MODE=$MODE IF_STACK=$IF_STACK[$#IF_STACK]]: %s (@newly_defined_label)\n",$ADDR,"@_")
+			if $opt_T;														# trace compilation
 
     if ($IF_STACK[$#IF_STACK] >= 0) {                       			# currently assembling code
-        if ($_[0] =~ m{:$}) {                               			# define label
-			if ($opt_A && defined($tag_addr)) { # && defined($ADDR)) {			# verify <> address information
-				if (defined($RPG)) {
-					die(sprintf("ROM reference mismatch (%02X:%04X expected, %02X:%04X found) at input line $.\n",$tag_rpg,$tag_addr,$RPG,code_addr()))
-						unless (code_addr() == $tag_addr) && ($RPG == $tag_rpg);
-				} else {
-					die(sprintf("ROM address mismatch (\$%04X expected, \$%04X found) at input line $.\n",$tag_addr,$ADDR))
-						unless ($ADDR == $tag_addr);
+			if ($_[0] =~ m{:$}) {                               			# define label
+				if ($opt_A && defined($tag_addr)) { # && defined($ADDR)) {			# verify <> address information
+					if (defined($RPG)) {
+						die(sprintf("ROM reference mismatch (%02X:%04X expected, %02X:%04X found) at input line $.\n",$tag_rpg,$tag_addr,$RPG,code_addr()))
+							unless (code_addr() == $tag_addr) && ($RPG == $tag_rpg);
+					} else {
+						die(sprintf("ROM address mismatch (\$%04X expected, \$%04X found) at input line $.\n",$tag_addr,$ADDR))
+							unless ($ADDR == $tag_addr);
+					}
 				}
-            }
-			push(@newly_defined_label,define_label($`));
-			set_label_type($MODE) if ($MODE > 0);
-            shift(@_);
-            next if (@_ == 0);                              			# label-only line => nothing to compile
-        }
+				push(@newly_defined_label,define_label($`));
+				set_label_type($MODE) if ($MODE > 0);
+				shift(@_);
+				next if (@_ == 0);                              			# label-only line => nothing to compile
+			}
     
-        &expand_aliases;                                    			# expand aliases (except for .IFDEF, .IFNDEF, etc. which are handled in compile_pragma())
-		&expand_repeatBytes;											# expand $FF[512x] 255[2x]
-		&expand_bang;													# expand !longJSR
-        &decimalize;                                        			# convert all numbers to decimal (e.g. for .ORG); NB: does not deal with #$numbers
-        ($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
-        $OP[$ADDR] = $OP;                                   			# make available to OPTIMIZER
-        printf(STDERR "\tOP[%04X] = ",$ADDR), print(STDERR "$OP @OP_ARG\n") if $opt_T;
+			&expand_aliases;                                    			# expand aliases (except for .IFDEF, .IFNDEF, etc. which are handled in compile_pragma())
+			&expand_repeatBytes;											# expand $FF[512x] 255[2x]
+			&expand_bang;													# expand !longJSR
+			&decimalize;                                        			# convert all numbers to decimal (e.g. for .ORG); NB: does not deal with #$numbers
+			($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
+			$OP[$ADDR] = $OP;                                   			# make available to OPTIMIZER
+			printf(STDERR "\tOP[%04X] = ",$ADDR), print(STDERR "$OP @OP_ARG\n") if $opt_T;
 
-        &unroll_structure;  	                              			# _IF, _Loop, etc.  
-        next unless defined($OP);                           			# some structure keywords only generate labels
+
+			&unroll_structure;  	                              			# _IF, _Loop, etc.  
+			next unless defined($OP);                           			# some structure keywords only generate labels
     } else {
-		($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
+			($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
     }
 
 ##  next if &compile_pragma;                              				# .ORG, .DB, .ENDIF, etc.; also done while not currently compiling code!
@@ -1728,38 +1729,39 @@ sub resolve_labels()
         #       LDAB    =SolBuf{LSB}+2
         #----------------------------------------------------------------------
 
-		my($str,$encoder) = ($ROM[$a] =~ m/^'?(.+)\{([^}\s]+)\}'?/);					# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
-		if (defined($encoder)) {														# 	initial '? allows for strings with spaces e.g. in 'ls -l{ShellCmd}'
-			my($remainder) = $';
-##			print(STDERR "encoder($str,$encoder) [$ROM[$a]]\n");
-			$encoder .= ".s$WMS_System"
-				if (-f "$PATH/C711.$encoder.s$WMS_System");
-			require "$PATH/C711.$encoder";
-			$encoder =~ s/\./_/g;														# replace . by _ in function name
-			my($ofs);																	# find statement base address
-			our($addr); die if defined($addr);											# UNUSED VARIABLE
-			for ($ofs=0; !defined($LINE[$a-$ofs]); $ofs++) {}
-			my($expr) = sprintf("$encoder('%s',%d);",$str,$LINE[$a-$ofs]);
-#			print(STDERR "eval($expr)\n");
-##          $ROM[$a] = sprintf("%d$remainder",eval($expr));
-			my($ev) = eval($expr);
-            die($@) if $@;
-			$ROM[$a] = $ev . $remainder;
-#           printf(STDERR "ROM[%04X] = %02X\n",$a,$ROM[$a]);            
-		}
-
-        #----------------------------------------------------------------------
-        # Simple Label Arithmetic
-        #----------------------------------------------------------------------
+			my($str,$encoder) = ($ROM[$a] =~ m/^'?(.+)\{([^}\s]+)\}'?/);					# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
+			if (defined($encoder)) {														# 	initial '? allows for strings with spaces e.g. in 'ls -l{ShellCmd}'
+				my($remainder) = $';
+	##			print(STDERR "encoder($str,$encoder) [$ROM[$a]]\n");
+				$encoder .= ".s$WMS_System"
+					if (-f "$PATH/C711.$encoder.s$WMS_System");
+				require "$PATH/C711.$encoder";
+				$encoder =~ s/\./_/g;														# replace . by _ in function name
+				my($ofs);																	# find statement base address
+				our($addr); die if defined($addr);											# UNUSED VARIABLE
+				for ($ofs=0; !defined($LINE[$a-$ofs]); $ofs++) {}
+				my($expr) = sprintf("$encoder('%s',%d);",$str,$LINE[$a-$ofs]);
+	#			print(STDERR "eval($expr)\n");
+	##          $ROM[$a] = sprintf("%d$remainder",eval($expr));
+				my($ev) = eval($expr);
+							die($@) if $@;
+				$ROM[$a] = $ev . $remainder;
+	#           printf(STDERR "ROM[%04X] = %02X\n",$a,$ROM[$a]);            
+			}
+			else {
+				#----------------------------------------------------------------------
+				# Simple Label Arithmetic
+				#----------------------------------------------------------------------
 
 ##		printf(STDERR "-> %X\n",$a);
-        my($lval) = eval_label($ROM[$a],$a);                                            # label with simple arithmetic
-        if (defined($lval)) {
-            $ROM[$a] = $lval;
-            next;
-        }
+				my($lval) = eval_label($ROM[$a],$a);                                            # label with simple arithmetic
+				if (defined($lval)) {
+						$ROM[$a] = $lval;
+						next;
+				}
 
-        $ROM[$a] = labelValue($a,$ROM[$a]);												# this will always trigger an error unless ROM[a] is numeric
+				$ROM[$a] = labelValue($a,$ROM[$a]);												# this will always trigger an error unless ROM[a] is numeric
+			}
     }
     
     for (my($a)=$FIRST_ADDR; $a<=$MAX_ROM_ADDR; $a++) {                                 # finally, split signed words & check ranges
@@ -1919,17 +1921,17 @@ sub expand_aliases()
 		next if match_pragma($_[0],'.IFUNDEF','');
 		next if match_pragma($_[0],'.ASSUME_DEFINED','');
 		next if match_pragma($_[0],'.ASSUME_UNDEFINED','');
-		while (1) {
+		while (1) { # process line repeatedly until no aliases are left
 			my($pre,$alias,$post);
 			if ($_[$i] =~ m/{.+}/) {													# encoder
 				my($p1,$p2);
 				($p1,$p2,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z0-9_]+\()?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
 				$pre = $p1 . $p2;
-#				print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n");
-            } else {	
+				# print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n");
+			} else {	
 				($pre,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
 			}
-#			print(STDERR "$_[$i] $pre/$alias/$post [$ALIAS{$alias}]\n");
+			# print(STDERR "$_[$i] $pre/$alias/$post [$ALIAS{$alias}]\n");
 
 			last unless defined($ALIAS{$alias});
 			$ALIAS_REFD{$alias}++;
@@ -1940,7 +1942,7 @@ sub expand_aliases()
 				splice(@_,$i,1,@sali);
 			}
 		}
-#		print(STDERR "$_[$i]\n");
+		# print(STDERR "$_[$i]\n\n");
 	}
 }
 

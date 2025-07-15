@@ -3352,7 +3352,7 @@ sub produce_output(@)
 
             unless (defined($org)) {                                        # new .ORG after a gap
 				if ($code_started) {
-#####				print("\n");													# introduces empty lines in BadCats e.g. at $4530
+                    ##### print("\n");													# introduces empty lines in BadCats e.g. at $4530
 				} elsif (!($WMS_System =~ m{^WPC})) {
 					print_addr($addr) if ($print_addrs);
 					printf('			')	if ($print_code);
@@ -3425,14 +3425,14 @@ sub produce_output(@)
 			$line .= indent($line,$hard_tab*$IND[$addr]) . $OP[$addr];				# then, the operator
 			$line .= indent($line,$hard_tab*($IND[$addr]+$op_width[$TYPE[$addr]]))	# and any operands
 				unless ($OP[$addr] eq '!');											# don't add whitespace after ! op
-##			foreach my $opa (@{$OPA[$addr]}) {
-##				$opa = $1.$' if ($opa =~ m{^(#)?([0-9A-F]{2}):}) && (hex($2)==$_cur_RPG);	# remove PG prefix of same-page labels 
-##				$line .= $opa . ' ';
-##			}
+            ## foreach my $opa (@{$OPA[$addr]}) {
+            ## 	$opa = $1.$' if ($opa =~ m{^(#)?([0-9A-F]{2}):}) && (hex($2)==$_cur_RPG);	# remove PG prefix of same-page labels 
+            ## 	$line .= $opa . ' ';
+            ## }
             my($len2nd) = 0;
             my($printNextAddr) = 1;
 			for (my($i)=0; $i<@{$OPA[$addr]}; $i++) {
-                if ($i == 1) { $len2nd = length($line); }
+                if ($i <= 1) { $len2nd = length($line); }
 
 				if ($i>0 && $TYPE[$addr]==$CodeType_data && defined($LBL[$addr+$i])) {			# label inside data block
 					die("stray label <$LBL[$addr+$i]> disallowed outside .DB block (implementation restricton)\n")

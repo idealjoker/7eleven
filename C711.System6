@@ -14,7 +14,7 @@
 
 use strict vars;
 
-our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE,$ADDR);
+our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE,$ADDR,$MODE,@OP_ARG,$OP,@ROM);
 
 #----------------------------------------------------------------------
 # Compilation Magic
@@ -30,6 +30,54 @@ sub unroll_structure()
 
 sub asm_macros()
 {
+	if ($MODE==0 || $MODE==1) {
+		if ($OP eq '_SwitchScriptConfig') {
+			set_label_type(0);
+
+			my($cfg) = 0x00;
+			my($startAddr) = $ADDR++;
+
+			foreach my $arg (@OP_ARG) {
+				if ($arg =~ m/Ext/) {
+					$cfg |= 0b00000001;
+				}
+				elsif ($arg =~ m/SolInTilt/) {
+					$cfg |= 0b00000010;
+				}
+				elsif ($arg =~ m/Debounce\((\$?[\dA-Fa-f]{1,2})(-ms|-tics)\)/) {
+					if ($cfg & 0b1000) { die("Syntax: _SwitchScriptConfig Debounce() must come before Fire() at input line $.\n"); }
+					$cfg |= 0b00000100;
+					my($val) = ($1 =~ m{^\$}) ? hex($1) : $1;
+					$ROM[$ADDR++] = ($2 eq '-ms') ? $val / 16 : $val;
+				}
+				elsif ($arg =~ /^Fire\(([^,]*)(,(\$?[\dA-Fa-f]{1,2})(-ms|-tics))?\)$/) {
+					$cfg |= 0b00001000;
+					$ROM[$ADDR++] = $1;
+					my($delay) = ($3 =~ m{^\$}) ? hex($3) : $3;
+					$ROM[$ADDR++] = defined($2)? (($4 eq '-ms') ? $delay / 16 : $delay) : 0;
+				}
+				elsif ($arg =~ /^After\((\$?[\dA-Fa-f]{1,2})(-ms|-tics)\)$/) {
+					if (!($cfg & 0b1000)) { die("Syntax: _SwitchScriptConfig Fire() must come before After() at input line $.\n"); }
+					my($units) = $2;
+					my($delay) = ($1 =~ m{^\$}) ? hex($1) : $1;
+					$ROM[$ADDR-1] = ($units eq '-ms') ? $delay / 16 : $delay;
+				}
+				elsif ($arg =~ m/Ops\((\d{1,2})\)/) {
+					my($val) = ($1 =~ m{^\$}) ? hex($1) : $1;
+					die("invalid _SwitchScriptConfig Ops count ($1) at input line $.\n")
+						unless numberp($val) && $val>=0 && $val<=15; 
+					$cfg |= $val << 4;
+				}
+				else {
+					die("Syntax: _SwitchScriptConfig Ext SolInTilt Debounce(-ms|-tics) Fire(Sol#02:3-tics) After(8-tics) Ops:<1-15> for arg '$arg' at input line $.\n");
+				}
+			}
+
+			$ROM[$startAddr] = $cfg; 																# .DB xx
+			$MODE=0,return 1;
+		}
+	}
+
 	return asm_6800_macros();												# in [C711.M6800]
 }
 

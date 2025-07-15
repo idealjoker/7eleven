@@ -35,7 +35,7 @@ sub SolCmd_s6($$)
 			unless ($sol >= 0 && $sol < 16);
 	}
 	else {
-		die("SolCmd: invalid solenoid '$sol' at input lie $src_line\n");
+		die("SolCmd: invalid solenoid '$sol' at input line $src_line\n");
 	}
 
 	return $sol + ($tics * 0x10);

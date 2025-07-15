@@ -9,6 +9,9 @@
 # HISTORY:
 #	Oct 30, 2024: - created
 
+# eg 9xST_Joker_score{SoundCmd}
+# where ST_Joker_score is a label set to an index in the SOUND_TABLE
+
 sub SoundCmd_s6($$)
 {
 	my($str,$src_line) = @_;

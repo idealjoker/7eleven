@@ -94,23 +94,52 @@ $Lamp[0x3F] = 'L_sys_BB_highScore';
 
 sub def_switch_script($$@)										
 {
-	my($sn,$addr,$stripBang) = @_;
+	my($sn,$addr,$stripBang) = @_; # switch name (eg, SW_eject), start address, ?
 	return if $decoded[$addr];
 
 	$Address = $addr;
-	my($SC) = BYTE($Address);
-	def_byte_hex($sn . '_script','Switch Script',				# script config byte
-					'config byte [' . (($SC & 0b0001) ? ' extended ' : '')
-									 . (($SC >> 4) ? sprintf('with %d pinops ',($SC >> 4)) : '')
-									 . ']');	    
+	my($SC) = BYTE($Address);  
 	my($slen) = 2;												# script statement length
 	$slen += 4 if ($SC & 0b0001);								# extended script
-	$slen += ($SC >> 4);										# pinops
-	def_byte_dec('',undef,'debounce timer') if ($SC & 0b0100);	# debounce timer
-	if ($SC & 0b1000) {	# solenoid command & timer
-	 	def_byteblock_hex(2,'',undef,'solenoid op');
-		$OPA[$Address-2][0] = sprintf('Sol#%02X:%X-tics{SolCmd.s6}', BYTE($Address-2) & 0x0F, BYTE($Address-2) >> 4);
+	$slen += ($SC >> 4);	
+										# pinops
+	setLabel($sn . '_script', $addr);
+	insert_divider($addr, 'Switch Script');
+	$OP[$addr] = '_SwitchScriptConfig';
+	$IND[$addr] = 4; 
+	$TYPE[$addr] =	$CodeType_data;
+
+	my($nOps) = $SC >> 4;
+	if ($nOps > 0) {
+		push(@{$OPA[$addr]}, sprintf('Ops(%i)', $nOps));
 	}
+	if ($SC & 0b0001) {
+		push(@{$OPA[$addr]}, 'Ext');
+	}
+	if ($SC & 0b0010) {
+		push(@{$OPA[$addr]}, 'SolInTilt');
+	}
+	if ($SC & 0b0100) {
+		$OPA[$addr][-1] .= " \\\n" 
+			if (@OPA[$addr] > 0);
+		push(@{$OPA[$addr]}, sprintf("Debounce(%i-tics)", BYTE($addr+1)));
+		$decoded[$Address++] = 1;
+	}
+	if ($SC & 0b1000) {
+		$OPA[$addr][-1] .= " \\\n" 
+			if (@OPA[$addr] > 0);
+		push(@{$OPA[$addr]}, sprintf('Fire(Sol#%02X:%X-tics{SolCmd.s6})', BYTE($Address+1) & 0x0F, BYTE($Address+1) >> 4));
+		$decoded[$Address++] = 1;
+
+		my($delay) = BYTE($Address+1);
+		if ($delay > 0) {
+			push(@{$OPA[$addr]}, sprintf('After(%i-tics)', $delay));
+			$decoded[$Address++] = 1;
+		}
+	}
+	$decoded[$Address++] = 1;
+
+
 	def_switch_conditional($slen, $SC);
 
 	if ($stripBang) {
@@ -133,7 +162,7 @@ sub grow_switch_scripts()
 				foreach my $opa (@{$OPA[$a]}) {
 					$opa =~ s/(.*)!/\1/;
 				}
-	        }
+			}
 			last if (BYTE($Address-$slen) == 0);							# script ends with SS_DEFAULT
 		}
 	}
@@ -145,15 +174,16 @@ sub def_switch_conditional($)
 
 	my($bAddress) = $Address;
 	$OP[$bAddress] = '.DB';
-	$IND[$bAddress] = 8; 
+	$IND[$bAddress] = 4; 
 	$TYPE[$bAddress] =	$CodeType_data;
-	push(@{$OPA[$bAddress]},(BYTE($Address) == 0)			# conditional
+	my($cond) = BYTE($Address);
+	push(@{$OPA[$bAddress]},($cond == 0)			# conditional
 								? 'SS_DEFAULT' 
-								: (BYTE($Address) < 0x40) 
-									? sprintf('Lamp#%02X',BYTE($Address)) 
-									: (BYTE($Address) & 0b10000000)
-									 ? sprintf('$%02X!',BYTE($Address)) # todo: handle LMC adjustment checks
-									: sprintf('Flag#%02X',BYTE($Address)-0x40));
+								: ($cond < 0x40) 
+									? sprintf('Lamp#%02X',$cond) 
+									: ($cond & 0b10000000)
+									 ? sprintf('$%02X!',$cond) # todo: handle LMC adjustment checks
+									: sprintf('Flag#%02X',$cond-0x40));
 	$decoded[$Address++] = 1;
 
 	push(@{$OPA[$bAddress]},score_str(BYTE($Address),$Address,$opt_A) . ($Address+1 < $bAddress+$slen ? " \\\n" : ''));
@@ -203,11 +233,11 @@ sub def_switch_conditional($)
 		$decoded[$Address++] = 1;
 	}
 
-	if (BYTE($Address-$slen) != 0) {										# other conditional exist, save info for later processing
+	if ($cond != 0) {										# other conditional exist, save info for later processing
 		push(@SSaddr,$Address);
 		push(@SSslen,$slen);
 		push(@SS_SC,$SC);
-    }
+	}
 }
 
 #----------------------------------------------------------------------
