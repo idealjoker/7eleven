@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon Jul 14 14:58:00 2025
+#                    dlm: Wed Jul 16 21:08:02 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 402 46 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 420 51 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -401,9 +401,24 @@
 #				  - modified to always produce default .OPTINFO file on -1 (STDOUT
 #					no longer an option)
 #				  - made -O work for -1 and -2
+#				  - v1.0.0
+#	Jul 16, 2025: - BUG: still contained shell and Mercurial dependencies that
+#						 I used in PEMBOT and TCM, but replaced with better 
+#						 {ShellCmd} encoder in Ideal
+#				  - modified link options -l and -I to work only when env var
+#					$C711_OPENSSL_CMD is set
+#				  - v1.0.1
 # HISTORY END
 
 # RELEASE NOTES:
+#	- v1.0.0 and earlier versions had @COMPILATION_INFO and others with bactic shell 
+#	  commands hard coded in the compiler; as of v1.0.1 all bactics have been removed
+#	  except for:
+#		- {ShellCmd} interpreter, e.g. set ROM byte equal to (next) Mercurial revision in BCD
+#			.DEFINE GAME_ID 'hg tip | awk -F: "/^changeset:/{printf(\"$%d\n\",\$2+1)}"{ShellCmd}'
+#		- linker options, which require the openssl UNIX shell command; this must be
+#		  set in the environment for examle thusly:
+#			C711_OPENSSL_CMD=openssl C771 -l ...
 #	- jump6800 does not mark the target as mode-1 (no support for mode propagation
 #	  in asm_wvm_op yet)
 #	- Loop pseudo labels:
@@ -429,12 +444,17 @@
 #   - Interpreters
 #		- are loaded from $PATH/C711.$encoder
 #		- currently implemented
-# 	      	- {SolCmd}
-#   		- {ScoreByte}
+# 	      	- {SolCmd} {SolCmd.s6}
+#			- {SoundCmd.s6}
+#   		- {ScoreByte} {ScoreByte.s6} {ScoreByte.s6A}
+#			- {ScoreByte_noSound.s6} {ScoreByte_noSound.s6A}
+#			- {PinOp.s6}
 #       	- {LSB} {MSB}
 #	       	- {InvertByte}
-#			- {BitMask}			for lamps and flags
-#			- {ByteOffset}		for lamps and flags
+#			- {BitMask}			multiple args allowed
+#			- {InvBitMask}		multiple args allowed
+#			- {ByteOffset}		
+#			- {ShellCmd}		string arg
 #		- need {eval} for label arithmetic
 #			- simplistic arithmetic (+,-,&,|) needs to remain in eval_label() to allow
 #			  e.g. LDAA =SolBuf{LSB}+2
@@ -449,6 +469,8 @@
 #	- option -l <OS binary file> is used to compile game code
 #		- in addition to <OS binary file> it also reads (imports) the API
 #		- API file has same basename and .API extension
+#	- linker options require environment variable $C711_OPENSSL_CMD to be
+#	  set, e.g. to "openssl" 
 
 # System 11 Ideal Virtual Machine (IVM) Support:
 #   - Stage 1:  !oneShot                            IVM_STAGE1
@@ -507,7 +529,7 @@ our($OPTIMIZABLE_LABEL_PREFIX) = '`';                            		# this is pre
 
 my($PATH) = $0; $PATH =~ s{/[^/]*$}{};
 
-our($opt_1,$opt_2,$opt_a,$opt_A,$opt_c,$opt_C,$opt_d,$opt_D,$opt_f,$opt_F,
+our($opt_n,$opt_1,$opt_2,$opt_a,$opt_A,$opt_c,$opt_C,$opt_d,$opt_D,$opt_f,$opt_F,
 	$opt_g,$opt_i,$opt_I,$opt_J,$opt_k,$opt_L,$opt_l,$opt_m,$opt_o,$opt_O,$opt_r,$opt_R,
 	$opt_s,$opt_S,$opt_t,$opt_T,$opt_v,,$opt_w,$opt_x);
 
@@ -534,7 +556,7 @@ die("Usage: $0 " .
 		"\n\t[-T)race compilation (debug)] [trace -C)onditional compilation (debug)]" . 		# debugging
 		"\n\t[verify -A)ddress information in source (debug)]" .
 	    "\n\t<source file>\n")
-    unless &getopts('12Aa:cCdD:fF:g:i:IJkLl:mO:o:RrS:s:Tt:vw') && (@ARGV == 1);
+    unless &getopts('12Aa:cCdD:fF:g:i:IJkLl:mn:O:o:RrS:s:Tt:vw') && (@ARGV == 1);
 
 my($dummy,$basename,$ext) = ($ARGV[0] =~ m{([^/]+/)?([^\.]+)\.(.*)}); 
 $basename = 'out' unless defined($basename);
@@ -742,17 +764,21 @@ if (defined($opt_D)) { 											# define symbol from command line
 load_vROM(split(/,/,$opt_t)) if defined($opt_t);
 
 our($FREE_SP_ADDR);
-our($MERCURIAL_RELEASE,$COMPILATION_INFO,$COMPILATION_INFO77,$COMPILATION_TIMESTAMP);
+##our($MERCURIAL_RELEASE,$COMPILATION_INFO,$COMPILATION_INFO77,$COMPILATION_TIMESTAMP);
 
-chop($MERCURIAL_RELEASE =                                       # Compilation Information
-    `hg log 2>/dev/null | awk -F: '/^ch/{if (NR == 1) print "R."\$2+1}'`);
-chop($COMPILATION_INFO =                                        # BAD CATS (16-character display)
-    $MERCURIAL_RELEASE . `date '+ %m-%d-%Y'`);
-chop($COMPILATION_INFO77 =                                      # PIN BOT (2x7-character display)
-    $MERCURIAL_RELEASE . `date '+   %m%d%y'`);
-chop($COMPILATION_TIMESTAMP = uc(`date '+%h %d  %H %M '`));     # used for PIN BOT first
-printf(STDERR "$SRC [$COMPILATION_INFO]\n")                 # report on screen during 2nd pass
-    unless defined($opt_1 || $opt_L);
+## OLD DEFINITIONS LEFT FOR REFERENCE
+##chop($MERCURIAL_RELEASE =												# Compilation Information
+##	`hg log 2>/dev/null | awk -F: '/^ch/{if (NR == 1) print "R."\$2+1}'`);
+##chop($COMPILATION_INFO =												# BAD CATS (16-character display)
+##	$MERCURIAL_RELEASE . `date '+ %m-%d-%Y'`);
+##chop($COMPILATION_INFO77 =											# PIN BOT (2x7-character display)
+##	$MERCURIAL_RELEASE . `date '+	%m%d%y'`);
+
+unless (defined($opt_1) || $opt_L) {									# report on screen during 2nd pass
+	print(STDERR $SRC);
+	print(STDERR " [$opt_n]") if defined($opt_n);
+	print(STDERR "\n");
+}
     
 #----------------------------------------------------------------------
 # Load API
@@ -806,6 +832,8 @@ unless ($LIB_API eq '') {
 #----------------------------------------------------------------------
 
 if (defined($opt_l)) {
+	die("-l: need openssl command in environment (\$C711_OPENSSL_SHELLCMD)\n")
+		unless length($ENV{C711_OPENSSL_SHELLCMD}) > 0;
 	die("$opt_l: need LIB_MIN_ADDR for linking\n")						# check address range
 		unless defined($LIB_MIN_ADDR);
 	printf(STDERR "$opt_l: WARNING: system code (\$%04X-\$%04X) outside " .
@@ -813,7 +841,7 @@ if (defined($opt_l)) {
 						$LIB_MIN_ADDR,$LIB_MAX_ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR)
 		if ($LIB_MIN_ADDR > $MAX_ROM_ADDR || $LIB_MAX_ADDR < $MIN_ROM_ADDR);
 
-	my($hd) = `openssl sha256 $opt_l`;									# verify sha256 hash (using openssl)
+	my($hd) = `$ENV{C711_OPENSSL_SHELLCMD} sha256 $opt_l`;									# verify sha256 hash (using openssl)
 	my($fn,$hash) = ($hd =~ m{^SHA2-256\((.*)\)= ([0-9a-fA-F]{64})$});
 	die("$opt_l: invalid hash specifier <$hd>\n")
         unless defined($hash);
@@ -1135,6 +1163,8 @@ unless ($opt_w || $opt_L) {
 produce_output();                                           # output either code listing or ROM image files
 
 if (defined($opt_I)) {										# output Interface (API)
+	die("-I: need openssl command in environment (\$C711_OPENSSL_SHELLCMD)\n")
+		unless length($ENV{C711_OPENSSL_SHELLCMD}) > 0;
 	printf("code_address_range(0x%04X,0x%04X);\n",
 		$MIN_ROM_ADDR,$MAX_ROM_ADDR);
 	my($sum,$carry) = (0,0);
@@ -1152,7 +1182,7 @@ if (defined($opt_I)) {										# output Interface (API)
 	printf("code_checksum(0x%02X);\n",$sum);		
 
 	if (defined($opt_o)) {									# single linked output 
-		chomp(my($hash) = `openssl sha256 $opt_o`);
+		chomp(my($hash) = `$ENV{C711_OPENSSL_SHELLCMD} sha256 $opt_o`);
 		print("code_hash('$hash');\n");
     }
 	foreach my $lbl (sort { $LBL{$a} <=> $LBL{$b} } keys(%LBL)) {
