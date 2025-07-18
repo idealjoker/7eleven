@@ -14,7 +14,7 @@
 
 use strict vars;
 
-our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE,$ADDR,$MODE,@OP_ARG,$OP,@ROM);
+our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE,$ADDR,$MODE,@OP_ARG,$OP,@ROM, @OP, %ALIAS);
 
 #----------------------------------------------------------------------
 # Compilation Magic
@@ -69,11 +69,79 @@ sub asm_macros()
 					$cfg |= $val << 4;
 				}
 				else {
-					die("Syntax: _SwitchScriptConfig Ext SolInTilt Debounce(-ms|-tics) Fire(Sol#02:3-tics) After(8-tics) Ops:<1-15> for arg '$arg' at input line $.\n");
+					die("Syntax Error on '$arg' at input line $.\n Usage: _SwitchScriptConfig Ext SolInTilt Debounce(-ms|-tics) Fire(SolCmd) After(-ms|-tics) Ops:(<1-15>)\n");
 				}
 			}
 
 			$ROM[$startAddr] = $cfg; 																# .DB xx
+			$MODE=0,return 1;
+		}
+		if ($OP =~ /^_ExtendedScript[\w\\]*$/) {
+			set_label_type(0);
+			my($startAddr) = $ADDR;
+			$ROM[$ADDR++] = 0; 																# .DB xx
+			$ROM[$ADDR++] = 0; 																# .DB xx
+			$ROM[$ADDR++] = 0; 																# .DB xx
+			$ROM[$ADDR++] = 1; 																# .DB xx
+
+			my($i)=0;
+			for (; $i<@OP_ARG; ) {	
+				my($arg) = $OP_ARG[$i++];
+				# print(STDERR "arg $i: '$arg', ");
+				if ($arg =~ /^If(Not)?\(([^\)]+)\)\{?$/) {
+					my($cond) = $2;
+					$cond = $ALIAS{$cond} if defined($ALIAS{$cond});
+					if ($1) {
+						$cond |= 0b10000000;
+					}
+					$ROM[$startAddr+0] = $cond;
+				}
+				elsif ($arg =~ /^\{\}?/) {}
+				elsif ($arg eq '}') {}
+				elsif ($arg =~ /^$/) {}
+				elsif ($arg =~ m/^Play\(([^\)]+)\)\}?$/) {
+					$ROM[$startAddr+1] = $1;
+				}
+				elsif ($arg =~ m/^(.*\{SoundCmd\})(\}?)$/) {
+					$ROM[$startAddr+1] = $1;
+					next unless !defined($2);
+				}
+				elsif ($arg =~ m/^Do\((.+)\)\}?$/) {
+					my($op) = $1;
+					$op = $ALIAS{$op} if defined($ALIAS{$op});
+					$ROM[$startAddr+2] = $op;
+				}
+				elsif ($arg =~ m/^(.*\{PinOp\})(\}?)$/) {
+					my($op) = $1;
+					$ROM[$startAddr+2] = $op;
+					next unless !defined($2);
+				}
+				elsif ($arg =~ m/^ScoreX\((\d{1,2})\)\}?$/) {
+					my($val) = ($1 =~ m{^\$}) ? hex($1) : $1;
+					die("invalid _ExtendedScript ScoreX($1) at input line $.\n")
+						unless numberp($val) && $val>=0 && $val<=15; 
+					$ROM[$startAddr+3] &= 0xF0;
+					$ROM[$startAddr+3] |= $val;
+				}
+				elsif ($arg =~ /^AwardEB\}?$/) {
+					$ROM[$startAddr+3] |= 0b00010000;
+				}
+				elsif ($arg =~ /^AwardSpecial\}?$/) {
+					$ROM[$startAddr+3] |= 0b00100000;
+				}
+				else {
+					die("Syntax Error on '$arg' at input line $.\n  Usage: _ExtendedScript If(<Lamp or Flag>) { <SoundCmd> <PinOp> ScoreX(<1-15>) AwardEB AwardSpecial } <addl PinOps>\n");
+				}
+
+				last if ($arg =~ /\}$/);
+			}
+
+			# printf(STDERR "left: from $i in  @OP_ARG |  $ROM[$startAddr+0] $ROM[$startAddr+1] $ROM[$startAddr+2] $ROM[$startAddr+3]\n");
+
+			# finish off any PinOps appended to the extended script
+			for (; $i<@OP_ARG; $i++) {		
+				$ROM[$ADDR++] = $OP_ARG[$i];
+			}
 			$MODE=0,return 1;
 		}
 	}

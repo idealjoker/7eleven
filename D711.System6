@@ -107,7 +107,7 @@ sub def_switch_script($$@)
 	insert_divider($addr, 'Switch Script');
 	$OP[$addr] = '_SwitchScriptConfig';
 	$IND[$addr] = 4; 
-	$TYPE[$addr] =	$CodeType_data;
+	$TYPE[$addr] =	$CodeType_asm;
 
 	my($nOps) = $SC >> 4;
 	if ($nOps > 0) {
@@ -173,6 +173,7 @@ sub def_switch_conditional($)
 	my($slen, $SC) = @_;
 
 	my($bAddress) = $Address;
+	my($nOps) = $SC >> 4;
 	$OP[$bAddress] = '.DB';
 	$IND[$bAddress] = 4; 
 	$TYPE[$bAddress] =	$CodeType_data;
@@ -186,47 +187,84 @@ sub def_switch_conditional($)
 									: sprintf('Flag#%02X',$cond-0x40));
 	$decoded[$Address++] = 1;
 
-	push(@{$OPA[$bAddress]},score_str(BYTE($Address),$Address,$opt_A) . ($Address+1 < $bAddress+$slen ? " \\\n" : ''));
+	push(@{$OPA[$bAddress]},score_str(BYTE($Address),$Address,$opt_A) . ($Address+1 < $bAddress+$slen && !($SC & 0b0001) ? " \\\n" : ''));
 	$decoded[$Address++] = 1;
 
-	if ($SC & 0b0001) { 													# extended script 
-		for (my($i)=0; $i<4; $i++) {
-			my($cmd) = sprintf('$%02X',BYTE($Address));   # todo: encode these or at least make them not get hit by label finder
-			if ($i == 3) {
-				$cmd .= " \\\n";
+	# extended script
+	if ($SC & 0b0001) { 				
+		my($addr) = $Address;
+		$OP[$Address] = '_ExtendedScript';
+		$IND[$addr] = 8; 
+		$TYPE[$addr] =	$CodeType_asm;
+
+		my($cond) = BYTE($Address+0);
+		if ($cond > 0) { # condition
+			my($not) = $cond & 0b10000000;
+			$cond = $cond & 0b01111111;
+			push(@{$OPA[$addr]}, sprintf('If%s(%s)', $not? 'Not' : '',
+								($cond < 0x40) 
+									? sprintf('Lamp#%02X',$cond) 
+									: sprintf('Flag#%02X',$cond-0x40)));
+		}
+
+		push(@{$OPA[$addr]}, '{');
+		if (BYTE($addr+1) != 0 || BYTE($addr+2) != 0 || BYTE($addr+3) != 1) {
+
+			my($sound) = BYTE($Address+1);
+			if ($sound > 0) {
+				my($x) = $sound >> 4;
+				my($num) = $sound & 0x0F;
+				# push(@{$OPA[$addr]}, sprintf('Play(%s%i)', $x? sprintf('%ix', $x) : '', $sound & 0x0F));  
+				# push(@{$OPA[$addr]}, sprintf('Play(%i)', $sound));
+				if ($x == 1) {
+					push(@{$OPA[$addr]}, sprintf('%i{SoundCmd}', $num));
+				}
+				else {
+					push(@{$OPA[$addr]}, sprintf('%ix%i{SoundCmd}', $x, $num));
+				}
 			}
-			push(@{$OPA[$bAddress]}, $cmd);
-			$decoded[$Address++] = 1;
+
+			my($pinop) = BYTE($Address+2);
+			if ($pinop > 0) {
+				push(@{$OPA[$addr]}, sprintf('%s', encode_pinop($pinop)));
+			}
+
+			my($misc) = BYTE($Address+3);
+			if (($misc & 0x0F) != 1) {
+				push(@{$OPA[$addr]}, sprintf('ScoreX(%i)', $misc & 0x0F));
+			}
+			if ($misc & 0b00010000) {
+				push(@{$OPA[$addr]}, 'AwardEB');
+			}
+			if ($misc & 0b00100000) {
+				push(@{$OPA[$addr]}, 'AwardSpecial');
+			}
+
+		}
+		push(@{$OPA[$addr]}, '}');
+		if ($nOps) {
+			$OPA[$addr][-1] .=" \\\n";
+		}
+		$decoded[$Address++] = 1;
+		$TYPE[$Address] =	$CodeType_asm;
+		$decoded[$Address++] = 1;
+		$TYPE[$Address] =	$CodeType_asm;
+		$decoded[$Address++] = 1;
+		$TYPE[$Address] =	$CodeType_asm;
+		$decoded[$Address++] = 1;
+		
+		if ($nOps) {
+			$bAddress = $addr;
 		}
 	}
 
 	# PinOps
-	while ($Address < $bAddress+$slen) {
+	for (my($i)=0; $i<$nOps; $i++) {
 		my($op) = BYTE($Address);
-		my($sop) = sprintf('$%02X!',$op);
+		my($sop) = encode_pinop($op);
 
-
-		if ($op == 0) {	$sop = "nop";	}
-		elsif ($op <= 0x3F) { $sop = sprintf("setBit(Lamp#%02X){PinOp} \\\n", $op & 0x3F); }
-		elsif ($op <= 0x4F) { $sop = sprintf("setBit(Flag#%02X){PinOp} \\\n", ($op - 0x40) & 0x0F); }
-		elsif (($op & ~0x07) == 0x50) { $sop = sprintf("rotRight(Bitgroup#%02X){PinOp} \\\n", $op & 0x07); }
-		elsif (($op & ~0x07) == 0x58) { $sop = sprintf("rotLeft(Bitgroup#%02X){PinOp} \\\n", $op & 0x07); }
-		elsif (($op & ~0x07) == 0x60) { $sop = sprintf("advance(Bitgroup#%02X){PinOp} \\\n", $op & 0x07); }
-		# elsif (($op & ~0x07) == 0x68) {  } # unknown op
-		elsif (($op & ~0x07) == 0x70) { $sop = sprintf("clear(Bitgroup#%02X){PinOp} \\\n", $op & 0x07); }
-		elsif (($op & ~0x07) == 0x78) { $sop = sprintf("fill(Bitgroup#%02X){PinOp} \\\n", $op & 0x07); }
-		elsif (($op & ~0x3F) == 0x80) { $sop = sprintf("clearBit(Lamp#%02X){PinOp} \\\n", $op & 0x3F); }
-		elsif (($op & ~0x0F) == (0x80|0x40)) { $sop = sprintf("clearBit(Flag#%02X){PinOp} \\\n", $op & 0x0F); }
-		# elsif (($op & ~0x0F) == 0xD0) { } # unknown op(s)
-		elsif (($op & ~0x07) == 0xE0) { $sop = sprintf("drain(Flag#%02X){PinOp} \\\n", $op & 0x07); }
-		# elsif (($op & ~0x07) == 0xE8) { } # unknown op
-		elsif (($op & ~0x07) == 0xF0) { $sop = sprintf("blink(Scriptlamp#%02X){PinOp} \\\n", $op & 0x07); }
-		elsif (($op & ~0x07) == 0xF8) { $sop = sprintf("toggle(Scriptlamp#%02X){PinOp} \\\n", $op & 0x07); }
-
-		if ($sop =~ / \\\n$/) {
-			if ($Address == $bAddress+$slen-1) {
-				$sop = substr $sop, 0, -3;
-			}
+		if (length($sop) > 5 && $i != $nOps-1) {
+			$sop .= " \\\n";
 		}
 
 		push(@{$OPA[$bAddress]},$sop);
@@ -238,6 +276,30 @@ sub def_switch_conditional($)
 		push(@SSslen,$slen);
 		push(@SS_SC,$SC);
 	}
+}
+
+sub encode_pinop($) {
+	my($op) = @_;
+	my($sop) = sprintf('$%02X!',$op);
+
+	if ($op == 0) {	$sop = "nop";	}
+	elsif ($op <= 0x3F) { $sop = sprintf("setBit(Lamp#%02X){PinOp}", $op & 0x3F); }
+	elsif ($op <= 0x4F) { $sop = sprintf("setBit(Flag#%02X){PinOp}", ($op - 0x40) & 0x0F); }
+	elsif (($op & ~0x07) == 0x50) { $sop = sprintf("rotRight(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0x58) { $sop = sprintf("rotLeft(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0x60) { $sop = sprintf("advance(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	# elsif (($op & ~0x07) == 0x68) {  } # unknown op
+	elsif (($op & ~0x07) == 0x70) { $sop = sprintf("clear(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0x78) { $sop = sprintf("fill(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x3F) == 0x80) { $sop = sprintf("clearBit(Lamp#%02X){PinOp}", $op & 0x3F); }
+	elsif (($op & ~0x0F) == (0x80|0x40)) { $sop = sprintf("clearBit(Flag#%02X){PinOp}", $op & 0x0F); }
+	# elsif (($op & ~0x0F) == 0xD0) { } # unknown op(s)
+	elsif (($op & ~0x07) == 0xE0) { $sop = sprintf("drain(Flag#%02X){PinOp}", $op & 0x07); }
+	# elsif (($op & ~0x07) == 0xE8) { } # unknown op
+	elsif (($op & ~0x07) == 0xF0) { $sop = sprintf("blink(Scriptlamp#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0xF8) { $sop = sprintf("toggle(Scriptlamp#%02X){PinOp}", $op & 0x07); }
+
+	return $sop;
 }
 
 #----------------------------------------------------------------------

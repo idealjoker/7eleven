@@ -1449,11 +1449,16 @@ sub labelValue($$)																		# addr<0: line no; addr>=0: address
 			die(sprintf("Undefined label <$lbl> at input line %d\n",$line))
 				unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
 	        return $LBL{$lbl};
-		} else {																		# System 7-11
-			die(sprintf("Undefined label <$lbl> at input line $line\n"))
-				unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
-	        return $LBL{$lbl};
-	    }
+		} else {	
+			if (numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$}) {																	# System 7-11
+				return $LBL{$lbl};
+			}
+			else {
+				# uncomment to find which call caused the error
+				# for (print STDERR "Stack Trace:\n", my $i = 0; (my @call_details = (caller($i++))); ) { print STDERR $call_details[1].":".$call_details[2]." in function ".$call_details[3]."\n"; }
+				die(sprintf("Undefined label <$lbl @ %02X> at input line $line\n", $addr))
+			}
+		}
 	}
 }
 

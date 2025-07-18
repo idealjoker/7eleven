@@ -15,17 +15,14 @@ To use them,  point your switch handler at sys_switch_script, and then fill the 
 Your script will start with a configuration byte, and then at least one branch.
 
 Example: 
-<623E>	SW_spinner_script:              .DB $04                             	; control byte [short]
-<61FB>	                                .DB 44                              	; debounce timer
-<61F4>	                                .DB S_gor:3-tics{SolCmd.s6} $10     	; solenoid op
-<623F>	                                .DB L_spinner 1x1K{ScoreByte_noSound.s6} 
-<6241>	                                .DB SS_DEFAULT 1x100{ScoreByte_noSound.s6} 
+    <623E>	SW_spinner_script:              _SwitchScriptConfig_ Debounce(68-tics) Fire(S_gor:3-tics)
+    <623F>	                                .DB L_spinner 1x1K{ScoreByte_noSound.s6} 
+    <6241>	                                .DB SS_DEFAULT 1x100{ScoreByte_noSound.s6} 
 
 ## Configuration Byte
 
-Scripts have a minimum of 1 op per branch, and all branches must have the same number
-
-(todo: make configuration byte encoder)
+This byte controls the makeup of the following branches, and configures some other misc useful things
+You can use the _SwitchScriptConfig to generate them, or code them by hand.
 
 - bit 0: enables Extended Scripting
 - bit 1: allows solenoids triggered by script to fire in tilt/game over
@@ -33,11 +30,19 @@ Scripts have a minimum of 1 op per branch, and all branches must have the same n
 - bit 3: fires a solenoid (see SolCmd) 
 - bits 4-7: amount of PinOp script bytes at the end of each branch
 
-## Debounce Config
+## Debounce Config 
 
-Number of milliseconds to debounce for, x 16
+Kills switch processing for a short period of time before running the script as a form of basic debounce
+    _SwitchScriptConfig Debounce(<num>-tics) will generate this byte automatically
+
+or:  
+    .DB <Number of tics to debounce for>
 
 ## Solenoid Config
+
+Fires a solenoid when the switch is hit, with a configurable delay.
+
+    _SwitchScriptConfig Fire(<SolCmd>) After(<num>-tics) will generate this automatically
 
 Two bytes, the first (SolCmd) specifies which solenoid to fire (lower nibble) and how long to fire it for (upper nibble).  The second is a delay before the solenoid fires.
 
@@ -49,7 +54,9 @@ Two bytes, the first (SolCmd) specifies which solenoid to fire (lower nibble) an
 
 Branches are evaluated in order until one's condition is met, and the final one is considered the default if none above it match.
 
-The condition may be a lamp, flag, or adjustment check (or something else(?)), and if that lamp is on/flag is set, then the branch will execute.  The final condition is SS_DEFAULT.
+Scripts must have at least a condition and a ScoreByte, followed by (if configured) an extended script and the specified number of PinOps.
+
+The condition may be a lamp, flag, or adjustment check, and if that lamp is on/flag is set, then the branch will execute.  The final branch's condition must be SS_DEFAULT.
 
 ## LMC Adjustment check
 
@@ -74,18 +81,19 @@ One byte, determining, specifying how many points to score (or 0 for no score).
 
 #### Extended/Complex Script
 
-(?)
+If enabled via the config byte, the first four bytes after the ScoreByte in a branch will be used to perform extend script abilites:
 
-@Slochar has partial notes
+1. a secondary condition (ANDed with the main condition of the branch)- evaluated by sys_testBit (not the same as the main branch condition logic)
+2. a SoundCmd to play
+3. a PinOp to perform
+4. special operations:
+  - first nibble: score multiplier for the branch's ScoreByte
+	- bit 4: awards EB
+	- bit 5: awards Special
+	- bit 6: ?
+	- bit 7: ?
 
-  EB1_testBit			EXT: condition byte		0 means FALSE!!!
-	EB2_sound			EXT: sound
-	EB3_pinOp			EXT: pinOp
-	EB4_control			EXT: Flags				1X	award EB
-												2X	award SPECIAL
-                        4X (?)
-                        8X (?)
-						EXT: score mult.		X
+nop can be used to skip the first three bytes, the special op would be 0x01 for a no-op
 
 #### PinOps
 

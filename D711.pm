@@ -3435,7 +3435,7 @@ sub produce_output(@)
                 if ($i <= 1) { $len2nd = length($line); }
 
 				if ($i>0 && $TYPE[$addr]==$CodeType_data && defined($LBL[$addr+$i])) {			# label inside data block
-					die("stray label <$LBL[$addr+$i]> disallowed outside .DB block (implementation restricton)\n")
+					die(sprintf("stray label <$LBL[$addr+$i] / %02X> on %02X disallowed outside .DB block(implementation restricton) (line so far: $line, from: %s)\n)", $addr+$i, $addr, join $OPA[$addr]))
 						unless ($OP[$addr] eq '.DB');
 					$OP[$addr+$i] = '.DB'; $IND[$addr+$i] = $data_indent; $TYPE[$addr+$i] =  $CodeType_data;
 					@{$OPA[$addr+$i]} = @{$OPA[$addr]}[$i..$#{$OPA[$addr]}];
