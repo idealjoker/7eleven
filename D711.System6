@@ -226,7 +226,7 @@ sub def_switch_conditional($)
 
 			my($pinop) = BYTE($Address+2);
 			if ($pinop > 0) {
-				push(@{$OPA[$addr]}, sprintf('%s', encode_pinop($pinop)));
+				push(@{$OPA[$addr]}, sprintf('%s', decode_pinop($pinop)));
 			}
 
 			my($misc) = BYTE($Address+3);
@@ -261,7 +261,7 @@ sub def_switch_conditional($)
 	# PinOps
 	for (my($i)=0; $i<$nOps; $i++) {
 		my($op) = BYTE($Address);
-		my($sop) = encode_pinop($op);
+		my($sop) = decode_pinop($op);
 
 		if (length($sop) > 5 && $i != $nOps-1) {
 			$sop .= " \\\n";
@@ -278,7 +278,7 @@ sub def_switch_conditional($)
 	}
 }
 
-sub encode_pinop($) {
+sub decode_pinop($) {
 	my($op) = @_;
 	my($sop) = sprintf('$%02X!',$op);
 
@@ -288,7 +288,7 @@ sub encode_pinop($) {
 	elsif (($op & ~0x07) == 0x50) { $sop = sprintf("rotRight(Bitgroup#%02X){PinOp}", $op & 0x07); }
 	elsif (($op & ~0x07) == 0x58) { $sop = sprintf("rotLeft(Bitgroup#%02X){PinOp}", $op & 0x07); }
 	elsif (($op & ~0x07) == 0x60) { $sop = sprintf("advance(Bitgroup#%02X){PinOp}", $op & 0x07); }
-	# elsif (($op & ~0x07) == 0x68) {  } # unknown op
+	elsif (($op & ~0x07) == 0x68) { $sop = sprintf("unadvance(Bitgroup#%02X){PinOp}", $op & 0x07); }
 	elsif (($op & ~0x07) == 0x70) { $sop = sprintf("clear(Bitgroup#%02X){PinOp}", $op & 0x07); }
 	elsif (($op & ~0x07) == 0x78) { $sop = sprintf("fill(Bitgroup#%02X){PinOp}", $op & 0x07); }
 	elsif (($op & ~0x3F) == 0x80) { $sop = sprintf("clearBit(Lamp#%02X){PinOp}", $op & 0x3F); }
@@ -300,6 +300,20 @@ sub encode_pinop($) {
 	elsif (($op & ~0x07) == 0xF8) { $sop = sprintf("toggle(Scriptlamp#%02X){PinOp}", $op & 0x07); }
 
 	return $sop;
+}
+
+sub def_intervals() {
+	def_byte_hex('INTERVAL_TRIGGER_1');
+	def_byte_hex('INTERVAL_TRIGGER_2');
+	def_byte_hex('INTERVAL_TRIGGER_3');
+	def_byte_hex('INTERVAL_TRIGGER_4');
+	def_byte_hex('BLINK_DELAY');
+	for (my($i)=1; $i<5; $i++) {
+		setLabel("INTERVAL_TRIGGER_PINOP_$i",$Address);
+		$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		push(@{$OPA[$Address]}, decode_pinop(BYTE($Address)));
+    $decoded[$Address++] = 1;
+	}
 }
 
 sub def_sol_tables() {
@@ -383,15 +397,7 @@ sub disassemble_System6($)
 	def_byte_hex('BALLSERVE_SOLCMD_AND_1EB_FLAG');
 	def_byte_LampOrFlag('EXTRABALL_LAMP');
 	def_byte_hex('MAX_PLAYER');
-	def_byte_hex('INTERVAL_TRIGGER_1');
-	def_byte_hex('INTERVAL_TRIGGER_2');
-	def_byte_hex('INTERVAL_TRIGGER_3');
-	def_byte_hex('INTERVAL_TRIGGER_4');
-	def_byte_hex('BLINK_DELAY');
-	def_byte_hex('INTERVAL_TRIGGER_PINOP_1');
-	def_byte_hex('INTERVAL_TRIGGER_PINOP_2');
-	def_byte_hex('INTERVAL_TRIGGER_PINOP_3');
-	def_byte_hex('INTERVAL_TRIGGER_PINOP_4');
+	def_intervals();
 	def_byte_LampOrFlag('SCRIPT_LAMPS');
 		def_byte_LampOrFlag('');
 		def_byte_LampOrFlag('');

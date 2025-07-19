@@ -63,12 +63,18 @@ sub PinOp_s6($$)
 	if ($op eq 'advance') {  # what is fill?  like rotate, but doesn't carry over back to the start (?)
 		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
 			return hex($1) | 0x60;
-        } else {
+		} else {
 			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
-        }
-    }
+		}
+	}
 
-	# 6F ?  probably the opposite of advance
+	if ($op eq 'unadvance') {  # what is fill?  like rotate, but doesn't carry over back to the start (?)
+		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
+			return hex($1) | 0x6F;
+		} else {
+			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
+		}
+	}
 
 	if ($op eq 'clear') {
 		if ($arg =~ m/^Bitgroup#(0?[0-7])/) {
