@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Sun Jun 15 22:46:38 2025
+#					 dlm: Mon Jul 14 17:04:57 2025
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 30 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 31 61 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -27,6 +27,8 @@
 # 	May 13, 2025: - re-enabled old defLamp() for consistency with Pinside thread
 #	May 15, 2025: - moved -i after loadROM() to allow disassembly instructions
 #	Jun 15, 2025: - removed path from usage error
+#	Jul 14, 2025: - BUG: grow_switch_scripts adds new identifiers that were
+#						 not substituted (reported by @zacaj)
 # HISTORY END
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
@@ -94,6 +96,7 @@ else		{ &D711::disassemble_System6($opt_A); }
 
 &D711::apply_magic_System6($opt_A);											# e.g. ScoreByte
 &D711::grow_switch_scripts();												# needs to be done when space is known
+&D711::substitute_identifiers();											# rename game-specific ids	
 
 #----------------------------------------------------------------------
 # Produce Output

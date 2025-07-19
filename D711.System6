@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 6 
 #                    doc: Mon May 27 16:31:28 2024
-#                    dlm: Wed Jun  4 14:41:39 2025
+#                    dlm: Mon Jul 14 17:29:33 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 184 36 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 39 55 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # System 6 (Green ROM) Disassembly Information
@@ -35,6 +35,8 @@
 #	Apr 26, 2025: - renamed labels for conistency with [System6.API]
 #	May  7, 2025: - updated labels for consistency with IGR
 #	Jun  1, 2025: - renamed systemConstants to systemAliases
+#	Jul 14, 2025: - BUG: switch script conditional did not decode adjustment
+#						 correctly (reported by @zacaj)
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -145,11 +147,17 @@ sub def_switch_conditional($)
 	$IND[$bAddress] = 8; 
 	$TYPE[$bAddress] =	$CodeType_data;
 	$REM[$bAddress] = 'conditional branch';
-	push(@{$OPA[$bAddress]},(BYTE($Address) == 0)			# conditional
-								? 'SS_DEFAULT' 
-								: (BYTE($Address) < 0x40) 
-									? sprintf('Lamp#%02X',BYTE($Address)) 
-									: sprintf('Flag#%02X',BYTE($Address)-0x40));
+	my($cond);																# conditional
+	if (BYTE($Address) == 0) {
+		$cond = 'SS_DEFAULT';
+	} elsif (BYTE($Address) < 0x40) {
+		$cond = sprintf('Lamp#%02X',BYTE($Address));
+	} elsif (BYTE($Address) < 0x80) {
+		$cond = sprintf('Flag#%02X',BYTE($Address)-0x40);
+	} else {
+		$cond = sprintf('Adj#%02X',BYTE($Address)-0x80);
+	} 
+	push(@{$OPA[$bAddress]},$cond);
 	$decoded[$Address++] = 1;
 
 	push(@{$OPA[$bAddress]},score_str(BYTE($Address),$Address,$opt_A));
