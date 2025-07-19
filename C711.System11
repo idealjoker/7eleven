@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . S Y S T E M 1 1 
 #                    doc: Mon Jun  2 09:55:01 2025
-#                    dlm: Thu Jul  3 10:37:48 2025
+#                    dlm: Wed Jul 16 19:37:57 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 60 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 17 51 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -14,6 +14,7 @@
 #	Jun 12, 2025: - BUG: U26_size needs capitalization
 #	Jun 16, 2025: - added compile_pragma()
 #	Jul  3, 2025: - added compilation_magic()
+#	Jul 16, 2025: - adapted @COMPILATION_INFO to -n
 # HISTORY END
 
 use strict vars;
@@ -80,7 +81,7 @@ sub compile_pragma()
 	return 1 if compile_vm_pragma();
 
 	our($MODE,@ROM,$MIN_ROM_ADDR,$MAX_ROM_ADDR,$FIRST_ADDR,@LINE,$opt_1,$opt_v,$opt_t);
-	our($COMPILATION_TIMESTAMP,$COMPILATION_INFO,$COMPILATION_INFO77,$FREE_SP_ADDR);
+	our($opt_n,$FREE_SP_ADDR);
 
 	if (($MODE == 0) || ($MODE == 3)) {		
 
@@ -217,15 +218,11 @@ sub compile_pragma()
 			die("Syntax: .STR[len] '14-segment string' (<'$str'> at input line $.)\n")		# not either
 				unless (length($str) > 0);
 			set_label_type(3);
-			$str = $COMPILATION_TIMESTAMP													# @COMPILER VAR: compilation timestamp
-				if ($str eq '@COMPILATION_TIMESTAMP');
-			$str = $COMPILATION_INFO														# @COMPILER VAR: compilation info
-				if ($str eq '@COMPILATION_INFO');
-			$str = $COMPILATION_INFO77														# @COMPILER VAR: compilation info
-				if ($str eq '@COMPILATION_INFO77');
-			if ($str eq '@FREE_SP') {														# @COMPILER VAR: free space
+			if ($str eq '@FREE_SP') {													# @COMPILER VAR: free space
 				$FREE_SP_ADDR = $ADDR;
-			}
+			} elsif ($str eq '@COMPILATION_INFO') {										# COMPILATION_INFO
+				$str = $opt_n; 															
+            }
 			if ($len > 0) {
 				my($nop) = $str;
 				$nop =~ s/\.//g; 															# remove periods

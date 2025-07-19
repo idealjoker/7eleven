@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Tue Jul  8 09:15:32 2025
+#					 dlm: Wed Jul 16 18:40:53 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 3124 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 320 65 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -317,6 +317,7 @@
 #					enabled substitution in labels
 #				  - added WPC FX# type
 #	Jul  8, 2025: - adapted other aliases to tentative Jul 6 change
+#	Jul 16, 2025: - modified def_string to always output .STR$len
 # END OF HISTORY
 
 # TO-DO:
@@ -2061,7 +2062,8 @@ sub def_string(@)
     
     $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
     $REM[$Address] = $rem unless defined($REM[$Address]); 
-    $OP[$Address] = '.STR';
+#   $OP[$Address] = '.STR';
+    $OP[$Address] = ".STR$len";
     my($o);
     $OPA[$Address][0] = "'";
     for ($o=0; $o<$len; $o++) {
