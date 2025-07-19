@@ -76,7 +76,7 @@ sub asm_macros()
 			$ROM[$startAddr] = $cfg; 																# .DB xx
 			$MODE=0,return 1;
 		}
-		if ($OP =~ /^_ExtendedScript[\w\\]*$/) {
+		elsif ($OP =~ /^_ExtendedScript[\w\\]*$/) {
 			set_label_type(0);
 			my($startAddr) = $ADDR;
 			$ROM[$ADDR++] = 0; 																# .DB xx
@@ -142,6 +142,46 @@ sub asm_macros()
 			for (; $i<@OP_ARG; $i++) {		
 				$ROM[$ADDR++] = $OP_ARG[$i];
 			}
+			$MODE=0,return 1;
+		}
+		elsif ($OP =~ /^_SolOp$/) {
+			set_label_type(0);
+			my($op) = 0;
+
+			foreach my $arg (@OP_ARG) {
+				# if ($arg =~ m/#\d:?/) { }
+				if ($arg =~ m/^Cmd#0?(\d)(-0(\d))?$/) {
+					my($n) = hex($1);
+						die("Syntax Error: Sol Cmd '$arg' must be between 0 and 7 at input line $.\n")
+					unless ($n>=0 && $n<=7);
+					if (defined ($3)) {
+						my($n2) = hex($3);
+						# dual
+							die("Syntax Error: Sol Cmd '$arg' must be between 0 and 7 at input line $.\n")
+						unless ($n>=0 && $n<=7);
+						$op = $n | (($n2-$n+1)<<4);
+					}
+					elsif ($op == 0) {
+						# first one = start index
+						$op |= $n;
+						$op |= 1 << 4; # default to 1 usage
+					}
+					else {
+						$op &= 0x0F;
+						$op |= $n-($op&0x0F)+1
+					}
+				}
+				elsif ($arg eq '-') { }
+				else {
+					die("Syntax Error on '$arg' at input line $.\nUsage: _SolOp #<num>: Cmd#01-07\n");
+				}
+			}
+			if ($op == 0) {
+				die("Syntax Error: Usage: _SolOp #<num>: Cmd#01-07 at input line $.\n");
+			}
+			
+
+			$ROM[$ADDR++] = $op;
 			$MODE=0,return 1;
 		}
 	}

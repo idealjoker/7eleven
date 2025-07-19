@@ -13,7 +13,6 @@
 #					  	 substituted any more when this is called
 
 # eg  Sol#02:3-tics{SolCmd.s6}  
-# can these fire controlled solenoids too(?)
 
 sub SolCmd_s6($$)
 {
@@ -22,11 +21,11 @@ sub SolCmd_s6($$)
 	return 0x80
 		if ($str eq 'NOP');
 
-	my($sol,$tics) = ($str =~ m{^([^:]+):([1-7])-tics?$});
+	my($sol,$tics) = ($str =~ m{^([^:]+):([1-9])-tics?$});
 #	print(STDERR "SolCmd_s6: $sol,$tics)\n");
 
 	die("SolCmd: cannot decode '$str' at input line $src_line\n")
-		unless ($tics > 0 && $tics < 8);
+		unless ($tics > 0 && $tics < 10);
 
 	if ($sol =~ m/^Sol#[0-1]?([0-9A-Fa-f])$/) {
 		$sol = hex($1);

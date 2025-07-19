@@ -302,6 +302,41 @@ sub encode_pinop($) {
 	return $sop;
 }
 
+sub def_sol_tables() {
+	setLabel('PINOP_SOLCMD_TABLE',$Address);
+	insert_divider($Address,'PinOp Solenoid Tables');
+
+	for (my($i)=0; $i<8; $i++) {
+		$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		push(@{$OPA[$Address]}, sprintf("Sol#%02X:%i-tics{SolCmd}", BYTE($Address)&0x0F, BYTE($Address)>>4));
+		$REM[$Address] = sprintf("Cmd#0%i", $i);
+    $decoded[$Address++] = 1;
+	}
+	insert_empty_line($Address-1);
+
+	my($bAddress) = $Address;
+	setLabel('PINOP_SOLOP_TABLE',$Address);
+	for (my($i)=0; $i<8; $i++) {
+		my($n) = BYTE($Address)>>4;
+		my($start) = BYTE($Address)&0x0F;
+		$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		if ($n) {
+			$OP[$Address] = '_SolOp';
+			# push(@{$OPA[$Address]}, "0$i:");
+			push(@{$OPA[$Address]}, $n == 1?
+															sprintf("Cmd#0%i", $start)
+														: sprintf("Cmd#0%i-0%i", $start, $start+$n-1 )
+															);
+		}
+		else {
+			$OP[$Address] = '.DB';
+			push(@{$OPA[$Address]}, BYTE($Address)); 
+		}													
+		$REM[$Address] = sprintf("SolOp#0%i", $i);
+    $decoded[$Address++] = 1;
+	}
+}
+
 #----------------------------------------------------------------------
 # Game Disassembly Routine
 #----------------------------------------------------------------------
@@ -373,8 +408,7 @@ sub disassemble_System6($)
 	def_byteblock_hex(2,'FLAGS_MEMDATA');
 	def_byteblock_hex(8,'BLINK_MEMDATA');
 	def_byteblock_hex_cols(32,2,'SOUND_TABLE','Sound Table');
-	def_byteblock_hex(8,'PINOP_SOLCMD_TABLE','PinOp Solenoid Tables');
-	def_byteblock_hex(8,'PINOP_SOLOP_TABLE');
+	def_sol_tables();
 	def_byte_hex('BONUSCOUNT_BONUSX_DELAY','Outhole Bonus Data');
 	def_byte_hex('BONUSCOUNT_SOUND');
 	def_byte_hex('BONUSCOUNT_DELAY');
