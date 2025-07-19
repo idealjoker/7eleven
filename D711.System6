@@ -295,7 +295,7 @@ sub encode_pinop($) {
 	elsif (($op & ~0x0F) == (0x80|0x40)) { $sop = sprintf("clearBit(Flag#%02X){PinOp}", $op & 0x0F); }
 	# elsif (($op & ~0x0F) == 0xD0) { } # unknown op(s)
 	elsif (($op & ~0x07) == 0xE0) { $sop = sprintf("drain(Flag#%02X){PinOp}", $op & 0x07); }
-	# elsif (($op & ~0x07) == 0xE8) { } # unknown op
+	elsif (($op & ~0x07) == 0xE8) { $sop = sprintf("fire(SolOp#0%i){PinOp}", $op & 0x07); } 
 	elsif (($op & ~0x07) == 0xF0) { $sop = sprintf("blink(Scriptlamp#%02X){PinOp}", $op & 0x07); }
 	elsif (($op & ~0x07) == 0xF8) { $sop = sprintf("toggle(Scriptlamp#%02X){PinOp}", $op & 0x07); }
 
