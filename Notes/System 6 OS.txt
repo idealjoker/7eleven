@@ -225,8 +225,8 @@ You can configure a number of them at the address specified by GAMELOGIC_TABLE a
 		B2		1st lamp/flag condition, 0 means ignore
 		B3		2nd lamp/flag condition
 		B4,B7	1st condition/pinop pair, cond or PinOp=0 means ignore
-		B5,B8	1st condition/pinop pair
-    B6,B9   1st condition/pinop pair
+		B5,B8	2st condition/pinop pair
+    B6,B9 3st condition/pinop pair
 
 # Game Events
 

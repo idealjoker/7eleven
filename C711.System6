@@ -90,9 +90,19 @@ sub asm_macros()
 				# print(STDERR "arg $i: '$arg', ");
 				if ($arg =~ /^If(Not)?\(([^\)]+)\)\{?$/) {
 					my($cond) = $2;
+					my($neg) = $1;
+					if ($cond =~ /^!(.*)$/) {
+						$neg = 1;
+						$cond = $1
+					}
 					$cond = $ALIAS{$cond} if defined($ALIAS{$cond});
-					if ($1) {
-						$cond |= 0b10000000;
+					if ($neg) {
+						if(numberp($cond)) {
+							$cond |= 0b10000000;
+						}
+						else {
+							$cond = '!'.$cond;
+						}
 					}
 					$ROM[$startAddr+0] = $cond;
 				}
@@ -182,6 +192,100 @@ sub asm_macros()
 			
 
 			$ROM[$ADDR++] = $op;
+			$MODE=0,return 1;
+		}
+		elsif ($OP =~ /^_GameLogic[\w\\]*$/) {
+			set_label_type(0);
+			my($bAddress) = $ADDR;
+			for(my($j)=0; $j<9; $j++) {
+				$ROM[$ADDR+$j] = 0; 																# .DB xx
+			}
+
+			my($i)=0;
+			# preconditions
+			for (; $i<@OP_ARG; ) {	
+				my($arg) = $OP_ARG[$i++];
+				if ($arg =~ /^(If|And)(Not)?\(([^\)]+)\)\{?$/) {
+					my($cond) = $3;
+					my($neg) = $2;
+					if ($cond =~ /^Adj#([0-9A-Fa-f]{2})=([0-9A-Fa-f]{2})$/) {
+						my($a) = ($1 =~ m{^\$}) ? hex($1) : $1;
+							die("invalid _GameLogic Adj#$1 in '$arg' at input line $.\n")
+						unless numberp($a) && $a>=0 && $a<=15; 
+						my($b) = ($2 =~ m{^\$}) ? hex($2) : $2;
+							die("invalid _GameLogic =$2 in '$arg' at input line $.\n")
+						unless numberp($b) && $b>=0 && $b<=15; 
+						$ROM[$ADDR++] = ($a << 4) | $b;
+					}
+					else {
+						if ($ADDR == $bAddress) { $ADDR++; } # skip adjustment field if not specified
+						if ($cond =~ /^!(.*)$/) {
+							$neg = 1;
+							$cond = $1;
+						}
+						$cond = $ALIAS{$cond} if defined($ALIAS{$cond});
+						if ($neg) {
+							if(numberp($cond)) {
+								$cond |= 0b10000000;
+							}
+							else {
+								$cond = '!'.$cond;
+							}
+						}
+						$ROM[$ADDR++] = $cond;
+					}
+				}
+				elsif ($arg eq '{') {}
+				else {
+					die("Syntax Error on '$arg' at input line $.\n  Usage: _GameLogic If(Adj#<0-15>=<0-15>) And(<Lamp or Flag>) { If(<Lamp or Flag>) <PinOp> }\n");
+				}
+
+				last if ($arg =~ /\{$/);
+			}
+
+			$ADDR = $bAddress + 3;
+
+			# operations
+			for (; $i<@OP_ARG; ) {	
+				my($arg) = $OP_ARG[$i++];
+				if ($arg =~ /^If(Not)?\(([^\)]+)\)$/) {
+					my($cond) = $2;
+					my($neg) = $1;
+					if ($ADDR == $bAddress) { $ADDR++; } # skip adjustment field if not specified
+					if ($cond =~ /^!(.*)$/) {
+						$neg = 1;
+						$cond = $1;
+					}
+					$cond = $ALIAS{$cond} if defined($ALIAS{$cond});
+					if ($neg) {
+						if(numberp($cond)) {
+							$cond |= 0b10000000;
+						}
+						else {
+							$cond = '!'.$cond;
+						}
+					}
+					$ROM[$ADDR] = $cond;
+				}
+				elsif ($arg =~ /^(.+\{PinOp\})(\})?$/) {
+					my($op) = $1;
+					my($exit) = $2;
+					$ROM[$ADDR++ + 3] = $op;
+					next unless $exit;
+				}
+				elsif ($arg eq '}') {}
+				else {
+					die("Syntax Error on '$arg' at input line $.\n  Usage: _GameLogic If(Adj#<0-15>=<0-15>) And(<Lamp or Flag>) { If(<Lamp or Flag>) <PinOp>  }\n");
+				}
+
+				last if ($arg =~ /\}$/);
+			}
+			
+				die(sprintf("Syntax Error, %i unexpected token(s) after } at input line $.\n  Usage: _GameLogic If(Adj#<0-15>=<0-15>) And(<Lamp or Flag>) { If(<Lamp or Flag>) <PinOp>  }\n", @OP_ARG - $i))
+			unless ($i == @OP_ARG);
+
+			$ADDR = $bAddress + 9;
+			
 			$MODE=0,return 1;
 		}
 	}

@@ -351,6 +351,75 @@ sub def_sol_tables() {
 	}
 }
 
+sub def_game_logic_table() {
+	$Address = WORD(0x60D0);												# Status Update Table
+	my($n) = (WORD(0x60D2) - $Address) / 9;
+	if ($n > 0) {
+		die unless ($n==int($n));
+		insert_divider($Address,'Game Logic Table');
+		for (my($i)=1; $i<=$n; $i++) {
+			setLabel("gameLogic_$i",$Address);
+			$OP[$Address] = '_GameLogic';
+			$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+
+			my($bAddress) = $Address;
+			my($adjCond) = BYTE($bAddress+0);
+			my($preCond1) = BYTE($bAddress+1);
+			my($preCond2) = BYTE($bAddress+2);
+			my($cmd) = 'If';
+			if ($adjCond) {
+				push(@{$OPA[$bAddress]}, sprintf("$cmd(Adj#%02X=%02i)", $adjCond>>4, $adjCond&0x0F));
+				$cmd = 'And';
+			}
+			if ($preCond1) {
+				my($cond) = $preCond1;
+				my($not) = $cond & 0b10000000;
+				$cond = $cond & 0b01111111;
+				push(@{$OPA[$bAddress]}, sprintf("$cmd%s(%s)", $not? 'Not' : '',
+								($cond < 0x40) 
+									? sprintf('Lamp#%02X',$cond) 
+									: sprintf('Flag#%02X',$cond-0x40)));
+				$cmd = 'And';
+			}
+			if ($preCond2) {
+				my($cond) = $preCond2;
+				my($not) = $cond & 0b10000000;
+				$cond = $cond & 0b01111111;
+				push(@{$OPA[$bAddress]}, sprintf("$cmd%s(%s)", $not? 'Not' : '',
+								($cond < 0x40) 
+									? sprintf('Lamp#%02X',$cond) 
+									: sprintf('Flag#%02X',$cond-0x40)));
+				$cmd = 'And';
+			}
+			push(@{$OPA[$bAddress]}, "{ \\\n");
+
+			for(my($j)=3; $j<=5; $j++) {
+				my($cond) = BYTE($bAddress+$j);
+				my($op) = BYTE($bAddress+$j+3);
+				next unless $cond || $op;
+
+				if ($cond) {
+					my($not) = $cond & 0b10000000;
+					$cond = $cond & 0b01111111;
+					push(@{$OPA[$bAddress]}, sprintf("If%s(%s)", $not? 'Not' : '',
+								($cond < 0x40) 
+									? sprintf('Lamp#%02X',$cond) 
+									: sprintf('Flag#%02X',$cond-0x40)));
+				}
+
+				push(@{$OPA[$bAddress]}, decode_pinop($op) . " \\\n");
+			}
+
+			push(@{$OPA[$bAddress]}, "}");
+
+			for(my($j)=0; $j<9; $j++) {
+				$TYPE[$Address] =	$CodeType_asm;
+				$decoded[$Address++] = 1;
+			}
+		}
+	}
+}
+
 #----------------------------------------------------------------------
 # Game Disassembly Routine
 #----------------------------------------------------------------------
@@ -483,16 +552,7 @@ sub disassemble_System6($)
 		}
 	}
 
-	$Address = WORD(0x60D0);												# Status Update Table
-	my($n) = (WORD(0x60D2) - $Address) / 9;
-	if ($n > 0) {
-		die unless ($n==int($n));
-		insert_divider($Address,'Game Logic Table');
-		def_byteblock_hex_cols(9,9,'gameLogic_1');			 
-		for (my($i)=2; $i<=$n; $i++) {
-			def_byteblock_hex_cols(9,9,"gameLogic_$i");
-		}
-	}
+	def_game_logic_table();
     
 	$Address = WORD(0x60D4);												# Game Event Table
 	my($n) = (WORD(0x60D6) - $Address) / 4;
