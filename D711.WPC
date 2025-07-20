@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Jul  8 14:51:46 2025
+#                    dlm: Sun Jul 20 14:56:49 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 122 54 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 124 37 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -120,6 +120,8 @@
 #				  - added custom labels for WPC tables
 #				  - BUG: custom labels were broken
 #	Jul  8, 2025: - BUG: lamp group range is too short
+#	Jul 20, 2025: - added defSound()
+#				  - added inCode refs
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -391,6 +393,24 @@ sub process_object_file($)													# execute this early on, because it defin
 # WPC Disassembly Routines
 #======================================================================
 
+#----------------------------------------------------------------------
+# In-Code References
+#
+#	- this is done as a first step, before anything else has been
+#	  disassembled
+#
+#	- references are assumed to point to data (no code following)
+#
+#	- patterns are derived from T2; it is quite likely that other
+#	  programmers use additional patterns (e.g. LDX & LDA)
+#
+#	- patterns
+#		1) LDX #<addr> & LDB #<page>
+#		2) LDY #<addr> & LDA #<page>
+#		3) LDX #<addr> & !longJSR <ref>
+#		4) LDY #<addr> & !longJSR <ref>
+#----------------------------------------------------------------------
+
 sub VALID_ROMREF(@)
 {
 	my($addr) = @_;
@@ -405,7 +425,7 @@ sub disassemble_inCode_refs($$$)
 	my($RPG,$fa,$la) = @_;
 ##	printf(STDERR "disassemble_inCode_refs(%02X,%04X,%04X)\n",@_);
 
-	for (my($addr)=$fa; $addr<=$la-5; $addr++) {
+	for (my($addr)=$fa; $addr<=$la-5; $addr++) {							# pattern 1
 		next unless BYTE($addr)   == 0x8E &&								# LDX #
 					BYTE($addr+3) == 0xC6 &&								# LDB #
 					BYTE($addr+4)>=$start_page &&
@@ -424,7 +444,7 @@ sub disassemble_inCode_refs($$$)
 		select_WPC_RPG($RPG);
     }
 
-	for (my($addr)=$fa; $addr<=$la-5; $addr++) {
+	for (my($addr)=$fa; $addr<=$la-6; $addr++) {							# pattern 2
 		next unless WORD($addr)   == 0x108E &&								# LDY #
 					BYTE($addr+4) == 0x86 &&								# LDA #
 					BYTE($addr+5)>=$start_page &&
@@ -442,10 +462,36 @@ sub disassemble_inCode_refs($$$)
 		$REM[$addr] = $rem unless defined($REM[$addr]);
 		select_WPC_RPG($RPG);
     }
+
+	for (my($addr)=$fa; $addr<=$la-9; $addr++) {							# pattern 4
+		next unless WORD($addr)   == 0x108E &&								# LDY #
+					BYTE($addr+4) == 0xBD && WORD($addr+5) == $Lbl{longJSR} && # !longJSR
+					BYTE($addr+9)>=$start_page &&
+						(BYTE($addr+9)==0xFF && WORD($addr+2)>=0x8000 &&  WORD($addr+2)<=0xFFFF ||
+						 BYTE($addr+9)<=0x3D && WORD($addr+2)>=0x4000 &&  WORD($addr+2)<=0x7FFF);
+
+##		printf(STDERR "%02X:%04X: pattern 4\n",$_cur_RPG,$addr);
+		my($pointee_addr) = WORD($addr+2);
+		my($pointee_pg)	  = BYTE($addr+9);
+		my($type) 		  = ($pointee_addr>=0x8000) ? 'SYSTEM_YLJ' : 'GAME_YLJ';
+		my($pointee_lbl)  = sprintf('UNKNOWN_%s_REF_%04X',$type,$addr);
+##		printf(STDERR "WPC_INTERPAGE_REF[%02X][%04X] = %02X;\n",$_cur_RPG,$pointee_addr,$pointee_pg);
+		$WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr] = $pointee_pg;		# reference in current pg to pointee_addr in pointee_pg
+		select_WPC_RPG($pointee_pg);
+		my($usr_lbl) 	  = $LBL[$pointee_addr];
+		$pointee_lbl 	  = $usr_lbl if defined($usr_lbl);
+##		printf(STDERR "setLabel($pointee_lbl,%04X,%02X);\n",$pointee_addr,$pointee_pg);
+		setLabel($pointee_lbl,$pointee_addr,$pointee_pg);
+		$REM[$addr] = $rem unless defined($REM[$addr]);
+		select_WPC_RPG($RPG);
+    }
 }
 
+#----------------------------------------------------------------------
+# System Calls
+#----------------------------------------------------------------------
 
-sub disassemble_syscalls()													# execute this after all syscalls have been defined
+sub disassemble_syscalls()												# execute this after all syscalls have been defined
 {
 	for (my($sc)=0; $sc<@SYSCALL; $sc++) {
 		select_WPC_RPG(0x3B) if ($SC_NOTE[$sc] == 3);						# NOTE 3: syscall tied to PG#3B
@@ -465,6 +511,9 @@ sub disassemble_syscalls()													# execute this after all syscalls have be
 	}
 }
 
+#----------------------------------------------------------------------
+# CPU Vectors
+#----------------------------------------------------------------------
 
 sub disassemble_CPU_vectors()
 {
@@ -481,6 +530,9 @@ sub disassemble_CPU_vectors()
 	def_code_ptr('RST_vector','RST_handler','CPU Vector Handler');              
 }
 
+#----------------------------------------------------------------------
+# System Pointers
+#----------------------------------------------------------------------
 
 sub disassemble_system_pointers()
 {
@@ -665,9 +717,9 @@ sub disassemble_system_pointers()
 				   0x81E9,0x81F2,0x81F5,0x81F8,0x81FB,
 				   0x81FE,0x8201,0x8204,0x8207,0x820A,0x820D,0x8210,
 				   0x8213);
-	my(@tblLbl) = (0x81A8,0x81B9,0x81BC,0x81BF,0x81C8,0x81CB,
-				   0x81D4,0x81D7,'=SCORE_TABLE',0x81DD,0x81E0,0x81E3,0x81E6,
-				   0x81E9,0x81F2,0x81F5,0x81F8,0x81FB,
+	my(@tblLbl) = (0x81A8,'=LAMP_INIT_MEM','=FLAGS_INIT_MEM','=USERDATA_INIT_MEM',
+				   0x81C8,0x81CB,0x81D4,0x81D7,'=SCORE_TABLE',0x81DD,
+				   0x81E0,0x81E3,0x81E6,0x81E9,0x81F2,0x81F5,0x81F8,0x81FB,
 				   0x81FE,0x8201,0x8204,0x8207,0x820A,0x820D,0x8210,
 				   0x8213);				   
 
@@ -711,6 +763,13 @@ sub disassemble_system_pointers()
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1; 
 }
 
+#======================================================================
+# WPC Tables
+#======================================================================
+
+#----------------------------------------------------------------------
+# Lock Table
+#----------------------------------------------------------------------
 
 sub disassemble_lock_table()
 {
@@ -732,6 +791,10 @@ sub disassemble_lock_table()
 	def_WPC_lockTable('=LOCKTABLE','Multiball Device Table',1);
 }
 
+#----------------------------------------------------------------------
+# Font Table
+#----------------------------------------------------------------------
+
 sub disassemble_font_table()
 {
 	$Address = 0x8285;
@@ -743,6 +806,10 @@ sub disassemble_font_table()
 	$Address = def_WPC_ref('=FONTS_ANCIL',undef,1);
 	def_WPC_fontAncilTable('=FONTS_ANCIL','Font Ancillary Table');
 }
+
+#----------------------------------------------------------------------
+# DMD Table
+#----------------------------------------------------------------------
 
 sub disassemble_DMD_table()
 {
@@ -827,7 +894,7 @@ sub init_WPC(@)
 }
 
 #======================================================================
-# WPC Disassembly Library
+# WPC Disassembly Library (Utilities)
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -2075,6 +2142,15 @@ sub defFX($$)
 	die("defFX: invalid FX number\n")
 		unless ($no>0 && $no<=0xFFFF);
 	$FX[$no] = $name;
+}
+
+sub defSound($$)
+{
+	my($no,$name) = @_;
+
+	die("defSound: invalid Sound number\n")
+		unless ($no>0 && $no<=0xFFFF);
+	$Sound[$no] = $name;
 }
 
 #----------------------------------------------------------------------

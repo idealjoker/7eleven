@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Jul  8 21:51:31 2025
+#                    dlm: Sun Jul 20 14:57:23 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 489 24 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 68 31 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -65,6 +65,7 @@
 #				  - added/improved scoring syscalls
 #				  - added sleep syscalls
 #	Jul  8, 2025: - added bitgroup syscall
+#	Jul 20, 2025: - added stuff
 # END OF HISTORY
 
 #======================================================================
@@ -768,25 +769,29 @@ $Hook[91]		= 'IRQtimer';
 
 #----------------------------------------------------------------------
 # System Threads
+#	Flags: 0800 	killed at ball start
 #----------------------------------------------------------------------
 
 $Thread[0x0004] = 'SYSTHD_Balltrough_handler';		
 $Thread[0x0005] = 'SYSTHD_Diagnostics';		
+$Thread[0x000B] = 'SYSTHD_initBall';		
 $Thread[0x780D] = 'SYSTHD_OutholeKicker_busy';	
 $Thread[0x780F] = 'SYSTHD_Balltrough_disabled';
-$Thread[0x787F] = 'SYSTHD_StartButton_thread';
-$Thread[0x2010] = 'SYSTHD_BallSearch';
-$Thread[0x007A] = 'SYSTHD_Playfield_qualified';
 
-$Thread[0x12] = 'SYSTHD_tilt_unknown';
-$Thread[0x13] = 'SYSTHD_bobTilt_swingDelay';				# flags $38
-$Thread[0x14] = 'SYSTHD_bobTilt_switchDebounce';			# flags $18
+$Thread[0x0012] = 'SYSTHD_tilt_unknown';
+
+$Thread[0x007A] = 'SYSTHD_Playfield_qualified';
+$Thread[0x787F] = 'SYSTHD_StartButton';
+
+$Thread[0x2010] = 'SYSTHD_BallSearch';
+
+$Thread[0x3813] = 'SYSTHD_bobTilt_swingDelay';				
+$Thread[0x1814] = 'SYSTHD_bobTilt_switchDebounce';			
 
 for (my($i)=0; $i<=0x0F; $i++) {
 	$Thread[0x40+$i] = sprintf('SYSTHD_Lock#%02X_handler',$i);
 }
 
-$Thread[0x7F] = 'SYSTHD_Startbutton';						# flags $78
 
 #----------------------------------------------------------------------
 # Game Adjustments
