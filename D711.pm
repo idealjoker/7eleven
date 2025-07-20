@@ -2621,7 +2621,7 @@ sub def_byteblock_bin(@)
 
 sub def_byteblock_hex(@)
 {
-    my($nbytes,$lbl,$divider_label,$rem) = @_;
+    my($nbytes,$lbl,$divider_label,$rem,$emptyLine) = @_;
     die unless defined($Address);
     setLabel($lbl,$Address);
     $Address+=$nbytes,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
@@ -2640,7 +2640,7 @@ sub def_byteblock_hex(@)
             $decoded[$Address++] = 1;
         }
     } while ($nbytes > 0);
-    insert_empty_line($bAddress);
+    insert_empty_line($bAddress) if $emptyLine != 0;
 }
 
 

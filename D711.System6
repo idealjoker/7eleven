@@ -44,7 +44,7 @@
 require "$PATH/System$WMS_System.API";
 
 #----------------------------------------------------------------------
-# System Switches
+# System Definitions (hardcoded)
 #----------------------------------------------------------------------
 
 $Switch[0x00] = 'SW_bobTilt';					 
@@ -56,10 +56,6 @@ $Switch[0x05] = 'SW_coinLeft';
 $Switch[0x06] = 'SW_slamTilt';
 $Switch[0x07] = 'SW_HSreset';
 $Switch[0x08] = 'SW_outhole';
-
-#----------------------------------------------------------------------
-# System Lamps
-#----------------------------------------------------------------------
 
 $Lamp[0x30] = 'L_sys_bonusOverflow';	  
 $Lamp[0x31] = 'L_sys_BB_1pGame';
@@ -77,6 +73,18 @@ $Lamp[0x3C] = 'L_sys_BB_tilt';
 $Lamp[0x3D] = 'L_sys_BB_gameOver';
 $Lamp[0x3E] = 'L_sys_BB_samePlayerShootsAgain';
 $Lamp[0x3F] = 'L_sys_BB_highScore';
+
+$SoundCmd[0x00] = 'SC_10';
+$SoundCmd[0x01] = 'SC_100';
+$SoundCmd[0x02] = 'SC_1k';
+$SoundCmd[0x03] = 'SC_10k';
+$SoundCmd[0x04] = 'SC_100k';
+
+$Sol[8] = 'S_sound_1';
+$Sol[9] = 'S_sound_2';
+$Sol[10] = 'S_sound_3';
+$Sol[11] = 'S_sound_4';
+$Sol[12] = 'S_sound_5';
 
 #----------------------------------------------------------------------
 # Switch Scripts
@@ -354,6 +362,10 @@ sub def_sound_table() {
 	insert_divider($Address,'Sound Table');
 
 	for (my($i)=0; $i<16; $i++) {
+		if (BYTE($Address)==0 && BYTE($Address+1)==0) {
+			def_byteblock_hex(2,'','', sprintf("%02i{SoundCmd} (unused)", $i), 0);
+			next;
+		}
 		$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
 		push(@{$OPA[$Address]}, sprintf("Sound#%02X", BYTE($Address) - 0x80));
 		push(@{$OPA[$Address]}, sprintf('$%02X!', BYTE($Address+1)));
@@ -369,8 +381,8 @@ sub def_sol_tables() {
 
 	for (my($i)=0; $i<8; $i++) {
 		$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-		push(@{$OPA[$Address]}, sprintf("Sol#%02X:%i-tics{SolCmd}", BYTE($Address)&0x0F, BYTE($Address)>>4));
-		$REM[$Address] = sprintf("Cmd#0%i", $i);
+		push(@{$OPA[$Address]}, BYTE($Address)>>4? sprintf("Sol#%02X:%i-tics{SolCmd}", BYTE($Address)&0x0F, BYTE($Address)>>4) : '$00');
+		$REM[$Address] = sprintf("Cmd#0%i", $i) . (BYTE($Address)>>4? '' : ' (unused)');
     $decoded[$Address++] = 1;
 	}
 	insert_empty_line($Address-1);
@@ -393,7 +405,7 @@ sub def_sol_tables() {
 			$OP[$Address] = '.DB';
 			push(@{$OPA[$Address]}, BYTE($Address)); 
 		}													
-		$REM[$Address] = sprintf("SolOp#0%i", $i) . (defined($SolOp[$i])? ": $SolOp[$i]" : '');
+		$REM[$Address] = sprintf("SolOp#0%i", $i) . (defined($SolOp[$i])? ": $SolOp[$i]" : '') . (!$n? ' (unused)' : '');
     $decoded[$Address++] = 1;
 	}
 }
@@ -540,10 +552,15 @@ sub disassemble_System6($)
 		def_byte_LampOrFlag('');
 		def_byte_LampOrFlag('');
 	def_byteblock_hex(4,'BONUSX_VALUE_TABLE');
-	def_byte_hex('SPECIAL_SCORE','Misc Game Data');
+	def_byte_hex('SPECIAL_SCORE','Misc Game Data'); 
+		$OPA[$Address-1][0] = score_str(BYTE($Address-1),$Address-1,$opt_A);
 	def_byte_hex('SYSSND_CREDIT','System Sounds');
+		$OPA[$Address-1][0] = BYTE($Address-1)>=0x80? 
+				sprintf("Sound#%02X", BYTE($Address-1) - 0x80) 
+			: sprintf("Sol#%02X:%i-tics{SolCmd}", BYTE($Address-1)&0x0F, BYTE($Address-1)>>4);
 	def_byte_hex('SYSSND_CREDIT_DELAY');
 	def_byte_hex('SYSSND_TILTWARNING');
+		$OPA[$Address-1][0] = sprintf("Sound#%02X", BYTE($Address-1) - 0x80);
 	def_ptr_hex('GAMELOGIC_TABLE','System Pointers');
 	def_ptr_hex('GAMELOGIC_TABLE_END');
 	def_ptr_hex('GAMEEVENTS_TABLE');
