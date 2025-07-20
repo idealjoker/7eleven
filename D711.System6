@@ -297,8 +297,16 @@ sub decode_pinop($) {
 	# elsif (($op & ~0x0F) == 0xD0) { } # unknown op(s)
 	elsif (($op & ~0x07) == 0xE0) { $sop = sprintf("drain(Flag#%02X){PinOp}", $op & 0x07); }
 	elsif (($op & ~0x07) == 0xE8) { $sop = sprintf("fire(SolOp#0%i){PinOp}", $op & 0x07); } 
-	elsif (($op & ~0x07) == 0xF0) { $sop = sprintf("blink(Scriptlamp#%02X){PinOp}", $op & 0x07); }
-	elsif (($op & ~0x07) == 0xF8) { $sop = sprintf("toggle(Scriptlamp#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0xF0) { 
+		my($a) = $Lbl{'SCRIPT_LAMPS'}+($op & 0x07);
+		# print(STDERR "lamp $op&0x07 = $a, ".BYTE($a)."\n");
+		$sop = sprintf("blink(Lamp#%02X){PinOp}", BYTE($a));
+	}
+	elsif (($op & ~0x07) == 0xF8) { 
+		my($a) = $Lbl{'SCRIPT_LAMPS'}+($op & 0x07);
+		# print(STDERR "lamp $op&0x07 = $a, ".BYTE($a)."\n");
+		$sop = sprintf("toggle(Lamp#%02X){PinOp}", BYTE($a));
+	}
 
 	return $sop;
 }
@@ -506,14 +514,10 @@ sub disassemble_System6($)
 	def_byte_LampOrFlag('EXTRABALL_LAMP');
 	def_byte_hex('MAX_PLAYER');
 	def_intervals();
-	def_byte_LampOrFlag('SCRIPT_LAMPS');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
+	setLabel('SCRIPT_LAMPS', $Address);
+	for (my($i)=0; $i<8; $i++) {
+		def_byte_LampOrFlag('','',sprintf("Scriptlamp#0%i", $i) . (defined($Scriptlamp[$i])? ": $Scriptlamp[$i]" : ''));
+	}
 	def_bitgrouptable(8,'BITGROUP_TABLE');
 	insert_divider($Address, 'Lamp/Flag Initialization and Memory Data');
 	def_data_matrix_block('LAMPS_INITDATA', 'Lamp', 8);

@@ -768,7 +768,7 @@ sub insert_divider($$)                                          # Subroutine, Ju
 {
     my($addr,$label) = @_;
 #   return if ($DIVIDER[$addr] || !defined($label));
-    return unless defined($label);
+    return unless defined($label) && length($label)>0;
 	return if $DIVIDER[$addr];
 
 	my($hline) = ';----------------------------------------------------------------------';
@@ -2367,6 +2367,7 @@ sub def_bitgrouptable(@)
             $OPA[$Address+2*$bg][0] = sprintf('Flag#%02X',BYTE($Address+2*$bg) & 0x3F);
             $OPA[$Address+2*$bg][1] = sprintf('Flag#%02X',BYTE($Address+2*$bg+1) & 0x3F);
         }
+        $REM[$Address+2*$bg] = sprintf("Bitgroup#0%i", $bg) . (defined($BitGroup[$bg])? ": $BitGroup[$bg]" : '');
         $decoded[$Address+2*$bg] = $decoded[$Address+2*$bg+1] = 1;
     }
     $Address += $nentries * 2;

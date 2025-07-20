@@ -115,17 +115,41 @@ sub PinOp_s6($$)
 	if ($op eq 'blink') {
 		if ($arg =~ m/^Scriptlamp#(0?[0-7])$/) {
 			return hex($1) | 0xF0;
-        } else {
+		}
+		elsif ($arg =~ m/^Lamp#([0-9A-Fa-f]{2})$/) {
+			my($lamp) = hex($1);
+			my($a) = $LBL{'SCRIPT_LAMPS'};
+			my($i)=0;
+			for(;$i<8;$i++) {
+				last if ($ROM[$a+$i] == $lamp);
+			}
+				die("PinOp_s6: lamp '$arg' not found in SCRIPT_LAMPS at input line $src_line\n")
+			if ($i==8);
+			# print(STDERR "$lamp $a $i $ROM[$a+$i]\n");
+			return hex($i) | 0xF0;
+		} else {
 			die("PinOp_s6: cannot decode Scriptlamp argument '$arg' at input line $src_line\n");
-        }
+		}
 	} 
 
 	if ($op eq 'toggle') {  # note: toggle blinking, not toggle the light itself
 		if ($arg =~ m/^Scriptlamp#(0?[0-7])$/) {
 			return hex($1) | 0xF8;
-        } else {
+		} 
+		elsif ($arg =~ m/^Lamp#([0-9A-Fa-f]{2})$/) {
+			my($lamp) = hex($1);
+			my($a) = $LBL{'SCRIPT_LAMPS'};
+			my($i)=0;
+			for(;$i<8;$i++) {
+				last if ($ROM[$a+$i] == $lamp);
+			}
+				die("PinOp_s6: lamp '$arg' not found in SCRIPT_LAMPS at input line $src_line\n")
+			if ($i==8);
+			# print(STDERR "$lamp $a $i $ROM[$a+$i]\n");
+			return hex($i) | 0xF8;
+		} else {
 			die("PinOp_s6: cannot decode Scriptlamp argument '$arg' at input line $src_line\n");
-        }
+	  }
 	} 
 
 	die("PinOps_s6: cannot decode '$str'\n");
