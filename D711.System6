@@ -801,10 +801,18 @@ sub apply_magic_System6($)
 			if ($OP[$addr-2] eq 'LDAA' && $OPA[$addr-2][0] =~ m{^#}) {
 				$OPA[$addr-2][0] =~ m{\$(..)};
 				$OPA[$addr-2][0] = '#' . score_str(hex($1),$addr,$opt_A);
-            } else {
+			} else {
 				printf(STDERR "WARNING: unknown score value (register A) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
-            }
-        }
+			}
+		}
+		if (direct_code_path($addr,'^sys_PinOp\[A\]$')) {
+			if ($OP[$addr-2] eq 'LDAA' && $OPA[$addr-2][0] =~ m{^#}) {
+				$OPA[$addr-2][0] =~ m{\$(..)};
+				$OPA[$addr-2][0] = '#' . decode_pinop(hex($1));
+			} else {
+				printf(STDERR "WARNING: unknown score value (register A) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+			}
+		}	
 		if (direct_code_path($addr,'^sys_switch_script$')) {
 			my($script_addr);
 			if ($OP[$addr-5] eq 'LDX') {
