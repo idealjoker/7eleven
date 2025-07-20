@@ -96,15 +96,11 @@ $D711::Sol[2] = 'S_gar';
 $D711::Sol[3] = 'S_gor';
 $D711::Sol[4] = 'S_magnet';
 $D711::Sol[5] = 'S_snake_lamps';
-$D711::Sol[8] = 'S_sound_1';
-$D711::Sol[9] = 'S_sound_2';
-$D711::Sol[10] = 'S_sound_3';
-$D711::Sol[11] = 'S_sound_4';
-$D711::Sol[12] = 'S_sound_5';
 $D711::Sol[13] = 'S_knocker';
 
 $D711::SolOp[2] = 'SO_magnet';
 
+$D711::Sound[0x01] = 'SND_tilt_warning';
 $D711::Sound[0x0A] = 'SND_10';
 
 $D711::SoundCmd[10] = 'SC_Special';
