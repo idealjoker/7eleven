@@ -340,6 +340,20 @@ sub def_data_matrix_block($$$) {
 	}
 }
 
+sub def_sound_table() {
+	setLabel('SOUND_TABLE',$Address);
+	insert_divider($Address,'Sound Table');
+
+	for (my($i)=0; $i<16; $i++) {
+		$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		push(@{$OPA[$Address]}, sprintf("Sound#%02X", BYTE($Address) - 0x80));
+		push(@{$OPA[$Address]}, sprintf('$%02X!', BYTE($Address+1)));
+		$REM[$Address] = sprintf("%02i{SoundCmd}", $i);
+    $decoded[$Address++] = 1;
+    $decoded[$Address++] = 1;
+	}
+}
+
 sub def_sol_tables() {
 	setLabel('PINOP_SOLCMD_TABLE',$Address);
 	insert_divider($Address,'PinOp Solenoid Tables');
@@ -507,7 +521,7 @@ sub disassemble_System6($)
 	def_data_matrix_block('LAMPS_MEMDATA', 'Lamp', 8);
 	def_data_matrix_block('FLAGS_MEMDATA', 'Flag', 2);
 	def_data_matrix_block('BLINK_MEMDATA', 'Lamp', 8);
-	def_byteblock_hex_cols(32,2,'SOUND_TABLE','Sound Table');
+	def_sound_table();
 	def_sol_tables();
 	def_byte_hex('BONUSCOUNT_BONUSX_DELAY','Outhole Bonus Data');
 	def_byte_hex('BONUSCOUNT_SOUND');

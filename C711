@@ -1634,11 +1634,18 @@ sub resolve_labels()
 				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
-				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})([-+|&].*)?$/
 			) {
 				$ROM[$a] = hex($1) . $2;											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 				next if numberp($ROM[$a]);											# we are done, if we have a number
+			}
+			if ($ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/) {
+				my($sound) = hex($1);
+				if ($sound >=0 && $sound < 32) { # sounds start at 80, but that's harder to read, so allow 0-31 as well
+					$sound += 0x80;
+				}
+				$ROM[$a] = $sound . $2;											
+				next if numberp($ROM[$a]);											
 			}
 			if ($ROM[$a] =~ m/^(!)?Lamp#([0-9A-Fa-f]{2})([-+|&].*)?$/) {	                # lamps can be negated in conditions
 				$ROM[$a] = ((hex($2))|($1 eq '!' ?0x80 : 0)) . $3;

@@ -124,7 +124,9 @@ There are a few different ways sounds are triggered.
 
 The simplest is that all scoring automatically triggers a specific sound based on what digit it is- the first five entries in the SOUND_TABLE control this (0 = 10s digit)
 
-You can also play a SoundCmd (see encoder) directly from assembly by calling sys_soundCmd[A].
+You can also play a SoundCmd (see encoder) in an Extended Script.
+
+In assembly, you can trigger any sound directly by calling sys_solCmdOrPlaySound.
 
 Sound Scripts allow you to combine a sequence of sounds easily.
 
