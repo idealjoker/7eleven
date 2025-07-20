@@ -316,6 +316,30 @@ sub def_intervals() {
 	}
 }
 
+sub def_data_matrix_block($$$) {
+	my($label,$type,$count) = @_;
+	my($bAddress) = $Address;
+	setLabel($label, $bAddress);
+	$OP[$bAddress] = sprintf("_%sData", $type);
+	$IND[$bAddress] = $data_indent; $TYPE[$bAddress] =  $CodeType_data;
+	my($n) = 0;
+	for(my($j)=0; $j<$count; $j++) {
+		my($col) = BYTE($Address);
+		$TYPE[$Address] =	$CodeType_asm;
+		$decoded[$Address++] = 1;
+
+		for(my($i)=0; $i<8; $i++) {
+			my($val) = $col & (1 << $i);
+			if ($val) {
+				if (push(@{$OPA[$bAddress]}, sprintf("%s#%02X", $type, $n)) % 4 == 0) {
+					$OPA[$bAddress][-1] .= " \\\n";
+				}
+			}
+			$n++;
+		}
+	}
+}
+
 sub def_sol_tables() {
 	setLabel('PINOP_SOLCMD_TABLE',$Address);
 	insert_divider($Address,'PinOp Solenoid Tables');
@@ -476,12 +500,13 @@ sub disassemble_System6($)
 		def_byte_LampOrFlag('');
 		def_byte_LampOrFlag('');
 	def_bitgrouptable(8,'BITGROUP_TABLE');
-	def_byteblock_hex(8,'LAMPS_INITDATA','Lamp/Flag Initialization and Memory Data');
-	def_byteblock_hex(2,'FLAGS_INITDATA');
-	def_byteblock_hex(8,'BLINK_INITDATA');
-	def_byteblock_hex(8,'LAMPS_MEMDATA');
-	def_byteblock_hex(2,'FLAGS_MEMDATA');
-	def_byteblock_hex(8,'BLINK_MEMDATA');
+	insert_divider($Address, 'Lamp/Flag Initialization and Memory Data');
+	def_data_matrix_block('LAMPS_INITDATA', 'Lamp', 8);
+	def_data_matrix_block('FLAGS_INITDATA', 'Flag', 2);
+	def_data_matrix_block('BLINK_INITDATA', 'Lamp', 8);
+	def_data_matrix_block('LAMPS_MEMDATA', 'Lamp', 8);
+	def_data_matrix_block('FLAGS_MEMDATA', 'Flag', 2);
+	def_data_matrix_block('BLINK_MEMDATA', 'Lamp', 8);
 	def_byteblock_hex_cols(32,2,'SOUND_TABLE','Sound Table');
 	def_sol_tables();
 	def_byte_hex('BONUSCOUNT_BONUSX_DELAY','Outhole Bonus Data');

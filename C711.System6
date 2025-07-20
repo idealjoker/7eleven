@@ -288,6 +288,28 @@ sub asm_macros()
 			
 			$MODE=0,return 1;
 		}
+		elsif ($OP =~ /^_(Lamp|Flag)Data[\w\\]*$/) {
+			my($type) = $1;
+			my($offset) = $type eq 'Lamp'? 0 : 0x40;
+			my($bytes) = $type eq 'Lamp'? 8 : 2;
+			set_label_type(0);
+			my($bAddress) = $ADDR;
+			for(my($j)=0; $j<$bytes; $j++) {
+				$ROM[$ADDR++] = 0; 																# .DB xx
+			}
+
+			foreach my $arg (@OP_ARG) {
+				if ($arg =~ /^$type#([0-9A-Fa-f]{2})$/) {
+					my($n) = hex($1);
+					$ROM[$bAddress + ($n >> 3)] |= 1 << ($n & 0b111);
+				}
+				else {
+					die(sprintf("Syntax Error on '$arg' at input line $.\n  Usage: _%sData %s#<num>  ...\n", $type, $type));
+				}
+			}
+
+			$MODE=0,return 1;
+		}
 	}
 
 	return asm_6800_macros();												# in [C711.M6800]
