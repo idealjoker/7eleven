@@ -102,3 +102,9 @@ $D711::Sol[10] = 'S_sound_3';
 $D711::Sol[11] = 'S_sound_4';
 $D711::Sol[12] = 'S_sound_5';
 $D711::Sol[13] = 'S_knocker';
+
+$D711::SolOp[2] = 'SO_magnet';
+
+$D711::Sound[0x0A] = 'SND_10';
+
+$D711::SoundCmd[10] = 'SC_Special';

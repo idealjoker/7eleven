@@ -216,11 +216,12 @@ sub def_switch_conditional($)
 				my($num) = $sound & 0x0F;
 				# push(@{$OPA[$addr]}, sprintf('Play(%s%i)', $x? sprintf('%ix', $x) : '', $sound & 0x0F));  
 				# push(@{$OPA[$addr]}, sprintf('Play(%i)', $sound));
+				$num = $SoundCmd[$num] if defined $SoundCmd[$num];
 				if ($x == 1) {
-					push(@{$OPA[$addr]}, sprintf('%i{SoundCmd}', $num));
+					push(@{$OPA[$addr]}, sprintf('%s{SoundCmd}', $num));
 				}
 				else {
-					push(@{$OPA[$addr]}, sprintf('%ix%i{SoundCmd}', $x, $num));
+					push(@{$OPA[$addr]}, sprintf('%ix%s{SoundCmd}', $x, $num));
 				}
 			}
 
@@ -348,7 +349,7 @@ sub def_sound_table() {
 		$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
 		push(@{$OPA[$Address]}, sprintf("Sound#%02X", BYTE($Address) - 0x80));
 		push(@{$OPA[$Address]}, sprintf('$%02X!', BYTE($Address+1)));
-		$REM[$Address] = sprintf("%02i{SoundCmd}", $i);
+		$REM[$Address] = sprintf("%02i{SoundCmd}", $i). (defined($SoundCmd[$i])? ": $SoundCmd[$i]" : '');
     $decoded[$Address++] = 1;
     $decoded[$Address++] = 1;
 	}
@@ -384,7 +385,7 @@ sub def_sol_tables() {
 			$OP[$Address] = '.DB';
 			push(@{$OPA[$Address]}, BYTE($Address)); 
 		}													
-		$REM[$Address] = sprintf("SolOp#0%i", $i);
+		$REM[$Address] = sprintf("SolOp#0%i", $i) . (defined($SolOp[$i])? ": $SolOp[$i]" : '');
     $decoded[$Address++] = 1;
 	}
 }

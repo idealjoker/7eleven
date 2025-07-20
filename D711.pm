@@ -3077,7 +3077,7 @@ sub scan_next_6800_pointer($$)
 # Game Specific Identifiers
 #----------------------------------------------------------------------
 
-sub substitute_identifiers(@)                                                               # substitute game-specific identifiers
+sub substitute_identifiers(@)   # convert generic identifiers like Lamp#01 into their matching aliases/labels
 {
     my($fa,$la) = @_;
     $fa = 0 unless defined($fa);
@@ -3118,6 +3118,10 @@ sub substitute_identifiers(@)                                                   
                 $LBL[$addr] = $` . $DMD[hex($1)] . $' if defined($DMD[hex($1)]);
             } elsif ($LBL[$addr] =~ m{FX#([0-9A-F]{2})}) {                          	# FX animations (WPC)
                 $LBL[$addr] = $` . $FX[hex($1)] . $' if defined($FX[hex($1)]);
+            } elsif ($LBL[$addr] =~ m{SolOp#0?([0-7])}) {                          	# SolOps (S6)
+                $LBL[$addr] = $` . $SolOp[hex($1)] . $' if defined($SolOp[hex($1)]);
+            } elsif ($LBL[$addr] =~ m{SoundCmd#0?([0-7])}) {                          	# SoundCmds (S6)
+                $LBL[$addr] = $` . $SoundCmd[hex($1)] . $' if defined($SoundCmd[hex($1)]);
             } 
         }
         next unless defined($OP[$addr]);
@@ -3155,6 +3159,10 @@ sub substitute_identifiers(@)                                                   
                 $OPA[$addr][$i] = $` . $DMD[hex($1)] . $' if defined($DMD[hex($1)]);
             } elsif ($OPA[$addr][$i] =~ m{FX#([0-9A-F]{2})}) {                          	# FX animations (WPC)
                 $OPA[$addr][$i] = $` . $FX[hex($1)] . $' if defined($FX[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{SolOp#0?([0-7])}) {                          	# SolOps (S6)
+                $OPA[$addr][$i] = $` . $SolOp[hex($1)] . $' if defined($SolOp[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{SoundCmd#0?([0-7])}) {                          	# SoundCmds (S6)
+                $OPA[$addr][$i] = $` . $SoundCmd[hex($1)] . $' if defined($SoundCmd[hex($1)]);
             } 
         }
     }
@@ -3312,6 +3320,8 @@ sub produce_output(@)
         output_aliases('Bitgroup Aliases','Bitgroup#%02X',@BitGroup);
         output_aliases('Switch Aliases','Switch#%02X',@Switch);
         output_aliases('Sound Aliases','Sound#%02X',@Sound);
+        output_aliases('SolOp Aliases','SolOp#%02X',@SolOp);
+        output_aliases('SoundCmd Aliases','%02i',@SoundCmd);
         if (defined($_cur_RPG)) {
 	        output_aliases('Thread Aliases','Thread#%04X',@Thread);
 	        output_aliases('DMD Aliases','DMD#%02X',@DMD);
