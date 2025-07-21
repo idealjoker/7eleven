@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Jul 20 14:56:49 2025
+#                    dlm: Sun Jul 20 22:06:06 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 124 37 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 409 40 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -121,7 +121,7 @@
 #				  - BUG: custom labels were broken
 #	Jul  8, 2025: - BUG: lamp group range is too short
 #	Jul 20, 2025: - added defSound()
-#				  - added inCode refs
+#				  - added additional inCode refs
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -405,10 +405,19 @@ sub process_object_file($)													# execute this early on, because it defin
 #	  programmers use additional patterns (e.g. LDX & LDA)
 #
 #	- patterns
-#		1) LDX #<addr> & LDB #<page>
-#		2) LDY #<addr> & LDA #<page>
-#		3) LDX #<addr> & !longJSR <ref>
-#		4) LDY #<addr> & !longJSR <ref>
+#		1) LDY #<addr> & LDA #<page>	(creates new label if there is none)
+#		2) LDX #<addr> & LDB #<page>	(creates new label if there is none)
+#		3) LDY #<addr> & !longJSR <ref> (not matched unless label exists)
+#		4) LDX #<addr> & !longJSR <ref> (not matched unless label exists)
+#
+#	- pattern order matters, because LDY has the same opcode as
+#	  LDX but with a prefix byte
+#		- the test for LDX will match both LDX and LDY; therefore
+#		  LDY must come first
+#		- however, the opcode for LDY is also equal to a possible 
+#		  post-byte of PSH/PUL followed by an LDX; therefore
+#		  false positives are possible for LDY, too; this is filtered
+#		  by the check for VALID_ROMREF()
 #----------------------------------------------------------------------
 
 sub VALID_ROMREF(@)
@@ -425,26 +434,7 @@ sub disassemble_inCode_refs($$$)
 	my($RPG,$fa,$la) = @_;
 ##	printf(STDERR "disassemble_inCode_refs(%02X,%04X,%04X)\n",@_);
 
-	for (my($addr)=$fa; $addr<=$la-5; $addr++) {							# pattern 1
-		next unless BYTE($addr)   == 0x8E &&								# LDX #
-					BYTE($addr+3) == 0xC6 &&								# LDB #
-					BYTE($addr+4)>=$start_page &&
-						(BYTE($addr+4)==0xFF && WORD($addr+1)>=0x8000 &&  WORD($addr+1)<=0xFFFF ||
-						 BYTE($addr+4)<=0x3D && WORD($addr+1)>=0x4000 &&  WORD($addr+1)<=0x7FFF);
-
-		my($pointee_addr) = WORD($addr+1);
-		my($pointee_pg)	  = BYTE($addr+4);
-		my($type) 		  = ($pointee_addr>=0x8000) ? 'SYSTEM_XB' : 'GAME_XB';
-		my($pointee_lbl)  = sprintf('UNKNOWN_%s_REF_%04X',$type,$addr);
-		select_WPC_RPG($pointee_pg);
-		my($usr_lbl) 	  = $LBL[$pointee_addr];
-		$pointee_lbl 	  = $usr_lbl if defined($usr_lbl);
-		setLabel($pointee_lbl,$pointee_addr,$pointee_pg);
-		$REM[$addr] = $rem unless defined($REM[$addr]);
-		select_WPC_RPG($RPG);
-    }
-
-	for (my($addr)=$fa; $addr<=$la-6; $addr++) {							# pattern 2
+	for (my($addr)=$fa; $addr<=$la-6; $addr++) {							# pattern 1
 		next unless WORD($addr)   == 0x108E &&								# LDY #
 					BYTE($addr+4) == 0x86 &&								# LDA #
 					BYTE($addr+5)>=$start_page &&
@@ -463,27 +453,57 @@ sub disassemble_inCode_refs($$$)
 		select_WPC_RPG($RPG);
     }
 
-	for (my($addr)=$fa; $addr<=$la-9; $addr++) {							# pattern 4
+	for (my($addr)=$fa; $addr<=$la-5; $addr++) {							# pattern 2
+		next unless BYTE($addr)   == 0x8E &&								# LDX #
+					BYTE($addr+3) == 0xC6 &&								# LDB #
+					BYTE($addr+4)>=$start_page &&
+						(BYTE($addr+4)==0xFF && WORD($addr+1)>=0x8000 &&  WORD($addr+1)<=0xFFFF ||
+						 BYTE($addr+4)<=0x3D && WORD($addr+1)>=0x4000 &&  WORD($addr+1)<=0x7FFF);
+
+		my($pointee_addr) = WORD($addr+1);
+		my($pointee_pg)	  = BYTE($addr+4);
+		my($type) 		  = ($pointee_addr>=0x8000) ? 'SYSTEM_XB' : 'GAME_XB';
+		my($pointee_lbl)  = sprintf('UNKNOWN_%s_REF_%04X',$type,$addr);
+		select_WPC_RPG($pointee_pg);
+		my($usr_lbl) 	  = $LBL[$pointee_addr];
+		$pointee_lbl 	  = $usr_lbl if defined($usr_lbl);
+		setLabel($pointee_lbl,$pointee_addr,$pointee_pg);
+		$REM[$addr] = $rem unless defined($REM[$addr]);
+		select_WPC_RPG($RPG);
+    }
+
+	for (my($addr)=$fa; $addr<=$la-9; $addr++) {							# pattern 3
 		next unless WORD($addr)   == 0x108E &&								# LDY #
 					BYTE($addr+4) == 0xBD && WORD($addr+5) == $Lbl{longJSR} && # !longJSR
 					BYTE($addr+9)>=$start_page &&
 						(BYTE($addr+9)==0xFF && WORD($addr+2)>=0x8000 &&  WORD($addr+2)<=0xFFFF ||
 						 BYTE($addr+9)<=0x3D && WORD($addr+2)>=0x4000 &&  WORD($addr+2)<=0x7FFF);
 
-##		printf(STDERR "%02X:%04X: pattern 4\n",$_cur_RPG,$addr);
 		my($pointee_addr) = WORD($addr+2);
 		my($pointee_pg)	  = BYTE($addr+9);
-		my($type) 		  = ($pointee_addr>=0x8000) ? 'SYSTEM_YLJ' : 'GAME_YLJ';
-		my($pointee_lbl)  = sprintf('UNKNOWN_%s_REF_%04X',$type,$addr);
-##		printf(STDERR "WPC_INTERPAGE_REF[%02X][%04X] = %02X;\n",$_cur_RPG,$pointee_addr,$pointee_pg);
-		$WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr] = $pointee_pg;		# reference in current pg to pointee_addr in pointee_pg
 		select_WPC_RPG($pointee_pg);
-		my($usr_lbl) 	  = $LBL[$pointee_addr];
-		$pointee_lbl 	  = $usr_lbl if defined($usr_lbl);
-##		printf(STDERR "setLabel($pointee_lbl,%04X,%02X);\n",$pointee_addr,$pointee_pg);
-		setLabel($pointee_lbl,$pointee_addr,$pointee_pg);
-		$REM[$addr] = $rem unless defined($REM[$addr]);
+		setLabel($LBL[$pointee_addr],$pointee_addr,$pointee_pg)
+			if defined($LBL[$pointee_addr]);
 		select_WPC_RPG($RPG);
+		$REM[$addr] = $rem unless defined($REM[$addr]);
+		$WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr] = $pointee_pg;			# reference in current pg to pointee_addr in pointee_pg
+    }
+
+	for (my($addr)=$fa; $addr<=$la-8; $addr++) {							# pattern 4
+		next unless BYTE($addr)   == 0x8E &&								# LDX #
+					BYTE($addr+3) == 0xBD && WORD($addr+4) == $Lbl{longJSR} && # !longJSR
+					BYTE($addr+8)>=$start_page &&
+						(BYTE($addr+8)==0xFF && WORD($addr+1)>=0x8000 &&  WORD($addr+1)<=0xFFFF ||
+						 BYTE($addr+8)<=0x3D && WORD($addr+1)>=0x4000 &&  WORD($addr+1)<=0x7FFF);
+		my($pointee_addr) = WORD($addr+1);
+        next if defined($WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr]);
+        my($pointee_pg)   = BYTE($addr+8);
+        select_WPC_RPG($pointee_pg);
+        setLabel($LBL[$pointee_addr],$pointee_addr,$pointee_pg)
+	        if defined($LBL[$pointee_addr]);
+		select_WPC_RPG($RPG);
+        $REM[$addr] = $rem unless defined($REM[$addr]);
+        $WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr] = $pointee_pg;     	# reference in current pg to pointee_addr in pointee_pg
     }
 }
 
