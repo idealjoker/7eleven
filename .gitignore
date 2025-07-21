@@ -1,2 +1,3 @@
 Games/*
 !Games/Defs/
+.vscode/settings.json

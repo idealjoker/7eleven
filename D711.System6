@@ -348,7 +348,7 @@ sub def_data_matrix_block($$$) {
 		for(my($i)=0; $i<8; $i++) {
 			my($val) = $col & (1 << $i);
 			if ($val) {
-				if (push(@{$OPA[$bAddress]}, sprintf("%s#%02X", $type, $n)) % 4 == 0) {
+				if (push(@{$OPA[$bAddress]}, sprintf("%s#%02X", $type, $n)) % 4 == 0 && $j+1!=$count) {
 					$OPA[$bAddress][-1] .= " \\\n";
 				}
 			}
@@ -367,7 +367,7 @@ sub def_sound_table() {
 			next;
 		}
 		$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-		push(@{$OPA[$Address]}, sprintf("Sound#%02X", BYTE($Address) - 0x80));
+		push(@{$OPA[$Address]}, decode_solCmd_or_sound(BYTE($Address)));
 		push(@{$OPA[$Address]}, sprintf('$%02X!', BYTE($Address+1)));
 		$REM[$Address] = sprintf("%02i{SoundCmd}", $i). (defined($SoundCmd[$i])? ": $SoundCmd[$i]" : '');
     $decoded[$Address++] = 1;
@@ -479,6 +479,23 @@ sub def_game_logic_table() {
 	}
 }
 
+sub def_soundlist() {
+	my($bAddress) = $Address;
+	def_bytelist_hex(0, '');
+	
+	for(my($i) = 0;$i<@{$OPA[$bAddress]};$i++) {
+		$OPA[$bAddress][$i] = decode_solCmd_or_sound(BYTE($bAddress+$i));
+	}
+}
+
+sub decode_solCmd_or_sound($) {
+	my($byte) = @_;
+	return '$FF!' if $byte == 0xFF;
+	return $byte>=0x80? 
+				sprintf("Sound#%02X", $byte - 0x80) 
+			: sprintf("Sol#%02X:%i-tics{SolCmd}", $byte&0x0F, $byte>>4)
+}
+
 #----------------------------------------------------------------------
 # Game Disassembly Routine
 #----------------------------------------------------------------------
@@ -555,12 +572,10 @@ sub disassemble_System6($)
 	def_byte_hex('SPECIAL_SCORE','Misc Game Data'); 
 		$OPA[$Address-1][0] = score_str(BYTE($Address-1),$Address-1,$opt_A);
 	def_byte_hex('SYSSND_CREDIT','System Sounds');
-		$OPA[$Address-1][0] = BYTE($Address-1)>=0x80? 
-				sprintf("Sound#%02X", BYTE($Address-1) - 0x80) 
-			: sprintf("Sol#%02X:%i-tics{SolCmd}", BYTE($Address-1)&0x0F, BYTE($Address-1)>>4);
+		$OPA[$Address-1][0] = decode_solCmd_or_sound(BYTE($Address-1));
 	def_byte_hex('SYSSND_CREDIT_DELAY');
 	def_byte_hex('SYSSND_TILTWARNING');
-		$OPA[$Address-1][0] = sprintf("Sound#%02X", BYTE($Address-1) - 0x80);
+		$OPA[$Address-1][0] = decode_solCmd_or_sound(BYTE($Address-1));
 	def_ptr_hex('GAMELOGIC_TABLE','System Pointers');
 	def_ptr_hex('GAMELOGIC_TABLE_END');
 	def_ptr_hex('GAMEEVENTS_TABLE');
@@ -636,30 +651,30 @@ sub disassemble_System6($)
 		$Address = WORD(0x60E0+2*$p);										# Sound Scripts
 		next if $decoded[$Address];
 		def_byte_hex(sprintf('p%dStart_sndList',$p+1));
-		def_bytelist_hex(0,'');
+		def_soundlist();
 	}
 	$Address = WORD(0x60E8); 
 	unless ($decoded[$Address]) {
 		def_byte_hex('match_sndList');
-		def_bytelist_hex(0,'');
+		def_soundlist();
 	}
 	$Address = WORD(0x60EA); 
 	unless ($decoded[$Address]) {
 		def_byte_hex('highScore_sndList');
-		def_bytelist_hex(0,'');
+		def_soundlist();
 	}
 	$Address = WORD(0x60EC); 
 	unless ($decoded[$Address]) {
 		def_byte_hex('gameOver_sndList');
-		def_bytelist_hex(0,'');
+		def_soundlist();
 	}
 
 	$Address = WORD(0x60F3);												# Attract Mode Data
 	insert_divider($Address,'Attract Mode Lamp Data');
 	my($n) = BYTE(0x60F2) + 1;
-	def_byteblock_hex(6,'attract_mode_data');
-	for (my($i)=2; $i<=$n; $i++) {
-		def_byteblock_hex(6,'');
+	def_data_matrix_block('attract_mode_data', 'Lamp', 6);
+	for (my($i)=1; $i<=$n; $i++) {
+		def_data_matrix_block('', 'Lamp', 6);
 	}
 
 	for (my($i)=0; $i<@switchScriptCandidateAddr; $i++) {
@@ -802,7 +817,7 @@ sub apply_magic_System6($)
 				$OPA[$addr-2][0] =~ m{\$(..)};
 				$OPA[$addr-2][0] = '#' . score_str(hex($1),$addr,$opt_A);
 			} else {
-				printf(STDERR "WARNING: unknown score value (register A) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+				printf(STDERR "WARNING: unknown score value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
 			}
 		}
 		if (direct_code_path($addr,'^sys_PinOp\[A\]$')) {
@@ -810,7 +825,7 @@ sub apply_magic_System6($)
 				$OPA[$addr-2][0] =~ m{\$(..)};
 				$OPA[$addr-2][0] = '#' . decode_pinop(hex($1));
 			} else {
-				printf(STDERR "WARNING: unknown score value (register A) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+				printf(STDERR "WARNING: unknown score value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
 			}
 		}	
 		if (direct_code_path($addr,'^sys_switch_script$')) {
