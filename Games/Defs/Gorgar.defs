@@ -50,6 +50,7 @@ $D711::Lamp[0x0C] = 'L_bonus_6k';
 $D711::Lamp[0x0D] = 'L_bonus_7k';
 $D711::Lamp[0x0E] = 'L_bonus_8k';
 $D711::Lamp[0x0F] = 'L_bonus_9k';
+$D711::Lamp[0x10] = 'L_bonus_overflow';
 $D711::Lamp[0x11] = 'L_bonus_10k';
 $D711::Lamp[0x12] = 'L_bonus_20k';
 $D711::Lamp[0x13] = 'L_A_lane';
@@ -79,6 +80,7 @@ $D711::Lamp[0x2A] = 'L_gar';
 $D711::Lamp[0x2B] = 'L_eject_10k';
 $D711::Lamp[0x2C] = 'L_eject_15k';
 $D711::Lamp[0x2D] = 'L_eject_eb';
+$D711::Lamp[0x2E] = 'L_F_gor_gar'; # used as a flag
 $D711::Lamp[0x2F] = 'L_spinner';
 
 $D711::BitGroup[0x00] = 'B_bonus';
@@ -87,7 +89,7 @@ $D711::BitGroup[0x02] = 'B_1_4_target';
 $D711::BitGroup[0x03] = 'B_snake';
 $D711::BitGroup[0x04] = 'B_eject';
 $D711::BitGroup[0x05] = 'B_ABC';
-$D711::BitGroup[0x06] = 'B_flag0_1';
+$D711::BitGroup[0x06] = 'B_outlane_specials';
 $D711::BitGroup[0x07] = 'B_1_4_arrow';
 
 $D711::Sol[0] = 'S_outhole';
@@ -98,9 +100,58 @@ $D711::Sol[4] = 'S_magnet';
 $D711::Sol[5] = 'S_snake_lamps';
 $D711::Sol[13] = 'S_knocker';
 
+$D711::SolOp[0] = 'SO_gar';
+$D711::SolOp[1] = 'SO_gor';
 $D711::SolOp[2] = 'SO_magnet';
+$D711::SolOp[3] = 'SO_snake_lamps';
+$D711::SolOp[4] = 'SO_magnet_and_knocker'; # idk why knocker is in there?
+$D711::SolOp[7] = 'SO_gar_gor';
 
 $D711::Sound[0x01] = 'SND_tilt_warning';
+$D711::Sound[0x05] = 'SND_100';
 $D711::Sound[0x0A] = 'SND_10';
+$D711::Sound[0x0F] = 'SND_10k';
+$D711::Sound[0x0D] = 'SND_ABC_Complete';
+$D711::Sound[0x12] = 'SND_start_heartbeat';
+$D711::Sound[0x13] = 'SND_stop_heartbeat';
+$D711::Sound[0x1B] = 'SND_Credit';
 
+$D711::SoundCmd[9] = 'SC_ABC_Complete';
 $D711::SoundCmd[10] = 'SC_Special';
+
+$D711::Flag[0x00] = 'F_L_outlane_control';
+$D711::Flag[0x01] = 'F_R_outlane_control';
+$D711::Flag[0x02] = 'F_outlane_special_lit';
+$D711::Flag[0x03] = 'F_L_drops_complete';
+$D711::Flag[0x04] = 'F_ABC_complete_handler_9_'; # ?
+$D711::Flag[0x05] = 'F_1234_complete';
+$D711::Flag[0x06] = 'F_DE_complete';
+$D711::Flag[0x07] = 'F_trigger_heartbeat';
+$D711::Flag[0x08] = 'F_pulse_snake_lamps';
+$D711::Flag[0x0A] = 'F_special_awarded';
+$D711::Flag[0x0B] = 'F_ABC_complete';
+$D711::Flag[0x0D] = 'F_ABC_complete_handler_pending'; # turned on along with B, turned off when B handler starts
+$D711::Flag[0x0F] = 'F_snake_top_award_'; #seems to be just like 50k but with a knocker? set by completing GOR while 50k already lit
+
+$D711::Adj[01] = 'A_outlane_special';
+$D711::Adj[02] = 'A_eject';
+$D711::Adj[03] = 'A_EB_1234';
+$D711::Adj[04] = 'A_1234_special';
+$D711::Adj[05] = 'A_bgm';
+
+# gameEvent_1_handler = GOR complete logic
+# gameEvent_2_handler = target special collect logic
+# gameEvent_3_handler = DE complete logic
+# gameEvent_4_handler = pulse snake lamps
+# gameEvent_5_handler = 1234 complete logic
+# gameEvent_6_handler = ABC complete logic
+# gameEvent_7_handler = gor+gar complete
+# gameEvent_8_handler = periodic heartbeat?
+# game_background_handler_6441 = stop heartbeat (drain, tilt, etc)
+# SW_B_lane_handler_64DF = jmp sys_PinOp
+# gameEvent_1_handler_64E2 = jmp sys_testBit
+# gameEvent_7_handler_6491 = given a lamp in A, blink it or the next lowest lit lamp
+# SW_B_lane_handler_6504 = advance bonus 3x
+# gameEvent_5_handler_6520 = jmp sys_soundCmd
+# _GameVarE0 = starts semi-randomly, 
+# $6550 = should be labeled as part of gameEvent_4_handler
