@@ -93,6 +93,7 @@ else		{ &D711::disassemble_System6($opt_A); }
 &D711::grow_switch_scripts();												# needs to be done when space is known
 &D711::substitute_identifiers();											# rename game-specific ids
 &D711::apply_magic_System6($opt_A);											# e.g. ScoreByte
+&D711::substitute_identifiers();											# rename game-specific ids
 
 
 #----------------------------------------------------------------------

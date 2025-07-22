@@ -827,12 +827,34 @@ sub apply_magic_System6($)
 				printf(STDERR "WARNING: unknown score value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
 			}
 		}
+		if (direct_code_path($addr,'^sys_testBit\[A\]$') ||
+			direct_code_path($addr,'^sys_blinkLamp\[A\]$') ||
+			direct_code_path($addr,'^sys_clearBit\[A\]$') ||
+			direct_code_path($addr,'^sys_setBit\[A\]$')
+		) {
+			if ($OP[$addr-2] eq 'LDAA' && $OPA[$addr-2][0] =~ m{^#}) {
+				$OPA[$addr-2][0] =~ m{\$(..)};
+				$OPA[$addr-2][0] = '#' . (hex($1) < 0x40
+									? sprintf('Lamp#%02X',hex($1)) 
+									: sprintf('Flag#%02X',hex($1)-0x40));
+			} else {
+				printf(STDERR "WARNING: unknown lamp/flag value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+			}
+		}
 		if (direct_code_path($addr,'^sys_PinOp\[A\]$')) {
 			if ($OP[$addr-2] eq 'LDAA' && $OPA[$addr-2][0] =~ m{^#}) {
 				$OPA[$addr-2][0] =~ m{\$(..)};
 				$OPA[$addr-2][0] = '#' . decode_pinop(hex($1));
 			} else {
-				printf(STDERR "WARNING: unknown score value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+				printf(STDERR "WARNING: unknown pinop value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+			}
+		}	
+		if (direct_code_path($addr,'^sys_solCmdOrPlaySound\[A\]$')) {
+			if ($OP[$addr-2] eq 'LDAA' && $OPA[$addr-2][0] =~ m{^#}) {
+				$OPA[$addr-2][0] =~ m{\$(..)};
+				$OPA[$addr-2][0] = '#' . decode_solCmd_or_sound(hex($1));
+			} else {
+				printf(STDERR "WARNING: unknown solCmd value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
 			}
 		}	
 		if (direct_code_path($addr,'^sys_switch_script$')) {
