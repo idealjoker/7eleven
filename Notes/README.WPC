@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Tue Jul  8 10:13:07 2025
+                    dlm: Tue Jul 22 09:12:06 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 65 47 NIL 0 0 72 0 2 4 NIL ofnI
+                    uE-Info: 331 27 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -318,11 +318,22 @@ sys_bitgroupOp_ABXY
 
 =Threads=
 
-- default thread mask is $01FF (512 thread ids)
+- thread id mask is $01FF 
+	- 512 thread ids
 - thread mask flags:
-	$1000		???
-	$2000		protected from tilt
-	$0800		protected from game start
+	$0200		???
+	$0400		???
+	$0800		killed in sys_initBall_event (ball start)
+	$1000		killed in sys_endBall_and_exit (ball end) after thread delay
+	$2000		killed in sys_tilt (tilt)
+	$4000		???
+	$8000		waited for in sys_endBall_and_exit (15s timeout)
+- popular flag combinations
+	$00			protected (not killed by system); not waited for
+	$78			unprotected; not waited for
+	$20			killed on tilt only; not waited for (e.g. ball search)
+	$38			??? (bobtilt swing delay)
+	$18			killed on ball start and ball end (bobtilt switch debounce)
 - system thread ids:
 	$12-$14		tilt related
 	$40-$4F		lock threads

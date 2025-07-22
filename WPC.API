@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Jul 20 14:57:23 2025
+#                    dlm: Tue Jul 22 09:23:02 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 68 31 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 69 26 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -66,6 +66,7 @@
 #				  - added sleep syscalls
 #	Jul  8, 2025: - added bitgroup syscall
 #	Jul 20, 2025: - added stuff
+#	Jul 22, 2025: - added system threads and hooks
 # END OF HISTORY
 
 #======================================================================
@@ -760,8 +761,12 @@ $Hook[19]		= 'tilt_override';
 $Hook[20]		= 'tiltWarning_override';
 $Hook[28]		= 'startButton_override_2';
 
-$Hook[45]		= 'endOfBall';
+$Hook[31]		= 'endOfBall_postThreads';
+
+$Hook[45]		= 'endOfBall_preThreads';
 $Hook[46]		= 'gameStart_pre_initBallEvent';
+
+$Hook[69]		= 'gameOver_event';
 
 $Hook[78]		= 'lampFX_override';
 
@@ -769,7 +774,15 @@ $Hook[91]		= 'IRQtimer';
 
 #----------------------------------------------------------------------
 # System Threads
-#	Flags: 0800 	killed at ball start
+#
+# Flags:
+#	$0200		???
+#	$0400		???
+#	$0800		killed in sys_initBall_event (ball start)
+#	$1000		killed in sys_endBall_and_exit (ball end) after thread delay
+#	$2000		killed in sys_tilt (tilt)
+#	$4000		???
+#	$8000		waited for in sys_endBall_and_exit (15s timeout)
 #----------------------------------------------------------------------
 
 $Thread[0x0004] = 'SYSTHD_Balltrough_handler';		
