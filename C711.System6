@@ -208,13 +208,17 @@ sub asm_macros()
 				if ($arg =~ /^(If|And)(Not)?\(([^\)]+)\)\{?$/) {
 					my($cond) = $3;
 					my($neg) = $2;
-					if ($cond =~ /^Adj#([0-9A-Fa-f]{2})=([0-9A-Fa-f]{2})$/) {
-						my($a) = ($1 =~ m{^\$}) ? hex($1) : $1;
-							die("invalid _GameLogic Adj#$1 in '$arg' at input line $.\n")
-						unless numberp($a) && $a>=0 && $a<=15; 
+					if ($cond =~ /^([^=]+)=([0-9A-Fa-f]{2})$/) {
+						my($adj) = $1;
 						my($b) = ($2 =~ m{^\$}) ? hex($2) : $2;
 							die("invalid _GameLogic =$2 in '$arg' at input line $.\n")
 						unless numberp($b) && $b>=0 && $b<=15; 
+
+						$adj = $ALIAS{$adj} if defined($ALIAS{$adj});
+						$adj =~ /^Adj#([0-9A-Fa-f]{2})$/;
+						my($a) = ($1 =~ m{^\$}) ? hex($1) : $1;
+							die("invalid _GameLogic Adj#$1 in '$arg' at input line $.\n")
+						unless numberp($a) && $a>=0 && $a<=15; 
 						$ROM[$ADDR++] = ($a << 4) | $b;
 					}
 					else {

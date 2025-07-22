@@ -681,6 +681,13 @@ sub disassemble_System6($)
 		next if $decoded[$switchScriptCandidateAddr[$i]];
 		def_switch_script($switchScriptCandidateName[$i],$switchScriptCandidateAddr[$i]);
     }
+
+	# named adjustments
+	for (my($i)=0; $i<@Adj; $i++) {
+		next unless defined($Adj[$i]);
+		define_label(".AD_".($Adj[$i]=~s/^A_//r), 0x01A3 + $i*2);
+		define_label(".AD_".($Adj[$i]=~s/^A_//r)."+1", 0x01A3 + $i*2 +1);
+	}
 }
 
 sub disassemble_greenROM()
