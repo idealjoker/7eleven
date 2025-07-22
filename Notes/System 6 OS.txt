@@ -26,7 +26,7 @@ You can use the _SwitchScriptConfig to generate them, or code them by hand.
 
 - bit 0: enables Extended Scripting
 - bit 1: allows solenoids triggered by script to fire in tilt/game over
-- bit 2: the next byte contains debounce settings (todo: make debounce encoder)
+- bit 2: the next byte contains debounce settings
 - bit 3: fires a solenoid (see SolCmd) 
 - bits 4-7: amount of PinOp script bytes at the end of each branch
 
@@ -110,13 +110,9 @@ These two tables combined allow a sequence of coils to be fired via a single Pin
 
 List of 8 SolCmds, referenced by SolOp table below
 
-(todo: decompile this)
-
 ## PINOP_SOLOP_TABLE
 
 This table is referenced by the solenoid PinOp.   Each entry contains an index in the SolCmd table to start at (lower nibble), and a count of how many SolCmds to run (higher nibble).  (useful for, eg, resetting drop target banks)
-
-(todo: make an encoder)
 
 # Sounds
 
@@ -134,8 +130,6 @@ Sound Scripts allow you to combine a sequence of sounds easily.
 
 Plays a sound, with option to repeat it up to 15 times.  See encoder for syntax.  
 
-todo: generate these when decompiling
-
 
 ## SOUND_TABLE
 
@@ -143,8 +137,6 @@ Table of 16 configurable sounds and how long they last (will block other sounds 
 
 First byte: 5 bits for what command to send to the sound board, ORed with 0x80 (lower would be a SolCmd (are these allowed here too (?)))
 Second byte: sound length in tics
-
-(todo: decode these)
 
 ## Sound Scripts
 
@@ -155,8 +147,6 @@ First byte: length in tics between triggering each entry in the list
 Rest of the bytes: sound to play (see SOUND_TABLE), FF for no sound, or 00 to end the script
 
 The sounds to play can also be SolCmds
-
-(todo: decode these)
 
 example:
 
@@ -219,8 +209,6 @@ System 6 supports 8 different bit groups, configered in the BITGROUP_TABLE via a
 After a switch script runs, the OS will also run any Game Logic PinOp scripts whose conditions are met.  This is useful to do common processing.
 
 You can configure a number of them at the address specified by GAMELOGIC_TABLE and GAMELOGIC_TABLE_END
-
-(todo: make an encoder for these based on @Slochar's "background script" notes)
 
 	- 9  bytes per entry:
 		B1=XY	adjustment condition, true if adX == Y; 0 means ignore
@@ -291,8 +279,6 @@ When the counter reaches 0, the counter will be reset to INTERVAL_TRIGGER_1-4, a
 
 Note: GAME_BACKGROUND_HANDLER is run before the counters are processed, so it can be used to manipulate them.  
 
-(todo: decode pinops)
-
 # Memory Map
 
 ## _GameVarE0-N
@@ -358,7 +344,7 @@ whenever a change to the lamps has been made, sys_updateGameLogic must be called
 		C0-CF	NE when flag set but not suppressed in __dontUse
 		50-7F	invalid?
 ## sys_run_timedScripts
-## sys_play_sound
+## sys_play_sound/sys_soundCmd[A]
 ## sys_light_EBlamp
 ## sys_setBitgroup
 ## sys_pinOp[A]
