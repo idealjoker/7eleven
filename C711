@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Jul 16 21:08:02 2025
+#                    dlm: Tue Jul 22 16:50:13 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 420 51 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 411 52 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -408,6 +408,7 @@
 #				  - modified link options -l and -I to work only when env var
 #					$C711_OPENSSL_CMD is set
 #				  - v1.0.1
+#	Jul 22, 2025: - added .ERROR, .ELSE_IFDEF (v1.1)
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1945,6 +1946,7 @@ sub expand_aliases()
 		next if ($i == 1 && match_pragma($_[0],'.UNDEF','INE'));
 		next if ($i == 1 && match_pragma($_[0],'.DECL','ARE'));
 		next if match_pragma($_[0],'.IFDEF','');
+		next if match_pragma($_[0],'.ELSE_IFDEF','');
 		next if match_pragma($_[0],'.IFNDEF','');
 		next if match_pragma($_[0],'.IFUNDEF','');
 		next if match_pragma($_[0],'.ASSUME_DEFINED','');
@@ -2226,9 +2228,14 @@ sub compile_common_pragma()
 {
 ##  my($OP,@OP_ARG) = @_;
 
-    #---------------------
-    # Conditional Assembly
-    #---------------------
+	#=======================================================
+	# First set of PRAGMAs have to be evaluated whether
+	# code is being compiled or not (conditional compilation)
+	#=======================================================
+
+    #-----------------------
+    # Conditional Comilation
+    #-----------------------
 
     if ($OP eq '.ENDIF') {                                                              # .ENDIF
         die("Syntax: .ENDIF (<@_> at input line $.)\n")
@@ -2245,6 +2252,8 @@ sub compile_common_pragma()
             unless (@OP_ARG == 0);
         if ($IF_STACK[$#IF_STACK] == 1) {                                               # then, assembling -> else, not assembling
             $IF_STACK[$#IF_STACK] = -1;
+        } elsif ($IF_STACK[$#IF_STACK] == -3) {                                         # then, not assembling, but previous clause assembled  -> else, not assembling
+            $IF_STACK[$#IF_STACK] = -1;
         } elsif ($IF_STACK[$#IF_STACK] == -1) {                                         # then, not assembling -> else, assembling
             $IF_STACK[$#IF_STACK] = 1;
         } elsif ($IF_STACK[$#IF_STACK] != -2) {                                         # nested if, not assembling
@@ -2255,7 +2264,7 @@ sub compile_common_pragma()
     }
 
     if ($OP eq '.IFDEF') {                                                              # .IFDEF
-        die("Syntax: .IFDEF id (<@_> at input line $.)\n")
+        die("Syntax: .IFDEF id [|| id[...]] (<@_> at input line $.)\n")
             unless (@OP_ARG >= 1);
 		if ($IF_STACK[$#IF_STACK] < 0) {												# currently not assembling => skip entire nested if
 			push(@IF_STACK,-2);
@@ -2275,6 +2284,32 @@ sub compile_common_pragma()
         return 1;
     }
 
+    if ($OP eq '.ELSE_IFDEF') {                                                        	# .ELSE_IFDEF
+        die("Syntax: .ELSE_IFDEF id [|| id[...]] (<@_> at input line $.)\n")
+            unless (@OP_ARG >= 1);
+        if ($IF_STACK[$#IF_STACK] == 1) {                                               # then, assembling -> else, not assembling
+            $IF_STACK[$#IF_STACK] = -1;
+        } elsif ($IF_STACK[$#IF_STACK] == -1) {                                         # then, not assembling, no previous clause assembled -> else, assembling if condition true
+	        my($result);
+    	    for (my($i)=0; $i<@OP_ARG; $i+=2) {
+    	    	if ($i > 0) {
+    	    		die("cannot decode .ELSE_IFDEF (<@_> at input line $.)\n")
+    	    			unless ($OP_ARG[$i-1] eq '||');
+    	    	}
+        		$ALIAS_REFD{$OP_ARG[$i]}++;
+        		$result |= defined($ALIAS{$OP_ARG[$i]});
+        	}
+        	$IF_STACK[$#IF_STACK] = $result ? 1 : -1;
+        } elsif ($IF_STACK[$#IF_STACK] == -3) {                                         # then, not assembling, previous clause assembled -> else, not asembling
+        	$IF_STACK[$#IF_STACK] = -3;													# no change
+        } elsif ($IF_STACK[$#IF_STACK] != -2) {                                         # nested if, not assembling
+            die("unexpected .ELSE_IFDEF at input line $. [@IF_STACK]\n");
+        }
+        printf(STDERR "%d: @_ -> [@IF_STACK]\n",$.) if defined($opt_C);
+        return 1;
+    }
+		            
+
     if ($OP eq '.IFNDEF' || $OP eq '.IFUNDEF') {                                        # .IFUNDEF
         die("Syntax: .IFUNDEF id (<@_> at input line $.)\n")
             unless (@OP_ARG == 1);
@@ -2289,6 +2324,17 @@ sub compile_common_pragma()
     }
 
     return 1 if ($IF_STACK[$#IF_STACK] < 0);                                            # NOT COMPILING CODE => IGNORE REMAINING PRAGMAS
+
+	#=======================================================
+	# PRAGMAs below are ignord unless code is being compiled
+	#=======================================================
+
+    #-------
+    # Errors
+    #-------
+
+	die(".ERROR <@OP_ARG> at input line $.\n")										# .ERROR
+    	if ($OP eq '.ERROR');
 
 	if ($OP eq '.ASSUME_DEFINED') { 													# .ASSUME_DEFINED
 		die("Syntax: .ASSUME_DEFINED id[...] (<@_> at input line $.)\n")
