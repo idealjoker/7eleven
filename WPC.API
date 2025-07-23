@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Jul 22 09:23:02 2025
+#                    dlm: Wed Jul 23 13:21:03 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 69 26 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 70 41 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -67,6 +67,7 @@
 #	Jul  8, 2025: - added bitgroup syscall
 #	Jul 20, 2025: - added stuff
 #	Jul 22, 2025: - added system threads and hooks
+#	Jul 23, 2025: - additions and changes
 # END OF HISTORY
 
 #======================================================================
@@ -128,8 +129,8 @@ define_label('_GI_POWERSAVER_TIMER',				0x6D);		# minutes
 define_label('__SOLCMD_TABLE_ADDR',					0x7C);	
 define_label('__SOLCMD_TABLE_ADDR+1',				0x7D);	
 
-define_label('_BALLTILTED??',						0x86);	
-define_label('_GAMEOVER??',							0x87);	
+define_label('_BALLTILTED',							0x86);	
+define_label('_GAMEOVER',							0x87);	
 define_label('_BALLTROUGH_LOCKOUT',					0x88);	
 
 define_label('_ISR_MATRIXBYTE',						0x9C);
@@ -160,6 +161,8 @@ define_label('=GI_BRIGHTNESS',						0x03D6+$VO); 	# 5 bytes
 define_label('_PLAYER_UP',							0x040F+$VO);
 define_label('_BALL_IN_PLAY',						0x0410+$VO);
 define_label('_EXTRABALLS_PENDING',					0x0411+$VO);
+define_label('_PLAYFIELD_QUALIFIED',				0x0419+$VO);
+define_label('_BALL_KICKED_INTO_SHOOTER',			0x041A+$VO);
 define_label('_SCORE_MULTIPLIER',					0x0441+$VO);
 define_label('_BACKGROUND_MUSIC_PLAYING',			0x0445+$VO);
 unless ($WPCV eq 'WPC(alpha)') {
@@ -376,7 +379,7 @@ define_syscall('addScore',							0x851F,'B');
 define_syscall('syscall_852C',						0x852C,'B');
 define_syscall('syscall_8539',						0x8539,'B');
 define_syscall('playSound',							0x8546,'N');
-define_syscall('DMDanimation',						0x8553,'D');
+define_syscall('displayFX',							0x8553,'D');
 define_syscall('syscall_8562',						0x8562,'B');
 define_syscall('syscall_8572',						0x8572,'B');
 define_syscall('syscall_8582',						0x8582,'B');
@@ -602,11 +605,11 @@ define_syscall('sys_initGameStartVariables',			0xB170+$VO);	# B0CD -163
 define_syscall('A=playerUp',							0xB1AB+$VO);	# B11E?
 define_syscall('setPlayerUp[A]',						0xB1BD+$VO);	
 define_syscall('A=ballInPlay_lastBall?',				0xB1D1+$VO);	# B12E
-define_syscall('serveBall_and_exit',					0xB213+$VO);	# B170
-define_syscall('serveBall',								0xB218+$VO);	# B175
-define_syscall('ballServe_displayFX',					0xB224+$VO);
+define_syscall('sys_init_ball_and_exit',				0xB213+$VO);	# B170
+define_syscall('sys_init_ball_event',					0xB218+$VO);	# B175
+define_syscall('.sys_init_ball',						0xB224+$VO);
 define_syscall('nextBall_success?',						0xB24E+$VO);
-define_syscall('qualifyPlayfield',						0xB2C7+$VO);	# B224
+define_syscall('handle_qualifyPlayfield_event',			0xB2C7+$VO);	# B224
 define_syscall('playfieldQualified?',					0xB2DF+$VO);
 
 VERSION_OFFSETS(-213,0);
@@ -631,8 +634,8 @@ define_syscall('changeBackgroundMusic[A]',  			0xC0DB+$VO);
 define_syscall('soundCardCmd[AB]',						0xC0ED+$VO);
 
 VERSION_OFFSETS(-273,0);
-define_syscall('endFX',									0xC65F+$VO);	# C5CF -273
-define_syscall('abortDisplayFX[A]??',					0xC6E0+$VO);	# C5CF -273
+define_syscall('end_lampFX',							0xC65F+$VO);	# C5CF -273
+define_syscall('abort??_displayFX[A]',					0xC6E0+$VO);	# C5CF -273
 define_syscall('displayFX[A]',							0xC791+$VO);
 
 #if ($WPCV eq 'WPC(alpha)') {							# clashes with obj-based migration
@@ -683,8 +686,9 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('printString[BXY]',						0xB97B);
  define_syscall('lampFX[A]',							0xCC3A);
  define_syscall('syscall_C923',							0xC923,'B');
+ define_syscall('end_displayFX',						0xC952);
  define_syscall('setDMDanimation_playing[A]',			0xCAB0);
- define_syscall('A==DMDanimation_playing?',				0xCAB4);
+ define_syscall('DMDanimation[A]_playing?',				0xCAB4);
  define_syscall('setDMDfunction[A]', 					0xCABD);
  define_syscall('A=lastDMDanimation_played??',			0xCADE);
  define_syscall('replay_last_DMDanimation??',			0xCAE2);
@@ -741,32 +745,33 @@ define_syscall('3B:BYU=MBD_dataRefs[A]', 	         	0x7076+$VO, '', 3); # 77F2 +
 #----------------------------------------------------------------------
 
 $Hook[0] 		= 'MBD_resetBallAccounting??_override';
-$Hook[1]		= 'debugger???';
+$Hook[1]		= 'debugger??';
 $Hook[2]		= 'score_override';
 $Hook[3]		= 'gameStart_override';
-$Hook[4]		= 'gameStart_post_initBallEvent';
-$Hook[5] 		= 'initBall_override';
+$Hook[4]		= 'gameStart_post_ballStartEvent';
+$Hook[5] 		= 'ballStart_override';
 $Hook[6]		= 'lastBall';
-$Hook[7]		= 'gameOver_override';
-$Hook[8]		= 'gameOver_complete';
-$Hook[9]		= 'startButton_override_1';
+$Hook[7]		= 'Gameover_override';
+$Hook[8]		= 'Gameover_complete';
+$Hook[9]		= 'Startbutton_override_1';
 
 $Hook[11]		= 'qualify_playfield';
 $Hook[12]		= 'awardEB_override';
-$Hook[13]		= 'ballServe_override';
-$Hook[15]		= 'player_gameStart';
+$Hook[13]		= 'initBall_override';
+$Hook[15]		= 'player_Gamestart';
 $Hook[16]		= 'prepare_nextBall';
 $Hook[19]		= 'tilt_override';
 
-$Hook[20]		= 'tiltWarning_override';
-$Hook[28]		= 'startButton_override_2';
+$Hook[20]		= 'Tiltwarning_override';
+$Hook[28]		= 'Startbutton_override_2';
 
 $Hook[31]		= 'endOfBall_postThreads';
+$Hook[37]		= 'Slamtilt_override';
 
 $Hook[45]		= 'endOfBall_preThreads';
-$Hook[46]		= 'gameStart_pre_initBallEvent';
+$Hook[46]		= 'Gamestart_pre_ballStartEvent';
 
-$Hook[69]		= 'gameOver_event';
+$Hook[69]		= 'Gameover_event';
 
 $Hook[78]		= 'lampFX_override';
 
@@ -786,24 +791,33 @@ $Hook[91]		= 'IRQtimer';
 #----------------------------------------------------------------------
 
 $Thread[0x0004] = 'SYSTHD_Balltrough_handler';		
-$Thread[0x0005] = 'SYSTHD_Diagnostics';		
+$Thread[0x0005] = 'SYSTHD_Diagnostics';
+$Thread[0x0006] = 'SYSTHD_lampFX_ending';
 $Thread[0x000B] = 'SYSTHD_initBall';		
-$Thread[0x780D] = 'SYSTHD_OutholeKicker_busy';	
+$Thread[0x780D] = 'SYSTHD_OutholeKicker_busy';
+$Thread[0x200E] = 'SYSTHD_endBall';
 $Thread[0x780F] = 'SYSTHD_Balltrough_disabled';
 
-$Thread[0x0012] = 'SYSTHD_tilt_unknown';
+$Thread[0x2010] = 'SYSTHD_BallSearch';
+$Thread[0x0012] = 'SYSTHD_delay1sec_then_tilt';				
+$Thread[0x3813] = 'SYSTHD_bobTilt_swingDelay';				
+$Thread[0x1814] = 'SYSTHD_bobTilt_switchDebounce';			
+
+for (my($i)=0x20; $i<=0x3F; $i++) {
+	$Thread[$i] = sprintf('SYSTHD_lampFX_thread#%04X',$i);
+}
+
+for (my($i)=0x40; $i<=0x5F; $i++) {
+	$Thread[$i] = sprintf('SYSTHD_Lock#%02X_handler',$i-0x40);
+}
+
+for (my($i)=0x60; $i<=0x63; $i++) {
+	$Thread[$i] = sprintf('SYSTHD_DMD_thread#%04X',$i);
+}
 
 $Thread[0x007A] = 'SYSTHD_Playfield_qualified';
 $Thread[0x787F] = 'SYSTHD_StartButton';
 
-$Thread[0x2010] = 'SYSTHD_BallSearch';
-
-$Thread[0x3813] = 'SYSTHD_bobTilt_swingDelay';				
-$Thread[0x1814] = 'SYSTHD_bobTilt_switchDebounce';			
-
-for (my($i)=0; $i<=0x0F; $i++) {
-	$Thread[0x40+$i] = sprintf('SYSTHD_Lock#%02X_handler',$i);
-}
 
 
 #----------------------------------------------------------------------

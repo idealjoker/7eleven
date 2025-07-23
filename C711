@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Tue Jul 22 16:50:13 2025
+#                    dlm: Wed Jul 23 13:17:33 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 411 52 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 412 51 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -409,6 +409,7 @@
 #					$C711_OPENSSL_CMD is set
 #				  - v1.0.1
 #	Jul 22, 2025: - added .ERROR, .ELSE_IFDEF (v1.1)
+#	Jul 23, 3035: - adapated to WPC Sol# -> SolCmd#
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1632,7 +1633,6 @@ sub resolve_labels()
 
 		if ($WMS_System =~ m{^WPC}) {
 			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})([-+|&].*)?$/ || 					# substitute all system identifiers
-				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
@@ -1644,7 +1644,8 @@ sub resolve_labels()
 					$ROM[$a] = hex($1) . $2;											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 					next if numberp($ROM[$a]);											# we are done, if we have a number
 	        }
-			if ($ROM[$a] =~ m/^Lamp#(\d{1,3})([-+|&].*)?$/) {
+			if ($ROM[$a] =~ m/^Lamp#(\d{1,3})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^SolCmd#(\d+)([-+|&].*)?$/) {
 				$ROM[$a] = $1 . $2;														# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 				next if numberp($ROM[$a]);												# we are done, if we have a number
 			}

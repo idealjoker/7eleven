@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Jul 20 22:06:06 2025
+#                    dlm: Wed Jul 23 13:19:34 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 409 40 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 126 50 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -122,6 +122,8 @@
 #	Jul  8, 2025: - BUG: lamp group range is too short
 #	Jul 20, 2025: - added defSound()
 #				  - added additional inCode refs
+#	Jul 23, 2025: - adapted to change Sol# -> SolCmd#
+#				  - adapted to change FX -> lampFX
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -2108,7 +2110,7 @@ sub defSolCmd($$)
 	die("defSolCmd: invalid solenoid command number $no\n")
 		unless ($no>=0 && $no<=0xFF);
 	my($no,$name) = @_;
-	$Sol[$no] = $name;
+	$SolCmd[$no] = $name;
 }
 
 sub defLabel($$$)
@@ -2155,12 +2157,12 @@ sub defDMD($$)
 	$DMD[$no] = $name;
 }
 
-sub defFX($$)
+sub defLampFX($$)
 {
 	my($no,$name) = @_;
 
-	die("defFX: invalid FX number\n")
-		unless ($no>0 && $no<=0xFFFF);
+	die("defLampFX: invalid lampFX number\n")
+		unless ($no>0 && $no<=0xFF);
 	$FX[$no] = $name;
 }
 

@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Tue Jul 22 09:12:06 2025
+                    dlm: Wed Jul 23 10:15:45 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 331 27 NIL 0 0 72 0 2 4 NIL ofnI
+                    uE-Info: 345 33 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -97,7 +97,8 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 
 =Truth Values=
 
-- CC means previous test succeeded
+- CC means previous test succeeded (true)
+- CS means previous test failed (false)
 - truth value syscalls marked with ? at end (e.g. bitSet?)
 
 ----------------------------------------------------------------------
@@ -329,18 +330,19 @@ sys_bitgroupOp_ABXY
 	$4000		???
 	$8000		waited for in sys_endBall_and_exit (15s timeout)
 - popular flag combinations
-	$00			protected (not killed by system); not waited for
-	$78			unprotected; not waited for
-	$20			killed on tilt only; not waited for (e.g. ball search)
-	$38			??? (bobtilt swing delay)
-	$18			killed on ball start and ball end (bobtilt switch debounce)
+	$00xx		protected (not killed by system); not waited for
+	$78xx		unprotected; not waited for
+	$20xx		killed on tilt only; not waited for (e.g. ball search)
+	$38xx		??? (bobtilt swing delay)
+	$18xx		killed on ball start and ball end (bobtilt switch debounce)
 - system thread ids:
-	$12-$14		tilt related
-	$40-$4F		lock threads
+	$xx12-$xx14		tilt system
+	$xx20-$xx3F		lamp FX
+	$xx40-$xx4F		lock system
 - thread buffer with spawn values
 	0-1		pointer to next thread in list
 	5-6		pointer to PC in this thread buffer
-	17-18	Y at spawn
+	17-18	thread flags/id (Y_in at spawn)
 	19		current ROM page
 	20-21	#$172E
 	34-44	current address (Program Counter)

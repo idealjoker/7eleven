@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Jul  8 10:59:51 2025
+#                    dlm: Wed Jul 23 13:18:17 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 68 80 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 69 54 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -66,6 +66,7 @@
 #	Jul  7, 2025: - added FX# syscall arg type support
 #				  - added Sound# support
 #	Jul  8, 2025: - modified thread handler labels to allow Thread# substitution
+#	Jul 23, 2025: - adapted to change Sol# -> SolCmd# 
 # HISTORY END
 
 # NOTES:
@@ -483,10 +484,10 @@ sub disassemble_syscall($$)
 			push(@{$OPA[$oaddr]},sprintf('Switch#%02X',BYTE($addr)));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
-		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'O') {											# O: sOlenoid
-			die(sprintf("Invalid solenoid Sol#%d",BYTE($addr)))
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'O') {											# O: sOlenoid command
+			die(sprintf("Invalid solenoid command SolCmd#%d",BYTE($addr)))
 				unless (BYTE($addr)>=1 && BYTE($addr)<=65);
-			push(@{$OPA[$oaddr]},sprintf('Sol#%02X',BYTE($addr)));
+			push(@{$OPA[$oaddr]},sprintf('SolCmd#%d',BYTE($addr)));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'N') {											# N: souNd

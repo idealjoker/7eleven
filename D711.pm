@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sun Jul 20 14:55:06 2025
+#					 dlm: Wed Jul 23 13:20:19 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 322 75 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 323 49 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -320,6 +320,7 @@
 #	Jul 16, 2025: - modified def_string to always output .STR$len
 #	Jul 20, 2025: - added support for WPC_INTERPAGE_REF
 #				  - BUG: inCode refs treated LDX specially (LDY, LDU added)
+#	Jul 23, 2025: - added support for WPC SolCmd#
 # END OF HISTORY
 
 # TO-DO:
@@ -3095,20 +3096,22 @@ sub scan_next_6800_pointer($$)
 # Game Specific Identifiers
 #----------------------------------------------------------------------
 
-sub substitute_identifiers(@)                                                               # substitute game-specific identifiers
+sub substitute_identifiers(@)                                                          # substitute game-specific identifiers
 {
     my($fa,$la) = @_;
     $fa = 0 unless defined($fa);
     $la = $#ROM unless defined($la);
 
     for (my($addr)=$fa; $addr<=$la; $addr++) {
-        if (defined($LBL[$addr])) {															# label substitution
+        if (defined($LBL[$addr])) {													   # label substitution
             if ($LBL[$addr] =~ m{Adj#([0-9A-Fa-f]{2,4})}) {                            # adjustments
                 $LBL[$addr] = $` . $Adj[hex($1)] . $' if defined($Adj[hex($1)]);
             } elsif ($LBL[$addr] =~ m{Sol#}) {                                         # solenoids
             	my($pref) = $`;
                 my($num,$len) = ($' =~ m{([0-9A-Fa-f]+)(.*)});
                 $LBL[$addr] = $pref . $Sol[hex($num)] . $len if defined($Sol[hex($num)]);
+            } elsif ($LBL[$addr] =~ m{SolCmd#(\d+)}) {                                 # solenoid commands (WPC)
+                $LBL[$addr] = $` . $SolCmd[$1] . $' if defined($SolCmd[$1]);
             } elsif ($LBL[$addr] =~ m{Lamp#([0-9A-Fa-f]{1,3})}) {                      # lamps
             	if (defined($_cur_RPG)) {
 	           		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless numberp($1);
@@ -3146,6 +3149,8 @@ sub substitute_identifiers(@)                                                   
             	my($pref) = $`;
                 my($num,$len) = ($' =~ m{([0-9A-Fa-f]+)(.*)});
                 $OPA[$addr][$i] = $pref . $Sol[hex($num)] . $len if defined($Sol[hex($num)]);
+            } elsif ($OPA[$addr][$i] =~ m{SolCmd#(\d+)}) {                                 # solenoid commands (WPC)
+                $OPA[$addr][$i] = $` . $SolCmd[$1] . $' if defined($SolCmd[$1]);
             } elsif ($OPA[$addr][$i] =~ m{Lamp#([0-9A-Fa-f]{1,3})}) {                      # lamps
             	if (defined($_cur_RPG)) {
 	           		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless numberp($1);
@@ -3320,7 +3325,6 @@ sub produce_output(@)
     	if defined($compilation_options);
 
     if ($hdr) {
-        output_aliases('Solenoid Aliases','Sol#%02X',@Sol);
         if (defined($_cur_RPG)) {
 	        output_aliases('Lamp Aliases','Lamp#%d',@Lamp);
         } else {
@@ -3329,6 +3333,8 @@ sub produce_output(@)
         output_aliases('Flag Aliases','Flag#%02X',@Flag);
         output_aliases('Bitgroup Aliases','Bitgroup#%02X',@BitGroup);
         output_aliases('Switch Aliases','Switch#%02X',@Switch);
+        output_aliases('Solenoid Aliases','Sol#%02X',@Sol);
+        output_aliases('Solenoid Command Aliases','SolCmd#%d',@SolCmd);
         output_aliases('Sound Aliases','Sound#%02X',@Sound);
         if (defined($_cur_RPG)) {
 	        output_aliases('Thread Aliases','Thread#%04X',@Thread);
