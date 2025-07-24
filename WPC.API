@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Jul 23 13:21:03 2025
+#                    dlm: Wed Jul 23 21:24:54 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 70 41 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 818 51 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -335,14 +335,14 @@ define_label('ROM_VERSION',							0xFFEF);
 
 define_syscall('Panic',								0x8298,'E');			# NOTE 1: does not return
 define_syscall('Error',								0x82B6,'E');
-define_syscall('syscall_82CB',						0x82CB,'E');
-define_syscall('addToAudit??',						0x82E2,'B');
+define_syscall('Panic_alt',							0x82CB,'E');
+define_syscall('set_Error_secret_audit',			0x82E2,'B');
 define_syscall('Y=adjustment',						0x82F2,'A');
 define_syscall('A=adjustment',						0x82FF,'A');
 define_syscall('B=adjustment',						0x830C,'A');
 define_syscall('switchClosed?',						0x8319,'S');
 define_syscall('syscall_8329',						0x8329,'S');
-define_syscall('switchBroken??',					0x8339,'S');
+define_syscall('switchBroken?',						0x8339,'S');
 define_syscall('sleep',								0x8346,'B');
 define_syscall('memCopy_XY',						0x835E,'B');
 define_syscall('memClearY',							0x836B,'B');
@@ -439,7 +439,7 @@ define_syscall('syscall_8895',						0x8895,'W');
 define_syscall('syscall_88A5',						0x88A5,'W');
 define_syscall('syscall_88B5',						0x88B5,'W');
 define_syscall('syscall_88C5',						0x88C5,'W');
-define_syscall('updateAudit',						0x88D5,'U');
+define_syscall('updateAudit[D]',					0x88D5,'U');
 define_syscall('syscall_88E5',						0x88E5,'W');
 define_syscall('longJSR',							0x88F5,'R');
 define_syscall('longJMP',							0x892F,'R',1);			# NOTE 1: does not return
@@ -815,9 +815,11 @@ for (my($i)=0x60; $i<=0x63; $i++) {
 	$Thread[$i] = sprintf('SYSTHD_DMD_thread#%04X',$i);
 }
 
+$Thread[0x0070] = 'SYSTHD_serial_interface_unknown_1';
 $Thread[0x007A] = 'SYSTHD_Playfield_qualified';
 $Thread[0x787F] = 'SYSTHD_StartButton';
 
+$Thread[0x0160] = 'SYSTHD_serial_interface_unknown_2';
 
 
 #----------------------------------------------------------------------
@@ -871,6 +873,15 @@ $Audit[0x801F] = 'AU_tilts';								# Standard Audit #24
 
 $Audit[0x802B] = 'AU_left_drains';							# Standard Audit #17
 $Audit[0x802C] = 'AU_right_drains';							# Standard Audit #18
+
+$Audit[0x8047] = 'SA_lockup_incidents';						# Secret Audit
+$Audit[0x8049] = 'SA_Slamtilts';
+$Audit[0x804A] = 'SA_Tiltwarnings';
+$Audit[0x804B] = 'SA_BobtiltStuck_incidents';
+$Audit[0x8050] = 'SA_Panic_incidents';		
+$Audit[0x8051] = 'SA_Error_incidents';
+$Audit[0x8052] = 'SA_leftFlipper_raised';
+$Audit[0x8053] = 'SA_rightFlipper_raised';
 
 #----------------------------------------------------------------------
 # Scott Charles (from Dr. WHO)
