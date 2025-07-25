@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . S Y S T E M 1 1 
 #                    doc: Mon Jun  2 09:55:01 2025
-#                    dlm: Fri Jul 25 11:28:51 2025
+#                    dlm: Fri Jul 25 17:15:24 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 410 48 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 83 102 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -16,6 +16,7 @@
 #	Jul  3, 2025: - added compilation_magic()
 #	Jul 16, 2025: - adapted @COMPILATION_INFO to -n
 #	Jul 25, 2025: - added syntax checking for PRAGMAs in  non-compiled code
+#                 - BUG: pragma filter was too lose  
 # HISTORY END
 
 use strict vars;
@@ -79,7 +80,7 @@ our(@IF_STACK,$MODE);
 sub compile_pragma()
 {
 	our($OP,@OP_ARG);
-    return undef unless ($OP =~ m{^\.});
+    return undef unless ($OP =~ m{^\..*[^:]$});                                         # not a PRAGMA
 
 	return 1 if compile_common_pragma();
 	return 1 if compile_vm_pragma();
