@@ -781,12 +781,12 @@ $Hook[91]		= 'IRQtimer';
 # System Threads
 #
 # Flags:
-#	$0200		???
-#	$0400		???
+#	$0200		unused
+#	$0400		unused
 #	$0800		killed in sys_initBall_event (ball start)
 #	$1000		killed in sys_endBall_and_exit (ball end) after thread delay
 #	$2000		killed in sys_tilt (tilt)
-#	$4000		???
+#	$4000		killed in sys_killThreads_gameStart (game start)
 #	$8000		waited for in sys_endBall_and_exit (15s timeout)
 #----------------------------------------------------------------------
 

@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . S Y S T E M 7 
 #                    doc: Mon Jun  2 09:55:01 2025
-#                    dlm: Mon Jul 14 14:19:52 2025
+#                    dlm: Fri Jul 25 11:29:24 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 13 49 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 128 48 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -11,6 +11,8 @@
 #	Jun  6, 2025: - BUG: rom_addr() returned 0 on empty args
 #	Jul  3, 2025: - added compilation_magic()
 #	Jul 14, 2025: - BUG: compile_pragma() missing
+#	Jul 25, 2025: - added syntax checking for PRAGMAs in  non-compiled code
+#				  - BUG: compile_vm_pragma() missing
 # HISTORY END
 
 use strict vars;
@@ -70,11 +72,20 @@ sub code_addr(@)															# ROM addr = CPU addr
 # Compiler Pragmas
 #----------------------------------------------------------------------
 
+our(@IF_STACK,$MODE);
+
 sub compile_pragma()
 {
 	our($OP,@OP_ARG);
     return undef unless ($OP =~ m{^\.});
+
 	return 1 if compile_common_pragma();
+	return 1 if compile_vm_pragma();
+	if ($IF_STACK[$#IF_STACK] < 0) {										# not compiling code => syntax check
+		die("Unknown mode-$MODE .PRAGMA <$OP @OP_ARG> on line $.\n")
+			unless $OP eq '.ORG';
+			
+	}
 
 	our($MODE,@ROM,$MIN_ROM_ADDR,$MAX_ROM_ADDR,$opt_v,$opt_t,$opt_1,@LINE,$FIRST_ADDR);
 
@@ -114,7 +125,7 @@ sub compile_pragma()
 		return 1;
 	}
 
-	die("Unknown mode-$MODE .PRAGMA <@_> on line $.\n");
+	die("Unknown mode-$MODE .PRAGMA <$OP @OP_ARG> on line $.\n");
 }
 
 1; 

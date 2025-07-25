@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Jul 23 13:17:33 2025
+#                    dlm: Fri Jul 25 09:04:47 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 412 51 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1030 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -409,7 +409,9 @@
 #					$C711_OPENSSL_CMD is set
 #				  - v1.0.1
 #	Jul 22, 2025: - added .ERROR, .ELSE_IFDEF (v1.1)
-#	Jul 23, 3035: - adapated to WPC Sol# -> SolCmd#
+#	Jul 23, 2035: - adapated to WPC Sol# -> SolCmd#
+#	Jul 25, 2025: - BUG: .ELSE_IFDEF did not work correctly
+#				  - added syntax checking for PRAGMAs in non-compiled code
 # HISTORY END
 
 # RELEASE NOTES:
@@ -606,7 +608,7 @@ if (m{^;!.*C711\s+}) {
 
 my(@vROMimage);                                                 		# PRIVATE: verification ROM image
 my(@AUTO_LABEL_DEF);													# PRIVATE: line numbers of auto label definitions for error messages
-my(@IF_STACK) = (0);                                            		# PRIVATE: conditional compilation (TOS 0: sentinel: outside any if; 1: then/else compiling; -1: then/else not compiling; -2: nested if, not compiling)
+our(@IF_STACK) = (0);                                            		# PRIVATE: conditional compilation (TOS 0: sentinel: outside any if; 1: then/else compiling; -1: then/else not compiling; -2: nested if, not compiling)
 
 our(@ROM);																# output buffer
 our($ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR);									# Sys6-11: CPU address space; WPC: 1MB ROM address space
@@ -1024,11 +1026,7 @@ NO_ADDL:
 		($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
     }
 
-##  next if &compile_pragma;                              				# .ORG, .DB, .ENDIF, etc.; also done while not currently compiling code!
-	if (compile_pragma()) {
-        printf(STDERR "\tROM[%04X] = $ROM[$ADDR-1]\n",$ADDR-1) if $opt_T;
-		next;
-    }
+	next if &compile_pragma;                              				# .ORG, .DB, .ENDIF, etc.; also done while not currently compiling code!
 
     if ($IF_STACK[$#IF_STACK] >= 0) {                       			# currently assembling code
     	if ($opt_A && defined($tag_addr)) {								# verify <> address information
@@ -2229,6 +2227,8 @@ sub compile_common_pragma()
 {
 ##  my($OP,@OP_ARG) = @_;
 
+	print(STDERR "compile_common_pragma: OP=$OP ARGS=@OP_ARG [$IF_STACK[$#IF_STACK]]\n") if $opt_T;
+
 	#=======================================================
 	# First set of PRAGMAs have to be evaluated whether
 	# code is being compiled or not (conditional compilation)
@@ -2289,7 +2289,7 @@ sub compile_common_pragma()
         die("Syntax: .ELSE_IFDEF id [|| id[...]] (<@_> at input line $.)\n")
             unless (@OP_ARG >= 1);
         if ($IF_STACK[$#IF_STACK] == 1) {                                               # then, assembling -> else, not assembling
-            $IF_STACK[$#IF_STACK] = -1;
+			$IF_STACK[$#IF_STACK] = -3;
         } elsif ($IF_STACK[$#IF_STACK] == -1) {                                         # then, not assembling, no previous clause assembled -> else, assembling if condition true
 	        my($result);
     	    for (my($i)=0; $i<@OP_ARG; $i+=2) {
@@ -2324,7 +2324,15 @@ sub compile_common_pragma()
         return 1;
     }
 
-    return 1 if ($IF_STACK[$#IF_STACK] < 0);                                            # NOT COMPILING CODE => IGNORE REMAINING PRAGMAS
+	if ($IF_STACK[$#IF_STACK] < 0) {													# not compiling code => syntax check still required
+	    return (isMember($OP,'.ERROR','.ASSUME_DEFINED','.ASSUME_UNDEFINED','.SUPPRESS_OPTIMIZATION','.LOCK_ROM_PAGE','.UNLOCK_ROM_PAGE') ||
+				match_pragma($OP,'.DEF','INE') ||
+				match_pragma($OP,'.UNDEF','INE') ||
+				match_pragma($OP,'.DECL','ARE') ||
+				isMember($OP,'.LBL','.LABEL','.RELBL','.RELABEL') ||
+				isMember($OP,'.DB','.DW','.DBW','.DBWB','.DBBW','.DWB') ||
+                isMember($OP,'.ASCII','.NOP')) ? 1 : 0;
+    }
 
 	#=======================================================
 	# PRAGMAs below are ignord unless code is being compiled
@@ -2334,7 +2342,7 @@ sub compile_common_pragma()
     # Errors
     #-------
 
-	die(".ERROR <@OP_ARG> at input line $.\n")										# .ERROR
+	die(".ERROR <@OP_ARG> at input line $.\n")											# .ERROR
     	if ($OP eq '.ERROR');
 
 	if ($OP eq '.ASSUME_DEFINED') { 													# .ASSUME_DEFINED

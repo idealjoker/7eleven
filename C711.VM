@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . V M 
 #                    doc: Wed May 21 21:55:45 2025
-#                    dlm: Mon Jun 16 13:25:11 2025
+#                    dlm: Fri Jul 25 11:09:30 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 1098 20 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1106 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -15,6 +15,7 @@
 #				  - renamed some funs
 #	Jun  2, 2025: - corrected header
 #	Jun 16, 2025: - added compile_vm_pragma()
+#	Jul 25, 2025: - added syntax checking for PRAGMAs in  non-compiled code
 # HISTORY END
 
 use strict vars;
@@ -1093,9 +1094,16 @@ sub asm_wvm_copyTo($$)																	# copyTo Reg Reg
 # VM Pragmas
 #----------------------------------------------------------------------
 
+our(@IF_STACK,$MODE);
+
 sub compile_vm_pragma()
 {
 	our($OP,@OP_ARG);
+
+	if ($IF_STACK[$#IF_STACK] < 0) {														# not compiling code => syntax check
+		return (isMember($OP,'.WVM_MODE','.M6800_MODE','.DATA_MODE') ||
+	  		    isMember($OP,'.DISABLE_IVM','.ENABLE_IVM')) ? 1 : 0;
+	}
 
 	#------------------------------
 	# Mode Checking
