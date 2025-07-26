@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Jul 23 21:24:54 2025
+#                    dlm: Sat Jul 26 09:45:31 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 818 51 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 858 66 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -781,12 +781,12 @@ $Hook[91]		= 'IRQtimer';
 # System Threads
 #
 # Flags:
-#	$0200		unused
-#	$0400		unused
+#	$0200		???
+#	$0400		???
 #	$0800		killed in sys_initBall_event (ball start)
 #	$1000		killed in sys_endBall_and_exit (ball end) after thread delay
 #	$2000		killed in sys_tilt (tilt)
-#	$4000		killed in sys_killThreads_gameStart (game start)
+#	$4000		???
 #	$8000		waited for in sys_endBall_and_exit (15s timeout)
 #----------------------------------------------------------------------
 
@@ -845,17 +845,19 @@ $Adj[0x90]		= 'AD_Match_award';
 $Adj[0x91]		= 'AD_ExtraBall_ticket';
 $Adj[0x92]		= 'AD_tickets_maxPerPlayer';
 $Adj[0x93]		= 'AD_Match_feature';
-$Adj[0x94]		= 'AD_custom_message';
+$Adj[0x94]		= 'AD_custom_message';						# AD20
 $Adj[0x95]		= 'AD_language';
 $Adj[0x96]		= 'AD_clock_style';
 $Adj[0x97]		= 'AD_date_style';
 $Adj[0x98]		= 'AD_show_dateTime';
-$Adj[0x99]		= 'AD_GI_allowDimming';
+$Adj[0x99]		= 'AD_GI_allowDimming';						# AD25
 $Adj[0x9A]		= 'AD_Tournament_play';
 $Adj[0x9B]		= 'AD_screenFormat_European';
 $Adj[0x9C]		= 'AD_SoundVolume_zero_alllowed';
 $Adj[0x9D]		= 'AD_GI_powersaver';
-$Adj[0x9E]		= 'AD_GI_powersaver_brightness';
+$Adj[0x9E]		= 'AD_GI_powersaver_brightness';			# AD30
+
+$Adj[0xA1]		= 'AD_game_restart';						# AD33
 
 #----------------------------------------------------------------------
 # System Audits
