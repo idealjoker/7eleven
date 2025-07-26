@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Jul 23 13:20:19 2025
+#					 dlm: Sat Jul 26 08:10:08 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 323 49 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 324 61 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -321,6 +321,7 @@
 #	Jul 20, 2025: - added support for WPC_INTERPAGE_REF
 #				  - BUG: inCode refs treated LDX specially (LDY, LDU added)
 #	Jul 23, 2025: - added support for WPC SolCmd#
+#	Jul 26, 2025: - added pseudo-address tags to all .DEFINEs
 # END OF HISTORY
 
 # TO-DO:
@@ -3212,38 +3213,46 @@ sub indent($$)
     return $ind;
 }
 
-sub output_aliases($$@)
+sub output_aliases($$$@)
 {
-    my($title,$fmt,@aliases) = @_;
+    my($tag,$title,$fmt,@aliases) = @_;
     return unless (@aliases);
 
-    print(";----------------------------------------------------------------------\n");
-    print("; $title\n");
-    print(";----------------------------------------------------------------------\n\n");
+	my($tp) = ($print_addrs && defined($_cur_RPG)) ? sprintf("<%s:%04X>\t",$tag,0) : '';
+    print("$tp;----------------------------------------------------------------------\n");
+    print("$tp; $title\n");
+    print("$tp;----------------------------------------------------------------------\n$tp\n");
 
+	my($line);
     for (my($i)=0; $i<@aliases; $i++) {
         next unless defined($aliases[$i]);
-        $line = '.DEFINE';
+        $line = ($print_addrs && defined($_cur_RPG)) ? sprintf("<%s:%04X>\t",$tag,$i) : '';
+        $line .= '.DEFINE';
         $line .= indent($line,$hard_tab*$def_name_indent);
         $line .= $aliases[$i];
         $line .= indent($line,$hard_tab*$def_val_indent) . sprintf($fmt,$i);
         print("$line\n");
     }
-    print("\n");
+    $tp = ($print_addrs && defined($_cur_RPG)) ? sprintf("<%s:%04X>\t",$tag,$#aliases) : '';
+    print("$tp\n");
 }
 
-sub output_keyValue_aliases($@)
+sub output_keyValue_aliases($$@)
 {
-    my($title,%kv) = @_;
+    my($tag,$title,%kv) = @_;
     return unless (%kv);
 
-    print(";----------------------------------------------------------------------\n");
-    print("; $title\n");
-    print(";----------------------------------------------------------------------\n\n");
+	my($tp) = ($print_addrs && defined($_cur_RPG)) ? sprintf("<%s:%04X>\t",$tag,0) : '';
+    print("$tp;----------------------------------------------------------------------\n");
+    print("$tp; $title\n");
+    print("$tp;----------------------------------------------------------------------\n$tp\n");
 
+	my($line);
+	my($i) = 0;
     foreach my $key (sort { $kv{$a} <=> $kv{$b} } keys(%kv)) {
         next unless defined($kv{$key});
-        $line = '.DEFINE';
+        $line = ($print_addrs && defined($_cur_RPG)) ? sprintf("<%s:%04X>\t",$tag,$i++) : '';
+        $line .= '.DEFINE';
         $line .= indent($line,$hard_tab*$def_name_indent);
         $line .= $key;
 		if (numberp($kv{$key})) {
@@ -3253,21 +3262,24 @@ sub output_keyValue_aliases($@)
 	    }
         print("$line\n");
     }
-    print("\n");
+    $tp = ($print_addrs && defined($_cur_RPG)) ? sprintf("<%s:%04X>\t",$tag,$i-1) : '';
+    print("$tp\n");
 }
 
 sub byHexValue {
     (numberp($Lbl{$a}) ? sprintf('  :%04X',$Lbl{$a}) : $Lbl{$a}) cmp (numberp($Lbl{$b}) ? sprintf('  :%04X',$Lbl{$b}) : $Lbl{$b});
 }
 
-sub output_labels($)
+sub output_labels($$)
 {
-    my($title) = @_;
+    my($tag,$title) = @_;
 
-    print(";----------------------------------------------------------------------\n");
-    print("; $title\n");
-    print(";----------------------------------------------------------------------\n\n");
+	my($tp) = ($print_addrs && defined($_cur_RPG)) ? sprintf("<%s:%04X>\t",$tag,0) : '';
+    print("$tp;----------------------------------------------------------------------\n");
+    print("$tp; $title\n");
+    print("$tp;----------------------------------------------------------------------\n$tp\n");
 
+	my($line,$llv);
     foreach my $lbl (sort byHexValue keys %Lbl) {
 #       next if ($lbl =~ m{(.*)\+[1-9]$} && defined($Lbl{$1}));             # e.g. =Lamps+2
 		next if ($lbl =~ m{(.*)[\+-]\d+$}); # && defined($Lbl{$1}));             # e.g. =Lamps+2
@@ -3276,7 +3288,9 @@ sub output_labels($)
 
         if (numberp($lv)) {													# not WPC
             next if defined($ROM[$lv]);                                     # not an external label
-            $line = '.LBL'; 
+            $llv = $lv;
+	        $line = ($print_addrs && defined($_cur_RPG)) ? sprintf("<%s:%04X>\t",$tag,$lv) : '';
+            $line .= '.LBL'; 
             $line .= indent($line,$hard_tab*$def_name_indent) . $lbl;
             $line .= indent($line,$hard_tab*$def_val_indent) .
                         sprintf(($lv > 0xFF)?"\$%04X\n":"\$%02X\n",$Lbl{$lbl});
@@ -3288,13 +3302,16 @@ sub output_labels($)
             	die unless (substr($lbl,0,2) eq $pg);						# sanity check
             	$lbl = $';
             }
-            $line = '.LBL'; 
+            $llv = $addr;
+	        $line = ($print_addrs && defined($_cur_RPG)) ? sprintf("<%s:%04X>\t",$tag,$addr) : '';
+            $line .= '.LBL'; 
             $line .= indent($line,$hard_tab*$def_name_indent) . $lbl;
             $line .= indent($line,$hard_tab*$def_val_indent) . $lv . "\n";
         }
         print($line);
     }
-    print("\n");
+    $tp = ($print_addrs && defined($_cur_RPG)) ? sprintf("<%s:%04X>\t",$tag,$llv) : '';
+    print("$tp\n");
 }
 
 sub print_addr($)
@@ -3326,30 +3343,30 @@ sub produce_output(@)
 
     if ($hdr) {
         if (defined($_cur_RPG)) {
-	        output_aliases('Lamp Aliases','Lamp#%d',@Lamp);
+	        output_aliases('LA','Lamp Aliases','Lamp#%d',@Lamp);
         } else {
-	        output_aliases('Lamp Aliases','Lamp#%02X',@Lamp);
+	        output_aliases('LA','Lamp Aliases','Lamp#%02X',@Lamp);
 	    }
-        output_aliases('Flag Aliases','Flag#%02X',@Flag);
-        output_aliases('Bitgroup Aliases','Bitgroup#%02X',@BitGroup);
-        output_aliases('Switch Aliases','Switch#%02X',@Switch);
-        output_aliases('Solenoid Aliases','Sol#%02X',@Sol);
-        output_aliases('Solenoid Command Aliases','SolCmd#%d',@SolCmd);
-        output_aliases('Sound Aliases','Sound#%02X',@Sound);
+        output_aliases('FL','Flag Aliases','Flag#%02X',@Flag);
+        output_aliases('BG','Bitgroup Aliases','Bitgroup#%02X',@BitGroup);
+        output_aliases('SW','Switch Aliases','Switch#%02X',@Switch);
+        output_aliases('SL','Solenoid Aliases','Sol#%02X',@Sol);
+        output_aliases('SC','Solenoid Command Aliases','SolCmd#%d',@SolCmd);
+        output_aliases('SN','Sound Aliases','Sound#%02X',@Sound);
         if (defined($_cur_RPG)) {
-	        output_aliases('Thread Aliases','Thread#%04X',@Thread);
-	        output_aliases('DMD Aliases','DMD#%02X',@DMD);
-	        output_aliases('FX Aliases','FX#%02X',@FX);
+	        output_aliases('TD','Thread Aliases','Thread#%04X',@Thread);
+	        output_aliases('DM','DMD Aliases','DMD#%02X',@DMD);
+	        output_aliases('FX','FX Aliases','FX#%02X',@FX);
         } else {
-	        output_aliases('Thread Aliases','Thread#%02X',@Thread);
+	        output_aliases('TD','Thread Aliases','Thread#%02X',@Thread);
 	    }
-        output_keyValue_aliases('System Aliases',%systemAliases);
-        output_aliases('Game Adjustment Aliases','Adj#%02X',@Adj);   
-        output_aliases('Audit Aliases','Audit#%04X',@Audit);
+        output_keyValue_aliases('SA','System Aliases',%systemAliases);
+        output_aliases('AD','Game Adjustment Aliases','Adj#%02X',@Adj);   
+        output_aliases('AU','Audit Aliases','Audit#%04X',@Audit);
         $def_val_indent *= 1.53846153846154;								# 20 instead of 13 :)
-		output_aliases('Error Aliases','Error#%02X',@Error);				
+		output_aliases('ER','Error Aliases','Error#%02X',@Error);				
         $def_val_indent /= 1.53846153846154;
-        output_labels("System$WMS_System API (external labels)");           # manually defined labels outside ROM
+        output_labels('LB',"System$WMS_System API (external labels)");           # manually defined labels outside ROM
     }
 
     my($gapLen,$codeStarted);

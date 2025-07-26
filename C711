@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri Jul 25 09:04:47 2025
+#                    dlm: Sat Jul 26 08:17:35 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1030 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 415 57 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -412,6 +412,7 @@
 #	Jul 23, 2035: - adapated to WPC Sol# -> SolCmd#
 #	Jul 25, 2025: - BUG: .ELSE_IFDEF did not work correctly
 #				  - added syntax checking for PRAGMAs in non-compiled code
+#	Jul 26, 2025: - added support for pseudo-address tags
 # HISTORY END
 
 # RELEASE NOTES:
@@ -906,7 +907,7 @@ while (!eof()) {
 	} else {
 		undef($tag_rpg); undef($tag_addr);
 	}
-	s{^<([0-9A-Fa-f]{2}:)?[0-9A-Fa-f]{4}>\s+}{};						# strip disassembly addresses and leading whitespace
+	s{^<([0-9A-Za-f]{2}:)?[0-9A-Fa-f]{4}>\s+}{};						# strip disassembly addresses and leading whitespace
 	while (m{\\\s*$}) { 												# line continuation
 		$_ = $` . <>;
 		chomp;															# strip EOL
