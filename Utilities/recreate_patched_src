@@ -1,0 +1,91 @@
+#!/usr/bin/perl
+#======================================================================
+#                    U T I L I T I E S / R E C R E A T E _ P A T C H E D _ S R C 
+#                    doc: Tue Jul 29 10:08:34 2025
+#                    dlm: Tue Jul 29 12:31:28 2025
+#                    (c) 2025 A.M. Thurnherr
+#                    uE-Info: 42 0 NIL 0 0 72 10 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Jul 29, 2025: - created
+# HISTORY END
+
+use strict vars;
+
+$0 =~ s@^.*/(.*)$@\1@;
+die("Usage: $0 <old patched source file> <new original source file>\n")
+	unless (@ARGV==2 && -f $ARGV[0] && -f $ARGV[1]);
+
+my($origF) = splice(@ARGV,$#ARGV);
+open(ORIGF,$origF) || die("$origF: $!\n");
+
+my($pg_tag,$addr,$last_tag,$last_addr);
+while (<>) {
+	my($i) = 0;
+
+	print,next unless m{^<([0-9A-Z]{2})?:?([0-9A-Fa-f]{4})>};			# copy untagged lines from old patched file
+	die unless defined($2);
+
+	$pg_tag = $1;														# tag info from old patched file (hex strings)
+	$addr = $2;
+
+	if ($pg_tag eq $last_tag && $addr eq $last_addr) {					# multiple source lines at same address
+		$i++;
+	} else {
+		$i = 0;
+	}
+	print orig_source_line($pg_tag,$addr,$i);
+	if ($i == 0) {														# first source line at address just printed
+		$last_tag = $pg_tag;
+		$last_addr = $addr;
+	}
+}
+
+exit(0);
+
+#======================================================================
+
+{ my($last_sith);
+  my($last_stag);
+  my($last_saddr);
+
+sub orig_source_line($$$)
+{
+	my($ttag,$taddr,$tith) = @_;
+	my($nol,$stag,$saddr);
+
+	my($rewound) = 0;
+
+restart_file:
+	while ($nol = <ORIGF>) {												# read next line from original source
+		($stag,$saddr) = ($nol =~ m{^<([0-9A-Z]{2})?:?([0-9A-Fa-f]{4})>});
+		next unless defined $saddr;										# skip lines without tags
+
+		if ($ttag eq $last_stag && $taddr eq $last_saddr) { 			# MATCH: 2nd, 3rd, ... line at same address
+			die("($tith > $last_sith)/$ttag/$taddr") unless ($tith > $last_sith);
+			while ($last_sith+1 < $tith) {								# skip unrequested lines
+				$nol = <ORIGF>; last if eof();
+				($stag,$saddr) = ($nol =~ m{^<([0-9A-Z]{2})?:?([0-9A-Fa-f]{4})>});
+				die unless ($stag eq $last_stag && $saddr eq $last_saddr);
+				$last_sith++;
+			}
+			return $nol;												# return requested line
+		} elsif ($ttag eq $stag && $taddr eq $saddr) {					# MATCH: 1st line at this address
+			die unless ($tith == 0);
+			$last_sith = 0;
+			$last_stag = $stag;
+			$last_saddr = $saddr;
+			return $nol;
+	    }
+	}
+
+	die if ($tith > 0);													# no matching repeat line found
+	die if $rewound;													# full file scanned
+
+	seek(ORIGF,0,0);
+	$rewound = 1;
+	goto restart_file;
+}
+
+}
