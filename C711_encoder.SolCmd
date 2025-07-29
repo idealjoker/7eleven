@@ -1,17 +1,19 @@
 #======================================================================
-#                    C 7 1 1 . S O L C M D 
+#                    C 7 1 1 _ E N C O D E R . S O L C M D 
 #                    doc: Sun Oct 29 17:35:44 2023
-#                    dlm: Sat Jun  8 12:40:13 2024
+#                    dlm: Mon Jul 28 21:00:09 2025
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 14 17 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 16 29 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Oct 29, 2024: - created
+#   Jul 28, 2025: - adapted to changed 2nd arg
 
 sub SolCmd($$)
 {
-	my($str,$line) = @_;
+	my($str,$addr) = @_;
+	my($line) = $LINE[$addr];
 	return encode_solControl($str,"input line $line");
 }
 

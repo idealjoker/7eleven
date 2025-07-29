@@ -1,17 +1,19 @@
 #======================================================================
-#                    C 7 1 1 . S O U N D C M D . S 6 
+#                    C 7 1 1 _ E N C O D E R . S O U N D C M D . S 6 
 #                    doc: Wed Oct 30 08:18:58 2024
-#                    dlm: Wed Oct 30 09:50:12 2024
+#                    dlm: Mon Jul 28 21:01:01 2025
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 17 1 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 16 33 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Oct 30, 2024: - created
+#   Jul 28, 2025: - adapted to changed 2nd arg
 
 sub SoundCmd_s6($$)
 {
-	my($str,$src_line) = @_;
+	my($str,$addr) = @_;
+	my($src_line) = $LINE[$addr];
 
 	my($count,$snd) = ($str =~ m{^(1?[0-9]x)?(.*)$});
 #	print(STDERR "SoundCmd_s6: $count,$snd\n");

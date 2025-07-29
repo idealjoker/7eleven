@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Jul 27 10:14:34 2025
+#                    dlm: Mon Jul 28 20:40:43 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 1199 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 130 68 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -124,6 +124,10 @@
 #				  - added additional inCode refs
 #	Jul 23, 2025: - adapted to change Sol# -> SolCmd#
 #				  - adapted to change FX -> lampFX
+#	Jul 27, 2025: - added LD operand labels for inCode_refs
+#	Jul 28, 2025: - BUG: in-code refs were not immediate
+#				  - removed unused rem assignment statements
+#				  - BUG: in-code refs did not have PG prefix encoded
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -446,13 +450,14 @@ sub disassemble_inCode_refs($$$)
 		my($pointee_addr) = WORD($addr+2);
 		my($pointee_pg)	  = BYTE($addr+5);
 		my($type) 		  = ($pointee_addr>=0x8000) ? 'SYSTEM_YA' : 'GAME_YA';
-		my($pointee_lbl)  = sprintf('UNKNOWN_%s_REF_%04X',$type,$addr);
+		my($pointee_lbl)  = sprintf('%02X:UNKNOWN_%s_REF_%04X',$pointee_pg,$type,$pointee_addr);
 		select_WPC_RPG($pointee_pg);
 		my($usr_lbl) 	  = $LBL[$pointee_addr];
 		$pointee_lbl 	  = $usr_lbl if defined($usr_lbl);
 		setLabel($pointee_lbl,$pointee_addr,$pointee_pg);
-		$REM[$addr] = $rem unless defined($REM[$addr]);
 		select_WPC_RPG($RPG);
+		$OPA[$addr][0] = "#$pointee_lbl";
+		$OPA[$addr+4][0] = "#${pointee_lbl}{ROMpage}";
     }
 
 	for (my($addr)=$fa; $addr<=$la-5; $addr++) {							# pattern 2
@@ -461,17 +466,20 @@ sub disassemble_inCode_refs($$$)
 					BYTE($addr+4)>=$start_page &&
 						(BYTE($addr+4)==0xFF && WORD($addr+1)>=0x8000 &&  WORD($addr+1)<=0xFFFF ||
 						 BYTE($addr+4)<=0x3D && WORD($addr+1)>=0x4000 &&  WORD($addr+1)<=0x7FFF);
+#		die if $_cur_RPG == 0x3B && $addr == 0x708E;
 
 		my($pointee_addr) = WORD($addr+1);
 		my($pointee_pg)	  = BYTE($addr+4);
 		my($type) 		  = ($pointee_addr>=0x8000) ? 'SYSTEM_XB' : 'GAME_XB';
-		my($pointee_lbl)  = sprintf('UNKNOWN_%s_REF_%04X',$type,$addr);
+		my($pointee_lbl)  = sprintf('%02X:UNKNOWN_%s_REF_%04X',$pointee_pg,$type,$pointee_addr);
 		select_WPC_RPG($pointee_pg);
 		my($usr_lbl) 	  = $LBL[$pointee_addr];
 		$pointee_lbl 	  = $usr_lbl if defined($usr_lbl);
 		setLabel($pointee_lbl,$pointee_addr,$pointee_pg);
-		$REM[$addr] = $rem unless defined($REM[$addr]);
 		select_WPC_RPG($RPG);
+		$OPA[$addr][0] = "#$pointee_lbl";
+		$OPA[$addr+3][0] = "#${pointee_lbl}{ROMpage}";
+##		die("setLabel($pointee_lbl,$pointee_addr,$pointee_pg); $OP[$addr] @{$OPA[$addr]}") if $_cur_RPG == 0x3B && $addr == 0x708E;
     }
 
 	for (my($addr)=$fa; $addr<=$la-9; $addr++) {							# pattern 3
@@ -487,7 +495,6 @@ sub disassemble_inCode_refs($$$)
 		setLabel($LBL[$pointee_addr],$pointee_addr,$pointee_pg)
 			if defined($LBL[$pointee_addr]);
 		select_WPC_RPG($RPG);
-		$REM[$addr] = $rem unless defined($REM[$addr]);
 		$WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr] = $pointee_pg;			# reference in current pg to pointee_addr in pointee_pg
     }
 
@@ -501,10 +508,9 @@ sub disassemble_inCode_refs($$$)
         next if defined($WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr]);
         my($pointee_pg)   = BYTE($addr+8);
         select_WPC_RPG($pointee_pg);
-        setLabel($LBL[$pointee_addr],$pointee_addr,$pointee_pg)
-	        if defined($LBL[$pointee_addr]);
+		setLabel($LBL[$pointee_addr],$pointee_addr,$pointee_pg)
+			if defined($LBL[$pointee_addr]);
 		select_WPC_RPG($RPG);
-        $REM[$addr] = $rem unless defined($REM[$addr]);
         $WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr] = $pointee_pg;     	# reference in current pg to pointee_addr in pointee_pg
     }
 }

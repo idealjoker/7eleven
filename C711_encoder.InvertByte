@@ -1,9 +1,9 @@
 #======================================================================
-#                    C 7 1 1 . I N V E R T B Y T E 
+#                    C 7 1 1 _ E N C O D E R . I N V E R T B Y T E 
 #                    doc: Sun Oct 29 17:35:44 2023
-#                    dlm: Mon Jun  2 11:56:50 2025
+#                    dlm: Mon Jul 28 20:47:52 2025
 #                    (c) 2023 idealjoker@mailbox.orgXSxsq
-#                    uE-Info: 15 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 20 29 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -11,11 +11,13 @@
 #	May 31, 2024: - removed unnecessary statements
 #	Jun  8, 2024: - adapted to new interface
 #	Jun  2, 2025: - adapted to new labelValue
+#   Jul 28, 2025: - adapted to changed 2nd arg
 # HISTORY END
 
 sub InvertByte($$)
 {
-	my($str,$line) = @_;
+	my($str,$addr) = @_;
+	my($line) = $LINE[$addr];
 	return 0xFF - labelValue(-$line,$str);
 }
 

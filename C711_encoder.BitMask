@@ -1,26 +1,33 @@
 #======================================================================
-#                    C 7 1 1 . I N V B I T M A S K 
+#                    C 7 1 1 _ E N C O D E R . B I T M A S K 
 #                    doc: Fri May 31 11:52:25 2024
-#                    dlm: Sat May 17 09:58:06 2025
+#                    dlm: Mon Jul 28 20:44:35 2025
 #                    (c) 2023 idealjoker@mailbox.orgXSxsq
-#                    uE-Info: 11 51 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 27 29 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
-#	Feb 16, 2025: - re-created from [C711.BitMask]
-#	May 17, 2025: - BUG: did not work; wrong syntax
+#   May 31, 2024: - created
+#	Jun  8, 2024: - adapted to new interface
+#	Jun 26, 2024: - BUG: BITB #L_2x{BitMask} did not work
+#	Feb 16, 2025: - added support for multiple arguments
+#				  - BUG: Lamp and Flag code did not work
+#	Jul 14, 2025: - BUG: changes in C711 mean that the Lamps, Flags, Switches
+#						 have not been substituted yet any more!
+#	Jul 28, 2025: - adapted to changed 2nd arg
 
 # NOTES:
 #	- when this routine is called, lamps and flags have already
-#	  been substituted
+#	  been substituted (Jul 14, 2025; not sure this is true any more)
 #	- the code here is only for arguments #2, #3, etc.
 
-sub InvBitMask($$)
+sub BitMask($$)
 {
-    my($args,$line) = @_;
+    my($args,$addr) = @_;														# works for Flags and Lamps, the latter of which by this stage have been decimalized
+    my($line) = $LINE[$addr];
 
 	my($mask);
-	foreach my $str (split('[,&]',$args)) {
+	foreach my $str (split('[,|]',$args)) {
 		if (defined($ALIAS{$str})) {
 			$ALIAS_REFD{$str}++;
 			$str = $ALIAS{$str};
@@ -37,6 +44,12 @@ sub InvBitMask($$)
 			die("Invalid flag number at input line $line\n")
 				if ($byte > 3 || $bit > 7);
 			$mask |= (1<<$bit);
+		} elsif ($str =~ m{^Switch#([0-9A-Fa-f]{2})$}) {
+			my($byte,$bit) = (substr($1,0,1),substr($1,1,1));
+			$bit = hex($bit); $bit-=8 if ($bit > 7);
+			die("Invalid switch number at input line $line\n")
+				if ($byte > 3 || $bit > 7);
+			$mask |= (1<<$bit);
 		} else {
 			die("Invalid argument <$str> for {BitMask} at input line $line\n")
 				unless numberp($str) && ($str>=0);
@@ -44,7 +57,7 @@ sub InvBitMask($$)
 			$mask |= (1<<$bit);
 	    }
 	}
-	return 0xFF - $mask;
+	return $mask;
 }
 
 1;

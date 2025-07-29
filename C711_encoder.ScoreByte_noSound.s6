@@ -1,17 +1,19 @@
 #======================================================================
-#                    C 7 1 1 . S C O R E B Y T E _ N O S O U N D . S 6 
+#                    C 7 1 1 _ E N C O D E R . S C O R E B Y T E _ N O S O U N D . S 6 
 #                    doc: Sat Jun  8 12:22:52 2024
-#                    dlm: Sat Jun  8 21:10:55 2024
+#                    dlm: Mon Jul 28 21:04:54 2025
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 24 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 16 33 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jun  8, 2024: - created
+#   Jul 28, 2025: - adapted to changed 2nd arg
 
 sub ScoreByte_noSound_s6($$)
 {
-	my($str,$src_line) = @_;
+	my($str,$addr) = @_;
+	my($src_line) = $LINE[$addr];
 
 	$str =~ s/[Kk]/000/g;														# decode K symbol
 

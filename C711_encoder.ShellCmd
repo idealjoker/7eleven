@@ -1,13 +1,14 @@
 #======================================================================
-#                    . / C 7 1 1 . S H E L L C M D 
+#                    C 7 1 1 _ E N C O D E R . S H E L L C M D 
 #                    doc: Sun Nov 10 11:06:02 2024
-#                    dlm: Mon May 12 17:44:51 2025
+#                    dlm: Mon Jul 28 20:59:31 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 5 52 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 20 33 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
-#	Nov 10, 2024:	- created
+#	Nov 10, 2024: - created
+#   Jul 28, 2025: - adapted to changed 2nd arg
 
 # EXAMPLES:
 #
@@ -15,7 +16,8 @@
 
 sub ShellCmd($$)
 {
-	my($str,$src_line) = @_;
+	my($str,$addr) = @_;
+	my($src_line) = $LINE[$addr];
 	my($result) = `$str`;
 	die("\n") unless defined($result);
 	chomp($result);

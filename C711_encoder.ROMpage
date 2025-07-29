@@ -1,0 +1,39 @@
+#======================================================================
+#                    C 7 1 1 . R O M P A G E 
+#                    doc: Sun Jul 27 20:11:56 2025
+#                    dlm: Mon Jul 28 19:59:00 2025
+#                    (c) 2025 A.M. Thurnherr
+#                    uE-Info: 32 24 NIL 0 0 72 2 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Jul 27, 2025: - created
+#	Jul 28, 2025: - made work
+# HISTORY END
+
+sub ROMpage($$)
+{
+	my($str,$addr) = @_;
+
+	die("WPC source required")
+		unless defined($RPG);
+
+	my($pg,$lbl) = ($str =~ m{^([0-9A-Fa-f]{2}):(.*)});
+	$pg=sprintf('%02X',code_PG($addr)),$lbl=$str unless defined($pg);
+	$pg = 'FF' if defined($LBL{"FF:$lbl"});
+	die("cannot determine page id of label <$str> at input line $LINE[$addr]")
+		unless defined($pg);
+
+	my($taddr) = labelValue($addr,"$pg:$lbl");
+
+	if ($taddr >= 0x8000) {
+		return 0xFF;
+    } elsif ($taddr >= 0x4000) {
+		return hex($pg);
+    } else {
+    	die("ROMpage: invalid argument <$str> at input line $LINE[$addr]\n")
+    }
+}
+
+1;
+

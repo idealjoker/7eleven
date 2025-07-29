@@ -1,32 +1,36 @@
 #======================================================================
-#                    C 7 1 1 . S C O R E B Y T E . S 6 
+#                    C 7 1 1 _ E N C O D E R . S C O R E B Y T E _ N O S O U N D . S 6 A 
 #                    doc: Sat Jun  8 12:22:52 2024
-#                    dlm: Sat Jun  8 21:11:03 2024
+#                    dlm: Mon Jul 28 21:05:50 2025
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 23 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 17 33 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jun  8, 2024: - created
+#	Jun  9, 2024: - BUG: routine had wrong name
+#   Jul 28, 2025: - adapted to changed 2nd arg
 
-sub ScoreByte_s6($$)
+sub ScoreByte_noSound_s6A($$)
 {
-	my($str,$src_line) = @_;
+	my($str,$addr) = @_;
+	my($src_line) = $LINE[$addr];
+
 	$str =~ s/[Kk]/000/g;														# decode K symbol
 
 	my($mult,$expo);
 	if ($str =~ m{(.*)x(10*)}) {												# long form
 		$mult = $1; 
-		$expo = length($2)-1;
+		$expo = length($2)-2;
 		die("ScoreByte.s6: invalid score-value <$str> at input line $src_line") 	# range check
 			unless ($expo >= 0) && ($expo <= 5);
     } else {																	# short form
 		my($mult) = ($str =~ m{([^0]*)});
-		my($expo) = length($');
+		my($expo) = length($')-1;
 		die("ScoreByte.s6: invalid score-value <$str> at input line $src_line") 
 			unless ($str =~ m{[1-9]0*}) && ($expo >= 0) && ($expo <= 5);
     }
-    return ($mult<<4)|$expo;
+    return ($mult<<4)|($expo|0x08);
 }
 
 1;

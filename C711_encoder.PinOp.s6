@@ -1,9 +1,9 @@
 #======================================================================
-#                    C 7 1 1 . P I N O P . S 6 
+#                    C 7 1 1 _ E N C O D E R . P I N O P . S 6 
 #                    doc: Sat Jun  8 12:22:52 2024
-#                    dlm: Sat Mar  1 16:49:25 2025
+#                    dlm: Mon Jul 28 20:56:53 2025
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 93 0 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 21 0 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -12,10 +12,13 @@
 #	Feb 19, 2025: - renamed bitgroup ops set->fill, clear->empty
 #				  - BUG: fill had been alias for advance before
 #	Mar  1, 2025: - renamed empty() to clear() again
+#   Jul 28, 2025: - adapted to changed 2nd arg
+# HISTORY END
 
 sub PinOp_s6($$)
 {
-	my($str,$src_line) = @_;
+	my($str,$addr) = @_;
+	my($src_line) = $LINE[$addr];
 
 	my($op,$arg) = ($str =~ m{^(.*)\((.*)\)$});
 	die("PinOp: cannot decode '$str' at input line $src_line\n")

@@ -1,9 +1,9 @@
 #======================================================================
-#                    C 7 1 1 . S O L C M D . S 6 
+#                    C 7 1 1 _ E N C O D E R . S O L C M D . S 6 
 #                    doc: Tue Oct 29 19:54:45 2024
-#                    dlm: Mon Jul 14 14:18:07 2025
+#                    dlm: Mon Jul 28 21:01:40 2025
 #                    (c) 2023 idealjoker@mailbox.org
-#                    uE-Info: 13 65 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 19 33 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -11,10 +11,12 @@
 #	Oct 30, 2024: - added line numbers to errors
 #	Jul 14, 2025: - BUG: changes in C711 imply that Sol# are not 
 #					  	 substituted any more when this is called
+#   Jul 28, 2025: - adapted to changed 2nd arg
 
 sub SolCmd_s6($$)
 {
-	my($str,$src_line) = @_;
+	my($str,$addr) = @_;
+	my($src_line) = $LINE[$addr];
 
 	return 0x80
 		if ($str eq 'NOP');

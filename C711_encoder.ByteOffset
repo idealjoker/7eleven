@@ -1,15 +1,16 @@
 #======================================================================
-#                    C 7 1 1 . B Y T E O F F S E T 
+#                    C 7 1 1 _ E N C O D E R . B Y T E O F F S E T 
 #                    doc: Fri May 31 11:52:25 2024
-#                    dlm: Mon Nov 25 08:12:32 2024
+#                    dlm: Mon Jul 28 20:46:06 2025
 #                    (c) 2023 idealjoker@mailbox.orgXSxsq
-#                    uE-Info: 25 26 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 28 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #   May 31, 2024: - created
 #	Jun  8, 2024: - adapted to new interface
 #	Nov 25, 2024: - disabled because it is byte offset is ambiguous
+#   Jul 28, 2025: - adapted to changed 2nd arg
 
 # NOTES:
 #	- it appears that both lamps and flags have already been substituted
@@ -21,7 +22,8 @@
 
 sub ByteOffset($$)
 {
-    my($str,$line) = @_;														# works for Flags and Lamps, which by this stage have been decimalized
+    my($str,$addr) = @_;														# works for Flags and Lamps, which by this stage have been decimalized
+    my($line) = $LINE[$addr];
     die("ByteOfset Encoder: disabled due to ambiguity\n");
 
 #	print(STDERR "ByteOffset($str,$addr)\n");

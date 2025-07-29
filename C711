@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Jul 26 08:17:35 2025
+#                    dlm: Mon Jul 28 20:42:45 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 415 57 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 417 44 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -413,11 +413,13 @@
 #	Jul 25, 2025: - BUG: .ELSE_IFDEF did not work correctly
 #				  - added syntax checking for PRAGMAs in non-compiled code
 #	Jul 26, 2025: - added support for pseudo-address tags
+#	Jul 28, 2025: - changed encoder 2nd arg from line to addr
+#				  - replaced encoder prefix C711. by C711_encoder. 
 # HISTORY END
 
 # RELEASE NOTES:
-#	- v1.0.0 and earlier versions had @COMPILATION_INFO and others with bactic shell 
-#	  commands hard coded in the compiler; as of v1.0.1 all bactics have been removed
+#	- v1.0.0 and earlier versions had @COMPILATION_INFO and others with back-tic shell 
+#	  commands hard coded in the compiler; as of v1.0.1 all back-tics have been removed
 #	  except for:
 #		- {ShellCmd} interpreter, e.g. set ROM byte equal to (next) Mercurial revision in BCD
 #			.DEFINE GAME_ID 'hg tip | awk -F: "/^changeset:/{printf(\"$%d\n\",\$2+1)}"{ShellCmd}'
@@ -1370,7 +1372,7 @@ sub check_duplicate_label_types()
 	sub define_label($@)
 	{
 		my($lbl,$addr,$allow_relabel) = @_;
-##		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr($addr)) if $opt_T;
+		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr($addr)) if $opt_T;
 
 		if ($lbl eq 'ANALYSIS_GAP') {													# ignore gap labels
 			$last_label_addr = -1;
@@ -1426,6 +1428,8 @@ sub check_duplicate_label_types()
 		$LBL{$lbl} = $addr;
 		$LBP{$lbl} = $RPG;																# undef except in WPC
 		$LBL[$addr] = $lbl;
+
+		print(STDERR "LBL{$lbl} = $LBL{$lbl}; LBP{$lbl} = $LBP{$lbl}; LBL[$addr] = $LBL[$addr]\n") if $opt_T;
 
 		return $lbl;
 	}
@@ -1762,21 +1766,20 @@ sub resolve_labels()
 		my($str,$encoder) = ($ROM[$a] =~ m/^'?(.+)\{([^}\s]+)\}'?/);					# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
 		if (defined($encoder)) {														# 	initial '? allows for strings with spaces e.g. in 'ls -l{ShellCmd}'
 			my($remainder) = $';
-##			print(STDERR "encoder($str,$encoder) [$ROM[$a]]\n");
+			print(STDERR "encoder($str,$encoder) [$ROM[$a]]\n") if $opt_T;
 			$encoder .= ".s$WMS_System"
-				if (-f "$PATH/C711.$encoder.s$WMS_System");
-			require "$PATH/C711.$encoder";
+				if (-f "$PATH/C711_encoder.$encoder.s$WMS_System");
+			require "$PATH/C711_encoder.$encoder";
 			$encoder =~ s/\./_/g;														# replace . by _ in function name
 			my($ofs);																	# find statement base address
 			our($addr); die if defined($addr);											# UNUSED VARIABLE
 			for ($ofs=0; !defined($LINE[$a-$ofs]); $ofs++) {}
-			my($expr) = sprintf("$encoder('%s',%d);",$str,$LINE[$a-$ofs]);
-#			print(STDERR "eval($expr)\n");
-##          $ROM[$a] = sprintf("%d$remainder",eval($expr));
+##			my($expr) = sprintf("$encoder('%s',%d);",$str,$LINE[$a-$ofs]);
+			my($expr) = sprintf("$encoder('%s',%d);",$str,$a-$ofs);
 			my($ev) = eval($expr);
-            die($@) if $@;
+            die("$encoder: $@") if $@;
 			$ROM[$a] = $ev . $remainder;
-#           printf(STDERR "ROM[%04X] = %02X\n",$a,$ROM[$a]);            
+			printf(STDERR "ROM[%04X] = %02X\n",$a,$ROM[$a]) if $opt_T;
 		}
 
         #----------------------------------------------------------------------
