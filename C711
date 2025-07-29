@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon Jul 28 20:42:45 2025
+#                    dlm: Tue Jul 29 16:08:43 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 417 44 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 423 57 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -414,10 +414,17 @@
 #				  - added syntax checking for PRAGMAs in non-compiled code
 #	Jul 26, 2025: - added support for pseudo-address tags
 #	Jul 28, 2025: - changed encoder 2nd arg from line to addr
-#				  - replaced encoder prefix C711. by C711_encoder. 
+#				  - replaced encoder prefix C711. by C711_encoder.
+#	Jul 29, 2025: - BUG: dots were not allowed in source file names
 # HISTORY END
 
 # RELEASE NOTES:
+#	- v1.1.1
+#		- C711 bug fix to allow dots in source file names
+#	- v1.1.0
+#		- added .ERROR and .ELSE_IFDEF PRAGMAs
+#		- encoder API change
+#		- significant WPC improovements (esp. in-code references)
 #	- v1.0.0 and earlier versions had @COMPILATION_INFO and others with back-tic shell 
 #	  commands hard coded in the compiler; as of v1.0.1 all back-tics have been removed
 #	  except for:
@@ -565,7 +572,7 @@ die("Usage: $0 " .
 	    "\n\t<source file>\n")
     unless &getopts('12Aa:cCdD:fF:g:i:IJkLl:mn:O:o:RrS:s:Tt:vw') && (@ARGV == 1);
 
-my($dummy,$basename,$ext) = ($ARGV[0] =~ m{([^/]+/)?([^\.]+)\.(.*)}); 
+my($dummy,$basename,$ext) = ($ARGV[0] =~ m{([^/]+/)?(.+)\.([^\.]+)}); 
 $basename = 'out' unless defined($basename);
 
 my($EXTRA);																# additional statements on the current line
