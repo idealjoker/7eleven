@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Jul 26 09:45:31 2025
+#                    dlm: Wed Jul 30 22:18:56 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 858 66 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 71 40 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -68,6 +68,7 @@
 #	Jul 20, 2025: - added stuff
 #	Jul 22, 2025: - added system threads and hooks
 #	Jul 23, 2025: - additions and changes
+#	Jul 30, 2025: - updated bitgroup ops
 # END OF HISTORY
 
 #======================================================================
@@ -651,10 +652,10 @@ VERSION_OFFSETS(-329,0);
 define_syscall('resetBallSearchTimer[A]',				0xCF4B+$VO);	# CE02 -329
 
 VERSION_OFFSETS(-2549,0);
-define_syscall('rotLeft',								0xFDA2+$VO,'GB');
-define_syscall('fill', 									0xFDB4+$VO,'GB');
+define_syscall('rotLeft',								0xFDA2+$VO,'GB');			# used for lane change
+define_syscall('toggle', 								0xFDB4+$VO,'GB');
 define_syscall('unknownBitgroupOp1',					0xFDC6+$VO,'GB');
-define_syscall('unknownBitgroupOp2',					0xFDD8+$VO,'GB');
+define_syscall('advance',								0xFDD8+$VO,'GB');
 define_syscall('unknownBitgroupOp3',					0xFDEA+$VO,'GB');
 define_syscall('MBD_callHandler[A]',               		0xFDFC+$VO,'B',3);          # NOTE 3: must only be called from PG#3B
 define_syscall('switchActive[B]?',						0xFE0D+$VO);

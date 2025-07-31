@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Wed Jul 23 13:18:17 2025
+#                    dlm: Wed Jul 30 17:55:51 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 69 54 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 70 34 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -66,7 +66,8 @@
 #	Jul  7, 2025: - added FX# syscall arg type support
 #				  - added Sound# support
 #	Jul  8, 2025: - modified thread handler labels to allow Thread# substitution
-#	Jul 23, 2025: - adapted to change Sol# -> SolCmd# 
+#	Jul 23, 2025: - adapted to change Sol# -> SolCmd#
+#	Jul 30, 2025: - FX# -> LampFX#
 # HISTORY END
 
 # NOTES:
@@ -537,7 +538,7 @@ sub disassemble_syscall($$)
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'X') {											# X: lamp FX
-			push(@{$OPA[$oaddr]},sprintf('FX#%02X',BYTE($addr)));
+			push(@{$OPA[$oaddr]},sprintf('LampFX#%02X',BYTE($addr)));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'C') {											# C: code ptr (W)

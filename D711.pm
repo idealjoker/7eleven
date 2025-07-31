@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Jul 26 08:10:08 2025
+#					 dlm: Wed Jul 30 17:51:29 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 324 61 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3360 69 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -322,6 +322,7 @@
 #				  - BUG: inCode refs treated LDX specially (LDY, LDU added)
 #	Jul 23, 2025: - added support for WPC SolCmd#
 #	Jul 26, 2025: - added pseudo-address tags to all .DEFINEs
+#	Jul 30, 2025: - changed FX# to LampFX#
 # END OF HISTORY
 
 # TO-DO:
@@ -3138,8 +3139,8 @@ sub substitute_identifiers(@)                                                   
                 $LBL[$addr] = $` . $Audit[hex($1)] . $' if defined($Audit[hex($1)]);
             } elsif ($LBL[$addr] =~ m{DMD#([0-9A-F]{2})}) {                          	# DMD animations (WPC)
                 $LBL[$addr] = $` . $DMD[hex($1)] . $' if defined($DMD[hex($1)]);
-            } elsif ($LBL[$addr] =~ m{FX#([0-9A-F]{2})}) {                          	# FX animations (WPC)
-                $LBL[$addr] = $` . $FX[hex($1)] . $' if defined($FX[hex($1)]);
+            } elsif ($LBL[$addr] =~ m{LampFX#([0-9A-F]{2})}) {                         	# LampFX animations (WPC)
+                $LBL[$addr] = $` . $LampFX[hex($1)] . $' if defined($LampFX[hex($1)]);
             } 
         }
         next unless defined($OP[$addr]);
@@ -3177,8 +3178,8 @@ sub substitute_identifiers(@)                                                   
                 $OPA[$addr][$i] = $` . $Audit[hex($1)] . $' if defined($Audit[hex($1)]);
             } elsif ($OPA[$addr][$i] =~ m{DMD#([0-9A-F]{2})}) {                          	# DMD animations (WPC)
                 $OPA[$addr][$i] = $` . $DMD[hex($1)] . $' if defined($DMD[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{FX#([0-9A-F]{2})}) {                          	# FX animations (WPC)
-                $OPA[$addr][$i] = $` . $FX[hex($1)] . $' if defined($FX[hex($1)]);
+            } elsif ($OPA[$addr][$i] =~ m{LampFX#([0-9A-F]{2})}) {                         	# LampFX animations (WPC)
+                $OPA[$addr][$i] = $` . $LampFX[hex($1)] . $' if defined($LampFX[hex($1)]);
             } 
         }
     }
@@ -3356,7 +3357,7 @@ sub produce_output(@)
         if (defined($_cur_RPG)) {
 	        output_aliases('TD','Thread Aliases','Thread#%04X',@Thread);
 	        output_aliases('DM','DMD Aliases','DMD#%02X',@DMD);
-	        output_aliases('FX','FX Aliases','FX#%02X',@FX);
+	        output_aliases('FX','Lamp FX Aliases','LampFX#%02X',@LampFX);
         } else {
 	        output_aliases('TD','Thread Aliases','Thread#%02X',@Thread);
 	    }

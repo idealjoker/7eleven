@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Tue Jul 29 16:08:43 2025
+#                    dlm: Wed Jul 30 17:42:47 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 423 57 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 420 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -416,6 +416,7 @@
 #	Jul 28, 2025: - changed encoder 2nd arg from line to addr
 #				  - replaced encoder prefix C711. by C711_encoder.
 #	Jul 29, 2025: - BUG: dots were not allowed in source file names
+#	Jul 30, 2025: - changed FX# to LampFX#
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1648,7 +1649,7 @@ sub resolve_labels()
 				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Error#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^DMD#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
-				$ROM[$a] =~ m/^FX#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^LampFX#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Audit#([0-9A-Fa-f]{4})([-+|&].*)?$/) {
 					$ROM[$a] = hex($1) . $2;											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)

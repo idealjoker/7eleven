@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Jul 28 20:40:43 2025
+#                    dlm: Wed Jul 30 17:46:53 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 130 68 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2170 11 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -128,6 +128,7 @@
 #	Jul 28, 2025: - BUG: in-code refs were not immediate
 #				  - removed unused rem assignment statements
 #				  - BUG: in-code refs did not have PG prefix encoded
+#	Jul 30, 2025: - changed FX# to LampFX#
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -1760,10 +1761,10 @@ sub def_WPC_FXtable(@)
 	push(@{$OPA[$Address]},$cols);
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
-	for (my($FX)=1; $FX<=$rows; $FX++) {
+	for (my($LampFX)=1; $LampFX<=$rows; $LampFX++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
-		$REM[$opaddr] = defined($FX[$FX]) ? $FX[$FX] : sprintf('FX#%02X',$FX);
+		$REM[$opaddr] = defined($LampFX[$LampFX]) ? $LampFX[$LampFX] : sprintf('LampFX#%02X',$LampFX);
 		$OP[$opaddr] = '.DB';
 		for (my($i)=0; $i<7; $i++) {
 			push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
@@ -1773,10 +1774,10 @@ sub def_WPC_FXtable(@)
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
 		$OP[$opaddr] = '.DR';
 		my($ta,$tp) = (WORD($Address),BYTE($Address+2));
-		my($FXn) = defined($FX[$FX]) ? $FX[$FX] : sprintf('FX#%02X',$FX);
-		push(@{$OPA[$opaddr]},label_address($ta,$FXn.'_handler',1));						# suppress address suffix in label
+		my($LampFXn) = defined($LampFX[$LampFX]) ? $LampFX[$LampFX] : sprintf('LampFX#%02X',$LampFX);
+		push(@{$OPA[$opaddr]},label_address($ta,$LampFXn.'_handler',1));						# suppress address suffix in label
 		push(@{$OPA[$opaddr]},sprintf('$%02X',$tp));
-		WPC_codeRef($FXn.'_handler',"FX Handler ($FXn)",$follow_code);
+		WPC_codeRef($LampFXn.'_handler',"FX Handler ($LampFXn)",$follow_code);
 		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 		$opaddr += 3;
@@ -2166,7 +2167,7 @@ sub defLampFX($$)
 
 	die("defLampFX: invalid lampFX number\n")
 		unless ($no>0 && $no<=0xFF);
-	$FX[$no] = $name;
+	$LampFX[$no] = $name;
 }
 
 sub defSound($$)
