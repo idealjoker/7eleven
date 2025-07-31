@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Jul 30 17:46:53 2025
+#                    dlm: Thu Jul 31 10:49:45 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 2170 11 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2163 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -129,6 +129,8 @@
 #				  - removed unused rem assignment statements
 #				  - BUG: in-code refs did not have PG prefix encoded
 #	Jul 30, 2025: - changed FX# to LampFX#
+#	Jul 31, 2025: - BUG: bitgroup def byte $81 $81 indicates Bitgroup, not Lamp
+#				  - BUG: Bitgroup#00 was disallowed
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -1374,10 +1376,9 @@ sub dasm_bitgroup_def($$$)
 		return ($opa,$a);
 	}
 		    
-	if (BYTE($a) == 0x81) { 												# ??? (single byte)
+	if (BYTE($a) == 0x81) { 												# Bitgroup (single byte)
 		push(@{$OPA[$opa]},'$81'); $decoded[$a++] = 1;
-		push(@{$OPA[$opa]},sprintf("Lamp#%d",BYTE($a))); $decoded[$a++] = 1;
-##		push(@{$OPA[$opa]},sprintf('$%02X!',BYTE($a))); $decoded[$a++] = 1;
+		push(@{$OPA[$opa]},sprintf("Bitgroup#%02X",BYTE($a))); $decoded[$a++] = 1;
 		die unless BYTE($a) == 0x81;
 		push(@{$OPA[$opa]},'$81'); $decoded[$a++] = 1;
 		return ($opa,$a);
@@ -2082,7 +2083,7 @@ sub defGroup($$)
 	my($no,$name) = @_;
 
 	die("defGroup: invalid group number $no\n")
-		unless ($no>0 && $no<=255);
+		unless ($no>=0 && $no<=255);
 	$BitGroup[$no] = $name;
 }
 

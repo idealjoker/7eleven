@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Jul 30 17:42:47 2025
+#                    dlm: Thu Jul 31 16:41:00 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 420 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 420 62 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -417,6 +417,7 @@
 #				  - replaced encoder prefix C711. by C711_encoder.
 #	Jul 29, 2025: - BUG: dots were not allowed in source file names
 #	Jul 30, 2025: - changed FX# to LampFX#
+#	Jul 31, 2025: - extended syntax to allow [] in alias names
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1969,8 +1970,10 @@ sub expand_aliases()
 				($p1,$p2,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z0-9_]+\()?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
 				$pre = $p1 . $p2;
 #				print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n");
-            } else {	
-				($pre,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
+            } else {
+				($pre,$alias,$post) = ($_[$i] =~ m{^\[})								# M6809 indirect extended
+								    ? ($_[$i] =~ m{^(\[\#?)([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*\])$})
+								    : ($_[$i] =~ m{^(\#)?([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*)$});
 			}
 #			print(STDERR "$_[$i] $pre/$alias/$post [$ALIAS{$alias}]\n");
 
