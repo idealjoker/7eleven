@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Thu Jul 31 10:49:45 2025
+#                    dlm: Thu Jul 31 17:38:53 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 2163 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 134 69 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -131,6 +131,7 @@
 #	Jul 30, 2025: - changed FX# to LampFX#
 #	Jul 31, 2025: - BUG: bitgroup def byte $81 $81 indicates Bitgroup, not Lamp
 #				  - BUG: Bitgroup#00 was disallowed
+#				  - added operand-definition in comments to WPC magic
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -857,7 +858,9 @@ sub disassemble_DMD_table()
 #	- replace JMP *+3 by &skip postfix tag of preceding JSR instruction
 #	- make sleep arguments decimal
 #	- add empty lines after RTS, JMP, etc.
-#	- handle WPC truth values (CC=true) after predicates marked with ?
+#	- handle WPC truth values (CC=true) after predicates marked with
+#	  trailing '?'
+#	- define operands in comments
 #======================================================================
 
 sub apply_magic_WPC($$)
@@ -872,6 +875,14 @@ sub apply_magic_WPC($$)
 	}
 
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
+		next unless defined($OP[$addr]);
+
+		my($opi,$opa) = ($REM[$addr] =~ m{\b(\d):(\S+)});						# define operands from comments (e.g. 1:#L_shootAgain)
+		if (defined($opa)) {
+			die unless defined($OPA[$addr][$opi-1]);
+			$OPA[$addr][$opi-1] = $opa;
+		}
+		
 		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {	# 1) JMP *+3
 			undef($OP[$addr]);													# generate postfix tag
 			push(@{$OPA[$addr-3]},'& _SKIP');
