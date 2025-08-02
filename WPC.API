@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Jul 30 22:18:56 2025
+#                    dlm: Sat Aug  2 08:57:15 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 71 40 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 72 52 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -69,6 +69,7 @@
 #	Jul 22, 2025: - added system threads and hooks
 #	Jul 23, 2025: - additions and changes
 #	Jul 30, 2025: - updated bitgroup ops
+#	Aug  2, 2025: - renamed a couple of WPC syscalls
 # END OF HISTORY
 
 #======================================================================
@@ -636,7 +637,7 @@ define_syscall('soundCardCmd[AB]',						0xC0ED+$VO);
 
 VERSION_OFFSETS(-273,0);
 define_syscall('end_lampFX',							0xC65F+$VO);	# C5CF -273
-define_syscall('abort??_displayFX[A]',					0xC6E0+$VO);	# C5CF -273
+define_syscall('abort_lampFX[A]',						0xC6E0+$VO);	# C5CF -273
 define_syscall('displayFX[A]',							0xC791+$VO);
 
 #if ($WPCV eq 'WPC(alpha)') {							# clashes with obj-based migration
