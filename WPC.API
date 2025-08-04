@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Aug  2 08:57:15 2025
+#                    dlm: Mon Aug  4 16:18:52 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 72 52 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 776 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -195,6 +195,7 @@ define_label('_RND_1',								0x1790);
 define_label('_RND_2',								0x1791);
 define_label('_RND_3',								0x1792);
 define_label('_DIAGNOSTICS_MODE',					0x1793);
+define_label('_MAX_PLAYER_IN_GAME',					0x1794);
 
 VERSION_OFFSETS(-6,0);
 ##define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$VO);
@@ -607,9 +608,9 @@ define_syscall('sys_initGameStartVariables',			0xB170+$VO);	# B0CD -163
 define_syscall('A=playerUp',							0xB1AB+$VO);	# B11E?
 define_syscall('setPlayerUp[A]',						0xB1BD+$VO);	
 define_syscall('A=ballInPlay_lastBall?',				0xB1D1+$VO);	# B12E
-define_syscall('sys_init_ball_and_exit',				0xB213+$VO);	# B170
-define_syscall('sys_init_ball_event',					0xB218+$VO);	# B175
-define_syscall('.sys_init_ball',						0xB224+$VO);
+define_syscall('sys_ballServe_exit',					0xB213+$VO);	# B170
+define_syscall('sys_ballServe',							0xB218+$VO);	# B175
+define_syscall('.sys_ballServed',						0xB224+$VO);
 define_syscall('nextBall_success?',						0xB24E+$VO);
 define_syscall('handle_qualifyPlayfield_event',			0xB2C7+$VO);	# B224
 define_syscall('playfieldQualified?',					0xB2DF+$VO);
@@ -750,30 +751,27 @@ $Hook[0] 		= 'MBD_resetBallAccounting??_override';
 $Hook[1]		= 'debugger??';
 $Hook[2]		= 'score_override';
 $Hook[3]		= 'gameStart_override';
-$Hook[4]		= 'gameStart_post_ballStartEvent';
-$Hook[5] 		= 'ballStart_override';
-$Hook[6]		= 'lastBall';
+$Hook[4]		= 'gameStart_post_initBall';
+$Hook[5] 		= 'initBall_override';
 $Hook[7]		= 'Gameover_override';
 $Hook[8]		= 'Gameover_complete';
-$Hook[9]		= 'Startbutton_override_1';
+$Hook[9]		= 'gameStart_addPlayer_override';
 
 $Hook[11]		= 'qualify_playfield';
 $Hook[12]		= 'awardEB_override';
-$Hook[13]		= 'initBall_override';
+$Hook[13]		= 'ballServe_override';
 $Hook[15]		= 'player_Gamestart';
 $Hook[16]		= 'prepare_nextBall';
 $Hook[19]		= 'tilt_override';
 
 $Hook[20]		= 'Tiltwarning_override';
-$Hook[28]		= 'Startbutton_override_2';
+$Hook[28]		= 'gameStart_newGame_override';
 
 $Hook[31]		= 'endOfBall_postThreads';
 $Hook[37]		= 'Slamtilt_override';
 
 $Hook[45]		= 'endOfBall_preThreads';
-$Hook[46]		= 'Gamestart_pre_ballStartEvent';
-
-$Hook[69]		= 'Gameover_event';
+$Hook[46]		= 'Gamestart_pre_initBall';
 
 $Hook[78]		= 'lampFX_override';
 
