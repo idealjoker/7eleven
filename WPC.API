@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Aug  4 16:18:52 2025
+#                    dlm: Thu Aug  7 15:25:45 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 776 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 73 27 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -70,6 +70,7 @@
 #	Jul 23, 2025: - additions and changes
 #	Jul 30, 2025: - updated bitgroup ops
 #	Aug  2, 2025: - renamed a couple of WPC syscalls
+#	Aug  7, 2025: - changes
 # END OF HISTORY
 
 #======================================================================
@@ -185,6 +186,8 @@ define_label('_TILTWARNINGS_LEFT',					0x04D4+$VO);
 #define_label('_NUM_BALLS_LOCKED',					0x0CCB+$VO);
 #define_label('_BALLS_IN_TROUGH',					0x0CCF+$VO);
 #define_label('_BALLS_INSTALLED_IN_GAME',			0x0CD0+$VO);
+
+define_label('=TOP_OF_STACK',						0x172A);
 
 define_label('=SCOREBUF_p1',						0x1730);
 define_label('=SCOREBUF_p2',						0x1736);
@@ -500,7 +503,7 @@ define_syscall('Y=indexed[X]==1?',						0x9117+$VO);
 define_syscall('memCopy[ABXY]',							0x9139+$VO);
 define_syscall('^memCopy[AXY]',							0x913D+$VO);
 define_syscall('memCopy[ABXY]_otherbank',				0x9141+$VO);
-define_syscall('lockRAM[B]',							0x9207+$VO);
+define_syscall('._ASIC_RAM_LOCKSIZE=A',					0x9207+$VO);
 define_syscall('unlockRAM',								0x9223+$VO);
 define_syscall('lockRAM',								0x922C+$VO);
 define_syscall('CS=badChecksum[XY]',					0x928A+$VO);

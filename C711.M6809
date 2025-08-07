@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Thu Aug  7 07:39:00 2025
+#                    dlm: Thu Aug  7 15:30:16 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 35 82 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 36 78 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -33,6 +33,7 @@
 #						 of two
 #	Jul 26, 2025: - added true/false loop macros
 #	Aug  7, 2025: - added errors for attempts to JSR or JMP to different code page
+#				  - added errors for attempts to branch to different code page
 # HISTORY END
 
 use strict vars;
@@ -970,6 +971,11 @@ sub asm_6809_op($$@)
         if ($am eq 's') {                                                               # relative mode (1-byte relative address)
             die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
                 if (@OP_ARG > 1);
+			if ($OP_ARG[0] =~ m{^[0-9A-Fa-f]{2}:}) {							# check for JSR into other page attempt
+				my($tpg) = hex(substr($OP_ARG[0],0,2));
+				die("Invalid short branch into different page <$OP @OP_ARG[0..$#OP_ARG]> at input line $.\n")
+					unless ($tpg == 0xFF || $tpg == $RPG);
+	        }
             store_opc($opc[$i]);
 
             $OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]                       # _EXITLOOP pseudo label
@@ -1000,6 +1006,11 @@ sub asm_6809_op($$@)
         if ($am eq 'L') {                                                               # long relative mode (2-byte relative address)
             die("Extraneous argument(s) <@OP_ARG[1..$#OP_ARG]> at input line $.\n")
                 if (@OP_ARG > 1);
+			if ($OP_ARG[0] =~ m{^[0-9A-Fa-f]{2}:}) {							# check for JSR into other page attempt
+				my($tpg) = hex(substr($OP_ARG[0],0,2));
+				die("Invalid long branch into different page <$OP @OP_ARG[0..$#OP_ARG]> at input line $.\n")
+					unless ($tpg == 0xFF || $tpg == $RPG);
+	        }
             store_opc($opc[$i]);
 
             $OP_ARG[$OP_ARG[0]] = $LOOP_DONE_LBL[$#LOOP_DONE_LBL]                       # _EXITLOOP pseudo label

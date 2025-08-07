@@ -1,9 +1,9 @@
 ======================================================================
-                    N O T E S / R E A D M E . W P C 
+                    / U S E R S / A N T / D E S K T O P / P B L / W M S _ G A M E S / 7 E L E V E N / N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Wed Jul 23 10:15:45 2025
+                    dlm: Thu Aug  7 14:58:59 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 345 33 NIL 0 0 72 0 2 4 NIL ofnI
+                    uE-Info: 418 0 NIL 0 0 72 0 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -414,34 +414,4 @@ $13
 	- if lamp already blinking, leave it blinking
 
 !memClear <addr> <16-bit len>
-	
-======================================================================
-
-=Ball Drain Sequence=
-
-SW_Outhole_handler:
-	if neither multiball nor autofire are active (otherwise handle autofire)...
-	...spawn ball_drained_thread
-		sleep 3s
-		set background tune
-		!longJSR library_6636[3B]
-			adjust background tune
-		exit
-	sys_Outhole_handler
-		RAM_041A := 1
-		kick ball into trough (sys_OutholeKicker_and_exit)
-
-MSW_Balltrough_handler:
-	handle _BALLTROUGH_LOCKOUT
-	become Thread#0041
-	let balls settle in trough
-	count balls in trough
-	jump to Balltrough_eventDispatcher
-		<do stuff>
-       	call Balltrough_event_handler with cmd $02 if end-of-ball condition is true
-		otherwise, serve another ball
-
-Balltrough_event_handler/ballTrough_endBall
-	handle Autofire (again????) if active
-	otherwise, jump to sys_endBall_and_exit
 	
