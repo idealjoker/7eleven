@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Sat Jul 26 11:54:34 2025
+#                    dlm: Thu Aug  7 07:39:00 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 581 45 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 35 82 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -32,6 +32,7 @@
 #						 branches and jump instructions take 3 bytes instead
 #						 of two
 #	Jul 26, 2025: - added true/false loop macros
+#	Aug  7, 2025: - added errors for attempts to JSR or JMP to different code page
 # HISTORY END
 
 use strict vars;
@@ -1173,9 +1174,22 @@ sub compile_asm()
 
 	return 1 if asm_6809_op('BSR','s',0x8D);
 	return 1 if asm_6809_op('LBSR','L',0x17);
-	return 1 if asm_6809_op('JMP','DXO',0x0E,0x6E,0x7E);
+	if (asm_6809_op('JMP','DXO',0x0E,0x6E,0x7E)) {
+		if ($OP_ARG[0] =~ m{^[0-9A-Fa-f]{2}:}) {							# check for JSR into other page attempt
+			my($tpg) = hex(substr($OP_ARG[0],0,2));
+			die("Invalid JMP into different page <$OP @OP_ARG[0..$#OP_ARG]> at input line $.\n")
+				unless ($tpg == 0xFF || $tpg == $RPG);
+		}
+		return 1;
+	}
 	
 	if (asm_6809_op('JSR','DXO',0x9D,0xAD,0xBD)) {							# System Call Handling
+
+		if ($OP_ARG[0] =~ m{^[0-9A-Fa-f]{2}:}) {							# check for JSR into other page attempt
+			my($tpg) = hex(substr($OP_ARG[0],0,2));
+			die("Invalid JSR into different page <$OP @OP_ARG[0..$#OP_ARG]> at input line $.\n")
+				unless ($tpg == 0xFF || $tpg == $RPG);
+		}
 
 		return 1 unless defined($SYSCALL{$OP_ARG[0]});
 

@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu Jul 31 16:41:00 2025
+#                    dlm: Thu Aug  7 09:33:39 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 420 62 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 430 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -418,9 +418,15 @@
 #	Jul 29, 2025: - BUG: dots were not allowed in source file names
 #	Jul 30, 2025: - changed FX# to LampFX#
 #	Jul 31, 2025: - extended syntax to allow [] in alias names
+#	Aug  7, 2025: - added local/remote label warning
+#				  - added support to suppress warnings with -w in comment
 # HISTORY END
 
 # RELEASE NOTES:
+#	- v1.1.2 (not yet released)
+#		- [] allowed in alias names
+#		- use -w in comments to suppress WARNINGs (currently only remote/local
+#		  label warning)
 #	- v1.1.1
 #		- C711 bug fix to allow dots in source file names
 #	- v1.1.0
@@ -889,6 +895,7 @@ if (defined($opt_l)) {
 
 my(@NO_OPT);															# addresses where optimization is not allowed; set by !! line prefix
 my(@optimization_suppressed);											# instructions that must not be optimized; set by .SUPPRESS_OPTIMIZATION
+my(@warnings_suppressed);												# addresses where no warnigns should be produced; set by -w in comments
 my(@OP);																# address -> instruction for optimizer
 my($locked_page);														# page addr (MSB ROM address) for .[UN]LOCK_ROM_PAGE
 my($tag_rpg,$tag_addr);													# address info from <> line prefix
@@ -911,6 +918,8 @@ while (!eof()) {
 		}
 	}
 	chomp;																# strip EOL
+	push(@warnings_suppressed,$ADDR)									# suppress warnings
+		if (m{;.*\s-w\b});
 	s{;.*}{};															# strip comments
 	if (m{^<([0-9A-Fa-f]{2})?:?([0-9A-Fa-f]{4})>}) {					# record address information for -A
 		$tag_rpg   = hex($1) if defined($1);
@@ -1478,19 +1487,27 @@ sub labelValue($$)																		# addr<0: line no; addr>=0: address
 		}
 	} else {																			# not force-compilation
 		if ($WMS_System =~ m{^WPC}) {													# WPC
+			my($cpg) = code_PG($addr);
 			my($pg,$l) = ($lbl =~ m{^([0-9A-Fa-f]{2}:)?(.*)$});
-			unless (defined($pg)) {														# no RPG info: 1) same pg, 2) prime RE, 3) low address
-##				printf(STDERR "searching for $lbl (RPG = %02X)\n",code_PG($addr));
-				if (defined($LBL{sprintf("%02X:$lbl",code_PG($addr))})) {
-					$lbl = sprintf("%02X:$lbl",code_PG($addr));
+			if (defined($pg)) {
+				$pg = hex(substr($pg,0,2));
+			} else {
+##				printf(STDERR "searching for $lbl (RPG = %02X)\n",$cpg);
+				if (defined($LBL{sprintf("%02X:$lbl",$cpg)})) {
+					$pg = $cpg;
+					$lbl = sprintf("%02X:$lbl",$pg);
 ##					print(STDERR "$lbl found\n");
 				} elsif (defined($LBL{"FF:$lbl"})) {
+					$pg = 0xFF;
 					$lbl = "FF:$lbl";
 ##					print(STDERR "$lbl found\n");
 				}
 			}
 			die(sprintf("Undefined label <$lbl> at input line %d\n",$line))
 				unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
+			my($llb) = sprintf("%02X:$l",$cpg);				
+			print(STDERR "WARNING: Referencing remote label <$lbl> while there also is local label <$llb> defined at input line $line\n")
+				if !$opt_w && !isMember($addr,@warnings_suppressed) && $pg != $cpg && numberp($LBL{$llb});
 	        return $LBL{$lbl};
 		} else {																		# System 7-11
 			die(sprintf("Undefined label <$lbl> at input line $line\n"))
