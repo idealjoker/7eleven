@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Thu Jul 31 17:38:53 2025
+#                    dlm: Mon Aug 11 22:04:58 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 134 69 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 135 32 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -132,6 +132,7 @@
 #	Jul 31, 2025: - BUG: bitgroup def byte $81 $81 indicates Bitgroup, not Lamp
 #				  - BUG: Bitgroup#00 was disallowed
 #				  - added operand-definition in comments to WPC magic
+#	Aug 11, 2025: - improvements
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -604,17 +605,17 @@ sub disassemble_system_pointers()
 	$Address = def_WPC_ref(sprintf('=UNKNOWN_BYTELIST_TABLE_%04X',$Address));
 		def_WPC_byteList_table(undef,'Bytelist Table');
 	$Address = 0x81B6; push(@skipAddr,$Address);					
-	$Address = def_WPC_ref('=BITSHIFTER_LAMPMATRIX_LUT');
+	$Address = def_WPC_ref('=BITSHIFTER_LAMPMATRIX_LOOKUP_TABLE');
 		def_byteblock_hex(65);
 	$Address = 0x81C2; push(@skipAddr,$Address);
 	$Address = def_WPC_ref('=BITGROUP_TABLE');
 		def_WPC_bitgroup_table(undef,'Bitgroup Table');
 	$Address = 0x81C5; push(@skipAddr,$Address);
-	$Address = def_WPC_ref('=SWITCHTABLE');
+	$Address = def_WPC_ref('=SWITCH_TABLE');
 		def_WPC_switchTable(undef,'Switch Table',1);				# label already defined, follow code
 	$Address = 0x81CE; push(@skipAddr,$Address);
-	$Address = def_WPC_ref('=FX_TABLE');
-		def_WPC_FXtable(undef,'FX Table');
+	$Address = def_WPC_ref('=LAMPFX_TABLE');
+		def_WPC_FXtable(undef,'Lamp Effects Table');
 	$Address = 0x81D1; push(@skipAddr,$Address);
 	$Address = def_WPC_ref(sprintf('=UNKNOWN_SYSTEM_TABLE_%04X',$Address));
 		def_WPC_unknownSystem_table_1(undef,'Unknown System Table');
@@ -881,6 +882,7 @@ sub apply_magic_WPC($$)
 		if (defined($opa)) {
 			die unless defined($OPA[$addr][$opi-1]);
 			$OPA[$addr][$opi-1] = $opa;
+			substitute_identifier(\$OPA[$addr][$opi-1]);
 		}
 		
 		if ($OP[$addr] eq 'JMP' && $LBL[$addr+3] =~ m{^([0-9A-F]{2}:)?$OPA[$addr][0]$}) {	# 1) JMP *+3
@@ -1773,13 +1775,15 @@ sub def_WPC_FXtable(@)
 	push(@{$OPA[$Address]},$cols);
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
-	for (my($LampFX)=1; $LampFX<=$rows; $LampFX++) {
+	for (my($LampFX)=0; $LampFX<$rows; $LampFX++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
 		$REM[$opaddr] = defined($LampFX[$LampFX]) ? $LampFX[$LampFX] : sprintf('LampFX#%02X',$LampFX);
 		$OP[$opaddr] = '.DB';
 		for (my($i)=0; $i<7; $i++) {
-			push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
+			push(@{$OPA[$opaddr]},($i == 3) ? sprintf('Bitgroup#%02X',BYTE($Address))
+											: sprintf('$%02X!',BYTE($Address)));
+			$decoded[$Address++] = 1;
 	    }
 
 		$opaddr += 7;

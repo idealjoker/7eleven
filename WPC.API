@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Thu Aug  7 15:25:45 2025
+#                    dlm: Mon Aug 11 22:04:16 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 73 27 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 74 32 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -71,6 +71,7 @@
 #	Jul 30, 2025: - updated bitgroup ops
 #	Aug  2, 2025: - renamed a couple of WPC syscalls
 #	Aug  7, 2025: - changes
+#	Aug 11, 2025: - improvements
 # END OF HISTORY
 
 #======================================================================
@@ -171,7 +172,7 @@ define_label('_BACKGROUND_MUSIC_PLAYING',			0x0445+$VO);
 unless ($WPCV eq 'WPC(alpha)') {
 	define_label('^DMD_PLAYING_ANIMATION_DATA',		0x0481);
 	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
-	define_label('_LAST_DMD_ANIMATION_PLAYED??',	0x0487);
+	define_label('_DMD_MODE_IN_EFFECT',				0x0487);
 }
 define_label('=PLAYER_MEM_DATA',					0x04AC+$VO);
 define_label('_SIZE_PLAYER_MEM_DATA',				0x04AE+$VO);
@@ -449,7 +450,7 @@ define_syscall('updateAudit[D]',					0x88D5,'U');
 define_syscall('syscall_88E5',						0x88E5,'W');
 define_syscall('longJSR',							0x88F5,'R');
 define_syscall('longJMP',							0x892F,'R',1);			# NOTE 1: does not return
-define_syscall('unknown_spawnThread_1',				0x8948,'R');
+define_syscall('spawnThread_sibling',				0x8948,'R');
 define_syscall('unknown_spawnThread_2',				0x8983,'R');
 define_syscall('memCopy_to_X',						0x89BE,'PB');
 define_syscall('memCopy_from_Y',					0x89CE,'PB');
@@ -542,6 +543,7 @@ define_syscall('X=^threadData',							0x9BFE+$VO);
 
 VERSION_OFFSETS(-332,0);
 define_syscall('syscall_9D96',							0x9D96+$VO);	# 9C4A
+define_syscall('killThreads_siblings',					0x9E0A+$VO);
 define_syscall('syscall_9E3B',							0x9E3B+$VO);
 define_syscall('setBit[AB]',							0x9E7F+$VO);
 define_syscall('clearBit[AB]',							0x9E92+$VO);
@@ -594,7 +596,7 @@ define_syscall('setGIbrightness81[A]',					0xAB4B+$VO);
 define_syscall('setGIbrightness[AB]',     				0xAB53+$VO);
 define_syscall('sys_setGIbrightness[AB]',				0xAB56+$VO);
 
-define_syscall('X=^tableElt[AX]',						0xAC5B+$VO);
+define_syscall('BX=^tableElt[AX]',						0xAC5B+$VO);
 define_syscall('X=^tableElt[ABX]',						0xAC5E+$VO);
 define_syscall('X=^tableElt[AXY]',						0xAC89+$VO);
 
@@ -658,7 +660,7 @@ define_syscall('resetBallSearchTimer[A]',				0xCF4B+$VO);	# CE02 -329
 
 VERSION_OFFSETS(-2549,0);
 define_syscall('rotLeft',								0xFDA2+$VO,'GB');			# used for lane change
-define_syscall('toggle', 								0xFDB4+$VO,'GB');
+define_syscall('rotRight', 								0xFDB4+$VO,'GB');
 define_syscall('unknownBitgroupOp1',					0xFDC6+$VO,'GB');
 define_syscall('advance',								0xFDD8+$VO,'GB');
 define_syscall('unknownBitgroupOp3',					0xFDEA+$VO,'GB');
@@ -696,7 +698,7 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('setDMDanimation_playing[A]',			0xCAB0);
  define_syscall('DMDanimation[A]_playing?',				0xCAB4);
  define_syscall('setDMDfunction[A]', 					0xCABD);
- define_syscall('A=lastDMDanimation_played??',			0xCADE);
+ define_syscall('A=DMDmode_in_effect',					0xCADE);
  define_syscall('replay_last_DMDanimation??',			0xCAE2);
  define_syscall('syscall_D6BC',							0xD6BC,'WB');
  define_syscall('syscall_D730',							0xD730,'BBB');
@@ -756,6 +758,7 @@ $Hook[2]		= 'score_override';
 $Hook[3]		= 'gameStart_override';
 $Hook[4]		= 'gameStart_post_initBall';
 $Hook[5] 		= 'initBall_override';
+$Hook[5] 		= 'initBall';
 $Hook[7]		= 'Gameover_override';
 $Hook[8]		= 'Gameover_complete';
 $Hook[9]		= 'gameStart_addPlayer_override';

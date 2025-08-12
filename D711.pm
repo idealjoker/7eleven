@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Jul 30 17:51:29 2025
+#					 dlm: Mon Aug 11 09:32:47 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 3360 69 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 326 68 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -323,6 +323,7 @@
 #	Jul 23, 2025: - added support for WPC SolCmd#
 #	Jul 26, 2025: - added pseudo-address tags to all .DEFINEs
 #	Jul 30, 2025: - changed FX# to LampFX#
+#	Aug 11, 2025: - modularized substitute_identifiers for WPC magic
 # END OF HISTORY
 
 # TO-DO:
@@ -3098,6 +3099,49 @@ sub scan_next_6800_pointer($$)
 # Game Specific Identifiers
 #----------------------------------------------------------------------
 
+sub substitute_identifier($)
+{
+	my($strR) = @_;
+	
+	if ($$strR =~ m{Adj#([0-9A-Fa-f]{2,4})}) { 						   # adjustments
+		$$strR = $` . $Adj[hex($1)] . $' if defined($Adj[hex($1)]);
+	} elsif ($$strR =~ m{Sol#}) {										   # solenoids
+		my($pref) = $`;
+		my($num,$len) = ($' =~ m{([0-9A-Fa-f]+)(.*)});
+		$$strR = $pref . $Sol[hex($num)] . $len if defined($Sol[hex($num)]);
+	} elsif ($$strR =~ m{SolCmd#(\d+)}) {								   # solenoid commands (WPC)
+		$$strR = $` . $SolCmd[$1] . $' if defined($SolCmd[$1]);
+	} elsif ($$strR =~ m{Lamp#([0-9A-Fa-f]{1,3})}) {					   # lamps
+		if (defined($_cur_RPG)) {
+			die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless numberp($1);
+			$$strR = $` . $Lamp[$1] . $' if defined($Lamp[$1]);
+		} else {
+			die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr))
+				unless length($1) == 2;
+			$$strR = $` . $Lamp[hex($1)] . $' if defined($Lamp[hex($1)]);
+		}
+	} elsif ($$strR =~ m{Flag#([0-9A-F]{2})}) {							# flags
+		$$strR = $` . $Flag[hex($1)] . $' if defined($Flag[hex($1)]);
+	} elsif ($$strR =~ m{Bitgroup#([0-9A-Fa-f]{2,4})}) {					# bitgroups
+		$$strR = $` . $BitGroup[hex($1)] . $' if defined($BitGroup[hex($1)]);
+	} elsif ($$strR =~ m{Sound#([0-9A-Fa-f]{2,4})}) {						# sounds
+		$$strR = $` . $Sound[hex($1)] . $' if defined($Sound[hex($1)]);
+	} elsif ($$strR =~ m{Switch#([0-9A-F]{2})}) {							# switches
+		$$strR = $` . $Switch[hex($1)] . $' if defined($Switch[hex($1)]);
+	} elsif ($$strR =~ m{Thread#([0-9A-F]{2,4})}) {						# threads
+		$$strR = $` . $Thread[hex($1)] . $' if defined($Thread[hex($1)]);
+	} elsif ($$strR =~ m{Error#([0-9A-F]{2})}) {							# errors (WPC)
+		$$strR = $` . $Error[hex($1)] . $' if defined($Error[hex($1)]);
+	} elsif ($$strR =~ m{Audit#([0-9A-F]{4})}) {							# audits (WPC)
+		$$strR = $` . $Audit[hex($1)] . $' if defined($Audit[hex($1)]);
+	} elsif ($$strR =~ m{DMD#([0-9A-F]{2})}) { 							# DMD animations (WPC)
+		$$strR = $` . $DMD[hex($1)] . $' if defined($DMD[hex($1)]);
+	} elsif ($$strR =~ m{LampFX#([0-9A-F]{2})}) {							# LampFX animations (WPC)
+		$$strR = $` . $LampFX[hex($1)] . $' if defined($LampFX[hex($1)]);
+	}
+}
+	
+
 sub substitute_identifiers(@)                                                          # substitute game-specific identifiers
 {
     my($fa,$la) = @_;
@@ -3106,81 +3150,11 @@ sub substitute_identifiers(@)                                                   
 
     for (my($addr)=$fa; $addr<=$la; $addr++) {
         if (defined($LBL[$addr])) {													   # label substitution
-            if ($LBL[$addr] =~ m{Adj#([0-9A-Fa-f]{2,4})}) {                            # adjustments
-                $LBL[$addr] = $` . $Adj[hex($1)] . $' if defined($Adj[hex($1)]);
-            } elsif ($LBL[$addr] =~ m{Sol#}) {                                         # solenoids
-            	my($pref) = $`;
-                my($num,$len) = ($' =~ m{([0-9A-Fa-f]+)(.*)});
-                $LBL[$addr] = $pref . $Sol[hex($num)] . $len if defined($Sol[hex($num)]);
-            } elsif ($LBL[$addr] =~ m{SolCmd#(\d+)}) {                                 # solenoid commands (WPC)
-                $LBL[$addr] = $` . $SolCmd[$1] . $' if defined($SolCmd[$1]);
-            } elsif ($LBL[$addr] =~ m{Lamp#([0-9A-Fa-f]{1,3})}) {                      # lamps
-            	if (defined($_cur_RPG)) {
-	           		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless numberp($1);
-	                $LBL[$addr] = $` . $Lamp[$1] . $' if defined($Lamp[$1]);
-            	} else {
-            		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr))
-						unless length($1) == 2;
-	                $LBL[$addr] = $` . $Lamp[hex($1)] . $' if defined($Lamp[hex($1)]);
-	            }
-            } elsif ($LBL[$addr] =~ m{Flag#([0-9A-F]{2})}) { 							# flags
-                $LBL[$addr] = $` . $Flag[hex($1)] . $' if defined($Flag[hex($1)]);
-            } elsif ($LBL[$addr] =~ m{Bitgroup#([0-9A-Fa-f]{2,4})}) {                  	# bitgroups
-                $LBL[$addr] = $` . $BitGroup[hex($1)] . $' if defined($BitGroup[hex($1)]);
-            } elsif ($LBL[$addr] =~ m{Sound#([0-9A-Fa-f]{2,4})}) {                     	# sounds
-                $LBL[$addr] = $` . $Sound[hex($1)] . $' if defined($Sound[hex($1)]);
-            } elsif ($LBL[$addr] =~ m{Switch#([0-9A-F]{2})}) { 							# switches
-                $LBL[$addr] = $` . $Switch[hex($1)] . $' if defined($Switch[hex($1)]);
-            } elsif ($LBL[$addr] =~ m{Thread#([0-9A-F]{2,4})}) {						# threads
-                $LBL[$addr] = $` . $Thread[hex($1)] . $' if defined($Thread[hex($1)]);
-            } elsif ($LBL[$addr] =~ m{Error#([0-9A-F]{2})}) {                       	# errors (WPC)
-                $LBL[$addr] = $` . $Error[hex($1)] . $' if defined($Error[hex($1)]);
-            } elsif ($LBL[$addr] =~ m{Audit#([0-9A-F]{4})}) {                       	# audits (WPC)
-                $LBL[$addr] = $` . $Audit[hex($1)] . $' if defined($Audit[hex($1)]);
-            } elsif ($LBL[$addr] =~ m{DMD#([0-9A-F]{2})}) {                          	# DMD animations (WPC)
-                $LBL[$addr] = $` . $DMD[hex($1)] . $' if defined($DMD[hex($1)]);
-            } elsif ($LBL[$addr] =~ m{LampFX#([0-9A-F]{2})}) {                         	# LampFX animations (WPC)
-                $LBL[$addr] = $` . $LampFX[hex($1)] . $' if defined($LampFX[hex($1)]);
-            } 
+        	substitute_identifier(\$LBL[$addr]);
         }
         next unless defined($OP[$addr]);
         for (my($i)=0; $i<@{$OPA[$addr]}; $i++) {
-            if ($OPA[$addr][$i] =~ m{Adj#([0-9A-Fa-f]{2,4})}) {                            # adjustments
-                $OPA[$addr][$i] = $` . $Adj[hex($1)] . $' if defined($Adj[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{Sol#}) {                                         # solenoids
-            	my($pref) = $`;
-                my($num,$len) = ($' =~ m{([0-9A-Fa-f]+)(.*)});
-                $OPA[$addr][$i] = $pref . $Sol[hex($num)] . $len if defined($Sol[hex($num)]);
-            } elsif ($OPA[$addr][$i] =~ m{SolCmd#(\d+)}) {                                 # solenoid commands (WPC)
-                $OPA[$addr][$i] = $` . $SolCmd[$1] . $' if defined($SolCmd[$1]);
-            } elsif ($OPA[$addr][$i] =~ m{Lamp#([0-9A-Fa-f]{1,3})}) {                      # lamps
-            	if (defined($_cur_RPG)) {
-	           		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless numberp($1);
-	                $OPA[$addr][$i] = $` . $Lamp[$1] . $' if defined($Lamp[$1]);
-            	} else {
-            		die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr))
-						unless length($1) == 2;
-	                $OPA[$addr][$i] = $` . $Lamp[hex($1)] . $' if defined($Lamp[hex($1)]);
-	            }
-            } elsif ($OPA[$addr][$i] =~ m{Flag#([0-9A-F]{2})}) { 							# flags
-                $OPA[$addr][$i] = $` . $Flag[hex($1)] . $' if defined($Flag[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{Bitgroup#([0-9A-Fa-f]{2,4})}) {                  	# bitgroups
-                $OPA[$addr][$i] = $` . $BitGroup[hex($1)] . $' if defined($BitGroup[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{Sound#([0-9A-Fa-f]{2,4})}) {                     	# sounds
-                $OPA[$addr][$i] = $` . $Sound[hex($1)] . $' if defined($Sound[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{Switch#([0-9A-F]{2})}) { 							# switches
-                $OPA[$addr][$i] = $` . $Switch[hex($1)] . $' if defined($Switch[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{Thread#([0-9A-F]{2,4})}) {						# threads
-                $OPA[$addr][$i] = $` . $Thread[hex($1)] . $' if defined($Thread[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{Error#([0-9A-F]{2})}) {                       	# errors (WPC)
-                $OPA[$addr][$i] = $` . $Error[hex($1)] . $' if defined($Error[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{Audit#([0-9A-F]{4})}) {                       	# audits (WPC)
-                $OPA[$addr][$i] = $` . $Audit[hex($1)] . $' if defined($Audit[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{DMD#([0-9A-F]{2})}) {                          	# DMD animations (WPC)
-                $OPA[$addr][$i] = $` . $DMD[hex($1)] . $' if defined($DMD[hex($1)]);
-            } elsif ($OPA[$addr][$i] =~ m{LampFX#([0-9A-F]{2})}) {                         	# LampFX animations (WPC)
-                $OPA[$addr][$i] = $` . $LampFX[hex($1)] . $' if defined($LampFX[hex($1)]);
-            } 
+        	substitute_identifier(\$OPA[$addr][$i]);
         }
     }
 }
