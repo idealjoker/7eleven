@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu Aug  7 09:33:39 2025
+#                    dlm: Tue Aug 12 11:49:54 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 430 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 424 78 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -420,6 +420,8 @@
 #	Jul 31, 2025: - extended syntax to allow [] in alias names
 #	Aug  7, 2025: - added local/remote label warning
 #				  - added support to suppress warnings with -w in comment
+#	Aug 12, 2025: - DMD# => DisplayFX#
+#				  - BUG: label_value did not throw an error on DMD#28 any more
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1039,7 +1041,7 @@ NO_ADDL:
         &decimalize;                                        			# convert all numbers to decimal (e.g. for .ORG); NB: does not deal with #$numbers
         ($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
         $OP[$ADDR] = $OP;                                   			# make available to OPTIMIZER
-        printf(STDERR "\tOP[%04X] = ",$ADDR), print(STDERR "$OP @OP_ARG\n") if $opt_T;
+##        printf(STDERR "\tOP[%04X] = ",$ADDR), print(STDERR "$OP @OP_ARG\n") if $opt_T;
 
         &unroll_structure;  	                              			# _IF, _Loop, etc.  
         next unless defined($OP);                           			# some structure keywords only generate labels
@@ -1390,7 +1392,7 @@ sub check_duplicate_label_types()
 	sub define_label($@)
 	{
 		my($lbl,$addr,$allow_relabel) = @_;
-		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr($addr)) if $opt_T;
+##		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr($addr)) if $opt_T;
 
 		if ($lbl eq 'ANALYSIS_GAP') {													# ignore gap labels
 			$last_label_addr = -1;
@@ -1447,7 +1449,7 @@ sub check_duplicate_label_types()
 		$LBP{$lbl} = $RPG;																# undef except in WPC
 		$LBL[$addr] = $lbl;
 
-		print(STDERR "LBL{$lbl} = $LBL{$lbl}; LBP{$lbl} = $LBP{$lbl}; LBL[$addr] = $LBL[$addr]\n") if $opt_T;
+##		print(STDERR "LBL{$lbl} = $LBL{$lbl}; LBP{$lbl} = $LBP{$lbl}; LBL[$addr] = $LBL[$addr]\n") if $opt_T;
 
 		return $lbl;
 	}
@@ -1504,7 +1506,7 @@ sub labelValue($$)																		# addr<0: line no; addr>=0: address
 				}
 			}
 			die(sprintf("Undefined label <$lbl> at input line %d\n",$line))
-				unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
+				unless numberp($LBL{$lbl}); 
 			my($llb) = sprintf("%02X:$l",$cpg);				
 			print(STDERR "WARNING: Referencing remote label <$lbl> while there also is local label <$llb> defined at input line $line\n")
 				if !$opt_w && !isMember($addr,@warnings_suppressed) && $pg != $cpg && numberp($LBL{$llb});
@@ -1604,6 +1606,7 @@ sub resolve_labels()
 {
     for (my($a)=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {                               # first, substitute all label values
         next unless defined($ROM[$a]);
+        printf(STDERR "%05X: $ROM[$a]: resolving label\n",$a) if $opt_T;
 
         if ($_[0]) {                                                                    # debug dump
             if (numberp($ROM[$a])) {
@@ -1651,14 +1654,17 @@ sub resolve_labels()
             }
             next;
         }
+        print(STDERR "\tnot a decimal\n") if $opt_T;
 
         next if ($ROM[$a] =~ m{^\@});                                                   # leave resolution of @COMPILER_VARIABLES for later
 		next if isMember($ROM[$a],'16-BIT VALUE','WPC REFERENCE');
+        print(STDERR "\tnot a compiler special\n") if $opt_T;
 
         $ROM[$a] = hex($1) if ($ROM[$a] =~ m{^\$([0-9A-Fa-f]+)$});                      # turn $hex and %binary numbers into decimals
         $ROM[$a] = eval('0b' . $1) if ($ROM[$a] =~ m{^%([01]+)$});
         die(sprintf("<%04X> $@\n",$a)) unless defined($ROM[$a]);
 		next if numberp($ROM[$a]); 														# we are done, if we have a number
+        print(STDERR "\tnot a hex or binary\n") if $opt_T;
 
 		if ($WMS_System =~ m{^WPC}) {
 			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})([-+|&].*)?$/ || 					# substitute all system identifiers
@@ -1666,7 +1672,7 @@ sub resolve_labels()
 				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Error#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
-				$ROM[$a] =~ m/^DMD#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^DisplayFX#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^LampFX#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Audit#([0-9A-Fa-f]{4})([-+|&].*)?$/) {
@@ -1700,6 +1706,7 @@ sub resolve_labels()
 				next if numberp($ROM[$a]);                                          
 	        }
 	    }
+        print(STDERR "\tnot a system identifier\n") if $opt_T;
 
         my($ms) = '^\\' . $EIGHT_BIT_LABEL_PREFIX;                                      # 8-bit relative address
         if ($ROM[$a] =~ m{$ms}) {                                                   
@@ -1772,11 +1779,13 @@ sub resolve_labels()
             $ROM[$a] = labelValue($a,$lbl);
             next;
         }
+        print(STDERR "\tnot an optimizable label\n") if $opt_T;
 
         if (numberp($LBL{$ROM[$a]})) {                                                  # if entire remaining string exists in list of labels, substitute its value
             $ROM[$a] = labelValue($a,$ROM[$a]);                                         # [ this allows re-defining apparent label arithmetic 
             next;                                                                       # (e.g. .LBL RAM_var $FF; .LBL RAM_var+1 $C000)]
         }
+        print(STDERR "\tnot an defined label\n") if $opt_T;
 
         #----------------------------------------------------------------------
         # Value Encoders / Data Types / Interpreters
@@ -1792,7 +1801,7 @@ sub resolve_labels()
 		my($str,$encoder) = ($ROM[$a] =~ m/^'?(.+)\{([^}\s]+)\}'?/);					# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
 		if (defined($encoder)) {														# 	initial '? allows for strings with spaces e.g. in 'ls -l{ShellCmd}'
 			my($remainder) = $';
-			print(STDERR "encoder($str,$encoder) [$ROM[$a]]\n") if $opt_T;
+##			print(STDERR "encoder($str,$encoder) [$ROM[$a]]\n") if $opt_T;
 			$encoder .= ".s$WMS_System"
 				if (-f "$PATH/C711_encoder.$encoder.s$WMS_System");
 			require "$PATH/C711_encoder.$encoder";
@@ -1805,8 +1814,9 @@ sub resolve_labels()
 			my($ev) = eval($expr);
             die("$encoder: $@") if $@;
 			$ROM[$a] = $ev . $remainder;
-			printf(STDERR "ROM[%04X] = %02X\n",$a,$ROM[$a]) if $opt_T;
+##			printf(STDERR "ROM[%04X] = %02X\n",$a,$ROM[$a]) if $opt_T;
 		}
+        print(STDERR "\tnot an encoder\n") if $opt_T;
 
         #----------------------------------------------------------------------
         # Simple Label Arithmetic
@@ -1818,6 +1828,7 @@ sub resolve_labels()
             $ROM[$a] = $lval;
             next;
         }
+        print(STDERR "\tnot an expression\n") if $opt_T;
 
         $ROM[$a] = labelValue($a,$ROM[$a]);												# this will always trigger an error unless ROM[a] is numeric
     }
@@ -2257,9 +2268,7 @@ sub setROM($$)
 
 sub compile_common_pragma()
 {
-##  my($OP,@OP_ARG) = @_;
-
-	print(STDERR "compile_common_pragma: OP=$OP ARGS=@OP_ARG [$IF_STACK[$#IF_STACK]]\n") if $opt_T;
+##	print(STDERR "compile_common_pragma: OP=$OP ARGS=@OP_ARG [$IF_STACK[$#IF_STACK]]\n") if $opt_T;
 
 	#=======================================================
 	# First set of PRAGMAs have to be evaluated whether

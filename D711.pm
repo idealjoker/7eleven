@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Mon Aug 11 09:32:47 2025
+#					 dlm: Tue Aug 12 08:28:06 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 326 68 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 327 44 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -324,6 +324,7 @@
 #	Jul 26, 2025: - added pseudo-address tags to all .DEFINEs
 #	Jul 30, 2025: - changed FX# to LampFX#
 #	Aug 11, 2025: - modularized substitute_identifiers for WPC magic
+#	Aug 12, 2025: - changed @DMD to @Lamp_FX
 # END OF HISTORY
 
 # TO-DO:
@@ -3134,8 +3135,8 @@ sub substitute_identifier($)
 		$$strR = $` . $Error[hex($1)] . $' if defined($Error[hex($1)]);
 	} elsif ($$strR =~ m{Audit#([0-9A-F]{4})}) {							# audits (WPC)
 		$$strR = $` . $Audit[hex($1)] . $' if defined($Audit[hex($1)]);
-	} elsif ($$strR =~ m{DMD#([0-9A-F]{2})}) { 							# DMD animations (WPC)
-		$$strR = $` . $DMD[hex($1)] . $' if defined($DMD[hex($1)]);
+	} elsif ($$strR =~ m{DisplayFX#([0-9A-F]{2})}) { 							# DisplayFX animations (WPC)
+		$$strR = $` . $DisplayFX[hex($1)] . $' if defined($DisplayFX[hex($1)]);
 	} elsif ($$strR =~ m{LampFX#([0-9A-F]{2})}) {							# LampFX animations (WPC)
 		$$strR = $` . $LampFX[hex($1)] . $' if defined($LampFX[hex($1)]);
 	}
@@ -3330,7 +3331,7 @@ sub produce_output(@)
         output_aliases('SN','Sound Aliases','Sound#%02X',@Sound);
         if (defined($_cur_RPG)) {
 	        output_aliases('TD','Thread Aliases','Thread#%04X',@Thread);
-	        output_aliases('DM','DMD Aliases','DMD#%02X',@DMD);
+	        output_aliases('DM','Display FX Aliases','DisplayFX#%02X',@DisplayFX);
 	        output_aliases('FX','Lamp FX Aliases','LampFX#%02X',@LampFX);
         } else {
 	        output_aliases('TD','Thread Aliases','Thread#%02X',@Thread);

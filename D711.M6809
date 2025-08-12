@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Wed Jul 30 17:55:51 2025
+#                    dlm: Tue Aug 12 11:26:03 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 70 34 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 71 38 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -68,6 +68,7 @@
 #	Jul  8, 2025: - modified thread handler labels to allow Thread# substitution
 #	Jul 23, 2025: - adapted to change Sol# -> SolCmd#
 #	Jul 30, 2025: - FX# -> LampFX#
+#	Aug 12, 2025: - DMD# -> DisplayFX#
 # HISTORY END
 
 # NOTES:
@@ -533,8 +534,8 @@ sub disassemble_syscall($$)
 			push(@{$OPA[$oaddr]},sprintf('Audit#%04X',WORD($addr)));
 			push(@{$OI[$oaddr]},sprintf('%04X',WORD($addr)));
 			$decoded[$addr++] = $decoded[$addr++] = 1;
-		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'D') {											# D: DMD animation
-			push(@{$OPA[$oaddr]},sprintf('DMD#%02X',BYTE($addr)));
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'D') {											# D: DisplayFX
+			push(@{$OPA[$oaddr]},sprintf('DisplayFX#%02X',BYTE($addr)));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'X') {											# X: lamp FX

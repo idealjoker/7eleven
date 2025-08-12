@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Thu Aug  7 15:30:16 2025
+#                    dlm: Tue Aug 12 11:25:18 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 36 78 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 37 28 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -34,6 +34,7 @@
 #	Jul 26, 2025: - added true/false loop macros
 #	Aug  7, 2025: - added errors for attempts to JSR or JMP to different code page
 #				  - added errors for attempts to branch to different code page
+#	Aug 12, 2025: - updated comment
 # HISTORY END
 
 use strict vars;
@@ -1261,7 +1262,7 @@ sub compile_asm()
 			} elsif (substr($SCA,$i,1) eq 'U') {							# U: aUdit
 				$ROM[$ADDR++] = $OP_ARG[$i+1];              
 	            $ROM[$ADDR++] = '16-BIT VALUE';
-			} elsif (substr($SCA,$i,1) eq 'D') {							# D: DMD animation
+			} elsif (substr($SCA,$i,1) eq 'D') {							# D: Display FX
 				$ROM[$ADDR++] = $OP_ARG[$i+1];              
 			} elsif (substr($SCA,$i,1) eq 'X') {							# X: lamp FX
 				$ROM[$ADDR++] = $OP_ARG[$i+1];              
