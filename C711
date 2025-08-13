@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Tue Aug 12 11:49:54 2025
+#                    dlm: Wed Aug 13 14:11:34 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 424 78 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 425 88 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -422,6 +422,7 @@
 #				  - added support to suppress warnings with -w in comment
 #	Aug 12, 2025: - DMD# => DisplayFX#
 #				  - BUG: label_value did not throw an error on DMD#28 any more
+#	Aug 13, 2025: - added support for Gamestring#, StringSpec#, Font#, DMD_X# and DMD_Y#
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1667,7 +1668,7 @@ sub resolve_labels()
         print(STDERR "\tnot a hex or binary\n") if $opt_T;
 
 		if ($WMS_System =~ m{^WPC}) {
-			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})([-+|&].*)?$/ || 					# substitute all system identifiers
+			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})([-+|&].*)?$/ || 					# substitute hex literals
 				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
@@ -1675,16 +1676,21 @@ sub resolve_labels()
 				$ROM[$a] =~ m/^DisplayFX#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^LampFX#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{4})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^StringSpec#([0-9A-Fa-f]{4})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^Font#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Audit#([0-9A-Fa-f]{4})([-+|&].*)?$/) {
 					$ROM[$a] = hex($1) . $2;											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 					next if numberp($ROM[$a]);											# we are done, if we have a number
-	        }
-			if ($ROM[$a] =~ m/^Lamp#(\d{1,3})([-+|&].*)?$/ ||
+			}
+			if ($ROM[$a] =~ m/^Lamp#(\d{1,3})([-+|&].*)?$/ ||							# substitue decimal literals
+				$ROM[$a] =~ m/^Gamestring#(\d{1,3})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^DMD_X#(\d{1,3})([-+|&].*)?$/ ||
+				$ROM[$a] =~ m/^DMD_Y#(\d{1,2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^SolCmd#(\d+)([-+|&].*)?$/) {
 				$ROM[$a] = $1 . $2;														# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
 				next if numberp($ROM[$a]);												# we are done, if we have a number
 			}
-	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})([-+|&].*)?$/) {					# flags are lamps with bit 6 set
+	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})([-+|&].*)?$/) {					# flags are lamps with bit 6 (low flags) or bit 7 (high flags) set
 	        	my($fno) = hex($1);
     	        $ROM[$a] = ($fno >= 0x40) ? $fno + 0x80 . $2
     	        						  : $fno + 0x40 . $2;

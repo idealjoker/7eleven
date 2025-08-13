@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Aug 12 11:27:26 2025
+#                    dlm: Wed Aug 13 14:12:45 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 138 58 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 139 50 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -136,6 +136,7 @@
 #	Aug 12, 2025: - many labels changed
 #				  - added disassembly of DisplayFX table
 #				  - added disassembly of adjustment tables
+#	Aug 13, 2025: - improved string table decoding
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -643,104 +644,104 @@ sub disassemble_system_pointers()
 		def_byteblock_hex(64,undef,'Byte Table');
 
 	$Address = 0x8222; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_GAMESTRINGS_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_GAMESTRINGS');
+		def_WPC_stringTable('ENGLISH_GAMESTRING','Game String Table','Gamestring#');
 	$Address = 0x8225; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_GAMESTRINGS_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_GAMESTRINGS');
+		def_WPC_stringTable('GERMAN_GAMESTRING','Game String Table','Gamestring#');
 	$Address = 0x8228; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_GAMESTRINGS_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_GAMESTRINGS');
+		def_WPC_stringTable('FRENCH_GAMESTRING','Game String Table','Gamestring#');
 	$Address = 0x822B; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_SOLENOIDNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_SOLENOIDNAMES');
+		def_WPC_stringTable('ENGLISH_SOLENOIDNAME','System String Table','SolenoidName#');
 	$Address = 0x822E; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_SOLENOIDNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_SOLENOIDNAMES');
+		def_WPC_stringTable('GERMAN_SOLENOIDNAME','System String Table','SolenoidName#');
 	$Address = 0x8231; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_SOLENOIDNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_SOLENOIDNAMES');
+		def_WPC_stringTable('FRENCH_SOLENOIDNAME','System String Table','SolenoidName#');
 	$Address = 0x8234; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_FLASHERNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_FLASHERNAMES');
+		def_WPC_stringTable('ENGLISH_FLASHERNAME','System String Table','FlasherName#');
 	$Address = 0x8237; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_FLASHERNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_FLASHERNAMES');
+		def_WPC_stringTable('GERMAN_FLASHERNAME','System String Table','FlasherName#');
 	$Address = 0x823A; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_FLASHERNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_FLASHERNAMES');
+		def_WPC_stringTable('FRENCH_FLASHERNAME','System String Table','FlasherName#');
 	$Address = 0x823D; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_SWITCHNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_SWITCHNAMES');
+		def_WPC_stringTable('ENGLISH_SWITCHNAME','System String Table','SwitchName#');
 	$Address = 0x8240; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_SWITCHNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_SWITCHNAMES');
+		def_WPC_stringTable('GERMAN_SWITCHNAME','System String Table','SwitchName#');
 	$Address = 0x8243; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_SWITCHNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_SWITCHNAMES');
+		def_WPC_stringTable('FRENCH_SWITCHNAME','System String Table','SwitchName#');
 	$Address = 0x8246; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_LAMPNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_LAMPNAMES');
+		def_WPC_stringTable('ENGLISH_LAMPNAME','System String Table','LampName#');
 	$Address = 0x8249; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_LAMPNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_LAMPNAMES');
+		def_WPC_stringTable('GERMAN_LAMPNAME','System String Table','LampName#');
 	$Address = 0x824C; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_LAMPNAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_LAMPNAMES');
+		def_WPC_stringTable('FRENCH_LAMPNAME','System String Table','LampName#');
 	$Address = 0x824F; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_GAMEAUDIT_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_GAMEAUDIT_NAMES');
+		def_WPC_stringTable('ENGLISH_GAMEAUDIT_NAME','System String Table','GameAuditName#');
 	$Address = 0x8252; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_GAMEAUDIT_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_GAMEAUDIT_NAMES');
+		def_WPC_stringTable('GERMAN_GAMEAUDIT_NAME','System String Table','GameAuditName#');
 	$Address = 0x8255; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_GAMEAUDIT_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_GAMEAUDIT_NAMES');
+		def_WPC_stringTable('FRENCH_GAMEAUDIT_NAME','System String Table','GameAuditName#');
 	$Address = 0x8258; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_SYSAUDIT_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_SYSAUDIT_NAMES');
+		def_WPC_stringTable('ENGLISH_SYSAUDIT_NAME','System String Table','SysAuditName#');
 	$Address = 0x825B; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_SYSAUDIT_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_SYSAUDIT_NAMES');
+		def_WPC_stringTable('GERMAN_SYSAUDIT_NAME','System String Table','SysAuditName#');
 	$Address = 0x825E; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_SYSAUDIT_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_SYSAUDIT_NAMES');
+		def_WPC_stringTable('FRENCH_SYSAUDIT_NAME','System String Table','SysAuditName#');
 	$Address = 0x8261; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_GAME_ADJUSTMENTS_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_GAME_ADJUSTMENTS_NAMES');
+		def_WPC_stringTable('ENGLISH_GAMEADJ_NAME','System String Table','GameAdjustmentName#');
 	$Address = 0x8264; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_GAME_ADJUSTMENTS_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_GAME_ADJUSTMENTS_NAMES');
+		def_WPC_stringTable('GERMAN_GAMEADJ_NAME','System String Table','GameAdjustmentName#');
 	$Address = 0x8267; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_GAME_ADJUSTMENTS_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_GAME_ADJUSTMENTS_NAMES');
+		def_WPC_stringTable('FRENCH_GAMEADJ_NAME','System String Table','GameAdjustmentName#');
 	$Address = 0x826A; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_SYSTEM_ADJUSTMENTS_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_SYSTEM_ADJUSTMENTS_NAMES');
+		def_WPC_stringTable('ENGLISH_SYSADJ_NAME','System String Table','SysAdjustmentName#');
 	$Address = 0x826D; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_SYSTEM_ADJUSTMENTS_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_SYSTEM_ADJUSTMENTS_NAMES');
+		def_WPC_stringTable('GERMAN_SYSADJ_NAME','System String Table','SysAdjustmentName#');
 	$Address = 0x8270; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_SYSTEM_ADJUSTMENTS_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_SYSTEM_ADJUSTMENTS_NAMES');
+		def_WPC_stringTable('FRENCH_SYSADJ_NAME','System String Table','SysAdjustmentName#');
 	$Address = 0x8273; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_GI_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_GI_NAMES');
+		def_WPC_stringTable('ENGLISH_GI_NAME','System String Table','GIName#');
 	$Address = 0x8276; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_GI_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_GI_NAMES');
+		def_WPC_stringTable('GERMAB_GI_NAME','System String Table','GIName#');
 	$Address = 0x8279; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_GI_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_GI_NAMES');
+		def_WPC_stringTable('FRENCH_GI_NAME','System String Table','GIName#');
 	$Address = 0x827C; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=ENGLISH_TUNE_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=ENGLISH_TUNE_NAMES');
+		def_WPC_stringTable('ENGLISH_TUNE_NAME','System String Table','BackgroundTuneName#');
 	$Address = 0x827F; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=GERMAN_TUNE_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=GERMAN_TUNE_NAMES');
+		def_WPC_stringTable('GERMAN_TUNE_NAME','System String Table','BackgroundTuneName#');
 	$Address = 0x8282; push(@skipAddr,$Address);
-		$Address = def_WPC_ref(sprintf('=FRENCH_TUNE_NAMES_%04X',$Address));
-		def_WPC_stringTable(undef,'String Table');
+		$Address = def_WPC_ref('=FRENCH_TUNE_NAMES');
+		def_WPC_stringTable('FRENCH_TUNE_NAME','System String Table','BackgroundTuneName#');
 
 	my(@strRef)   = (0x8133,0x8136,0x8139);							# String References
 	my(@strRefL)  = ('GAME_NAME','GAME_NUMBER','RELEASE_DATE');
@@ -1318,19 +1319,19 @@ sub def_WPC_displayFXtable($@)
 # String Table
 #----------------------------------------------------------------------
 
-sub def_WPC_stringTable($@)
+sub def_WPC_stringTable($$$)
 {
-	my($lbl,$divider_label) = @_;
+	my($lbl,$divider_label,$sid) = @_;
 #	print(STDERR "def_WPC_stringTable(@_)\n");
 
 	die unless defined($Address);
 	return if ($decoded[$Address]);												
 	return if defined($OP[$Address]);
 
-	if (defined($lbl)) {
-		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
-	    setLabel($lbl,$Address);
-	}
+##	if (defined($lbl)) {
+##		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
+##	    setLabel($lbl,$Address);
+##	}
     
 	insert_divider($Address,$divider_label);
 
@@ -1339,7 +1340,7 @@ sub def_WPC_stringTable($@)
 	my($rows,$cols) = (WORD($Address),BYTE($Address+2));
 	push(@{$OPA[$Address]},$rows);
 	push(@{$OPA[$Address]},$cols);
-	$REM[$Address] = 'number of table rows, bytes per row' unless defined($REM[$Address]);
+	$REM[$Address] = 'number of 2-byte string pointers' unless defined($REM[$Address]);
 	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 
 	my($TSA) = $Address;												# Table Start Address
@@ -1350,7 +1351,7 @@ sub def_WPC_stringTable($@)
 	for (my($r)=0; $r<$rows; $r++) {
 		my($opaddr) = $Address;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
-		$REM[$opaddr] = sprintf('Row#%d',$r) if $r%10==0;
+		$REM[$opaddr] = sprintf($sid . '%d',$r) unless defined($REM[$opaddr]);
 		$OP[$opaddr] = '.DW';
 		push(@{$OPA[$opaddr]},sprintf('$%04X',WORD($Address)));
 		$decoded[$Address++] = $decoded[$Address++] = 1;

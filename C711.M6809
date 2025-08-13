@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Tue Aug 12 11:25:18 2025
+#                    dlm: Wed Aug 13 12:44:13 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 37 28 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1270 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -35,6 +35,7 @@
 #	Aug  7, 2025: - added errors for attempts to JSR or JMP to different code page
 #				  - added errors for attempts to branch to different code page
 #	Aug 12, 2025: - updated comment
+#	Aug 13, 2025: - added support for Gamestring#, StringSpec#, Font#, DMD_X# and DMD_Y#
 # HISTORY END
 
 use strict vars;
@@ -1265,6 +1266,15 @@ sub compile_asm()
 			} elsif (substr($SCA,$i,1) eq 'D') {							# D: Display FX
 				$ROM[$ADDR++] = $OP_ARG[$i+1];              
 			} elsif (substr($SCA,$i,1) eq 'X') {							# X: lamp FX
+				$ROM[$ADDR++] = $OP_ARG[$i+1];
+			} elsif (substr($SCA,$i,1) eq 'g') {							# g: Gamestring# StringSpec#
+				$ROM[$ADDR++] = $OP_ARG[$i+1];              
+	            $ROM[$ADDR++] = '16-BIT VALUE';
+			} elsif (substr($SCA,$i,1) eq 'f') {							# f: Font#
+				$ROM[$ADDR++] = $OP_ARG[$i+1];              
+			} elsif (substr($SCA,$i,1) eq 'x') {							# x: DMD_X#
+				$ROM[$ADDR++] = $OP_ARG[$i+1];              
+			} elsif (substr($SCA,$i,1) eq 'y') {							# y: DMD_Y#
 				$ROM[$ADDR++] = $OP_ARG[$i+1];              
 			} elsif (substr($SCA,$i,1) eq 'C') {							# C: code ptr (W)
 				$ROM[$ADDR++] = $OP_ARG[$i+1];              

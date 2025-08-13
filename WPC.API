@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Aug 12 11:28:05 2025
+#                    dlm: Wed Aug 13 14:06:22 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 76 38 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 799 36 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -74,6 +74,7 @@
 #	Aug 11, 2025: - improvements
 #	Aug 11, 2025: - properly named important system calls
 #				  - other improvements
+#	Aug 13, 2025: - improvements, especially DMD related
 # END OF HISTORY
 
 #======================================================================
@@ -162,6 +163,7 @@ define_label('=UNKNOWN_THREAD_DATA_1',				0x0366+$VO);
 define_label('^LOW_PRIORITY_THREADS',				0x036F+$VO);		
 define_label('=END_OF_THREADLIST??',				0x0371+$VO);		
 define_label('=STATUS_AREA_POINTER',				0x0380+$VO);	# Scott
+define_label('=STRING_BUFFER',						0x0386+$VO);	# to 0x03B0 (43 bytes)
 define_label('=GI_BRIGHTNESS',						0x03D6+$VO); 	# 5 bytes
 
 define_label('_PLAYER_UP',							0x040F+$VO);
@@ -184,6 +186,11 @@ define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$VO);
 define_label('_BALLSEARCH_SUSPEND_TIMER',			0x04C7+$VO);
 define_label('_TILTWARNINGS_LEFT',					0x04D4+$VO);
 
+define_label('_DMD_FRAMESELECT_FB1_SHADOW',			0x0535+$VO);
+define_label('_DMD_FRAMESELECT_FB2_SHADOW',			0x0536+$VO);
+define_label('_DMD_ACTIVE_FRAME_SHADOW',			0x0537+$VO);
+
+
 #define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN',	0x0CC9+$VO);	# 59E
 #define_label('_LOCKED_BALLS_DEFICIT',				0x0CCA+$VO);
 #define_label('_NUM_BALLS_LOCKED',					0x0CCB+$VO);
@@ -202,6 +209,7 @@ define_label('_RND_2',								0x1791);
 define_label('_RND_3',								0x1792);
 define_label('_DIAGNOSTICS_MODE',					0x1793);
 define_label('_MAX_PLAYER_IN_GAME',					0x1794);
+define_label('__DMD_FRAMESELECT',					0x1799);
 
 VERSION_OFFSETS(-6,0);
 ##define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$VO);
@@ -244,10 +252,10 @@ if ($WPCV eq 'WPC(alpha)') {						# Display
 	define_label('_ALPHANUMERIC_ROW2',				0x3FEE); 	
 } else {
 	define_label('_DMD_ACTIVE_FRAME',				0x3FBF);	# Digital Matrix Display
-	define_label('_DMD_FRAMESELECT_3800',			0x3FBE);	# W
-	define_label('_DMD_FRAMESELECT_3A00',			0x3FBC);	# W
-	define_label('=DMD_FRAMEBUF_3800',				0x3800);
-	define_label('=DMD_FRAMEBUF_3A00',				0x3A00);
+	define_label('_DMD_FRAMESELECT_FB1',			0x3FBE);	# W
+	define_label('_DMD_FRAMESELECT_FB2',			0x3FBC);	# W
+	define_label('=DMD_FRAMEBUF_FB1',				0x3800);
+	define_label('=DMD_FRAMEBUF_FB2',				0x3A00);
 	define_label('_DMD_SCANLINE',					0x3FBD);	# W: Request an FIRQ after a particular scanline is drawn; R: The last scanline that was drawn
 	if ($WPCV eq 'WPC(95)') { 					
 		define_label('_DMD_FRAMESELECT_3200',		0x3FB8);	# W
@@ -316,21 +324,28 @@ define_label('ROM_VERSION',							0xFFEF);
 #----------------------------------------------------------------------
 # System Calls
 #	- in-line arguments:
-#		R	code reference (code pointer & PG)
-#		W	untyped word 
-#		T	thread word
-#		U	audit word
-#		P	data pointer (address word)
-#		C	code pointer (address word)
-#		B	untyped byte
-#		S	switch byte
-#		O	solenoid byte
-#		L	lamp byte
-#		E	error byte
-#		G	bitgroup byte
-#		F	flag byte
-#		A	adjustment byte
-#		D	DMD animation byte
+#			A	Adj#					$$
+#			B	byte 					$$
+#			C	code pointer			$$$$
+#			D	DisplayFX				$$
+#			E	Error# 					$$
+#			F	Flag#					$$
+#			f	Font#					$$
+#			G	Bitgroup#				$$
+#			g	Gamestring#
+#				StringSpec#				$$$$	for strings with high-bit set
+#			L	Lamp# 					
+#			N	Sound# 					
+#			O	SolCmd# 				
+#			P	pointer (address word)	$$$$
+#			R	code reference			$$$$$$
+#			S	Switch# 				$$
+#			T	Thread#					$$$$
+#			U	Audit#					$$$$
+#			W	word 					$$$$
+#			X	LampFX#					$$
+#			x	DMD_X#					0-127
+#			y	DMD_Y#					0-31
 #	- NOTES
 #		1	JSR system call that does not return
 #		2	JMP system call
@@ -579,7 +594,7 @@ define_syscall('lamp[A]blinking?',						0xA0B0+$VO);
 define_syscall('lamp[A]on?',							0xA0B9+$VO);
 
 VERSION_OFFSETS(-145,0);
-define_syscall('syscall_A3D7',							0xA3D7+$VO);
+define_syscall('copy_Gamestring[X]_to_STRING_BUFFER',	0xA3D7+$VO);
 define_syscall('memCopy[AXY]',							0xA6B9+$VO);	# A628
 define_syscall('memClear[AY]',							0xA6C4+$VO);
 define_syscall('memClear[XY]',							0xA6D1+$VO);
@@ -704,9 +719,9 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('replay_last_DMDanimation??',			0xCAE2);
  define_syscall('syscall_D6BC',							0xD6BC,'WB');
  define_syscall('syscall_D730',							0xD730,'BBB');
- define_syscall('syscall_D77D',							0xD77D,'WBW');
- define_syscall('syscall_D799',							0xD799,'WBW');
- define_syscall('syscall_D7B4',							0xD7B4,'WBW');
+ define_syscall('printf[U]_leftAdjusted',				0xD77D,'gfxy');
+ define_syscall('printf[U]_centered',					0xD799,'gfxy');
+ define_syscall('printf[U]_rightAdjusted',				0xD7B4,'gfxy');
  define_syscall('ISR_lampMatrix_MUX',	       			0xDAC6);
  define_syscall('IRQ_timer_handler??',					0xECCA);
  define_syscall('syscall_EF47',							0xEF47,'B');
@@ -780,6 +795,8 @@ $Hook[37]		= 'Slamtilt_override';
 
 $Hook[45]		= 'endOfBall_preThreads';
 $Hook[46]		= 'Gamestart_pre_initBall';
+
+$Hook[66]		= 'slamTilt_override';
 
 $Hook[78]		= 'lampFX_override';
 

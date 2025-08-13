@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Tue Aug 12 11:26:03 2025
+#                    dlm: Wed Aug 13 14:12:11 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 71 38 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 72 88 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -69,6 +69,7 @@
 #	Jul 23, 2025: - adapted to change Sol# -> SolCmd#
 #	Jul 30, 2025: - FX# -> LampFX#
 #	Aug 12, 2025: - DMD# -> DisplayFX#
+#	Aug 13, 202%: - added support for Gamestring#, StringSpec#, Font#, DMD_X# and DMD_Y#
 # HISTORY END
 
 # NOTES:
@@ -454,6 +455,8 @@ sub op_2REGS($$$)																	# EXG/TFR
 # Main Disassembly Routines
 #----------------------------------------------------------------------
 
+# NB: syscall arg types documented in [WPC.API]
+
 sub disassemble_syscall($$)
 {
 	my($sc,$rv) = @_;
@@ -542,6 +545,27 @@ sub disassemble_syscall($$)
 			push(@{$OPA[$oaddr]},sprintf('LampFX#%02X',BYTE($addr)));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'x') {											# x: DMD_X#
+			push(@{$OPA[$oaddr]},sprintf('DMD_X#%d',BYTE($addr)));
+			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
+			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'y') {											# y: DMD_Y#
+			push(@{$OPA[$oaddr]},sprintf('DMD_Y#%d',BYTE($addr)));
+			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
+			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'f') {											# f: Font#
+			push(@{$OPA[$oaddr]},sprintf('Font#%02X',BYTE($addr)));
+			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
+			$decoded[$addr++] = 1;
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'g') {											# g: Gamestring# or StringSpec#
+			my($sno) = WORD($addr);
+			if ($sno >= 0x8000) {
+				push(@{$OPA[$oaddr]},sprintf('StringSpec#%04X',$sno));
+			} else {
+				push(@{$OPA[$oaddr]},sprintf('Gamestring#%d',$sno));
+			}
+            push(@{$OI[$oaddr]},sprintf('%04X',WORD($addr)));
+            $decoded[$addr++] = $decoded[$addr++] = 1;			
 		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'C') {											# C: code ptr (W)
 			my($taddr) = WORD($addr);
 			$decoded[$addr++] = $decoded[$addr++] = 1;
