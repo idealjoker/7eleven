@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Wed Aug 13 12:44:13 2025
+#                    dlm: Thu Aug 14 16:11:50 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 1270 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 39 59 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -36,6 +36,7 @@
 #				  - added errors for attempts to branch to different code page
 #	Aug 12, 2025: - updated comment
 #	Aug 13, 2025: - added support for Gamestring#, StringSpec#, Font#, DMD_X# and DMD_Y#
+#	Aug 14, 2025: - BUG: unforced direct mode did not work 
 # HISTORY END
 
 use strict vars;
@@ -43,7 +44,7 @@ use strict vars;
 our($OP,@OP_ARG,%JSR_TRG,@ROM,$ADDR,$RPG,%LBL,@IF_CONT_LBL,@LOOP_LBL,@LOOP_DONE_LBL,
 	$EXEC6809_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
 	$SIXTEEN_BIT_LABEL_PREFIX,@newly_defined_label,$WMS_System,$IVM_DISABLED,
-	@SC_ARGS,%SYSCALL,$DP);
+	@SC_ARGS,%SYSCALL,$DP,$opt_T);
 
 my($last_RTS_addr,@forward_lexical_RTS_branch);
 my($last_exitThread_addr,@forward_lexical_exitThread_branch);
@@ -910,11 +911,14 @@ sub asm_6809_op($$@)
 				$argval = $OP_ARG[0];
 			} elsif ($OP_ARG[0] =~ m{^\$([0-9A-Fa-f]+)$}) {
 				$argval = hex($1);
-			} elsif (numberp($LBL{$OP_ARG[0]})) {
-				$argval = $LBL{$OP_ARG[0]};
+			} elsif (numberp($LBL{'FF:'.$OP_ARG[0]})) {
+				$argval = $LBL{'FF:'.$OP_ARG[0]};
 			} else {
 				$argval = eval_label($OP_ARG[0],undef,1);								# returns undef if not a numerical result; no errors on undefined labels
 			}
+
+			next unless numberp($argval);												# not a direct mode argument
+
 			if (defined($argval) && $argval > 0xFF) {									# don't use direct addressing mode for large numbers
 				die("Invalid argument <$OP_ARG[0]> for forced direct mode at input line $.\n")
 					if $forced;

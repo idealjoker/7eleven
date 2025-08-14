@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Wed Aug 13 14:12:11 2025
+#                    dlm: Thu Aug 14 10:36:10 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 72 88 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 73 55 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -70,6 +70,7 @@
 #	Jul 30, 2025: - FX# -> LampFX#
 #	Aug 12, 2025: - DMD# -> DisplayFX#
 #	Aug 13, 202%: - added support for Gamestring#, StringSpec#, Font#, DMD_X# and DMD_Y#
+#	Aug 14, 2025: - removed forced mode '<' from op_DIR
 # HISTORY END
 
 # NOTES:
@@ -121,8 +122,8 @@ sub op_DIR($$$$)																	# operation with direct addressing (relative to
 	return undef unless (BYTE($addr) == $opc);
 	my($op_DIR) = BYTE($addr+1);
 	$OP[$opa] = $op; $IND[$opa] = $ind;
-	push(@{$OPA[$opa]},sprintf('<$%02X',BYTE($addr+1)));
-##	printf(STDERR "direct addressing mode at %02X:%04X\n",$_cur_RPG,code_addr());
+##	push(@{$OPA[$opa]},sprintf('<$%02X',BYTE($addr+1)));
+	push(@{$OPA[$opa]},sprintf('$%02X',BYTE($addr+1)));								# WPC has DP == 0
 	push(@{$OI[$opa]},sprintf('%02X%02X',BYTE($addr),BYTE($addr+1)));
 	$decoded[$addr++] = $decoded[$addr++] = 1;
 	return 1;

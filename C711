@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Aug 13 14:11:34 2025
+#                    dlm: Thu Aug 14 16:24:11 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 425 88 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 426 73 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -423,6 +423,7 @@
 #	Aug 12, 2025: - DMD# => DisplayFX#
 #				  - BUG: label_value did not throw an error on DMD#28 any more
 #	Aug 13, 2025: - added support for Gamestring#, StringSpec#, Font#, DMD_X# and DMD_Y#
+#	Aug 14, 2025: - set $DP = 0x00 since this is always the case for WPC 
 # HISTORY END
 
 # RELEASE NOTES:
@@ -635,7 +636,7 @@ our(@ROM);																# output buffer
 our($ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR);									# Sys6-11: CPU address space; WPC: 1MB ROM address space
 our($FIRST_ADDR);														# first address used in ROM
 our($RPG);																# Sys6-11: undefined; 		  WPC: current ROM page
-our($DP);																# undefined until .ASSUME_DP is used
+our($DP) = 0x00;														# always the case for WPC
 
 our($WMS_System,%System_Option); 										# source type
 local(our(%ALIAS,%ALIAS_REFD));                                 		# aliases (defines), number of references
