@@ -2,14 +2,15 @@
 #======================================================================
 #                    U T I L I T I E S / R E C R E A T E _ P A T C H E D _ S R C 
 #                    doc: Tue Jul 29 10:08:34 2025
-#                    dlm: Wed Aug 13 22:16:12 2025
+#                    dlm: Thu Aug 14 08:07:53 2025
 #                    (c) 2025 A.M. Thurnherr
-#                    uE-Info: 12 39 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 13 54 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jul 29, 2025: - created
 #	Aug 13, 2025: - added error message
+#	Aug 14, 2025: - BUG: $last_sith not always updated
 # HISTORY END
 
 use strict vars;
@@ -22,9 +23,8 @@ my($origF) = splice(@ARGV,$#ARGV);
 open(ORIGF,$origF) || die("$origF: $!\n");
 
 my($pg_tag,$addr,$last_tag,$last_addr);
+my($i) = 0;
 while (<>) {
-	my($i) = 0;
-
 	print,next unless m{^<([0-9A-Z]{2})?:?([0-9A-Fa-f]{4})>};			# copy untagged lines from old patched file
 	die unless defined($2);
 
@@ -57,6 +57,8 @@ sub orig_source_line($$$)
 	my($ttag,$taddr,$tith) = @_;
 	my($nol,$stag,$saddr);
 
+##	print(STDERR "orig_source_line($ttag,$taddr,$tith) [$last_stag,$last_saddr,$last_sith] -> ");
+
 	my($rewound) = 0;
 
 restart_file:
@@ -69,15 +71,19 @@ restart_file:
 			while ($last_sith+1 < $tith) {								# skip unrequested lines
 				$nol = <ORIGF>; last if eof();
 				($stag,$saddr) = ($nol =~ m{^<([0-9A-Z]{2})?:?([0-9A-Fa-f]{4})>});
-				die unless ($stag eq $last_stag && $saddr eq $last_saddr);
+				die("$stag eq $last_stag && $saddr eq $last_saddr? [$last_sith,$tith]\n") 
+					unless ($stag eq $last_stag && $saddr eq $last_saddr);
 				$last_sith++;
 			}
+			$last_sith++;
+##			print(STDERR "$last_sith: $nol");
 			return $nol;												# return requested line
 		} elsif ($ttag eq $stag && $taddr eq $saddr) {					# MATCH: 1st line at this address
 			die unless ($tith == 0);
 			$last_sith = 0;
 			$last_stag = $stag;
 			$last_saddr = $saddr;
+##			print(STDERR "$last_sith: $nol");
 			return $nol;
 	    }
 	}

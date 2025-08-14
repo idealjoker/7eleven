@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Tue Aug 12 08:28:06 2025
+#					 dlm: Thu Aug 14 09:19:04 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 327 44 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 328 66 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -325,6 +325,7 @@
 #	Jul 30, 2025: - changed FX# to LampFX#
 #	Aug 11, 2025: - modularized substitute_identifiers for WPC magic
 #	Aug 12, 2025: - changed @DMD to @Lamp_FX
+#	Aug 13, 2025: - BUG: duplicate empty lines after ANALYSIS_GAPs
 # END OF HISTORY
 
 # TO-DO:
@@ -3670,9 +3671,11 @@ sub produce_output(@)
 	            	undef($REM[$addr-$col]);
 	            }
 				print("$line\n");
-				push(@{$EXTRA[$addr]},''); push(@{$EXTRA_IND[$addr]},$ind);			# empty line after gap
-				$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
-				$EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
+				unless (@{$EXTRA[$addr]}) {
+					push(@{$EXTRA[$addr]},''); push(@{$EXTRA_IND[$addr]},$ind);		# empty line after gap unless there's something there already
+					$EXTRA_BEFORE_LABEL[$addr][$#{$EXTRA[$addr]}] = 1;
+					$EXTRA_AFTER_OP[$addr][$#{$EXTRA[$addr]}] = 0;
+				}
 				$addr--;
 ##			} elsif ($print_code && defined($org)) {								# print code in gaps
 ##				print_addr($addr) if ($print_addrs);								# code disabled 07/20 to avoid zillions of single-byte no-code lines
