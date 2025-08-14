@@ -2,13 +2,14 @@
 #======================================================================
 #                    U T I L I T I E S / R E C R E A T E _ P A T C H E D _ S R C 
 #                    doc: Tue Jul 29 10:08:34 2025
-#                    dlm: Tue Jul 29 12:31:28 2025
+#                    dlm: Wed Aug 13 22:16:12 2025
 #                    (c) 2025 A.M. Thurnherr
-#                    uE-Info: 42 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 12 39 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jul 29, 2025: - created
+#	Aug 13, 2025: - added error message
 # HISTORY END
 
 use strict vars;
@@ -35,7 +36,8 @@ while (<>) {
 	} else {
 		$i = 0;
 	}
-	print orig_source_line($pg_tag,$addr,$i);
+	print(orig_source_line($pg_tag,$addr,$i));
+
 	if ($i == 0) {														# first source line at address just printed
 		$last_tag = $pg_tag;
 		$last_addr = $addr;
@@ -81,11 +83,11 @@ restart_file:
 	}
 
 	die if ($tith > 0);													# no matching repeat line found
-	die if $rewound;													# full file scanned
+	die("target $ttag:$taddr not found\n")  if $rewound;													# full file scanned
 
 	seek(ORIGF,0,0);
 	$rewound = 1;
 	goto restart_file;
 }
 
-}
+} # static scope

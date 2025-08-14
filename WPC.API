@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Aug 13 14:06:22 2025
+#                    dlm: Wed Aug 13 22:15:04 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 799 36 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 78 40 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -75,6 +75,7 @@
 #	Aug 11, 2025: - properly named important system calls
 #				  - other improvements
 #	Aug 13, 2025: - improvements, especially DMD related
+#				  - typo in sycall names
 # END OF HISTORY
 
 #======================================================================
@@ -491,8 +492,8 @@ define_syscall('spawnThread_lowPriority',			0x8B3D,'TR');
 define_syscall('spawnThread_highPriority',			0x8B5A,'TR');
 define_syscall('killSpawnThread_lowPriority',		0x8B77,'TR');			# kill threads first, then spawn new one
 define_syscall('killSpawnThread_highPriority',		0x8B9D,'TR');
-define_syscall('spawnThreadifNeeded_lowPriority',	0x8BC3,'TR');			# don't spaawn if thread id already in use
-define_syscall('spawnThreadifNeeded_HighPriority',	0x8BF7,'TR');
+define_syscall('spawnThreadIfNeeded_lowPriority',	0x8BC3,'TR');			# don't spaawn if thread id already in use
+define_syscall('spawnThreadIfNeeded_HighPriority',	0x8BF7,'TR');
 define_syscall('memCopy',							0x8C2B,'WWB');
 define_syscall('syscall_8C3D',						0x8C3D,'WWW');
 define_syscall('syscall_8C60',						0x8C60,'WWW');

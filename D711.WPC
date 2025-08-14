@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Aug 13 14:12:45 2025
+#                    dlm: Wed Aug 13 22:15:23 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 139 50 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 140 53 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -137,6 +137,7 @@
 #				  - added disassembly of DisplayFX table
 #				  - added disassembly of adjustment tables
 #	Aug 13, 2025: - improved string table decoding
+#				  - updated disassemble_DMD_dataTable
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -852,9 +853,9 @@ sub disassemble_DMD_dataTable()
 {
 	$Address = 0x8288;
 	my($pg) = BYTE($Address+2);
-	$Address = def_WPC_ref('=DMD_ANIMATIONS',undef,1);
+	$Address = def_WPC_ref('=DISPLAYFX_DATA_TABLE',undef,1);
 	my($opg) = select_WPC_RPG($pg);
-	def_WPC_DMDdata('=DMD_ANIMATIONS','DMD Data Table');
+	def_WPC_DMDdata('=DISPLAYFX_DATA_TABLE','DisplayFX Data Table');
 	select_WPC_RPG($opg);
 }
 
@@ -1677,12 +1678,12 @@ sub def_WPC_DMDdata(@)
 		my($dpg) = BYTE($Address+2);
 			my($opg) = select_WPC_RPG($dpg);
 			my($dlbl) = $LBL[$daddr];
-			$dlbl = sprintf('%02X:DMD#%02X_data',BYTE($Address+2),$DMD) unless defined($dlbl);
+			$dlbl = sprintf('%02X:DisplayFX#%02X_data',BYTE($Address+2),$DMD) unless defined($dlbl);
 		    setLabel($dlbl,$daddr);
 		    select_WPC_RPG($opg);
 		push(@{$OPA[$Address]},sprintf('$%04X',$daddr));
 		push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address+2)));
-		$REM[$Address] = 'pointer to DMD animation data' if !defined($REM[$Address]) && $DMD==0;
+		$REM[$Address] = 'pointer to DisplayFX data' if !defined($REM[$Address]) && $DMD==0;
 	    $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
     }
 
