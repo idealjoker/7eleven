@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu Aug 14 16:24:11 2025
+#                    dlm: Thu Aug 14 20:45:02 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 426 73 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 433 53 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -423,11 +423,14 @@
 #	Aug 12, 2025: - DMD# => DisplayFX#
 #				  - BUG: label_value did not throw an error on DMD#28 any more
 #	Aug 13, 2025: - added support for Gamestring#, StringSpec#, Font#, DMD_X# and DMD_Y#
-#	Aug 14, 2025: - set $DP = 0x00 since this is always the case for WPC 
+#	Aug 14, 2025: - set $DP = 0x00 since this is always the case for WPC
+#				  - added support for any bracketing of address tags
 # HISTORY END
 
 # RELEASE NOTES:
-#	- v1.1.2 (not yet released)
+#	- v1.2.0 (not yet released)
+#		- any bracket characters allowed in address tags (e.g. >37:2555<, (37:2555), [37:2555{)
+#		- -A only checks default tags, e.g. <37:2555>
 #		- [] allowed in alias names
 #		- use -w in comments to suppress WARNINGs (currently only remote/local
 #		  label warning)
@@ -931,7 +934,7 @@ while (!eof()) {
 	} else {
 		undef($tag_rpg); undef($tag_addr);
 	}
-	s{^<([0-9A-Za-f]{2}:)?[0-9A-Fa-f]{4}>\s+}{};						# strip disassembly addresses and leading whitespace
+	s@^[<>{}\(\)[\]]([0-9A-Za-f]{2}:)?[0-9A-Fa-f]{4}[<>{}\(\)[\]]\s*@@;	# strip disassembly addresses and leading whitespace
 	while (m{\\\s*$}) { 												# line continuation
 		$_ = $` . <>;
 		chomp;															# strip EOL
