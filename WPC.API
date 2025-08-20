@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Aug 13 22:15:04 2025
+#                    dlm: Wed Aug 20 14:55:56 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 78 40 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 79 38 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -76,6 +76,7 @@
 #				  - other improvements
 #	Aug 13, 2025: - improvements, especially DMD related
 #				  - typo in sycall names
+#	Aug 19, 2025: - minor improvements
 # END OF HISTORY
 
 #======================================================================
@@ -179,7 +180,7 @@ unless ($WPCV eq 'WPC(alpha)') {
 	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
 	define_label('_DMD_MODE_IN_EFFECT',				0x0487);
 }
-define_label('=PLAYER_MEM_DATA',					0x04AC+$VO);
+define_label('__PLAYER_MEM_DATA',					0x04AC+$VO);
 define_label('_SIZE_PLAYER_MEM_DATA',				0x04AE+$VO);
 define_label('_CRON_MINUTE_COUNTER_1',				0x04B4+$VO);
 define_label('_CRON_MINUTE_COUNTER_2',				0x04B5+$VO);
@@ -513,11 +514,11 @@ VERSION_OFFSETS(-205,0);
 define_syscall('setBank=3D',							0x90B4+$VO);  # 0x8FE7 in FH
 define_syscall('setBank[B]',							0x90BC+$VO);
 define_syscall('longJSR[BX]',							0x90D1+$VO);
-define_syscall('A=[X+B]==1?',							0x90E7+$VO);
-define_syscall('A=[XB]==1?',							0x90EC+$VO);
+define_syscall('A=[BX+]==1?',							0x90E7+$VO);
+define_syscall('A=[BX]==1?',							0x90EC+$VO);
 define_syscall('BX=loadRef[X]',							0x90C5+$VO);
-define_syscall('Y=[X++B]==1?',							0x910E+$VO);
-define_syscall('Y=[XB]==1?',							0x9113+$VO);    
+define_syscall('Y=[BX++]==1?',							0x910E+$VO);
+define_syscall('Y=[BX]==1?',							0x9113+$VO);    
 define_syscall('Y=indexed[X]==1?',						0x9117+$VO);
 define_syscall('memCopy[ABXY]',							0x9139+$VO);
 define_syscall('^memCopy[AXY]',							0x913D+$VO);

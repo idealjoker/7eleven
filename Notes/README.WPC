@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sun Aug 10 21:38:37 2025
+                    dlm: Wed Aug 20 08:29:58 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 310 68 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 395 0 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -392,6 +392,8 @@ sys_bitgroupOp_ABXY
 	17-18	thread flags/id (Y_in at spawn)
 	19		current ROM page
 	20-21	#$172E
+	32		value of RAM_68, lamp blink state??
+	33		flags: $01 player_Gamestart_event executed
 	34-44	current address (Program Counter)
 
 ----------------------------------------------------------------------

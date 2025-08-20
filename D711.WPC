@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Aug 13 22:15:23 2025
+#                    dlm: Wed Aug 20 14:55:15 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 140 53 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 141 62 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -138,6 +138,7 @@
 #				  - added disassembly of adjustment tables
 #	Aug 13, 2025: - improved string table decoding
 #				  - updated disassemble_DMD_dataTable
+#	Aug 20, 2025: - BUG: two of the INIT_MEM tables were wrong
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -755,7 +756,7 @@ sub disassemble_system_pointers()
 				   0x81E9,0x81F2,0x81F5,0x81F8,0x81FB,
 				   0x81FE,0x8201,0x8204,0x8207,0x820A,0x820D,0x8210,
 				   0x8213);
-	my(@tblLbl) = (0x81A8,'=LAMP_INIT_MEM','=FLAGS_INIT_MEM','=USERDATA_INIT_MEM',
+	my(@tblLbl) = (0x81A8,'=LAMP_INIT_MEM','=BLINK_INIT_MEM','=FLAGS_INIT_MEM',
 				   0x81C8,0x81CB,0x81D4,0x81D7,'=SCORE_TABLE',0x81DD,
 				   0x81E0,0x81E3,0x81E6,0x81E9,0x81F2,0x81F5,0x81F8,0x81FB,
 				   0x81FE,0x8201,0x8204,0x8207,0x820A,0x820D,0x8210,
