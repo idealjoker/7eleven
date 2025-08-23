@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / R E C R E A T E _ P A T C H E D _ S R C 
 #                    doc: Tue Jul 29 10:08:34 2025
-#                    dlm: Thu Aug 14 20:20:41 2025
+#                    dlm: Sat Aug 16 19:51:00 2025
 #                    (c) 2025 A.M. Thurnherr
-#                    uE-Info: 41 100 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 46 92 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -12,6 +12,7 @@
 #	Aug 13, 2025: - added error message
 #	Aug 14, 2025: - BUG: $last_sith not always updated
 #				  - changed semantic to allow any bracketing of addr tag
+#	Aug 16, 2025: - made copy retain indent from modified source
 # HISTORY END
 
 use strict vars;
@@ -23,14 +24,16 @@ die("Usage: $0 <old patched source file> <new original source file>\n")
 my($origF) = splice(@ARGV,$#ARGV);
 open(ORIGF,$origF) || die("$origF: $!\n");
 
-my($pg_tag,$addr,$last_tag,$last_addr);
+my($pg_tag,$addr,$ind,$last_tag,$last_addr);
 my($i) = 0;
 while (<>) {
-	print,next unless m{^[<>{}\(\)[\]]([0-9A-Z]{2})?:?([0-9A-Fa-f]{4})[<>{}\(\)[\]]};			# copy untagged lines from old patched file
+	print,next unless m{^[<>{}\(\)[\]]([0-9A-Z]{2})?:?([0-9A-Fa-f]{4})[<>{}\(\)[\]](\s*)};			# copy untagged lines from old patched file
 	die unless defined($2);
 
 	$pg_tag = $1;														# tag info from old patched file (hex strings)
 	$addr = $2;
+	$ind = $3;
+	die unless length($ind) > 0;
 
 	if ($pg_tag eq $last_tag && $addr eq $last_addr) {					# multiple source lines at same address
 		$i++;
@@ -40,6 +43,7 @@ while (<>) {
 	my($osl) = orig_source_line($pg_tag,$addr,$i);
 	substr($osl,0,1) = substr($_,0,1);									# retain original bracketing
 	substr($osl,8,1) = substr($_,8,1);
+	$osl =~ s{^(\S+)(\s+)}{\1$ind};										# retain indentation
 	print($osl);
 
 	if ($i == 0) {														# first source line at address just printed

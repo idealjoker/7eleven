@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Aug 20 14:55:56 2025
+#                    dlm: Sat Aug 23 09:19:57 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 79 38 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 80 32 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -77,6 +77,7 @@
 #	Aug 13, 2025: - improvements, especially DMD related
 #				  - typo in sycall names
 #	Aug 19, 2025: - minor improvements
+#	Aug ??, 2025: - improvements
 # END OF HISTORY
 
 #======================================================================
@@ -724,6 +725,9 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('printf[U]_leftAdjusted',				0xD77D,'gfxy');
  define_syscall('printf[U]_centered',					0xD799,'gfxy');
  define_syscall('printf[U]_rightAdjusted',				0xD7B4,'gfxy');
+ define_syscall('sys_printf_leftAdjusted',				0xD7CD);
+ define_syscall('sys_printf_centered',					0xD7DB);
+ define_syscall('sys_printf_rightAdjusted',				0xD7E9);
  define_syscall('ISR_lampMatrix_MUX',	       			0xDAC6);
  define_syscall('IRQ_timer_handler??',					0xECCA);
  define_syscall('syscall_EF47',							0xEF47,'B');
@@ -737,6 +741,9 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('addBonus_5530',						0xFAB4);
  define_syscall('addBonus_9930',						0xFABA);
  define_syscall('addBonus[A]',							0xFABE);
+ define_syscall('DMDsys_init',						    0xFBAE);
+ define_syscall('DMDsys_invertScreen',				    0xFBCB);
+ 
  define_syscall('syscall_FE3C',							0xFE3C,'S');
 }
 
@@ -996,7 +1003,7 @@ $Error[0x4D] = 'ERR_Lock_count_on_eject_hole_was_higher_than_1';
 $Error[0x4E] = 'ERR_Call_to_trough_handler_for_endball_returned';
 $Error[0x4F] = 'ERR_Call_to_trough_handler_for_ball_serve_returned';
 $Error[0x50] = 'ERR_audit_complete_called_by_invalid_thread_id';
-$Error[0x51] = 'ERR_Could_not_get_thread_block_for_mulitball_device_kickout';
+$Error[0x51] = 'ERR_Could_not_get_thread_block_for_multiball_device_kickout';
 $Error[0x52] = 'ERR_Device_type_number_invalid_for_multiball_device';
 $Error[0x53] = 'ERR_Ball_serve_condition_w_no_balls_in_trough_you_must_kick_one';
 $Error[0x54] = 'ERR_MULTI_ALL_BALL_CHECK_called_while_auditing_in_progress';

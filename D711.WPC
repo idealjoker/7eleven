@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Aug 20 14:55:15 2025
+#                    dlm: Sat Aug 23 09:19:01 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 141 62 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 142 45 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -139,6 +139,7 @@
 #	Aug 13, 2025: - improved string table decoding
 #				  - updated disassemble_DMD_dataTable
 #	Aug 20, 2025: - BUG: two of the INIT_MEM tables were wrong
+#	Aug ??, 2025: - added boolean while loops
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -916,14 +917,16 @@ sub apply_magic_WPC($$)
 				$noa++;
 				die if $noa > 0xFFFF;
 			}
-			if    ($OP[$noa] eq '_IF_CC') { $OP[$noa] = '_IF_true'; }			# _IF_true
-			elsif ($OP[$noa] eq '__IF_CC') { $OP[$noa] = '__IF_true'; }			# __IF_true
-			elsif ($OP[$noa] eq '_IF_CS') { $OP[$noa] = '_IF_false'; }			# _IF_false
-			elsif ($OP[$noa] eq '__IF_CS') { $OP[$noa] = '__IF_false'; }		# __IF_false
-			elsif ($OP[$noa] eq 'BCC') { $OP[$noa] = 'Btrue'; }					# Btrue
-			elsif ($OP[$noa] eq 'BCS') { $OP[$noa] = 'Bfalse'; }				# Bfalse
-			elsif ($OP[$noa] eq 'LBCC') { $OP[$noa] = 'LBtrue'; }				# LBtrue
-			elsif ($OP[$noa] eq 'LBCS') { $OP[$noa] = 'LBfalse'; }				# LBfalse
+			if    ($OP[$noa] eq '_IF_CC') 		{ $OP[$noa] = '_IF_true'; }			#  boolean values: IF
+			elsif ($OP[$noa] eq '__IF_CC') 		{ $OP[$noa] = '__IF_true'; }		
+			elsif ($OP[$noa] eq '_IF_CS') 		{ $OP[$noa] = '_IF_false'; }		
+			elsif ($OP[$noa] eq '__IF_CS') 		{ $OP[$noa] = '__IF_false'; }		
+			elsif ($OP[$noa] eq 'BCC') 			{ $OP[$noa] = 'Btrue'; }			# branches
+			elsif ($OP[$noa] eq 'BCS') 			{ $OP[$noa] = 'Bfalse'; }			
+			elsif ($OP[$noa] eq 'LBCC') 		{ $OP[$noa] = 'LBtrue'; }			
+			elsif ($OP[$noa] eq 'LBCS') 		{ $OP[$noa] = 'LBfalse'; }			
+			elsif ($OP[$noa] eq '_WHILE_CC') 	{ $OP[$noa] = '_WHILE_true'; }		
+			elsif ($OP[$noa] eq '_WHILE_CS') 	{ $OP[$noa] = '_WHILE_false'; }		
 		}
 	}
 }
