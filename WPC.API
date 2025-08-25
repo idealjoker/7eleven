@@ -657,7 +657,7 @@ define_syscall('playSound[A]',							0xBDFB+$VO);
 define_syscall('abortBackgroundMusic??',				0xC095+$VO);
 define_syscall('ensureBackgroundMusic[A]',				0xC0BC+$VO);
 define_syscall('setBackgroundMusic[A]',					0xC0CA+$VO);
-define_syscall('A=backgroundMusic',						0xC0D7+$VO);
+define_syscall('A=backgroundMusicPlaying',				0xC0D7+$VO);
 define_syscall('changeBackgroundMusic[A]',  			0xC0DB+$VO);
 define_syscall('soundCardCmd[AB]',						0xC0ED+$VO);
 
