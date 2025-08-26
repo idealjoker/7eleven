@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sun Aug 24 20:45:24 2025
+#                    dlm: Tue Aug 26 07:42:40 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 143 54 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 144 42 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -141,6 +141,7 @@
 #	Aug 20, 2025: - BUG: two of the INIT_MEM tables were wrong
 #	Aug ??, 2025: - added boolean while loops
 #	Aug 24, 2025: - added error message for invalid argument substitutions
+#	Aug 26, 2025: - improved error message
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -2198,8 +2199,8 @@ sub defSound($$)
 {
 	my($no,$name) = @_;
 
-	die("defSound: invalid Sound number\n")
-		unless ($no>0 && $no<=0xFFFF);
+	die("defSound: invalid Sound number <$no>\n")
+		unless ($no>=0 && $no<=0xFF);
 	$Sound[$no] = $name;
 }
 
