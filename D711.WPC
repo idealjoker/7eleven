@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Tue Aug 26 07:42:40 2025
+#                    dlm: Wed Aug 27 11:02:38 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 144 42 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 145 53 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -141,7 +141,10 @@
 #	Aug 20, 2025: - BUG: two of the INIT_MEM tables were wrong
 #	Aug ??, 2025: - added boolean while loops
 #	Aug 24, 2025: - added error message for invalid argument substitutions
-#	Aug 26, 2025: - improved error message
+#	Aug 26, 2025: - improved error messages
+#	Aug 27, 2025: - added hint output for inCode refs
+#				  - BUG: .STR<len> did not handle string-end correctly
+#				  - added balltrough switch table
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -468,6 +471,9 @@ sub disassemble_inCode_refs($$$)
 		select_WPC_RPG($pointee_pg);
 		my($usr_lbl) 	  = $LBL[$pointee_addr];
 		$pointee_lbl 	  = $usr_lbl if defined($usr_lbl);
+		printf(STDERR "Hint: in-code LDY/LDA ref at %02X:%04X: possible code %02X:%04X\n",
+				$RPG,$addr,$pointee_pg,$pointee_addr)
+			unless defined($usr_lbl);
 		setLabel($pointee_lbl,$pointee_addr,$pointee_pg);
 		select_WPC_RPG($RPG);
 		$OPA[$addr][0] = "#$pointee_lbl";
@@ -489,6 +495,9 @@ sub disassemble_inCode_refs($$$)
 		select_WPC_RPG($pointee_pg);
 		my($usr_lbl) 	  = $LBL[$pointee_addr];
 		$pointee_lbl 	  = $usr_lbl if defined($usr_lbl);
+		printf(STDERR "Hint: in-code LDX/LDB ref at %02X:%04X: possible code at %02X:%04X\n",
+				$RPG,$addr,$pointee_pg,$pointee_addr)
+			unless defined($usr_lbl);
 		setLabel($pointee_lbl,$pointee_addr,$pointee_pg);
 		select_WPC_RPG($RPG);
 		$OPA[$addr][0] = "#$pointee_lbl";
@@ -504,10 +513,12 @@ sub disassemble_inCode_refs($$$)
 						 BYTE($addr+9)<=0x3D && WORD($addr+2)>=0x4000 &&  WORD($addr+2)<=0x7FFF);
 
 		my($pointee_addr) = WORD($addr+2);
-		my($pointee_pg)	  = BYTE($addr+9);
+        next if defined($WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr]);
+		my($pointee_pg) = BYTE($addr+9);
 		select_WPC_RPG($pointee_pg);
-		setLabel($LBL[$pointee_addr],$pointee_addr,$pointee_pg)
-			if defined($LBL[$pointee_addr]);
+		if (defined($LBL[$pointee_addr])) {
+			setLabel($LBL[$pointee_addr],$pointee_addr,$pointee_pg);
+		}
 		select_WPC_RPG($RPG);
 		$WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr] = $pointee_pg;			# reference in current pg to pointee_addr in pointee_pg
     }
@@ -520,10 +531,11 @@ sub disassemble_inCode_refs($$$)
 						 BYTE($addr+8)<=0x3D && WORD($addr+1)>=0x4000 &&  WORD($addr+1)<=0x7FFF);
 		my($pointee_addr) = WORD($addr+1);
         next if defined($WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr]);
-        my($pointee_pg)   = BYTE($addr+8);
+        my($pointee_pg) = BYTE($addr+8);
         select_WPC_RPG($pointee_pg);
-		setLabel($LBL[$pointee_addr],$pointee_addr,$pointee_pg)
-			if defined($LBL[$pointee_addr]);
+		if (defined($LBL[$pointee_addr])) {
+			setLabel($LBL[$pointee_addr],$pointee_addr,$pointee_pg);
+		}
 		select_WPC_RPG($RPG);
         $WPC_INTERPAGE_REF[$_cur_RPG][$pointee_addr] = $pointee_pg;     	# reference in current pg to pointee_addr in pointee_pg
     }
@@ -1534,10 +1546,11 @@ sub def_WPC_lockTable(@)
 		push(@{$OPA[$Address]},sprintf('$%04X',$taddr=WORD($Address)));
 		push(@{$OPA[$Address]},sprintf('$%02X',$trpg=BYTE($Address+2)));
 	    $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
-		if ($lck == 1) {
+		if ($lck == 1) {																	# ball trouugh
+			my($swta);
 		  	$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
 			$OP[$Address] = '.DWB';
-			push(@{$OPA[$Address]},sprintf('$%04X',WORD($Address)));
+			push(@{$OPA[$Address]},sprintf('$%04X',$swta=WORD($Address)));
 			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+2)));
 			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+3)));
 			push(@{$OPA[$Address]},sprintf('$%02X!',BYTE($Address+4)));
@@ -1546,6 +1559,19 @@ sub def_WPC_lockTable(@)
 			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 			$decoded[$Address++] = 1;
+
+			setLabel('=BALLTROUGH_SWITCH_TABLE',$swta);										# balltrough switch table
+##			$REM[$swta] = 'balltrough switches' unless defined($REM[$swta]);
+			my($i);
+			for ($i=0; BYTE($swta+$i)!=0; $i++) {
+				$OP[$swta+$i] = '.DB'; $IND[$swta+$i] = $data_indent; $TYPE[$swta+$i] =  $CodeType_data;
+				push(@{$OPA[$swta+$i]},sprintf('Switch#%02X',BYTE($swta+$i)));
+				$decoded[$swta+$i] = 1;
+			}
+			$OP[$swta+$i] = '.DB'; $IND[$swta+$i] = $data_indent; $TYPE[$swta+$i] = $CodeType_data;
+			push(@{$OPA[$swta+$i]},'$00!');
+			$decoded[$swta+$i] = 1;
+			insert_divider($swta,'Balltrough Switches');
 		} elsif ($lck > 1) {
 		  	$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
 			$OP[$Address] = '.DB';
@@ -1964,8 +1990,10 @@ sub def_WPC_string(@)
 		$OPA[$Address][0] .= decode_WPC_STR_char($Address+$o);
 		$decoded[$Address+$o] = 1;
 	}
-	$decoded[$Address+$o] = 1;
 	$OPA[$Address][0] .= "'";
+
+	$o-- if ($maxlen < 1e99); 													# no NUL
+	$decoded[$Address+$o] = 1;
 	$Address += $o;
 }   
 		    
@@ -2088,7 +2116,7 @@ sub defSwitch($$)
 {
 	my($no,$name) = @_;
 
-	die("defSwitch: invalid switch number $no\n")
+	die("defSwitch: invalid switch number <$no>\n")
 		unless ($no>=1 && $no<=64);
 	$Switch[$no] = $name;
 }
@@ -2097,7 +2125,7 @@ sub defLamp($$)
 {
 	my($no,$name) = @_;
 
-	die("defLamp: invalid lamp number $no\n")
+	die("defLamp: invalid lamp number <$no>\n")
 		unless ($no>0 && $no<=64);
 	$Lamp[$no] = $name;
 }
@@ -2106,7 +2134,7 @@ sub defGroup($$)
 {
 	my($no,$name) = @_;
 
-	die("defGroup: invalid group number $no\n")
+	die("defGroup: invalid group number <$no>\n")
 		unless ($no>=0 && $no<=255);
 	$BitGroup[$no] = $name;
 }
@@ -2115,7 +2143,7 @@ sub defFlag($$)
 {
 	my($no,$name) = @_;
 
-	die("defFlag: invalid flag number $no\n")
+	die("defFlag: invalid flag number <$no>\n")
 		unless ($no>0 && $no<=0x80);
 	$Flag[$no] = $name;
 }
@@ -2125,7 +2153,7 @@ sub defSolenoid($$)
 {
 	my($no,$name) = @_;
 
-	die("defSolenoid: invalid solenoid number $no\n")
+	die("defSolenoid: invalid solenoid number <$no>\n")
 		unless ($no>0 && $no<=0x65);
 	my($no,$name) = @_;
 	$Sol[$no] = $name;
@@ -2136,7 +2164,7 @@ sub defSolCmd($$)
 {
 	my($no,$name) = @_;
 
-	die("defSolCmd: invalid solenoid command number $no\n")
+	die("defSolCmd: invalid solenoid command number <$no>\n")
 		unless ($no>=0 && $no<=0xFF);
 	my($no,$name) = @_;
 	$SolCmd[$no] = $name;
@@ -2154,7 +2182,7 @@ sub defAdjustment($$)
 {
 	my($no,$name) = @_;
 
-	die("defAdjustment: invalid adjustment number $no\n")
+	die("defAdjustment: invalid adjustment number <$no>\n")
 		unless ($no>0 && $no<=0xFFFF);
 	$Adj[$no] = $name;
 }
@@ -2163,7 +2191,7 @@ sub defAudit($$)
 {
 	my($no,$name) = @_;
 
-	die("defAudit: invalid audit number $no\n")
+	die("defAudit: invalid audit number <$no>\n")
 		unless ($no>=0 && $no<65);
 	$Audit[$no] = $name;
 }
@@ -2172,8 +2200,8 @@ sub defThread($$)
 {
 	my($no,$name) = @_;
 
-	die("defThread: invalid thread id\n")
-		unless ($no>0 && $no<=0xFFFF);
+	die("defThread: invalid thread id <$no>\n")
+		unless ($no>=0 && $no<=0xFFFF);
 	$Thread[$no] = $name;
 }
 
@@ -2181,8 +2209,8 @@ sub defDisplayFX($$)
 {
 	my($no,$name) = @_;
 
-	die("defDisplayFX: invalid DisplayFX number\n")
-		unless ($no>0 && $no<=0xFFFF);
+	die("defDisplayFX: invalid DisplayFX number <$no>\n")
+		unless ($no>=0 && $no<=0xFFFF);
 	$DisplayFX[$no] = $name;
 }
 
@@ -2190,8 +2218,8 @@ sub defLampFX($$)
 {
 	my($no,$name) = @_;
 
-	die("defLampFX: invalid LampFX number\n")
-		unless ($no>0 && $no<=0xFF);
+	die("defLampFX: invalid LampFX number <$no>\n")
+		unless ($no>=0 && $no<=0xFF);
 	$LampFX[$no] = $name;
 }
 
