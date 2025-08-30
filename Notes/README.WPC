@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Fri Aug 29 08:32:50 2025
+                    dlm: Sat Aug 30 11:19:54 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 287 97 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 452 48 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -203,6 +203,15 @@ sys_bitgroupOp_ABXY
 
 ----------------------------------------------------------------------
 
+=Game Strings=
+
+- id word
+	- if positive 	 => index into =ENGLISH_GAMESTRINGS
+	- elsif id&$C000 => index into =ENGLISH_SYSTEM_STRINGS_2
+	- else			 => index into =ENGLISH_SYSTEM_STRINGS
+
+----------------------------------------------------------------------
+
 =Multiball Devices (MBDs) / Locks=
 
 - Notes:
@@ -217,6 +226,25 @@ sys_bitgroupOp_ABXY
 		  encoded in the switch table
 		- dispatcher defining events $04 - $09, triggered by switch state
 		  changes
+
+- Ball Accounting:
+	_BALLS_INSTALLED_IN_GAME
+		- RAM
+		- determined by counting the number of trough switches
+		- not directly relevant for game code
+	_BALLS_ACCOUNTED_FOR
+		- in protected RAM
+		- number of balls the game has proof of existence 
+		- usually equal to _BALLS_INSTALLED_IN_GAME but can be lower
+		  when balls get lost
+	_BALLS_IN_TROUGH
+		- number of balls currently in the trough 
+	_NUM_BALLS_LOCKED
+		- number of balls currently in any of the locks
+	_MIN_BALLS_NEEDED_IN_TROUGH_
+		- number of balls needed in trough for end-of-ball condition
+	_LOCKED_BALLS_DEFICIT
+		- ???
 
 - T2 Lock list
 		0	Invalid Lock 
@@ -255,9 +283,9 @@ sys_bitgroupOp_ABXY
  	    ------------------------------------------------------------------------------------------
 		code	dispatcher							notes	function
  	    ------------------------------------------------------------------------------------------
-		$01		MBD_eventDispatcher					1,2		eject ball from trough 
-		$02		MBD_eventDispatcher					1,2		ball has ended 
-		$03		MBD_eventDispatcher					3		MBD dispatcher called 
+		$01		MBD_eventDispatcher					1,2		SERVE BALL 	(eject ball from trough)
+		$02		MBD_eventDispatcher					1,2		END BALL 	(ball has drained)
+		$03		MBD_eventDispatcher					3		LOCK CHANGE (MBD dispatcher called)
 		$04		MSW_lock_handler 							switch not active (just opened), no ball locked logically (error condition)??
 		$05		MSW_lock_handler							ball ejected sucessfully??
 				MBD_LT02(scoop)_eject
@@ -368,8 +396,16 @@ sys_bitgroupOp_ABXY
 
 =Threads=
 
+- high-priority threads:
+	- once a high-priority thread starts running (is dispatched)
+	  neither any background tasks nor low-priority threads are
+	  run
+	- high-priority threads must only spawn high-priority sibling
+	  threads
+
 - thread id mask is $01FF 
 	- 512 thread ids
+	
 - thread mask flags:
 	$0200		unused/reserved
 	$0400		unused/reserved
@@ -378,25 +414,54 @@ sys_bitgroupOp_ABXY
 	$2000		killed in sys_tilt (tilt)
 	$4000		killed in sys_killThreads_gameStart (game start)
 	$8000		waited for in sys_endBall_and_exit (15s timeout)
+
 - popular flag combinations
 	$00xx		protected (not killed by system); not waited for
 	$78xx		unprotected; not waited for
 	$20xx		killed on tilt only; not waited for (e.g. ball search)
 	$38xx		??? (bobtilt swing delay)
 	$18xx		killed on ball start and ball end (bobtilt switch debounce)
+
 - system thread ids:
 	$xx12-$xx14		tilt system
 	$xx20-$xx3F		lamp FX
 	$xx40-$xx4F		lock system
+
 - thread buffer with spawn values
-	0-1		pointer to next thread in list
-	5-6		pointer to PC in this thread buffer
-	17-18	thread flags/id (Y_in at spawn)
-	19		current ROM page
+	0-1		parent.next		pointer to next thread in list
+	2		#$03 marker
+	3		#$00
+	4		#$01
+	5-6						pointer to PC in this thread buffer
+	7-14					??? (4 bytes, registers?)
+	15-16	__CURRENT_TIME	wakeup time
+	17-18	spawn Y_in		thread flags/id 
+	19						current ROM page
 	20-21	#$172E
-	32		value of RAM_68, lamp blink state??
-	33		flags: $01 player_Gamestart_event executed
-	34-44	current address (Program Counter)
+	22-33					??? (12 bytes, stack?)
+	34-35					current address (Program Counter)
+	40-43	#$00
+	44		#$00 			flags (80: related to wakeup time))
+
+----------------------------------------------------------------------
+
+=Player Memory Data=
+
+- variables:
+	^PLAYER_MEM_DATA		pointer to RAM area with player memory data
+	_SIZE_USER_DATA			number of user bytes
+	_SIZE_PLAYER_MEM_DATA	total size including user bytes
+
+- buffer bytes:
+	00-07					lamps
+	08-15 					blinkbuf
+	16-23					flags
+	24-31					??? (8 bytes)
+	32		RAM_68			lamp blink state??
+	33						flags: $01 player_Gamestart_event executed
+	34-35					list of values that update audits when game is aborted on ball 3
+	36						number of tickets earned??
+	37-??					user bytes
 
 ----------------------------------------------------------------------
 
@@ -413,7 +478,16 @@ sys_bitgroupOp_ABXY
 
 ----------------------------------------------------------------------
 
-=Bit Shifter=
+=ASIC Registers=
+
+_ASIC_IRQ_CTRL: (zerocross interrupt?)
+	R: $80 flag used in IRQ handler
+	W: $06 during game-boot (only?) -> WATCHDOG reset
+	   $96 at start of ISR (reset watchdog and disable interrupts? but why is it not reset?)
+
+----------------------------------------------------------------------
+
+=ASIC Bit Shifter=
 
 Buffers:
 	$1F		=???			not at all common, tracing syscalls

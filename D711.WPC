@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Aug 27 11:02:38 2025
+#                    dlm: Sat Aug 30 15:32:54 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 145 53 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 148 43 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -145,6 +145,7 @@
 #	Aug 27, 2025: - added hint output for inCode refs
 #				  - BUG: .STR<len> did not handle string-end correctly
 #				  - added balltrough switch table
+#	Aug 30, 2025: - added another sys param
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -763,8 +764,8 @@ sub disassemble_system_pointers()
 	my(@strRef)   = (0x8133,0x8136,0x8139);							# String References
 	my(@strRefL)  = ('GAME_NAME','GAME_NUMBER','RELEASE_DATE');
 
-	my(@known)	  = (0x8151,0x8193);
-	my(@knownL)	  = ('BALLSEARCH_TIMER','STARTBUTTON_LAMP');
+	my(@known)	  = (0x814E,0x812D,0x8151,0x8193);
+	my(@knownL)	  = ('SHOOTERLANE_SWITCH','SIZE_USER_BYTES','BALLSEARCH_TIMER','STARTBUTTON_LAMP');
 
 	my(@tblRef) = (0x81A8,0x81B9,0x81BC,0x81BF,0x81C8,0x81CB,
 				   0x81D4,0x81D7,0x81DA,0x81DD,0x81E0,0x81E3,0x81E6,
@@ -808,7 +809,7 @@ sub disassemble_system_pointers()
 	    def_ptr_hex_alt(sprintf('^UNKNOWN_SYSTEM_PARAM_%04X',$Address),sprintf('UNKNOWN_SYSTEM_PARAM_%04X',$Address));
 	}
 
-	def_ptr_hex('^=STATUS_AREA');
+	def_ptr_hex('^HEAP_STARTA');
 	insert_divider($Address,'System Code');
 
 	$Address = 0xFFEC;													# checksum
@@ -1992,8 +1993,10 @@ sub def_WPC_string(@)
 	}
 	$OPA[$Address][0] .= "'";
 
-	$o-- if ($maxlen < 1e99); 													# no NUL
-	$decoded[$Address+$o] = 1;
+	unless ($maxlen < 1e99) {	 												# include NUL
+		$decoded[$Address+$o] = 1;
+		$o++;
+	}
 	$Address += $o;
 }   
 		    

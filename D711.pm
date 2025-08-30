@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Thu Aug 14 09:19:04 2025
+#					 dlm: Sat Aug 30 15:33:59 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 328 66 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 330 55 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -326,6 +326,8 @@
 #	Aug 11, 2025: - modularized substitute_identifiers for WPC magic
 #	Aug 12, 2025: - changed @DMD to @Lamp_FX
 #	Aug 13, 2025: - BUG: duplicate empty lines after ANALYSIS_GAPs
+#	Aug 28, 2025: - added def_WBlist_hex
+#				  - added labeling to def_wordblock_hex
 # END OF HISTORY
 
 # TO-DO:
@@ -1903,6 +1905,30 @@ sub def_wordlist_hex(@) 														# value-terminated list
 	insert_empty_line($Address-2);
 }
 
+sub def_WBlist_hex(@) 														# value-terminated list
+{
+	my($EOL,$lbl,$divider_label,$rem,$allow_labeling) = @_;
+	die unless defined($Address);
+	setLabel($lbl,$Address);
+	return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
+	insert_divider($Address,$divider_label) if defined($divider_label);
+
+	do {
+		$OP[$Address] = '.DWB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		$REM[$Address]=$rem,undef($rem) unless defined($REM[$Address]);
+		my($bAddress) = $Address;
+		for (my($col)=0; WORD($Address)!=$EOL && $col<1; $col++) {
+			push(@{$OPA[$bAddress]},$allow_labeling ? sprintf('$%04X',WORD($Address)) : sprintf('$%04X!',WORD($Address)));
+			push(@{$OPA[$bAddress]},$allow_labeling ? sprintf('$%02X',BYTE($Address+2)) : sprintf('$%02X!',BYTE($Address+2)));
+			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+		}
+	} while (WORD($Address)!=$EOL);
+	$OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+	push(@{$OPA[$Address]},sprintf('$%04X!',WORD($Address)));
+	$decoded[$Address++] = $decoded[$Address++] = 1;
+	insert_empty_line($Address-3);
+}
+
 sub def_ptr_hex(@)                                                                  # pointer (not data word)
 {
     my($lbl,$divider_label,$rem) = @_;
@@ -2804,19 +2830,19 @@ sub def_byteblock_code(@)
 
 sub def_wordblock_hex(@)                                                        # data words (not pointers)
 {
-    my($nbytes,$lbl,$divider_label,$rem) = @_;
+    my($nbytes,$lbl,$divider_label,$rem,$allow_labeling) = @_;
     die unless defined($Address);
     setLabel($lbl,$Address);
     $Address+=$nbytes,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
     insert_divider($Address,$divider_label) if defined($divider_label);
 
     $OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-    $OPA[$Address][0] = sprintf('$%04X!',WORD($Address)); $REM[$Address] = $rem unless defined($REM[$Address]);
+    $OPA[$Address][0] = sprintf($allow_labeling?'$%04X':'$%04X!',WORD($Address)); $REM[$Address] = $rem unless defined($REM[$Address]);
     $decoded[$Address++] = $decoded[$Address++] = 1;
 
     for (my($i)=2; $i<$nbytes; $i+=2) {
         $OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-        $OPA[$Address][0] = sprintf('$%04X!',WORD($Address));
+        $OPA[$Address][0] = sprintf($allow_labeling?'$%04X':'$%04X!',WORD($Address));
         $decoded[$Address++] = $decoded[$Address++] = 1;
     }
     insert_empty_line($Address-2);
