@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu Aug 14 20:45:02 2025
+#                    dlm: Sat Aug 30 18:37:57 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 433 53 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 428 51 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -425,6 +425,7 @@
 #	Aug 13, 2025: - added support for Gamestring#, StringSpec#, Font#, DMD_X# and DMD_Y#
 #	Aug 14, 2025: - set $DP = 0x00 since this is always the case for WPC
 #				  - added support for any bracketing of address tags
+#	Aug 30, 2025: - added important relabel warning
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1397,7 +1398,7 @@ sub check_duplicate_label_types()
 	sub define_label($@)
 	{
 		my($lbl,$addr,$allow_relabel) = @_;
-##		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr($addr)) if $opt_T;
+		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr($addr)) if $opt_T;
 
 		if ($lbl eq 'ANALYSIS_GAP') {													# ignore gap labels
 			$last_label_addr = -1;
@@ -1435,7 +1436,11 @@ sub check_duplicate_label_types()
 				$nPG = sprintf("%02X:",$RPG);
 			}
 
-			return if defined($LBL[$addr]) && $lbl =~ m{^RAM_[0-9A-Fa-f]+$}; 			# ignore re-labling attempts with auto-generated label
+			if (defined($LBL[$addr]) && $lbl =~ m{^RAM_[0-9A-Fa-f]+$}) {	 			# ignore re-labling attempts with auto-generated label
+				printf(STDERR "WARNING: ignoring relabel attempt from $LBL[$addr] to $lbl at address \$$oPG%04X at input line $.\n",$addr)
+					unless $opt_w;
+				return;
+			}
 
 			printf(STDERR "WARNING: re-defining label $LBL[$addr] at address \$$oPG%04X to $nPG$lbl at input line $.\n",$addr)
 				if !$allow_relabel && $addr!=$last_label_addr							# multiple labels at same address allowed
@@ -1454,7 +1459,7 @@ sub check_duplicate_label_types()
 		$LBP{$lbl} = $RPG;																# undef except in WPC
 		$LBL[$addr] = $lbl;
 
-##		print(STDERR "LBL{$lbl} = $LBL{$lbl}; LBP{$lbl} = $LBP{$lbl}; LBL[$addr] = $LBL[$addr]\n") if $opt_T;
+		print(STDERR "LBL{$lbl} = $LBL{$lbl}; LBP{$lbl} = $LBP{$lbl}; LBL[$addr] = $LBL[$addr]\n") if $opt_T;
 
 		return $lbl;
 	}
@@ -1795,7 +1800,7 @@ sub resolve_labels()
             $ROM[$a] = labelValue($a,$ROM[$a]);                                         # [ this allows re-defining apparent label arithmetic 
             next;                                                                       # (e.g. .LBL RAM_var $FF; .LBL RAM_var+1 $C000)]
         }
-        print(STDERR "\tnot an defined label\n") if $opt_T;
+        print(STDERR "\tnot an defined label ($ROM[$a]->$LBL{$ROM[$a]})\n") if $opt_T;
 
         #----------------------------------------------------------------------
         # Value Encoders / Data Types / Interpreters
