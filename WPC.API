@@ -144,6 +144,8 @@ define_label('__SOLCMD_TABLE_ADDR+1',				0x7D);
 define_label('_BALLTILTED',							0x86);	
 define_label('_GAMEOVER',							0x87);	
 define_label('_BALLTROUGH_LOCKOUT',					0x88);	
+define_label('_SND_CMD_HEAD_INDEX',					0x8A);	
+define_label('_SND_CMD_TAIL_INDEX',					0x8B);	
 
 define_label('_ISR_MATRIXBYTE',						0x9C);
 define_label('_ISR_MATRIXBYTE_TMP',					0x9D);
@@ -178,6 +180,7 @@ define_label('_PLAYFIELD_QUALIFIED',				0x0419+$VO);
 define_label('_BALL_KICKED_INTO_SHOOTER',			0x041A+$VO);
 define_label('_SCORE_MULTIPLIER',					0x0441+$VO);
 define_label('_BACKGROUND_MUSIC_PLAYING',			0x0445+$VO);
+define_label('_SOUND_CMD_CIRCULAR_BUFFER',			0x045E+$VO);
 unless ($WPCV eq 'WPC(alpha)') {
 	define_label('^DMD_PLAYING_ANIMATION_DATA',		0x0481);
 	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
@@ -726,6 +729,7 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('setDMDfunction[A]', 					0xCABD);
  define_syscall('A=DMDmode_in_effect',					0xCADE);
  define_syscall('replay_last_DMDanimation??',			0xCAE2);
+ define_syscall('pushSndCommand[A]',			        0xC17C);
  define_syscall('syscall_D6BC',							0xD6BC,'WB');
  define_syscall('syscall_D730',							0xD730,'BBB');
  define_syscall('printf[U]_leftAdjusted',				0xD77D,'gfxy');
@@ -735,6 +739,7 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('sys_printf_centered',					0xD7DB);
  define_syscall('sys_printf_rightAdjusted',				0xD7E9);
  define_syscall('ISR_lampMatrix_MUX',	       			0xDAC6);
+ define_syscall('updateSoundCmdBuffer',	       			0xDDF1);
  define_syscall('IRQ_timer_handler??',					0xECCA);
  define_syscall('syscall_EF47',							0xEF47,'B');
  define_syscall('syscall_F647',							0xF647,'W');			
