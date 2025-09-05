@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Aug 30 15:34:33 2025
+#                    dlm: Fri Sep  5 18:02:03 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 81 29 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 83 39 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -79,6 +79,8 @@
 #	Aug 19, 2025: - minor improvements
 #	Aug ??, 2025: - improvements
 #	Aug 30, 2025: - additions
+# 	Sep  4, 2025: - merged github pull request from ecurtz
+#	Sep  5, 2025: - added info from Eli
 # END OF HISTORY
 
 #======================================================================
@@ -118,7 +120,7 @@ sub VERSION_OFFSETS($$)
 
 define_label('__FIRQ_SPRINGBOARD_1',				0x08);
 define_label('__FIRQ_SPRINGBOARD_2',				0x0A);
-define_label('_ROM_BANK_SHADOW',					0x11);		# Scott
+define_label('_ROM_BANK_SHADOW',					0x11);			# Scott
 define_label('__SPRINGBOARD',						0x12);
 
 define_label('=UNKNOWN_SWITCH_BUFFER',				0x1F);
@@ -136,7 +138,7 @@ define_label('__FINDTHREAD_ID',						0x5D);
 define_label('__FINDTHREAD_ID+1',					0x5E);
 define_label('__FINDTHREAD_MASK',					0x5F);
 
-define_label('_GI_POWERSAVER_TIMER',				0x6D);		# minutes
+define_label('_GI_POWERSAVER_TIMER',				0x6D);			# minutes
 
 define_label('__SOLCMD_TABLE_ADDR',					0x7C);	
 define_label('__SOLCMD_TABLE_ADDR+1',				0x7D);	
@@ -145,8 +147,10 @@ define_label('_BALLTILTED',							0x86);
 define_label('_GAMEOVER',							0x87);	
 define_label('_BALLTROUGH_LOCKOUT',					0x88);	
 define_label('_SND_CMD_HEAD_INDEX',					0x8A);	
-define_label('_SND_CMD_TAIL_INDEX',					0x8B);	
+define_label('_SND_CMD_TAIL_INDEX',					0x8B);
+define_label('_IO_BUFFER_HEAD_INDEX',				0x8F);			# Eli
 
+define_label('_IO_BUFFER_TAIL_INDEX',				0x90);			# Eli
 define_label('_ISR_MATRIXBYTE',						0x9C);
 define_label('_ISR_MATRIXBYTE_TMP',					0x9D);
 define_label('_ISR_TMP_A',							0x9E);
@@ -195,6 +199,7 @@ define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$VO);
 define_label('_BALLSEARCH_SUSPEND_TIMER',			0x04C7+$VO);
 define_label('_TILTWARNINGS_LEFT',					0x04D4+$VO);
 
+define_label('_IO_BUFFER',							0x050E+$VO);		# Eli
 define_label('_DMD_FRAMESELECT_FB1_SHADOW',			0x0535+$VO);
 define_label('_DMD_FRAMESELECT_FB2_SHADOW',			0x0536+$VO);
 define_label('_DMD_ACTIVE_FRAME_SHADOW',			0x0537+$VO);
@@ -547,8 +552,8 @@ define_syscall('Thread_Dispatch_Loop_System_Idle',		0x975F+$VO);
 define_syscall('Thread_Dispatch_Loop_System_Busy',		0x9797+$VO);
 
 VERSION_OFFSETS(-246,0);
-define_syscall('X=^spawnThread[BX]_sibling_highPriority', 	0x982E+$VO);	# 9738 -246
-define_syscall('X=^spawnThread[BX]_sibling_lowPriority', 	0x983D+$VO);
+define_syscall('X=^spawnThread[BXY]_highPriority', 		0x982E+$VO);	# 9738 -246
+define_syscall('X=^spawnThread[BXY]_lowPriority', 		0x983D+$VO);
 
 VERSION_OFFSETS(-270,0);
 define_syscall('sys_sleep[A]',							0x9894+$VO,'',2);	# 9894
@@ -825,6 +830,7 @@ $Hook[66]		= 'slamTilt_override';
 $Hook[78]		= 'lampFX_override';
 
 $Hook[91]		= 'IRQtimer';
+$Hook[95]		= 'renderChar_override';
 
 #----------------------------------------------------------------------
 # System Threads

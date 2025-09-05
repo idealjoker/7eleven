@@ -1,14 +1,15 @@
 #======================================================================
-#                    C 7 1 1 . R O M P A G E 
+#                    C 7 1 1 _ E N C O D E R . R O M P A G E 
 #                    doc: Sun Jul 27 20:11:56 2025
-#                    dlm: Mon Jul 28 19:59:00 2025
-#                    (c) 2025 A.M. Thurnherr
-#                    uE-Info: 32 24 NIL 0 0 72 2 2 4 NIL ofnI
+#                    dlm: Fri Sep  5 18:02:48 2025
+#                    (c) 2025 idealjoker@mailbox.org
+#                    uE-Info: 12 36 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 #	Jul 27, 2025: - created
 #	Jul 28, 2025: - made work
+#	Sep  5, 2025: - corrected header
 # HISTORY END
 
 sub ROMpage($$)
