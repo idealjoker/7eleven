@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Sep  5 18:02:03 2025
+#                    dlm: Fri Sep  5 18:19:02 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 83 39 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 172 29 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -160,6 +160,7 @@ define_label('=LAMP_MATRIX_00_LOGICAL',				0x02E0);		# Lamp and Bit Buffers
 define_label('=LAMP_MATRIX_08_PRIMARY',				0x02E8);		
 define_label('=LAMP_MATRIX_10_MASK',				0x02F0);		
 define_label('=LAMP_MATRIX_18_DATA',				0x02F8);		
+
 define_label('=LAMP_MATRIX_20_MASK',				0x0300);		
 define_label('=LAMP_MATRIX_28_DATA',				0x0308);		
 define_label('=LAMP_MATRIX_30_MASK',				0x0310);		
@@ -167,6 +168,8 @@ define_label('=LAMP_MATRIX_38_DATA',				0x0318);
 define_label('=BLINK_MATRIX',						0x0320);
 define_label('=FLAGS',								0x0328);
 define_label('=FLAGS_HIGH',							0x0330);
+define_label('^SOL_QUEUE_HEAD',						0x03EA);
+define_label('^SOL_QUEUE_TAIL',						0x03EC);
 
 VERSION_OFFSETS(-1,0);
 

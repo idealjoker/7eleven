@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Aug 30 15:32:54 2025
+#                    dlm: Sat Sep  6 12:31:20 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 148 43 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 149 36 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -146,6 +146,7 @@
 #				  - BUG: .STR<len> did not handle string-end correctly
 #				  - added balltrough switch table
 #	Aug 30, 2025: - added another sys param
+#	Sep  6, 2025: - typo HEAP_STARTA
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -809,7 +810,7 @@ sub disassemble_system_pointers()
 	    def_ptr_hex_alt(sprintf('^UNKNOWN_SYSTEM_PARAM_%04X',$Address),sprintf('UNKNOWN_SYSTEM_PARAM_%04X',$Address));
 	}
 
-	def_ptr_hex('^HEAP_STARTA');
+	def_ptr_hex('^HEAP_START');
 	insert_divider($Address,'System Code');
 
 	$Address = 0xFFEC;													# checksum
