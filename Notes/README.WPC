@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sat Aug 30 11:19:54 2025
+                    dlm: Sun Sep 14 10:20:37 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 452 48 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 366 32 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -187,7 +187,7 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 
 ----------------------------------------------------------------------
 
-=Bit Groups=
+=Bit Groups / Bitgroups=
 
 - 1 byte id
 - 1 byte buffer offset
@@ -347,23 +347,23 @@ sys_bitgroupOp_ABXY
 		B6
 		B7-9	Handler Reference
 		BA
-- typical entry:
-	.DB $B0        							B0
-	.DB $00									B1		
-	.DB $60									B2 		Flags (common value)
-	.DB LG_HK_targets						B3 		Bitgroup
-	.DB $40									B4		Flags?
-	.DB $00									B5
-	.DB $00   								B6
-    .DR 34:LampFX_Skillshot_handler $34		B7-9	Handler Reference
-    .DB $00									BA
+	- typical entry:
+		.DB $B0 								B0
+		.DB $00 								B1	    
+		.DB $60 								B2		Flags (common value)
+		.DB LG_HK_targets						B3		Bitgroup
+		.DB $40 								B4		Flags?
+		.DB $00 								B5
+		.DB $00 								B6
+		.DR 34:LampFX_Skillshot_handler $34 	B7-9	Handler Reference
+	    .DB $00                                 BA
 
-
-		
-
-
-
-		
+- running lamp effects are in linked list with anchor at $0477:
+	B0-1	next
+	B2-3	thread id
+	B4		LampFX#
+	B5		???
+	B6		matrix flags (04:LM#10;  40:LM#20;  80:LM#30)
 
 ----------------------------------------------------------------------
 
@@ -430,7 +430,7 @@ sys_bitgroupOp_ABXY
 - thread buffer with spawn values
 	0-1		parent.next		pointer to next thread in list
 	2		#$03 marker
-	3		#$00
+	3		#$00			LampFX threads have NE value
 	4		#$01
 	5-6						pointer to PC in this thread buffer
 	7-14					??? (4 bytes, registers?)

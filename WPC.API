@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Sep  5 18:19:02 2025
+#                    dlm: Sun Sep 14 15:36:26 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 172 29 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 84 35 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -81,6 +81,7 @@
 #	Aug 30, 2025: - additions
 # 	Sep  4, 2025: - merged github pull request from ecurtz
 #	Sep  5, 2025: - added info from Eli
+#	Sep 14, 2025: - minor additions
 # END OF HISTORY
 
 #======================================================================
@@ -188,6 +189,7 @@ define_label('_BALL_KICKED_INTO_SHOOTER',			0x041A+$VO);
 define_label('_SCORE_MULTIPLIER',					0x0441+$VO);
 define_label('_BACKGROUND_MUSIC_PLAYING',			0x0445+$VO);
 define_label('_SOUND_CMD_CIRCULAR_BUFFER',			0x045E+$VO);
+define_label('^LAMPFX_LIST',						0x0477+$VO);
 unless ($WPCV eq 'WPC(alpha)') {
 	define_label('^DMD_PLAYING_ANIMATION_DATA',		0x0481);
 	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
@@ -617,7 +619,7 @@ VERSION_OFFSETS(-145,0);
 define_syscall('copy_Gamestring[X]_to_STRING_BUFFER',	0xA3D7+$VO);
 define_syscall('memCopy[AXY]',							0xA6B9+$VO);	# A628
 define_syscall('memClear[AY]',							0xA6C4+$VO);
-define_syscall('memClear[XY]',							0xA6D1+$VO);
+define_syscall('memClear[ABY]',							0xA6D1+$VO);
 define_syscall('memSet[ABY]',							0xA6E3+$VO);
 define_syscall('addEntropy',							0xA6EC+$VO);
 define_syscall('CS=randomBit',							0xA70B+$VO);
