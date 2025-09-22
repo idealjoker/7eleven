@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sun Sep 14 10:20:37 2025
+                    dlm: Sun Sep 21 21:13:34 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 366 32 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 26 43 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory Map=
@@ -21,29 +21,31 @@ $4000-$7FFF 	16KB banked ROM
 $8000-$FFFF 	32KB system ROM
 					  
 					  
--ROM Paging-
+-Memory Paging-
     
+- RAM uses PG#3E (not supported by 7eleven)
+
 - 1MB ROM space on WPC board
-	- organized into 64x16KB pages (PG#00-3F)
-	- 32KB (PG#3E-3F) permanently mapped to $8000-$FFFF
+	- organized into 64x16KB pages (PG#00-3D,3F)
+	- 32KB (PG#3F) permanently mapped to $8000-$FFFF
 	- 16KB (current game page) mapped to $4000-$7FFF
 	- up to 992MB (62 pages) for game assets
     
 - 1MB ROM chip (27C080/27C801):
 	- address range: $00000 - $FFFFF
 	- PG#00-3D (30 pages, 480KB)
-	- PG#3E-3F (2 pages, 32KB)
+	- PG#3F    ( 2 pages,  32KB)
 
 - T2 uses 512KB ROM chip (27C040/27C401):
 	- address range: $00000 - $7FFFF
 	- PG#20-3D (30 pages, 480KB)
-	- PG#3E-3F (2 pages, 32KB)
+	- PG#3F    ( 2 pages,  32KB)
 	- May/2025: NOS AT28C040 EEPROM replacement available for $295 on eBay
 
 - FH uses 256KB ROM chip (27C020/27C201):
 	- address range: $00000 - $3FFFF
 	- PG#30-3D (14 pages, 224KB)
-	- PG#3E-3F (2 pages, 32KB)	 
+	- PG#3E-3F ( 2 pages,  32KB)
 
 
 -Labels-
@@ -89,7 +91,7 @@ $F4000-$F7FFF		PG#3D				$74000-77FFF
 $F8000-$FCFFF		PG#FF				$78000-7CFFF
 $FD000-$FFFFF		PG#FF				$7D000-7FFFF
 
-PG 		= int(ROM_addr / 0x4000)
+PG 		= int(ROM_addr / 0x4000) except for FE=RAM and FF=8000-FFFF
 ADDR	= (ROM_addr % 0x4000) + 0x4000
 
 

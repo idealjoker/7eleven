@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Aug 30 18:37:57 2025
+#                    dlm: Sun Sep 21 21:07:19 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 428 51 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2630 21 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -426,6 +426,7 @@
 #	Aug 14, 2025: - set $DP = 0x00 since this is always the case for WPC
 #				  - added support for any bracketing of address tags
 #	Aug 30, 2025: - added important relabel warning
+#	Sep 21, 2025: - added .DWWB
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2386,7 +2387,7 @@ sub compile_common_pragma()
 				match_pragma($OP,'.UNDEF','INE') ||
 				match_pragma($OP,'.DECL','ARE') ||
 				isMember($OP,'.LBL','.LABEL','.RELBL','.RELABEL') ||
-				isMember($OP,'.DB','.DW','.DBW','.DBWB','.DBBW','.DWB') ||
+				isMember($OP,'.DB','.DW','.DBW','.DBWB','.DBBW','.DWB','DWWB') ||
                 isMember($OP,'.ASCII','.NOP')) ? 1 : 0;
     }
 
@@ -2608,6 +2609,25 @@ sub compile_common_pragma()
 				printf("\$D711::Address = 0x%04X; &D711::def_ptr2lbl('$OP_ARG[0]');\n",$ADDR)
 					if ($opt_x);
 			}
+			$ROM[$ADDR++] = $OP_ARG[0];
+			$ROM[$ADDR++] = '16-BIT VALUE';
+			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {
+				$ROM[$ADDR++] = $OP_ARG[0];
+			}
+			return 1;
+	    }
+
+		if ($OP eq '.DWWB') {																# .DWWB (define 2 words followed by byte(s))
+			die("Syntax: .DWWB word-val word-val byte-val[...] (<@_> at input line $.)\n")
+				unless (@OP_ARG >= 3);
+			set_label_type(3);
+			unless ($OP_ARG[0] =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {							# label
+				printf("\$D711::Address = 0x%04X; &D711::def_ptr2lbl('$OP_ARG[0]');\n",$ADDR)
+					if ($opt_x);
+			}
+			$ROM[$ADDR++] = $OP_ARG[0];
+			$ROM[$ADDR++] = '16-BIT VALUE';
+			shift(@OP_ARG);
 			$ROM[$ADDR++] = $OP_ARG[0];
 			$ROM[$ADDR++] = '16-BIT VALUE';
 			for (shift(@OP_ARG); @OP_ARG > 0; shift(@OP_ARG)) {

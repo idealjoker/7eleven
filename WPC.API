@@ -82,6 +82,7 @@
 # 	Sep  4, 2025: - merged github pull request from ecurtz
 #	Sep  5, 2025: - added info from Eli
 #	Sep 14, 2025: - minor additions
+#	Sep 21, 2025: - WPC checksum syscalls
 #	Sep 22, 2025: - minor additions
 # END OF HISTORY
 
@@ -546,7 +547,12 @@ define_syscall('memCopy[ABXY]_otherbank',				0x9141+$VO);
 define_syscall('._ASIC_RAM_LOCKSIZE=A',					0x9207+$VO);
 define_syscall('unlockRAM',								0x9223+$VO);
 define_syscall('lockRAM',								0x922C+$VO);
-define_syscall('CS=badChecksum[XY]',					0x928A+$VO);
+define_syscall('Checksum_block[A]_good?',				0x9235+$VO);
+define_syscall('D=Checksum_block[A]_good?',				0x923B+$VO);
+define_syscall('update_Checksum_block[A]',				0x9252+$VO);
+define_syscall('update_Checksum_block[A]_and_lockRAM',	0x9265+$VO);
+define_syscall('init_Checksum_block[A]',				0x926B+$VO);
+define_syscall('D=Checksum[XY]_good?',					0x928A+$VO);
 define_syscall('Y=adjustmentA??==1',					0x92D4+$VO);
 define_syscall('A=adjustmentA??==1',					0x92DE+$VO);
 define_syscall('D=adjustmentA??==1',					0x92EC+$VO);
