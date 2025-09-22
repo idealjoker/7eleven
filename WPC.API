@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Sep 14 15:36:26 2025
+#                    dlm: Mon Sep 22 07:51:17 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 84 35 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 85 35 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -82,6 +82,7 @@
 # 	Sep  4, 2025: - merged github pull request from ecurtz
 #	Sep  5, 2025: - added info from Eli
 #	Sep 14, 2025: - minor additions
+#	Sep 22, 2025: - minor additions
 # END OF HISTORY
 
 #======================================================================
@@ -832,6 +833,7 @@ $Hook[59]		= 'load_gameString_override';
 
 $Hook[66]		= 'slamTilt_override';
 
+$Hook[77]		= 'displayFX_override';
 $Hook[78]		= 'lampFX_override';
 
 $Hook[91]		= 'IRQtimer';
