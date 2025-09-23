@@ -197,6 +197,19 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 	$40		blink buffer
 - Bitgroup#01 includes all controlled lamps
 
+=BITGROUP_TABLE:
+	- WPC pointer table
+	- entry:
+		B0-1	^next bitgroup
+		B2-n	bitgroup defiition
+	- bitgroup definition:
+		$FA <bitgroup elt> [...] $FA
+	- bitgroup elements:
+		<Lamp>							single lamp
+		<Flag>							single flag
+		$81 <Bitgroup> $81				Bitgroup
+		$85 <from-bit> <to-bit> $85		flag or lamp range
+
 sys_bitgroupOp_ABXY
 	A	ROM page of hook routine
 	B	0C(rotLeft) 0E(fill), 04(???)
