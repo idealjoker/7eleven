@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Sep 22 07:51:17 2025
+#                    dlm: Sat Sep 27 13:14:42 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 85 35 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 87 51 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -84,6 +84,7 @@
 #	Sep 14, 2025: - minor additions
 #	Sep 21, 2025: - WPC checksum syscalls
 #	Sep 22, 2025: - minor additions
+#	Sep 27, 2027: - minor additions / modifications
 # END OF HISTORY
 
 #======================================================================
@@ -197,9 +198,9 @@ unless ($WPCV eq 'WPC(alpha)') {
 	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
 	define_label('_DMD_MODE_IN_EFFECT',				0x0487);
 }
-define_label('^PLAYER_MEM_DATA',					0x04AC+$VO);
-define_label('_SIZE_USER_BYTES',					0x04AF+$VO);
-define_label('_SIZE_PLAYER_MEM_DATA',				0x04AE+$VO);
+define_label('^PLAYER_DATA',						0x04AC+$VO);
+define_label('_SIZE_PLAYER_GAME_DATA',				0x04AF+$VO);
+define_label('_SIZE_PLAYER_DATA',					0x04AE+$VO);
 define_label('_CRON_MINUTE_COUNTER_1',				0x04B4+$VO);
 define_label('_CRON_MINUTE_COUNTER_2',				0x04B5+$VO);
 define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$VO);
@@ -231,7 +232,7 @@ define_label('_RND_1',								0x1790);
 define_label('_RND_2',								0x1791);
 define_label('_RND_3',								0x1792);
 define_label('_DIAGNOSTICS_MODE',					0x1793);
-define_label('_MAX_PLAYER_IN_GAME',					0x1794);
+define_label('_MAX_PLAYER_IN_GAME',				0x1794);
 define_label('__DMD_FRAMESELECT',					0x1799);
 
 VERSION_OFFSETS(-6,0);
@@ -806,7 +807,7 @@ define_syscall('3B:BYU=MBD_dataRefs[A]', 	         	0x7076+$VO, '', 3); # 77F2 +
 #    		  code is NOT executed
 #----------------------------------------------------------------------
 
-$Hook[0] 		= 'MBD_resetBallAccounting??_override';
+$Hook[0] 		= 'initialize_WPC_system_override';
 $Hook[1]		= 'debugger??';
 $Hook[2]		= 'score_override';
 $Hook[3]		= 'gameStart_override';

@@ -1,14 +1,14 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sun Sep 21 21:13:34 2025
+                    dlm: Sat Sep 27 12:54:27 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 26 43 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 112 53 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
-=Memory Map=
+=Memory=
 				    
--Overview-
+-Memory Mapw-
 				    
 $0000-$17FF 	6KB RAM (volatile)
 $1800-$1FFF		2KB RAM (battery backed)
@@ -48,7 +48,7 @@ $8000-$FFFF 	32KB system ROM
 	- PG#3E-3F ( 2 pages,  32KB)
 
 
--Labels-
+-WPC Labels-
 
 - every label has a hex page id (00-3D, FF) and a name
 
@@ -94,6 +94,50 @@ $FD000-$FFFFF		PG#FF				$7D000-7FFFF
 PG 		= int(ROM_addr / 0x4000) except for FE=RAM and FF=8000-FFFF
 ADDR	= (ROM_addr % 0x4000) + 0x4000
 
+
+-RAM-
+
+.Player Memory Data.
+
+- syscalls
+	X=^memData_player[A]
+	X=^memData_playerUp
+	X=^playerGameByte[B]		B starts at 1
+	A=playerGameByte[B]			get byte
+	playerGameByte[B]=[A]		set byte
+
+- variables:
+	^PLAYER_DATA				pointer to RAM area of current player 
+	_SIZE_PLAYER_DATA			size of RAM area including buffers and game data (value in RAM?!)
+	_SIZE_PLAYER_GAME_DATA		number of game bytes in player data (value in RAM?!)
+
+- buffer bytes:
+	00-07					lamps
+	08-15 					blinkbuf
+	16-23					flags
+	24-31					??? (8 bytes)
+	32		RAM_68			lamp blink state??
+	33						flags: $01 player_Gamestart_event executed
+	34-35					list of values that update audits when game is aborted on ball 3??
+	36						number of tickets earned??
+
+- player game data:
+	- arbitrary sized RAM area for every player malloc'ed when WPC system is initialized
+	- size defined in ROM with reference at ^SIZE_PLAYER_DATA
+	- data start at offset 37 in player mem data
+
+
+.WPC Heap.
+
+- heap grows upward, stack grows downward into free RAM area
+- pointer to heap in ROM (^HEAP_START: =BOTTOM_OF_HEAP)
+- pointer to current start of free heap in RAM (^FREE_RAM)
+- malloc:
+	LDX 	^FREE_RAM
+	STX 	^allocated_RAM
+	LEAX	MALLOC_BYTES,X
+	STX     ^FREE_RAM
+- allocated RAM cannot be freed
 
 ----------------------------------------------------------------------
 
@@ -459,24 +503,6 @@ sys_bitgroupOp_ABXY
 	44		#$00 			flags (80: related to wakeup time))
 
 ----------------------------------------------------------------------
-
-=Player Memory Data=
-
-- variables:
-	^PLAYER_MEM_DATA		pointer to RAM area with player memory data
-	_SIZE_USER_DATA			number of user bytes
-	_SIZE_PLAYER_MEM_DATA	total size including user bytes
-
-- buffer bytes:
-	00-07					lamps
-	08-15 					blinkbuf
-	16-23					flags
-	24-31					??? (8 bytes)
-	32		RAM_68			lamp blink state??
-	33						flags: $01 player_Gamestart_event executed
-	34-35					list of values that update audits when game is aborted on ball 3
-	36						number of tickets earned??
-	37-??					user bytes
 
 ----------------------------------------------------------------------
 
