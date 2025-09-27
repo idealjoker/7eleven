@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sat Sep 27 12:54:27 2025
+                    dlm: Sat Sep 27 13:32:46 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 112 53 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 109 36 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -102,9 +102,11 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 - syscalls
 	X=^memData_player[A]
 	X=^memData_playerUp
-	X=^playerGameByte[B]		B starts at 1
-	A=playerGameByte[B]			get byte
-	playerGameByte[B]=[A]		set byte
+	X=^playerGameByte[B]				B starts at 1
+	A=playerGameByte[B]					get byte
+	playerGameByte[B]=[A]				set byte
+	A=playerGameByte <gamebyte-id>		get byte
+	playerGameByte=[A] <gamebyte-id>	set byte
 
 - variables:
 	^PLAYER_DATA				pointer to RAM area of current player 

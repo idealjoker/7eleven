@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Sep 27 13:14:42 2025
+#                    dlm: Sat Sep 27 13:27:42 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 87 51 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 438 30 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -434,8 +434,8 @@ define_syscall('syscall_8582',						0x8582,'B');
 define_syscall('syscall_8592',						0x8592,'B');
 define_syscall('lampFX',							0x85B2,'X');
 define_syscall('syscall_85A2',						0x85A2,'B');
-define_syscall('syscall_85C1',						0x85C1,'B');			# FH
-define_syscall('syscall_85D1',						0x85D1,'B');			# FH
+define_syscall('A=playerGameByte',					0x85C1,'B');			# FH
+define_syscall('playerGameByte=[A]',				0x85D1,'B');			# FH
 define_syscall('syscall_85E1',						0x85E1,'B');
 define_syscall('syscall_85F1',						0x85F1,'B');
 define_syscall('syscall_8601',						0x8601,'B');
