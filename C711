@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Sep 21 21:07:19 2025
+#                    dlm: Sat Sep 27 21:53:23 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 2630 21 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 2490 54 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -645,6 +645,7 @@ our($DP) = 0x00;														# always the case for WPC
 
 our($WMS_System,%System_Option); 										# source type
 local(our(%ALIAS,%ALIAS_REFD));                                 		# aliases (defines), number of references
+our($LAST_DEFINED) = 'X';												# .LAST pseudo-alias
 
 our(@SRC);																# source lines (used for optimizer and warnings)
 local(our(@LINE));														# source line number indexed by ADDR (used for optimizer and warnings)
@@ -2007,21 +2008,31 @@ sub expand_aliases()
 		next if match_pragma($_[0],'.IFUNDEF','');
 		next if match_pragma($_[0],'.ASSUME_DEFINED','');
 		next if match_pragma($_[0],'.ASSUME_UNDEFINED','');
-		while (1) {
+			
+		while (1) {																		# loop through nested aliases
 			my($pre,$alias,$post);
 			if ($_[$i] =~ m/{.+}/) {													# encoder
 				my($p1,$p2);
 				($p1,$p2,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z0-9_]+\()?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
 				$pre = $p1 . $p2;
 #				print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n");
-            } else {
+            } else {																	# not encoder
 				($pre,$alias,$post) = ($_[$i] =~ m{^\[})								# M6809 indirect extended
 								    ? ($_[$i] =~ m{^(\[\#?)([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*\])$})
-								    : ($_[$i] =~ m{^(\#)?([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*)$});
+								    : ($_[$i] =~ m{^(\#)?([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*)$}); # just an alias
 			}
 #			print(STDERR "$_[$i] $pre/$alias/$post [$ALIAS{$alias}]\n");
 
-			last unless defined($ALIAS{$alias});
+			if ($alias =~ m{^\.LAST_DEFINED(\+)?(\d+)?}) {								# .LAST_DEFINED pseudo alias
+				if (defined($2)) {
+					die("$LAST_DEFINED/$1/$2") unless numberp($LAST_DEFINED);
+					$alias = $LAST_DEFINED + $2;
+				} else {
+					$alias = $LAST_DEFINED . $1;
+				}
+			} 
+
+			last unless defined($ALIAS{$alias});										# regular alias
 			$ALIAS_REFD{$alias}++;
 			my(@sali) = split(/\s+/,$ALIAS{$alias});
 			if (@sali==1 || $ALIAS{$alias}=~m{^'}) {									# single word or multi-word string
@@ -2475,6 +2486,8 @@ sub compile_common_pragma()
 		} else {																		# non-string arguments
 			$ALIAS{$OP_ARG[0]} = "@OP_ARG[1..$#OP_ARG]";
 		}
+		$LAST_DEFINED = $ALIAS{$OP_ARG[0]};
+		print(STDERR "LAST_DEFINED =$LAST_DEFINED\n");
 		return 1;
 	}
 
