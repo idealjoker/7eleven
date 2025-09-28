@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Sep 27 21:53:23 2025
+#                    dlm: Sun Sep 28 08:28:23 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 2490 54 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 435 43 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -427,10 +427,12 @@
 #				  - added support for any bracketing of address tags
 #	Aug 30, 2025: - added important relabel warning
 #	Sep 21, 2025: - added .DWWB
+#	Sep 28, 2025: - added support for .LAST_DEFINED
 # HISTORY END
 
 # RELEASE NOTES:
 #	- v1.2.0 (not yet released)
+#		- support for .LAST_DEFINED[+const]
 #		- any bracket characters allowed in address tags (e.g. >37:2555<, (37:2555), [37:2555{)
 #		- -A only checks default tags, e.g. <37:2555>
 #		- [] allowed in alias names
@@ -2022,16 +2024,6 @@ sub expand_aliases()
 								    : ($_[$i] =~ m{^(\#)?([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*)$}); # just an alias
 			}
 #			print(STDERR "$_[$i] $pre/$alias/$post [$ALIAS{$alias}]\n");
-
-			if ($alias =~ m{^\.LAST_DEFINED(\+)?(\d+)?}) {								# .LAST_DEFINED pseudo alias
-				if (defined($2)) {
-					die("$LAST_DEFINED/$1/$2") unless numberp($LAST_DEFINED);
-					$alias = $LAST_DEFINED + $2;
-				} else {
-					$alias = $LAST_DEFINED . $1;
-				}
-			} 
-
 			last unless defined($ALIAS{$alias});										# regular alias
 			$ALIAS_REFD{$alias}++;
 			my(@sali) = split(/\s+/,$ALIAS{$alias});
@@ -2486,8 +2478,17 @@ sub compile_common_pragma()
 		} else {																		# non-string arguments
 			$ALIAS{$OP_ARG[0]} = "@OP_ARG[1..$#OP_ARG]";
 		}
+		if ($ALIAS{$OP_ARG[0]} =~ m{^\.LAST_DEFINED(\+)?(\d+)?$}) {						# handle .LAST_DEFINED
+			if (defined($2)) {
+				die("$LAST_DEFINED/$1/$2") unless numberp($LAST_DEFINED);
+				$ALIAS{$OP_ARG[0]} = $LAST_DEFINED + $2;
+			} else {
+				$ALIAS{$OP_ARG[0]} = $LAST_DEFINED . $1;
+			}
+	    } 
+			
 		$LAST_DEFINED = $ALIAS{$OP_ARG[0]};
-		print(STDERR "LAST_DEFINED =$LAST_DEFINED\n");
+##		print(STDERR "LAST_DEFINED =$LAST_DEFINED\n");
 		return 1;
 	}
 

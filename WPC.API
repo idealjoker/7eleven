@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Sep 27 13:27:42 2025
+#                    dlm: Sun Sep 28 09:22:21 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 438 30 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 88 10 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -85,6 +85,7 @@
 #	Sep 21, 2025: - WPC checksum syscalls
 #	Sep 22, 2025: - minor additions
 #	Sep 27, 2027: - minor additions / modifications
+#	Sep 28, 2027: - minor additions / modifications
 # END OF HISTORY
 
 #======================================================================
@@ -389,7 +390,7 @@ define_syscall('Y=adjustment',						0x82F2,'A');
 define_syscall('A=adjustment',						0x82FF,'A');
 define_syscall('B=adjustment',						0x830C,'A');
 define_syscall('switchClosed?',						0x8319,'S');
-define_syscall('syscall_8329',						0x8329,'S');
+define_syscall('switchClosed??_alt?',				0x8329,'S');
 define_syscall('switchBroken?',						0x8339,'S');
 define_syscall('sleep',								0x8346,'B');
 define_syscall('memCopy_XY',						0x835E,'B');
@@ -424,8 +425,8 @@ define_syscall('syscall_84F8',						0x84F8,'B');
 define_syscall('syscall_8505',						0x8505,'B');
 define_syscall('syscall_8512',						0x8512,'B');
 define_syscall('addScore',							0x851F,'B');
-define_syscall('syscall_852C',						0x852C,'B');
-define_syscall('syscall_8539',						0x8539,'B');
+define_syscall('addScore_noLocalMultiplier',		0x852C,'B');
+define_syscall('setScoreMultiplier',				0x8539,'B');
 define_syscall('playSound',							0x8546,'N');
 define_syscall('displayFX',							0x8553,'D');
 define_syscall('syscall_8562',						0x8562,'B');
@@ -675,7 +676,7 @@ define_syscall('addScore[A]_withLocalMultiplier[B]',	0xBAA4+$VO);
 define_syscall('addScore[A]_with1xLocalMultiplier',		0xBABB+$VO);
 define_syscall('addScore[AB]]',							0xBAC5+$VO);
 define_syscall('addScore[ABX]',							0xBACD+$VO);
-define_label('.scoreMultiplier_error',					0xBADA+$VO);
+define_label('.addScore_multiplier_error',				0xBADA+$VO);
 define_label('.addScore_continue',						0xBAE0+$VO);
 define_label('.addScore_done',							0xBAE8+$VO);
 define_syscall('addScore[ABXY]',						0xBAEA+$VO);	# BA15 -213
