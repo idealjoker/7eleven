@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Sep 28 09:22:21 2025
+#                    dlm: Thu Oct  2 13:37:32 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 88 10 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 89 51 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -84,8 +84,9 @@
 #	Sep 14, 2025: - minor additions
 #	Sep 21, 2025: - WPC checksum syscalls
 #	Sep 22, 2025: - minor additions
-#	Sep 27, 2027: - minor additions / modifications
-#	Sep 28, 2027: - minor additions / modifications
+#	Sep 27, 2025: - minor additions / modifications
+#	Sep 28, 2025: - minor additions / modifications
+#	Oct  2, 2025: - minor additions / modifications
 # END OF HISTORY
 
 #======================================================================
@@ -202,6 +203,7 @@ unless ($WPCV eq 'WPC(alpha)') {
 define_label('^PLAYER_DATA',						0x04AC+$VO);
 define_label('_SIZE_PLAYER_GAME_DATA',				0x04AF+$VO);
 define_label('_SIZE_PLAYER_DATA',					0x04AE+$VO);
+define_label('_BALL_SYSTEM_BUSY',					0x04B0+$VO);
 define_label('_CRON_MINUTE_COUNTER_1',				0x04B4+$VO);
 define_label('_CRON_MINUTE_COUNTER_2',				0x04B5+$VO);
 define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$VO);
@@ -437,7 +439,7 @@ define_syscall('lampFX',							0x85B2,'X');
 define_syscall('syscall_85A2',						0x85A2,'B');
 define_syscall('A=playerGameByte',					0x85C1,'B');			# FH
 define_syscall('playerGameByte=[A]',				0x85D1,'B');			# FH
-define_syscall('syscall_85E1',						0x85E1,'B');
+define_syscall('lamp_and_displayFX_initialize',		0x85E1,'D');
 define_syscall('syscall_85F1',						0x85F1,'B');
 define_syscall('syscall_8601',						0x8601,'B');
 define_syscall('syscall_8611',						0x8611,'B');
@@ -840,7 +842,10 @@ $Hook[46]		= 'Gamestart_pre_initBall';
 $Hook[59]		= 'load_gameString_override';
 
 $Hook[66]		= 'slamTilt_override';
+$Hook[69]		= 'update_Startbutton_lamp';
 
+$Hook[73]		= 'initSoundSystem_override';
+$Hook[75]		= 'lamp_and_displayFX_initialize_override';
 $Hook[77]		= 'displayFX_override';
 $Hook[78]		= 'lampFX_override';
 
@@ -923,7 +928,7 @@ $Adj[0x98]		= 'AD_show_dateTime';
 $Adj[0x99]		= 'AD_GI_allowDimming';						# AD25
 $Adj[0x9A]		= 'AD_Tournament_play';
 $Adj[0x9B]		= 'AD_screenFormat_European';
-$Adj[0x9C]		= 'AD_SoundVolume_zero_alllowed';
+$Adj[0x9C]		= 'AD_SoundVolume_zero_allowed';
 $Adj[0x9D]		= 'AD_GI_powersaver';
 $Adj[0x9E]		= 'AD_GI_powersaver_brightness';			# AD30
 
