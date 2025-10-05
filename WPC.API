@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Thu Oct  2 13:37:32 2025
+#                    dlm: Sun Oct  5 11:15:46 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 89 51 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 90 32 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -87,6 +87,7 @@
 #	Sep 27, 2025: - minor additions / modifications
 #	Sep 28, 2025: - minor additions / modifications
 #	Oct  2, 2025: - minor additions / modifications
+#	Oct  5, 2025: - minor change
 # END OF HISTORY
 
 #======================================================================
@@ -713,7 +714,7 @@ define_syscall('rotLeft',								0xFDA2+$VO,'GB');			# used for lane change
 define_syscall('rotRight', 								0xFDB4+$VO,'GB');
 define_syscall('unknownBitgroupOp1',					0xFDC6+$VO,'GB');
 define_syscall('advance',								0xFDD8+$VO,'GB');
-define_syscall('unknownBitgroupOp3',					0xFDEA+$VO,'GB');
+define_syscall('toggleAll',								0xFDEA+$VO,'GB');
 define_syscall('MBD_callHandler[A]',               		0xFDFC+$VO,'B',3);          # NOTE 3: must only be called from PG#3B
 define_syscall('switchActive[B]?',						0xFE0D+$VO);
 
