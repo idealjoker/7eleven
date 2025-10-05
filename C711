@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Sep 28 08:28:23 2025
+#                    dlm: Fri Oct  3 17:00:15 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 435 43 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 431 61 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -428,6 +428,7 @@
 #	Aug 30, 2025: - added important relabel warning
 #	Sep 21, 2025: - added .DWWB
 #	Sep 28, 2025: - added support for .LAST_DEFINED
+#	Oct  3, 2025: - allow .LAST_DEFINED+# to work with labels
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2480,15 +2481,19 @@ sub compile_common_pragma()
 		}
 		if ($ALIAS{$OP_ARG[0]} =~ m{^\.LAST_DEFINED(\+)?(\d+)?$}) {						# handle .LAST_DEFINED
 			if (defined($2)) {
-				die("$LAST_DEFINED/$1/$2") unless numberp($LAST_DEFINED);
-				$ALIAS{$OP_ARG[0]} = $LAST_DEFINED + $2;
+				$ALIAS{$OP_ARG[0]} = $LAST_DEFINED;										# can be label or number
+				$ALIAS{$OP_ARG[0]} = labelValue(-99999,$ALIAS{$OP_ARG[0]})
+					unless numberp($ALIAS{$OP_ARG[0]});
+				die ("non-number .LAST_DEFINED <$LAST_DEFINED> at input line $.\n")
+					unless numberp($ALIAS{$OP_ARG[0]});
+				$ALIAS{$OP_ARG[0]} = $ALIAS{$OP_ARG[0]} + $2;
 			} else {
 				$ALIAS{$OP_ARG[0]} = $LAST_DEFINED . $1;
 			}
 	    } 
 			
 		$LAST_DEFINED = $ALIAS{$OP_ARG[0]};
-##		print(STDERR "LAST_DEFINED =$LAST_DEFINED\n");
+##		print(STDERR "LAST_DEFINED = alias($OP_ARG[0]) = $LAST_DEFINED\n");
 		return 1;
 	}
 
