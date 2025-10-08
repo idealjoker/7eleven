@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Sep 27 13:15:08 2025
+#                    dlm: Wed Oct  8 17:25:11 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 151 37 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 153 39 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -149,6 +149,8 @@
 #	Sep  6, 2025: - typo HEAP_STARTA
 #	Sep 21, 2025: - added checksum block decoding
 #	Sep 27, 2025: - label name change
+#	Oct  8, 2025: - changed RELEASE_DATE to BUILD_DATE
+#				  - added APPLE_VERSION
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -771,7 +773,7 @@ sub disassemble_system_pointers()
 		def_WPC_stringTable('FRENCH_TUNE_NAME','System String Table','BackgroundTuneName#');
 
 	my(@strRef)   = (0x8133,0x8136,0x8139);							# String References
-	my(@strRefL)  = ('GAME_NAME','GAME_NUMBER','RELEASE_DATE');
+	my(@strRefL)  = ('GAME_NAME','GAME_NUMBER','BUILD_DATE');
 
 	my(@known)	  = (0x814E,0x812D,0x8151,0x8193);
 	my(@knownL)	  = ('SHOOTERLANE_SWITCH','SIZE_PLAYER_GAME_DATA','BALLSEARCH_TIMER','STARTBUTTON_LAMP');
@@ -893,6 +895,7 @@ sub disassemble_DMD_dataTable()
 #	- handle WPC truth values (CC=true) after predicates marked with
 #	  trailing '?'
 #	- define operands in comments
+#	- define APPLE_VERSION
 #======================================================================
 
 sub apply_magic_WPC($$)
@@ -953,6 +956,11 @@ sub apply_magic_WPC($$)
 			elsif ($OP[$noa] eq '_WHILE_CS') 	{ $OP[$noa] = '_WHILE_false'; }		
 		}
 	}
+
+	$Address = $Lbl{'RST_handler'};											# APPLE_VERSION
+	die($Address) unless numberp($Address);
+	$LBL[$Address-2] = 'APPLE_VERSION';
+
 }
 
 #----------------------------------------------------------------------
