@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sun Sep 28 08:46:42 2025
+                    dlm: Sun Oct 12 11:18:32 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 111 48 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 341 50 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -334,48 +334,58 @@ sys_bitgroupOp_ABXY
 	- ^MBD_LOCK_DATA in RAM
 	- _MBD_NUM_LOCKS rows
 	- 5 bytes per entry:
-		0	set to $80 on switch closure of lock when byte 1 == 0
-		1	LOCK ENABLED when (0, ignore switch closures, except to mark them in byte 0)
-		2	NUMBER OF LOCKED BALLS (0 or 1)
+		0	MUST EJECT (set to $80 on switch closure of lock when LOCK ENABLED == 0)
+		1	LOCK ENABLED (when 0, ignore switch closures, except to mark them as MUST EJECT)
+		2	NUMBER OF LOCKED BALLS (0 or 1 for eject holes)
 		3	Flags (MSW_lock_handler)
-		4	Switch (<3B:72D7>   MBD_LT02(scoop)_unknownLockOp[3B]:)
+		4	Switch (used in MBD_LT02_forceEject[A])
+
 
 - Lock Event Handlers
 	- usage: !MBD_callHandler_A <CMD>
 	- Handler Codes
  	    ------------------------------------------------------------------------------------------
-		code	dispatcher							notes	function
+		code	trg	dispatcher							notes	function
  	    ------------------------------------------------------------------------------------------
-		$01		MBD_eventDispatcher					1,2		SERVE BALL 	(eject ball from trough)
-		$02		MBD_eventDispatcher					1,2		END BALL 	(ball has drained)
-		$03		MBD_eventDispatcher					3		LOCK CHANGE (MBD dispatcher called)
-		$04		MSW_lock_handler 							switch not active (just opened), no ball locked logically (error condition)??
-		$05		MSW_lock_handler							ball ejected sucessfully??
-				MBD_LT02(scoop)_eject
-		$06		MSW_lock_handler							ball eject failed (switch closed less than 1s after it opened; error condition)??
-		$07		MSW_lock_handler							switch active (switch just closed)??
-		$08		MSW_lock_handler							ball locked successfully (switch remains closed after delay)??
-		$09		MSW_lock_handler							lock lost (switch opened after closing)??
-		$0A		MBD_LT02(scoop)_eject						ball failed to eject??
-		$0B	   	MBD_LT02(scoop)_eject						retry sucess??
-		$0C		MBD_LT02(scoop)_eject						retry failure??
-		$0D		MBD_LT02(scoop)_eject						eject retry??
-		$0F		MBD_LT03_eject								ball ejected??
-				library_7563			
-		$12		MBD_LT03_eject
-		$13		MBD_LT03_eject								all balls ejected??
-		$14		MBD_LT03_eject
-		$15		MBD_LT03_eject
-		$16		MBD_Balltrough_ejectBall			4		pre-call to sys_Balltrough_ejectBall 
-				MBD_Balltrough_ejectBall_thread
-		$17		MBD_LT03_eject
-		$18		MBD_LT04_eject								ball ejected??
-		$1B		MBD_LT04_eject
-		$1C		MBD_LT04_eject
-		$1D		MBD_LT04_eject
-		$1E		MBD_LT04_eject
-		$22		MBD_LT04_eject
-		$23		sys_Balltrough_ejectBall			4		balltrough eject attempt (pre-solcmd)
+		$01		T	MBD_eventDispatcher					1,2		SERVE BALL 	(eject ball from trough)
+		$02		T	MBD_eventDispatcher					1,2		END BALL 	(ball has drained)
+		$03		T	MBD_eventDispatcher					3		LOCK CHANGE (MBD dispatcher called)
+
+		$04		L	MSW_lock_handler 							BALL EJECTED FROM INACTIVE LOCK (switch opened)
+		$05		L	MSW_lock_handler							BALL EJECTED FROM ACTIVE LOCK (switch opened)
+				L	MBD_LT02(scoop)_eject						LOCK EJECT REQUESTED (sycall MBD_lockEject[A])
+		$06		L	MSW_lock_handler							BALL EJECT FAILED (switch closed less than 1s after it opened; error condition)
+		$07		L	MSW_lock_handler							SWITCH CLOSED (switch handler)
+		$08		L	MSW_lock_handler							LOCK LOST (switch re-opened after closing; lock active)
+		$09		L	MSW_lock_handler							BALL ESCAPED (switch opened after closing)
+		$0A		L	MBD_LT02(scoop)_eject				4		BALL EJECT REQUESTED (delay thread)
+		$0B		L	MBD_LT02(scoop)_eject						BALL EJECT COMPLETE (success or timeout)
+		$0C		L	MBD_LT02(scoop)_eject						BALL EJECT TIMEOUT (sent just before ball eject done)
+		$0D		L	MBD_LT02(scoop)_eject						BALL EJECT PRE-SOLCMD DELAY (sent just before solcmd to eject ball)
+
+		$0F			MBD_LT03_eject								ball ejected??
+					library_7563			
+		$12			MBD_LT03_eject
+		$13			MBD_LT03_eject								all balls ejected??
+		$14			MBD_LT03_eject
+		$15			MBD_LT03_eject
+
+		$16		T	MBD_Balltrough_ejectBall			4		pre-call to sys_Balltrough_ejectBall, initiated by syscall MBD_Balltrough_ejectBall 
+				T	MBD_Balltrough_ejectBall_thread
+
+		$17			MBD_LT03_eject
+		$18			MBD_LT04_eject								ball ejected??
+		$1B			MBD_LT04_eject
+		$1C			MBD_LT04_eject
+		$1D			MBD_LT04_eject
+		$1E			MBD_LT04_eject
+		$22			MBD_LT04_eject
+		$23			sys_Balltrough_ejectBall			4		balltrough eject attempt (pre-solcmd)
+
+	- Targets:
+			 T: ball trough
+			 L: lock
+
 	- Notes: 1) action required 
 			 2) event handler must not return
 			 3) not intended for delay
