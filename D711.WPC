@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Oct  8 17:25:11 2025
+#                    dlm: Mon Oct 20 16:59:38 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 153 39 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 154 58 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -151,6 +151,7 @@
 #	Sep 27, 2025: - label name change
 #	Oct  8, 2025: - changed RELEASE_DATE to BUILD_DATE
 #				  - added APPLE_VERSION
+#	Oct 19, 2025: - added decimalization to argument magic
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -915,8 +916,17 @@ sub apply_magic_WPC($$)
 		for (my($i)=1; $i<=@{$OPA[$addr]}; $i++) {								# define operands from comments (e.g. 1:#L_shootAgain)
 			my($opa) = ($REM[$addr] =~ m{\b$i:(\S+)});
 			next unless defined($opa);
+
 ##          print(STDERR "OPA[$addr][$i-1] = $opa =>");
-            $OPA[$addr][$i-1] = $opa;
+			if ($opa =~ m{%d}) {												# decimalize (e.g. 1:#%d)
+				my($pre,$post) = ($`,$');
+				my($num) = ($OPA[$addr][$i-1] =~ m{^$pre(.*)$post$});
+				die unless defined($num);
+				$num = hex($') if ($num =~ m{^\$});
+				$OPA[$addr][$i-1] = sprintf("$pre%d$post",$num);
+			} else {
+	            $OPA[$addr][$i-1] = $opa;
+	        }
             substitute_identifier(\$OPA[$addr][$i-1]);
 ##          print(STDERR "$OPA[$addr][$i-1]\n");
         }
