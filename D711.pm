@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Tue Oct 21 20:30:13 2025
+#					 dlm: Wed Oct 22 08:09:24 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 3134 76 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 331 56 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -328,6 +328,7 @@
 #	Aug 13, 2025: - BUG: duplicate empty lines after ANALYSIS_GAPs
 #	Aug 28, 2025: - added def_WBlist_hex
 #				  - added labeling to def_wordblock_hex
+#	Oct 22, 2025: - added support for <arg>:nolabel hint
 # END OF HISTORY
 
 # TO-DO:
@@ -753,8 +754,10 @@ sub substitute_labels(@)                                        		# replace addr
     $la = $#ROM unless defined($la);
 
     for (local($addr)=$fa; $addr<=$la; $addr++) {
-        for (my($i)=0; $i<@{$OPA[$addr]}; $i++) {
-            $OPA[$addr][$i] = substitute_label($addr,$i);
+        for (my($i)=1; $i<=@{$OPA[$addr]}; $i++) {
+        	my($opa) = ($REM[$addr] =~ m{\b$i:(\S+)});
+            $OPA[$addr][$i-1] = substitute_label($addr,$i-1)
+            	unless ($opa eq 'nolabel');
         }
     }
     foreach my $addr (keys(%label_arith_exprs)) {               # substitude expressions defined with def_lbl_arith()
