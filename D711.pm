@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Aug 30 15:33:59 2025
+#					 dlm: Tue Oct 21 20:30:13 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 330 55 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 3134 76 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -3131,15 +3131,15 @@ sub substitute_identifier($)
 {
 	my($strR) = @_;
 	
-	if ($$strR =~ m{Adj#([0-9A-Fa-f]{2,4})}) { 						   # adjustments
+	if ($$strR =~ m{Adj#([0-9A-Fa-f]{2,4})}) { 								# adjustments
 		$$strR = $` . $Adj[hex($1)] . $' if defined($Adj[hex($1)]);
-	} elsif ($$strR =~ m{Sol#}) {										   # solenoids
+	} elsif ($$strR =~ m{Sol#}) {										   	# solenoids
 		my($pref) = $`;
 		my($num,$len) = ($' =~ m{([0-9A-Fa-f]+)(.*)});
 		$$strR = $pref . $Sol[hex($num)] . $len if defined($Sol[hex($num)]);
-	} elsif ($$strR =~ m{SolCmd#(\d+)}) {								   # solenoid commands (WPC)
+	} elsif ($$strR =~ m{SolCmd#(\d+)}) {								   	# solenoid commands (WPC)
 		$$strR = $` . $SolCmd[$1] . $' if defined($SolCmd[$1]);
-	} elsif ($$strR =~ m{Lamp#([0-9A-Fa-f]{1,3})}) {					   # lamps
+	} elsif ($$strR =~ m{Lamp#([0-9A-Fa-f]{1,3})}) {					   	# lamps
 		if (defined($_cur_RPG)) {
 			die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless numberp($1);
 			$$strR = $` . $Lamp[$1] . $' if defined($Lamp[$1]);
@@ -3148,7 +3148,7 @@ sub substitute_identifier($)
 				unless length($1) == 2;
 			$$strR = $` . $Lamp[hex($1)] . $' if defined($Lamp[hex($1)]);
 		}
-	} elsif ($$strR =~ m{Flag#([0-9A-F]{2})}) {							# flags
+	} elsif ($$strR =~ m{Flag#([0-9A-F]{2})}) {								# flags
 		$$strR = $` . $Flag[hex($1)] . $' if defined($Flag[hex($1)]);
 	} elsif ($$strR =~ m{Bitgroup#([0-9A-Fa-f]{2,4})}) {					# bitgroups
 		$$strR = $` . $BitGroup[hex($1)] . $' if defined($BitGroup[hex($1)]);
@@ -3156,13 +3156,13 @@ sub substitute_identifier($)
 		$$strR = $` . $Sound[hex($1)] . $' if defined($Sound[hex($1)]);
 	} elsif ($$strR =~ m{Switch#([0-9A-F]{2})}) {							# switches
 		$$strR = $` . $Switch[hex($1)] . $' if defined($Switch[hex($1)]);
-	} elsif ($$strR =~ m{Thread#([0-9A-F]{2,4})}) {						# threads
+	} elsif ($$strR =~ m{Thread#([0-9A-F]{2,4})}) {							# threads
 		$$strR = $` . $Thread[hex($1)] . $' if defined($Thread[hex($1)]);
 	} elsif ($$strR =~ m{Error#([0-9A-F]{2})}) {							# errors (WPC)
 		$$strR = $` . $Error[hex($1)] . $' if defined($Error[hex($1)]);
 	} elsif ($$strR =~ m{Audit#([0-9A-F]{4})}) {							# audits (WPC)
 		$$strR = $` . $Audit[hex($1)] . $' if defined($Audit[hex($1)]);
-	} elsif ($$strR =~ m{DisplayFX#([0-9A-F]{2})}) { 							# DisplayFX animations (WPC)
+	} elsif ($$strR =~ m{DisplayFX#([0-9A-F]{2})}) { 						# DisplayFX animations (WPC)
 		$$strR = $` . $DisplayFX[hex($1)] . $' if defined($DisplayFX[hex($1)]);
 	} elsif ($$strR =~ m{LampFX#([0-9A-F]{2})}) {							# LampFX animations (WPC)
 		$$strR = $` . $LampFX[hex($1)] . $' if defined($LampFX[hex($1)]);

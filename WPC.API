@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Oct  5 11:15:46 2025
+#                    dlm: Tue Oct 21 21:47:43 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 90 32 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 91 29 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -88,6 +88,7 @@
 #	Sep 28, 2025: - minor additions / modifications
 #	Oct  2, 2025: - minor additions / modifications
 #	Oct  5, 2025: - minor change
+#	Oct 21, 2025: - additions
 # END OF HISTORY
 
 #======================================================================
@@ -742,7 +743,7 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('A=EBpending', 			      			0xB3CA);
  define_syscall('syscall_B8BA',							0xB8BC,'WWW');
  define_syscall('syscall_B8D5',							0xB8D5,'WWW');
- define_syscall('printString[BXY]',						0xB97B);
+ define_syscall('strcopy_[BX]to[Y]_maxlen44',			0xB97B);
  define_syscall('lampFX[A]',							0xCC3A);
  define_syscall('syscall_C923',							0xC923,'B');
  define_syscall('end_displayFX',						0xC952);
@@ -845,6 +846,7 @@ $Hook[59]		= 'load_gameString_override';
 $Hook[66]		= 'slamTilt_override';
 $Hook[69]		= 'update_Startbutton_lamp';
 
+$Hook[71]		= 'renderCreditInfo_override';
 $Hook[73]		= 'initSoundSystem_override';
 $Hook[75]		= 'lamp_and_displayFX_initialize_override';
 $Hook[77]		= 'displayFX_override';
@@ -852,6 +854,7 @@ $Hook[78]		= 'lampFX_override';
 
 $Hook[91]		= 'IRQtimer';
 $Hook[95]		= 'renderChar_override';
+$Hook[99]		= 'postIRQ';
 
 #----------------------------------------------------------------------
 # System Threads
