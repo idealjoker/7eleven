@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sun Oct 12 11:18:32 2025
+                    dlm: Sun Oct 26 10:18:19 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 341 50 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 167 46 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -48,7 +48,7 @@ $8000-$FFFF 	32KB system ROM
 	- PG#3E-3F ( 2 pages,  32KB)
 
 
--WPC Labels-
+-7eleven WPC Labels-
 
 - every label has a hex page id (00-3D, FF) and a name
 
@@ -150,6 +150,35 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 - CC means previous test succeeded (true)
 - CS means previous test failed (false)
 - truth value syscalls marked with ? at end (e.g. bitSet?)
+
+----------------------------------------------------------------------
+
+=Strings=
+
+- NUL (0) terminated ASCII strings with 2 escape mechanisms:
+	- backslash substitution:
+		\,	decimal separator (comma in US, period in Europe)
+		\n	<NEWLINE> (ASCII 10)
+		\t	<TAB> (ASCII 8)
+	  NOTES:
+	  	- no apparent way to print a backslash character except
+	  	  (perhaps) with a hash escape sequence
+		- because of the compile-time \-substitution, the \ needs to
+		  be doubled up in 7eleven source code
+	- hash escape sequences:
+		- called "pound clauses" in WMS error messages
+		- syntax: #<HEX># where <HEX> are 0-4 hex digits
+		- ## expands to the # character
+		- hex number is interpreted as WMS 16-segment display code
+			- codes used in T2, FH
+				#0#		???
+				#20#	vertical line from middle to bottom center???
+				#6308#	raised circle (upper half of 8)
+				#5C08#	baseline circle (lower half of 8)
+			- uses:
+				#20#string#0#	quote or emphasize string
+				N#6308#			French number symbol
+				#6308#/#5C08#	fancy(?) percent symbol
 
 ----------------------------------------------------------------------
 
