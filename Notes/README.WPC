@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sun Oct 26 10:18:19 2025
+                    dlm: Mon Oct 27 09:12:55 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 167 46 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 217 86 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -155,16 +155,12 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 
 =Strings=
 
-- NUL (0) terminated ASCII strings with 2 escape mechanisms:
-	- backslash substitution:
-		\,	decimal separator (comma in US, period in Europe)
-		\n	<NEWLINE> (ASCII 10)
-		\t	<TAB> (ASCII 8)
-	  NOTES:
-	  	- no apparent way to print a backslash character except
-	  	  (perhaps) with a hash escape sequence
-		- because of the compile-time \-substitution, the \ needs to
-		  be doubled up in 7eleven source code
+- there are two types of strings used in WPC:
+	- WPC strings with #-escape
+	- sprintf format strings with \-escape and %-format
+
+- WPC strings	
+	- NUL (0) terminated ASCII
 	- hash escape sequences:
 		- called "pound clauses" in WMS error messages
 		- syntax: #<HEX># where <HEX> are 0-4 hex digits
@@ -179,6 +175,49 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 				#20#string#0#	quote or emphasize string
 				N#6308#			French number symbol
 				#6308#/#5C08#	fancy(?) percent symbol
+
+- sprintf format strings:	
+	- NUL (0) terminated ASCII
+	- backslash substitution:
+		\,	decimal separator (comma in US, period in Europe)
+		\n	<NEWLINE> (ASCII 10)
+		\t	<TAB> (ASCII 8)
+	  NOTES:
+	  	- no apparent way to print a backslash character except
+	  	  (perhaps) with a hash escape sequence
+		- because of the compile-time \-substitution, the \ needs to
+		  be doubled up in 7eleven source code
+	- %-formats:
+		- begin with %, followed by optional formatting modifiers, followed
+		  by a mandatory data-source specifier
+		- either uppper or lower case allowed for formatting modifiers and
+		  data-source specifier 		  
+		- data-source specifiers
+			A	register A value
+			B	register B value
+			D	register D value
+			U	register U value
+			Y	register Y value
+		- formatting modifiers (some have numerical arguments)
+			F#	set output width (display width?, numbers only?)
+			C#	center justify data in field of width #
+			L#  left justify data in field of width #
+			R#  right justify data in field of width #
+			K	suppress justification (trim to width only)
+			J	right- instead of left-trim strings that do not fit width
+			I	indirect (data source is address)
+			G	use low byte of data source (discard high byte)
+			H	use high byte of data source (discard low byte and shift high byte)
+			S	render WPC string (data source is string pointer)
+			M	render WPC table string (data source is string specifier)
+			T	render score followed by table string?
+			O	render 0 as 00
+			Z	render leading zeroes (suppressed by default)
+			X	do not convert value to BCD
+			P	do not print 1,000 separator character (, or . defined on adjustments)
+			
+			
+			
 
 ----------------------------------------------------------------------
 
