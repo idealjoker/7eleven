@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Oct 25 17:21:53 2025
+#                    dlm: Tue Oct 28 11:28:39 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 92 37 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 93 37 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -90,6 +90,7 @@
 #	Oct  5, 2025: - minor change
 #	Oct 21, 2025: - additions
 #	Oct 25, 2025: - bitgroup syscalls
+#	Oct 28, 2025: - changes/additions
 # END OF HISTORY
 
 #======================================================================
@@ -177,6 +178,10 @@ define_label('=LAMP_MATRIX_38_DATA',				0x0318);
 define_label('=BLINK_MATRIX',						0x0320);
 define_label('=FLAGS',								0x0328);
 define_label('=FLAGS_HIGH',							0x0330);
+
+define_label('^FREE_BLOCKS',						0x036A);		# RAM blocks for malloc/free
+define_label('_BLOCKS_FREE',						0x036C);		# number of free RAM blocks 
+
 define_label('^SOL_QUEUE_HEAD',						0x03EA);
 define_label('^SOL_QUEUE_TAIL',						0x03EC);
 
@@ -194,6 +199,8 @@ define_label('_BALL_IN_PLAY',						0x0410+$VO);
 define_label('_EXTRABALLS_PENDING',					0x0411+$VO);
 define_label('_PLAYFIELD_QUALIFIED',				0x0419+$VO);
 define_label('_BALL_KICKED_INTO_SHOOTER',			0x041A+$VO);
+define_label('_RTC_HOURS',							0x0433+$VO);
+define_label('_RTC_MINUTES',						0x0434+$VO);
 define_label('_SCORE_MULTIPLIER',					0x0441+$VO);
 define_label('_BACKGROUND_MUSIC_PLAYING',			0x0445+$VO);
 define_label('_SOUND_CMD_CIRCULAR_BUFFER',			0x045E+$VO);
@@ -210,6 +217,7 @@ define_label('_BALL_SYSTEM_BUSY',					0x04B0+$VO);
 define_label('_CRON_MINUTE_COUNTER_1',				0x04B4+$VO);
 define_label('_CRON_MINUTE_COUNTER_2',				0x04B5+$VO);
 define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$VO);
+define_label('^DIAGNOSTICS_MODE_RAM',				0x04B7+$VO);
 define_label('_BALLSEARCH_SUSPEND_TIMER',			0x04C7+$VO);
 define_label('_TILTWARNINGS_LEFT',					0x04D4+$VO);
 
@@ -529,7 +537,7 @@ define_syscall('syscall_8C60',						0x8C60,'WWW');
 define_syscall('syscall_8C72',						0x8C72,'WW');
 define_syscall('syscall_8EE2',						0x8EE2);
 define_syscall('syscall_8EF6',						0x8EF6);
-define_syscall('syscall_8EFD',						0x8EFD);
+define_syscall('sys_init_memory',					0x8EFD);
 
 #----------------------------------------------------------------------
 # Group 2: 
@@ -595,9 +603,9 @@ define_syscall('X=^threadData',							0x9BFE+$VO);
 define_syscall('reset_Watchdog',						0x9D00+$VO);	# clashes when using object file migration
 
 VERSION_OFFSETS(-332,0);
-define_syscall('syscall_9D96',							0x9D96+$VO);	# 9C4A
+define_syscall('sys_verify_realEstate_requirements',	0x9D96+$VO);	# 9C4A
 define_syscall('killThreads_siblings',					0x9E0A+$VO);
-define_syscall('syscall_9E3B',							0x9E3B+$VO);
+define_syscall('sys_init_lamp_system',					0x9E3B+$VO);
 define_syscall('setBit[AB]',							0x9E7F+$VO);
 define_syscall('clearBit[AB]',							0x9E92+$VO);
 define_syscall('twiddle_BitShifter_input',				0x9EA5+$VO);
@@ -815,7 +823,7 @@ define_syscall('3B:BYU=MBD_dataRefs[A]', 	         	0x7076+$VO, '', 3); # 77F2 +
 #----------------------------------------------------------------------
 
 $Hook[0] 		= 'initialize_WPC_system_override';
-$Hook[1]		= 'debugger??';
+$Hook[1]		= 'WPC_initialized';
 $Hook[2]		= 'score_override';
 $Hook[3]		= 'gameStart_override';
 $Hook[4]		= 'gameStart_post_initBall';
@@ -854,6 +862,7 @@ $Hook[75]		= 'lamp_and_displayFX_initialize_override';
 $Hook[77]		= 'displayFX_override';
 $Hook[78]		= 'lampFX_override';
 
+$Hook[90]		= 'initWPC_preIRQstart';
 $Hook[91]		= 'IRQtimer';
 $Hook[95]		= 'renderChar_override';
 $Hook[99]		= 'postIRQ';
@@ -883,6 +892,7 @@ $Thread[0x2010] = 'SYSTHD_BallSearch';
 $Thread[0x0012] = 'SYSTHD_delay1sec_then_tilt';				
 $Thread[0x3813] = 'SYSTHD_bobTilt_swingDelay';				
 $Thread[0x1814] = 'SYSTHD_bobTilt_switchDebounce';			
+$Thread[0x7816] = 'SYSTHD_WPC_startup_delayedEvents';			
 
 for (my($i)=0x20; $i<=0x3F; $i++) {
 	$Thread[$i] = sprintf('SYSTHD_lampFX_thread#%04X',$i);

@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Mon Oct 27 09:12:55 2025
+                    dlm: Mon Oct 27 20:37:58 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 217 86 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 136 38 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -131,16 +131,37 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 	- data start at offset 37 in player mem data
 
 
-.WPC Heap.
+.RAM blocks.
+
+- linked list of RAM blocks (50 in T2)
+	B0-1					__next
+	B2						type
+	B3-46					44 bytes payload
+
+- block types:
+	1						malloc'ed
+	5	
+	8						LampFX
+
+- syscalls:
+	U=mallocBlock			allocate free block
+	U=freeBlock[U]			free block, U_out = ^FREE_BLOCKS
+	sys_free_block[U]		free block, U_out = ^FREE_BLOCKS
+	sys_free_blockChain[U]	free block and all linked to it
+
+
+.WPC Low-Level Heap.
 
 - heap grows upward, stack grows downward into free RAM area
-- pointer to heap in ROM (^HEAP_START: =BOTTOM_OF_HEAP)
-- pointer to current start of free heap in RAM (^FREE_RAM)
+	- pointer to heap in ROM (^HEAP_START: =BOTTOM_OF_HEAP = 0CD1 in T2)
+	- pointer to current start of free heap in RAM (^FREE_RAM)
+
 - malloc:
 	LDX 	^FREE_RAM
 	STX 	^allocated_RAM
 	LEAX	MALLOC_BYTES,X
 	STX     ^FREE_RAM
+
 - allocated RAM cannot be freed
 
 ----------------------------------------------------------------------
@@ -581,10 +602,9 @@ sys_bitgroupOp_ABXY
 	20-21	#$172E
 	22-33					??? (12 bytes, stack?)
 	34-35					current address (Program Counter)
-	40-43	#$00
+	40-41	#$0000			pointer to malloc'ed memory chain
+	42-43	#$0000			pointer to another memory chain (maybe lampFX?)
 	44		#$00 			flags (80: related to wakeup time))
-
-----------------------------------------------------------------------
 
 ----------------------------------------------------------------------
 
