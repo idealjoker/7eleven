@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri Oct  3 17:00:15 2025
+#                    dlm: Thu Oct 30 13:43:22 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 431 61 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 433 32 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -429,6 +429,8 @@
 #	Sep 21, 2025: - added .DWWB
 #	Sep 28, 2025: - added support for .LAST_DEFINED
 #	Oct  3, 2025: - allow .LAST_DEFINED+# to work with labels
+#	Oct 30, 2025: - added EXPERIMENTAL feature allowing simple additions and subtractions
+#				    with aliases
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2024,7 +2026,17 @@ sub expand_aliases()
 								    ? ($_[$i] =~ m{^(\[\#?)([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*\])$})
 								    : ($_[$i] =~ m{^(\#)?([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*)$}); # just an alias
 			}
-#			print(STDERR "$_[$i] $pre/$alias/$post [$ALIAS{$alias}]\n");
+			print(STDERR "alias($_[$i]) -> $pre/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
+			if ($alias =~ m{(\D+)([+-])(\d+)$}) {										# alias with constant added or subtracted; EXPERIMENTAL FEATURE
+				last if ($1 eq '.') || ($1 eq '.LAST_DEFINED');
+				if (numberp($ALIAS{$1})) {												# code must be able to handle T-800 in a string
+					print(STDERR "$1:$2:$3\n") if $opt_T;
+					$ALIAS_REFD{$1}++;
+					$_[$i] = sprintf("$pre%d$post",($2 eq '+')?($ALIAS{$1}+$3):($ALIAS{$1}-$3));
+					last;
+				}
+			}
+			last if numberp($alias);
 			last unless defined($ALIAS{$alias});										# regular alias
 			$ALIAS_REFD{$alias}++;
 			my(@sali) = split(/\s+/,$ALIAS{$alias});
