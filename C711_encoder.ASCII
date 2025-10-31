@@ -1,0 +1,24 @@
+#======================================================================
+#                    C 7 1 1 _ E N C O D E R . A S C I I 
+#                    doc: Thu Oct 30 20:00:27 2025
+#                    dlm: Thu Oct 30 20:05:40 2025
+#                    (c) 2025 A.M. Thurnherr
+#                    uE-Info: 18 75 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Oct 30, 2025: - created
+# HISTORY END
+
+sub ASCII($$)
+{
+	my($str,$addr) = @_;
+	my($line) = $LINE[$addr];
+	
+	die(sprintf("ASCII: Invalid length-%d string <$str> at input line $line\n",length($str)))
+		unless length($str) == 1;
+	return ord(substr($str,0,1));		
+}
+
+1;
+
