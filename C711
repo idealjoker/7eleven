@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu Oct 30 13:43:22 2025
+#                    dlm: Sun Nov  2 11:35:43 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 433 32 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 443 68 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -431,15 +431,20 @@
 #	Oct  3, 2025: - allow .LAST_DEFINED+# to work with labels
 #	Oct 30, 2025: - added EXPERIMENTAL feature allowing simple additions and subtractions
 #				    with aliases
+#	Nov  2, 2025: - greatly etended .DEFINE arithmetic support (stemming originally from
+#					Oct 3, mod) to include not-.LAST_DEFINED aliases; this may eventually
+#				    cause confusion with EXPERIMENTAL feature
 # HISTORY END
 
 # RELEASE NOTES:
 #	- v1.2.0 (not yet released)
-#		- support for .LAST_DEFINED[+const]
+#		- support for .LAST_DEFINED[+/-const] during .DEFINEs
+#		- support for ALIAS+/-const (or ALIAS) during .DEFINEs
+#		- support for +/- constant arithmetic during alias expansion
 #		- any bracket characters allowed in address tags (e.g. >37:2555<, (37:2555), [37:2555{)
 #		- -A only checks default tags, e.g. <37:2555>
 #		- [] allowed in alias names
-#		- use -w in comments to suppress WARNINGs (currently only remote/local
+#		- use -w in comments to suppress WARNINGs (currently only supported by remote/local
 #		  label warning)
 #	- v1.1.1
 #		- C711 bug fix to allow dots in source file names
@@ -2020,7 +2025,7 @@ sub expand_aliases()
 				my($p1,$p2);
 				($p1,$p2,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z0-9_]+\()?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
 				$pre = $p1 . $p2;
-#				print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n");
+				print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
             } else {																	# not encoder
 				($pre,$alias,$post) = ($_[$i] =~ m{^\[})								# M6809 indirect extended
 								    ? ($_[$i] =~ m{^(\[\#?)([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*\])$})
@@ -2046,7 +2051,7 @@ sub expand_aliases()
 				splice(@_,$i,1,@sali);
 			}
 		}
-#		print(STDERR "$_[$i]\n");
+		print(STDERR "$_[$i]\n") if $opt_T;
 	}
 }
 
@@ -2479,10 +2484,16 @@ sub compile_common_pragma()
     # Defines (Aliases & Conditional Assembly)
     #-----------------------------------------
 
+	my($ALIAS_NAME_SPECCHARS) = '`~!@#%^*\(\)_\-=\[{\]}|:"<,>\./\?\]\[\*';
+	my($ALIAS_NAME_RE) = "[A-Za-z$ALIAS_NAME_SPECCHARS][A-Za-z0-9$ALIAS_NAME_SPECCHARS]*";
+
 	if (match_pragma($OP,'.DEF','INE')) { 												# .DEFINE (define alias)
 		die("Syntax: .DEF[INE] name [value...] (<@_> at input line $.)\n")
 			unless (@OP_ARG >= 1);
-		die if ($OP_ARG[0] eq 'ALIAS_IS_DEFINED');
+		die("Invalid character in alias name <$OP_ARG[0]> at input line $. [$ALIAS_NAME_RE]\n")
+			unless ($OP_ARG[0] =~ m{^$ALIAS_NAME_RE$});				
+		die("Invalid (reserved) alias name <$OP_ARG[0]> at input line $.\n")
+			if ($OP_ARG[0] eq 'ALIAS_IS_DEFINED');
 		$ALIAS_REFD{$OP_ARG[0]}++;
 		if (@OP_ARG == 1) { 															# no argument (just define)
 			$ALIAS{$OP_ARG[0]} = 'ALIAS_IS_DEFINED';
@@ -2491,18 +2502,29 @@ sub compile_common_pragma()
 		} else {																		# non-string arguments
 			$ALIAS{$OP_ARG[0]} = "@OP_ARG[1..$#OP_ARG]";
 		}
-		if ($ALIAS{$OP_ARG[0]} =~ m{^\.LAST_DEFINED(\+)?(\d+)?$}) {						# handle .LAST_DEFINED
-			if (defined($2)) {
-				$ALIAS{$OP_ARG[0]} = $LAST_DEFINED;										# can be label or number
-				$ALIAS{$OP_ARG[0]} = labelValue(-99999,$ALIAS{$OP_ARG[0]})
-					unless numberp($ALIAS{$OP_ARG[0]});
+		if ($ALIAS{$OP_ARG[0]} =~ m{^($ALIAS_NAME_RE)([\+-])?(\S+)?\s*$}) {				# handle simple arithmetic
+			if (defined($3)) {
+				if ($1 eq '.LAST_DEFINED') {
+					$ALIAS{$OP_ARG[0]} = $LAST_DEFINED;									# handle .LAST_DEFINED; can be label or number
+					$ALIAS{$OP_ARG[0]} = labelValue(-99999,$ALIAS{$OP_ARG[0]})
+						unless numberp($ALIAS{$OP_ARG[0]});
+				} elsif (defined($ALIAS{$1})) {
+					$ALIAS{$OP_ARG[0]} = $ALIAS{$1};
+				}
 				die ("non-number .LAST_DEFINED <$LAST_DEFINED> at input line $.\n")
 					unless numberp($ALIAS{$OP_ARG[0]});
-				$ALIAS{$OP_ARG[0]} = $ALIAS{$OP_ARG[0]} + $2;
-			} else {
-				$ALIAS{$OP_ARG[0]} = $LAST_DEFINED . $1;
+				my($offset) = $3;
+				$offset = (defined($ALIAS{$3}))										# number, alias, or label
+						? $ALIAS{$3}
+						: labelValue(-99999,$3)
+					unless numberp($offset);
+				$ALIAS{$OP_ARG[0]} = ($2 eq '+')
+								   ? $ALIAS{$OP_ARG[0]} + $offset
+								   : $ALIAS{$OP_ARG[0]} - $offset;
+			} elsif ($1 eq '.LAST_DEFINED') {
+				$ALIAS{$OP_ARG[0]} = $LAST_DEFINED . $2;
 			}
-	    } 
+	    }
 			
 		$LAST_DEFINED = $ALIAS{$OP_ARG[0]};
 ##		print(STDERR "LAST_DEFINED = alias($OP_ARG[0]) = $LAST_DEFINED\n");
