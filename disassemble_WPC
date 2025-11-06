@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Tue Aug 12 08:28:43 2025
+#					 dlm: Thu Nov  6 11:27:04 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 40 0 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 41 43 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -38,6 +38,7 @@
 #	Jun 29, 2025: - added font  & DMD tables
 #				  - BUG: alpha disassembled font and DMD tables
 #	Aug 12, 2025: - keep up-to-date with changes in D711.WPC
+#	Nov  6, 2025: - corrected some comments
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -145,12 +146,12 @@ if ($opt_w) {																# possible refs
 #----------------------------------------------------------------------
 
 if ($opt_L) {																# dump label information
-	D711::dump_labels(0);													# fmt == 1 generates code that can be used with -u
-	exit(0);																# to make a disassembled file with all labels defined up-front
+	D711::dump_labels(0);													
+	exit(0);																
 }
 
 if ($opt_l) {																# dump label information
-	D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
+	D711::dump_labels(1);													# fmt == 1 generates code that can be used with -i
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 
@@ -170,7 +171,7 @@ if (defined($opt_o)) {														# dump obj information from single page (or 
 # Default C711 Source Output
 #------------------------------
 
-D711::select_WPC_RPG($D711::start_page,21);								# 1st game pg with headers
+D711::select_WPC_RPG($D711::start_page,21);									# 1st game pg with headers
 my($decoded) = D711::produce_output(0x4000,0x7FFF,1);
 for (my($rpg)=$D711::start_page+1; $rpg<0x3E; $rpg++) {						# remaining game pages without headers
 	D711::select_WPC_RPG($rpg,22);		

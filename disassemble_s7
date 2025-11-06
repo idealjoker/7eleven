@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 7 
 #					 doc: Mon May 27 21:21:01 2024
-#					 dlm: Sun Jun 15 22:47:00 2025
+#					 dlm: Thu Nov  6 11:29:02 2025
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 28 0 NIL 0 0 72 0 2 4 NIL ofnI
+#					 uE-Info: 17 61 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 7 Game Disassembly Instructions
@@ -14,6 +14,7 @@
 #	Aug 10, 2024: - removed support for -h
 #	May 15, 2025: - moved -i after loadROM() to allow disassembly instructions
 #	Jun 15, 2025: - removed path from usage error
+#	Nov  6, 2025: - removed -u from usage message and comment
 # HISTORY END
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
@@ -25,7 +26,7 @@ use D711 (7);
 
 use Getopt::Std;
 $0 =~ s@^.*/(.*)$@\1@;
-die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
+die("Usage:\t$0\n\t\t[dump -l)abels]\n\t\t" .
 			"[include -A)PI in output]\n\t\t" . 
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[suppress -a)ddress from output] [list -c)ode bytes]\n\t\t" . 
@@ -85,7 +86,7 @@ if (defined($opt_i)) {														# include files with perl code
 #----------------------------------------------------------------------
 
 if ($opt_l) {																# dump label information
-	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
+	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -i
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 

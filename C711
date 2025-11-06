@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Nov  2 11:35:43 2025
+#                    dlm: Thu Nov  6 17:58:23 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 443 68 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 442 54 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -434,10 +434,12 @@
 #	Nov  2, 2025: - greatly etended .DEFINE arithmetic support (stemming originally from
 #					Oct 3, mod) to include not-.LAST_DEFINED aliases; this may eventually
 #				    cause confusion with EXPERIMENTAL feature
+#	Nov  6, 2025: - made alias arithmetic compatible with Sys7-11
 # HISTORY END
 
 # RELEASE NOTES:
 #	- v1.2.0 (not yet released)
+#		- support for ALIAS +/- const/ALIAS everywhere
 #		- support for .LAST_DEFINED[+/-const] during .DEFINEs
 #		- support for ALIAS+/-const (or ALIAS) during .DEFINEs
 #		- support for +/- constant arithmetic during alias expansion
@@ -2032,9 +2034,10 @@ sub expand_aliases()
 								    : ($_[$i] =~ m{^(\#)?([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*)$}); # just an alias
 			}
 			print(STDERR "alias($_[$i]) -> $pre/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
+
 			if ($alias =~ m{(\D+)([+-])(\d+)$}) {										# alias with constant added or subtracted; EXPERIMENTAL FEATURE
-				last if ($1 eq '.') || ($1 eq '.LAST_DEFINED');
-				if (numberp($ALIAS{$1})) {												# code must be able to handle T-800 in a string
+				last if ($1 eq '.') || ($1 eq '.LAST_DEFINED');							# . and .LAST_DEFINED handled elsewhere
+				if (!defined($ALIAS{$alias}) && numberp($ALIAS{$1})) {					# code must be able to handle T-800 in a string
 					print(STDERR "$1:$2:$3\n") if $opt_T;
 					$ALIAS_REFD{$1}++;
 					$_[$i] = sprintf("$pre%d$post",($2 eq '+')?($ALIAS{$1}+$3):($ALIAS{$1}-$3));
@@ -2484,8 +2487,12 @@ sub compile_common_pragma()
     # Defines (Aliases & Conditional Assembly)
     #-----------------------------------------
 
-	my($ALIAS_NAME_SPECCHARS) = '`~!@#%^*\(\)_\-=\[{\]}|:"<,>\./\?\]\[\*';
-	my($ALIAS_NAME_RE) = "[A-Za-z$ALIAS_NAME_SPECCHARS][A-Za-z0-9$ALIAS_NAME_SPECCHARS]*";
+##	my($ALIAS_NAME_SPECCHARS) = '`~!@#%^*\(\)_\-=\[{\]}|:"<,>\./\?\]\[\*';
+##	my($ALIAS_NAME_RE) = "[A-Za-z$ALIAS_NAME_SPECCHARS][A-Za-z0-9$ALIAS_NAME_SPECCHARS]*";
+	my($ALIAS_NAME_SPECCHARS) = '`~!@#%^*\(\)_\-\+=\[{\]}|:"<,>\./\?\]\[\*';
+	my($ALIAS_NAME_SPECCHARS_NOARITH) = '`~!@#%^*\(\)_=\[{\]}|:"<,>\./\?\]\[\*';
+	my($ALIAS_NAME_RE) = "[A-Za-z0-9$ALIAS_NAME_SPECCHARS]+";
+	my($ALIAS_NAME_RE_NOARITH) = "[A-Za-z0-9$ALIAS_NAME_SPECCHARS_NOARITH]+";
 
 	if (match_pragma($OP,'.DEF','INE')) { 												# .DEFINE (define alias)
 		die("Syntax: .DEF[INE] name [value...] (<@_> at input line $.)\n")
@@ -2502,7 +2509,12 @@ sub compile_common_pragma()
 		} else {																		# non-string arguments
 			$ALIAS{$OP_ARG[0]} = "@OP_ARG[1..$#OP_ARG]";
 		}
-		if ($ALIAS{$OP_ARG[0]} =~ m{^($ALIAS_NAME_RE)([\+-])?(\S+)?\s*$}) {				# handle simple arithmetic
+		$ALIAS{$OP_ARG[0]} = $LBL{$ALIAS{$OP_ARG[0]}} 									# handle labels with arithmetic in name (_REG-A)
+			if defined($LBL{$ALIAS{$OP_ARG[0]}});
+##		$ALIAS{$OP_ARG[0]} = $ALIAS{$ALIAS{$OP_ARG[0]}}									# code added erroneously when trying to fix a bug
+##			if defined($ALIAS{$ALIAS{$OP_ARG[0]}});
+		if (!numberp($ALIAS{$OP_ARG[0]})													# handle simple arithmetic
+				&& $ALIAS{$OP_ARG[0]} =~ m{^($ALIAS_NAME_RE_NOARITH)([\+-])?(\S+)?\s*$}) {		
 			if (defined($3)) {
 				if ($1 eq '.LAST_DEFINED') {
 					$ALIAS{$OP_ARG[0]} = $LAST_DEFINED;									# handle .LAST_DEFINED; can be label or number
@@ -2510,17 +2522,19 @@ sub compile_common_pragma()
 						unless numberp($ALIAS{$OP_ARG[0]});
 				} elsif (defined($ALIAS{$1})) {
 					$ALIAS{$OP_ARG[0]} = $ALIAS{$1};
+				} elsif (defined($LBL{$1})) {
+					$ALIAS{$OP_ARG[0]} = $LBL{$1};
+				} 
+				if (numberp($ALIAS{$OP_ARG[0]})) {										# Some VM literals like Reg-P0 must be left untouched
+					my($offset) = $3;
+					$offset = (defined($ALIAS{$3}))										# number, alias, or label
+							? $ALIAS{$3}
+							: labelValue(-99997,$3)
+						unless numberp($offset);
+					$ALIAS{$OP_ARG[0]} = ($2 eq '+')
+									   ? $ALIAS{$OP_ARG[0]} + $offset
+									   : $ALIAS{$OP_ARG[0]} - $offset;
 				}
-				die ("non-number .LAST_DEFINED <$LAST_DEFINED> at input line $.\n")
-					unless numberp($ALIAS{$OP_ARG[0]});
-				my($offset) = $3;
-				$offset = (defined($ALIAS{$3}))										# number, alias, or label
-						? $ALIAS{$3}
-						: labelValue(-99999,$3)
-					unless numberp($offset);
-				$ALIAS{$OP_ARG[0]} = ($2 eq '+')
-								   ? $ALIAS{$OP_ARG[0]} + $offset
-								   : $ALIAS{$OP_ARG[0]} - $offset;
 			} elsif ($1 eq '.LAST_DEFINED') {
 				$ALIAS{$OP_ARG[0]} = $LAST_DEFINED . $2;
 			}

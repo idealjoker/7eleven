@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 6 
 #					 doc: Fri May 25 13:09:52 2024
-#					 dlm: Mon Jul 14 17:04:57 2025
+#					 dlm: Thu Nov  6 11:28:28 2025
 #					 (c) 2014 idealjoker@mailbox.org
-#					 uE-Info: 31 61 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 32 61 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS System 6 Game Disassembly Instructions
@@ -29,6 +29,7 @@
 #	Jun 15, 2025: - removed path from usage error
 #	Jul 14, 2025: - BUG: grow_switch_scripts adds new identifiers that were
 #						 not substituted (reported by @zacaj)
+#	Nov  6, 2025: - removed -u from usage message and comment
 # HISTORY END
 
 use lib ($0 =~ m@/[^/]*$@,$`);												# load [D711.pm]
@@ -40,7 +41,7 @@ use D711 (6);
 
 use Getopt::Std;
 $0 =~ s@^.*/(.*)$@\1@;
-die("Usage:\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
+die("Usage:\t$0\n\t\t[dump -l)abels]\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[list -a)ddressse in output] [list -c)ode bytes]\n\t\t" . 
 			"[suppress -g)ap data]\n\t\t" . 
@@ -103,7 +104,7 @@ else		{ &D711::disassemble_System6($opt_A); }
 #----------------------------------------------------------------------
 
 if ($opt_l) {																# dump label information
-	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
+	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -i
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 

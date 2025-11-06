@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 1 1 
 #					 doc: Wed May  7 09:51:43 2025
-#					 dlm: Sat Jul  5 09:13:53 2025
+#					 dlm: Thu Nov  6 11:27:48 2025
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 25 39 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 26 61 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -23,6 +23,7 @@
 #	Jun 12, 2025: - moved init_system_11() from [D711.pm]
 #	Jun 15, 2025: - removed path from usage error
 #	Jul  5, 2025: - toggled logic of -g
+#	Nov  6, 2025: - removed -u from usage message and comment
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -39,7 +40,7 @@ use D711 (11);																# load WMS System 11 disassembler
 
 use Getopt::Std;
 $0 =~ s@^.*/(.*)$@\1@;
-die("Usage:\n\t$0\n\t\t[dump -l)abels] [-u)se <label-file>]\n\t\t" .
+die("Usage:\n\t$0\n\t\t[dump -l)abels]\n\t\t" .
 			"[-i)nclude <file[,...]>\n\t\t" .
 			"[suppress code-s)tructure analysis]\n\t\t" .
 			"[suppress -a)ddresses in output] [include -c)ode in output]\n\t\t" . 
@@ -207,7 +208,7 @@ print(STDERR "[Compilation with C711 may require the -f option]\n")
 	if ($D711::unclean);
 
 if ($opt_l) {																# dump label information
-	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -u
+	&D711::dump_labels(1);													# fmt == 1 generates code that can be used with -i
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
 
