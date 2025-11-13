@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Thu Nov  6 17:58:23 2025
+#                    dlm: Thu Nov 13 17:13:43 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 442 54 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 439 57 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -435,6 +435,8 @@
 #					Oct 3, mod) to include not-.LAST_DEFINED aliases; this may eventually
 #				    cause confusion with EXPERIMENTAL feature
 #	Nov  6, 2025: - made alias arithmetic compatible with Sys7-11
+#	Nov 12, 2025: - error message for invalid .LAST_DEFINED
+#				  - made invalid .LAST_DEFINED impossible
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2511,13 +2513,13 @@ sub compile_common_pragma()
 		}
 		$ALIAS{$OP_ARG[0]} = $LBL{$ALIAS{$OP_ARG[0]}} 									# handle labels with arithmetic in name (_REG-A)
 			if defined($LBL{$ALIAS{$OP_ARG[0]}});
-##		$ALIAS{$OP_ARG[0]} = $ALIAS{$ALIAS{$OP_ARG[0]}}									# code added erroneously when trying to fix a bug
-##			if defined($ALIAS{$ALIAS{$OP_ARG[0]}});
-		if (!numberp($ALIAS{$OP_ARG[0]})													# handle simple arithmetic
+		if (!numberp($ALIAS{$OP_ARG[0]})												# handle simple arithmetic
 				&& $ALIAS{$OP_ARG[0]} =~ m{^($ALIAS_NAME_RE_NOARITH)([\+-])?(\S+)?\s*$}) {		
 			if (defined($3)) {
 				if ($1 eq '.LAST_DEFINED') {
 					$ALIAS{$OP_ARG[0]} = $LAST_DEFINED;									# handle .LAST_DEFINED; can be label or number
+					die("Invalid .LAST_DEFINED (no value) at input line $.\n")			# should not be possible (any more)
+						if ($ALIAS{$OP_ARG[0]} eq 'ALIAS_IS_DEFINED');
 					$ALIAS{$OP_ARG[0]} = labelValue(-99999,$ALIAS{$OP_ARG[0]})
 						unless numberp($ALIAS{$OP_ARG[0]});
 				} elsif (defined($ALIAS{$1})) {
@@ -2540,7 +2542,8 @@ sub compile_common_pragma()
 			}
 	    }
 			
-		$LAST_DEFINED = $ALIAS{$OP_ARG[0]};
+		$LAST_DEFINED = $ALIAS{$OP_ARG[0]}												# don't save .DEFINEs without value
+			unless ($ALIAS{$OP_ARG[0]} eq 'ALIAS_IS_DEFINED');
 ##		print(STDERR "LAST_DEFINED = alias($OP_ARG[0]) = $LAST_DEFINED\n");
 		return 1;
 	}
