@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Oct 28 11:28:39 2025
+#                    dlm: Wed Nov 19 18:50:33 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 93 37 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 94 50 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -91,6 +91,7 @@
 #	Oct 21, 2025: - additions
 #	Oct 25, 2025: - bitgroup syscalls
 #	Oct 28, 2025: - changes/additions
+#	Nov 19, 2025: - added DLog syscall for testing
 # END OF HISTORY
 
 #======================================================================
@@ -1105,7 +1106,11 @@ $Error[0x79] = 'ERR_current_thread_stack_overflow';
 $Error[0x7A] = 'ERR_current_thread_stack_underflow';
 $Error[0x7B] = 'ERR_DMX_page_allocator_failed';
 
-#----------------------------------------------------------------------';
+#----------------------------------------------------------------------
+# testing
+#----------------------------------------------------------------------
+
+define_syscall('DLog',0xFED4,'B');
 
 1;
 
