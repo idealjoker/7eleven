@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Nov 21 08:11:33 2025
+#                    dlm: Tue Nov 25 19:58:18 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 95 40 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 96 29 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -93,6 +93,7 @@
 #	Oct 28, 2025: - changes/additions
 #	Nov 19, 2025: - added DLog syscall for testing
 #	Nov 21, 2025: - removed DLog syscall
+#	Nov 25, 2025: - additions
 # END OF HISTORY
 
 #======================================================================
@@ -132,6 +133,7 @@ sub VERSION_OFFSETS($$)
 
 define_label('__FIRQ_SPRINGBOARD_1',				0x08);
 define_label('__FIRQ_SPRINGBOARD_2',				0x0A);
+define_label('_IRQ_COUNTER',						0x0C);
 define_label('_ROM_BANK_SHADOW',					0x11);			# Scott
 define_label('__SPRINGBOARD',						0x12);
 
@@ -150,7 +152,17 @@ define_label('__FINDTHREAD_ID',						0x5D);
 define_label('__FINDTHREAD_ID+1',					0x5E);
 define_label('__FINDTHREAD_MASK',					0x5F);
 
+define_label('__TIME_NEXT_MINUTE',					0x61);
+define_label('__RECORDED_TIME',						0x63);
+define_label('_EXEC_WATCHDOG',						0x65);
+
 define_label('_GI_POWERSAVER_TIMER',				0x6D);			# minutes
+
+define_label('_RELAYS_TRIAC_SHADOW',				0x74);
+define_label('_SOL_GENERAL_ENABLE_SHADOW',			0x75);
+define_label('_SOL_HIGHPOWER_ENABLE_SHADOW',		0x76);
+define_label('_SOL_FLASHERS_ENABLE_SHADOW',			0x77);
+define_label('_SOL_LOWPOWER_ENABLE_SHADOW',			0x78);
 
 define_label('__SOLCMD_TABLE_ADDR',					0x7C);	
 define_label('__SOLCMD_TABLE_ADDR+1',				0x7D);	
@@ -163,6 +175,9 @@ define_label('_SND_CMD_TAIL_INDEX',					0x8B);
 define_label('_IO_BUFFER_HEAD_INDEX',				0x8F);			# Eli
 
 define_label('_IO_BUFFER_TAIL_INDEX',				0x90);			# Eli
+define_label('_TICKET_DISPENSER_INSTALLED',			0x99);
+define_label('_ISR_4TIC_COUNTER',					0x9A);
+define_label('_ISR_DIAGNOSTIC_LED_SHADOW',			0x9B);
 define_label('_ISR_MATRIXBYTE',						0x9C);
 define_label('_ISR_MATRIXBYTE_TMP',					0x9D);
 define_label('_ISR_TMP_A',							0x9E);
@@ -321,7 +336,7 @@ if (isMember($WPCV,'WPC(fliptronic)','WPC(DCS)','WPC(security)','WPC(95)')) {
 	}
 }
 
-define_label('_TICKET_DISPENSER',					0x3FC6);	# Ticket Dispenser
+define_label('_TICKET_DISPENSER_IO',				0x3FC6);	# Ticket Dispenser
 
 define_label('_ASIC_IRQ_CTRL', 						0x3FFF);	
 define_label('_ASIC_PERIPH_TMR_FIRQ_CLEAR',			0x3FF8);	# clear or disable?
@@ -867,7 +882,8 @@ $Hook[78]		= 'lampFX_override';
 $Hook[90]		= 'initWPC_preIRQstart';
 $Hook[91]		= 'IRQtimer';
 $Hook[95]		= 'renderChar_override';
-$Hook[99]		= 'postIRQ';
+$Hook[98]		= 'preISR';
+$Hook[99]		= 'postISR';
 
 #----------------------------------------------------------------------
 # System Threads
