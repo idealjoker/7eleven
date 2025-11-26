@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Nov 25 19:58:18 2025
+#                    dlm: Tue Nov 25 20:03:21 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 96 29 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 691 24 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -94,6 +94,7 @@
 #	Nov 19, 2025: - added DLog syscall for testing
 #	Nov 21, 2025: - removed DLog syscall
 #	Nov 25, 2025: - additions
+#				  - renamed some syscalls
 # END OF HISTORY
 
 #======================================================================
@@ -554,7 +555,7 @@ define_syscall('syscall_8C60',						0x8C60,'WWW');
 define_syscall('syscall_8C72',						0x8C72,'WW');
 define_syscall('syscall_8EE2',						0x8EE2);
 define_syscall('syscall_8EF6',						0x8EF6);
-define_syscall('sys_init_memory',					0x8EFD);
+define_syscall('sys_reset_memory',					0x8EFD);
 
 #----------------------------------------------------------------------
 # Group 2: 
@@ -622,7 +623,7 @@ define_syscall('reset_Watchdog',						0x9D00+$VO);	# clashes when using object f
 VERSION_OFFSETS(-332,0);
 define_syscall('sys_verify_realEstate_requirements',	0x9D96+$VO);	# 9C4A
 define_syscall('killThreads_siblings',					0x9E0A+$VO);
-define_syscall('sys_init_lamp_system',					0x9E3B+$VO);
+define_syscall('sys_reset_lamp_system',					0x9E3B+$VO);
 define_syscall('setBit[AB]',							0x9E7F+$VO);
 define_syscall('clearBit[AB]',							0x9E92+$VO);
 define_syscall('twiddle_BitShifter_input',				0x9EA5+$VO);
@@ -802,7 +803,7 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('addBonus_5530',						0xFAB4);
  define_syscall('addBonus_9930',						0xFABA);
  define_syscall('addBonus[A]',							0xFABE);
- define_syscall('DMDsys_init',						    0xFBAE);
+ define_syscall('DMDsys_reset',						    0xFBAE);
  define_syscall('DMDsys_invertScreen',				    0xFBCB);
  
  define_syscall('syscall_FE3C',							0xFE3C,'S');
