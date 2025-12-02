@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Nov 25 20:03:21 2025
+#                    dlm: Tue Dec  2 12:11:11 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 691 24 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 98 41 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -95,6 +95,7 @@
 #	Nov 21, 2025: - removed DLog syscall
 #	Nov 25, 2025: - additions
 #				  - renamed some syscalls
+#	Dec  2, 2025: - renamed some syscalls
 # END OF HISTORY
 
 #======================================================================
@@ -783,9 +784,9 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('pushSndCommand[A]',			        0xC17C);
  define_syscall('syscall_D6BC',							0xD6BC,'WB');
  define_syscall('syscall_D730',							0xD730,'BBB');
- define_syscall('printf[U]_leftAdjusted',				0xD77D,'gfxy');
- define_syscall('printf[U]_centered',					0xD799,'gfxy');
- define_syscall('printf[U]_rightAdjusted',				0xD7B4,'gfxy');
+ define_syscall('printf_leftAdjusted',					0xD77D,'gfxy');
+ define_syscall('printf_centered',						0xD799,'gfxy');
+ define_syscall('printf_rightAdjusted',					0xD7B4,'gfxy');
  define_syscall('sys_printf_leftAdjusted',				0xD7CD);
  define_syscall('sys_printf_centered',					0xD7DB);
  define_syscall('sys_printf_rightAdjusted',				0xD7E9);

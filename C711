@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Nov 23 13:59:52 2025
+#                    dlm: Sat Nov 29 20:57:09 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 441 66 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 442 53 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -439,6 +439,7 @@
 #				  - made invalid .LAST_DEFINED impossible
 #	Nov 23, 2025: - improved C711 error message of missing .ENDIF at EOF with info on
 #					which .IF is not closed (not very useful info)
+#	Nov 29, 2025: - remove remaing EOF error messages
 # HISTORY END
 
 # RELEASE NOTES:
@@ -680,7 +681,7 @@ our($MODE) = 0;															# compilation mode/label type; 0: undefined; 1: M6
 
 our(%JSR_TRG);															# number of calls to subroutines for -J
 
-our(@IF_CONT_LBL,@LOOP_DONE_LBL);										# structured programming
+our(@IF_CONT_LBL,@IF_CONT_LINE,@LOOP_DONE_LBL);							# structured programming
 
 our($IVM_DISABLED);														# flag indicating that IVM is disabled; set by .ENABLE_IVM/.DISABLE_IVM
 
@@ -924,7 +925,7 @@ my(@NO_OPT);															# addresses where optimization is not allowed; set by
 my(@optimization_suppressed);											# instructions that must not be optimized; set by .SUPPRESS_OPTIMIZATION
 my(@warnings_suppressed);												# addresses where no warnigns should be produced; set by -w in comments
 my(@OP);																# address -> instruction for optimizer
-my($locked_page);														# page addr (MSB ROM address) for .[UN]LOCK_ROM_PAGE
+my($locked_page,$locked_page_line);										# page addr (MSB ROM address) for .[UN]LOCK_ROM_PAGE
 my($tag_rpg,$tag_addr);													# address info from <> line prefix
 
 while (!eof()) {
@@ -1103,14 +1104,14 @@ NO_ADDL:
     }
 }
 
-die("missing .ENDIF at EOF (.IF at input line $IF_STACK_LINE[$#IF_STACK])\n")											# End-of-File checks
+die("Unfinished .IF at input line $IF_STACK_LINE[$#IF_STACK])\n")	# End-of-File checks
     if ($IF_STACK[$#IF_STACK] != 0);
 
-die("missing .UNLOCK_PAGE at EOF\n")
-	if defined($locked_page);
+die("Unfinished .IF at input line $IF_CONT_LINE[$#IF_CONT_LINE]\n")
+    if (@IF_CONT_LINE);
 
-die("Unfinished if statement(s) at EOF [@IF_CONT_LBL]\n")
-    if (@IF_CONT_LBL);
+die("Unfinished .LOCK_PAGE at input line $locked_page_line\n")
+	if defined($locked_page);
 
 if (@LOOP_DONE_LBL) {
     print(STDERR "Unfinished loop statement(s) at EOF:\n");
@@ -2476,6 +2477,7 @@ sub compile_common_pragma()
 		die("Syntax: .LOCK_ROM_PAGE (<@_> at input line $.)\n")
 			unless (@OP_ARG == 0);
 		$locked_page = ($ADDR >> 8);
+		$locked_page_line = $.;
 		return 1;
 	}
 

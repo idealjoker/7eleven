@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Fri Nov 21 08:12:17 2025
+#                    dlm: Sat Nov 29 20:49:09 2025
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 41 78 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 510 27 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -39,14 +39,15 @@
 #	Aug 14, 2025: - BUG: unforced direct mode did not work
 #	Oct 30, 2025: - BUG: LEAX UTILITY_RAM+2,X was interpreted as LEAX 2,X (RE anchor)
 #	Nov 21, 2025: - BUG: erroneous inline args after JSR were silently ignored
+#	Nov 29, 2025: - added @IF_CONT_LINE
 # HISTORY END
 
 use strict vars;
 
-our($OP,@OP_ARG,%JSR_TRG,@ROM,$ADDR,$RPG,%LBL,@IF_CONT_LBL,@LOOP_LBL,@LOOP_DONE_LBL,
-	$EXEC6809_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,$EIGHT_BIT_LABEL_PREFIX,
-	$SIXTEEN_BIT_LABEL_PREFIX,@newly_defined_label,$WMS_System,$IVM_DISABLED,
-	@SC_ARGS,%SYSCALL,$DP,$opt_T);
+our($OP,@OP_ARG,%JSR_TRG,@ROM,$ADDR,$RPG,%LBL,@IF_CONT_LBL,@IF_CONT_LINE,
+	@LOOP_LBL,@LOOP_DONE_LBL,$EXEC6809_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,
+	$EIGHT_BIT_LABEL_PREFIX,$SIXTEEN_BIT_LABEL_PREFIX,@newly_defined_label,
+	$WMS_System,$IVM_DISABLED,@SC_ARGS,%SYSCALL,$DP,$opt_T);
 
 my($last_RTS_addr,@forward_lexical_RTS_branch);
 my($last_exitThread_addr,@forward_lexical_exitThread_branch);
@@ -404,6 +405,7 @@ sub macro_IF_6809($$)
     		if (@OP_ARG);
         $OP = $cop; push(@OP_ARG,auto_label(1));
         push(@IF_CONT_LBL,$OP_ARG[$#OP_ARG]);
+        push(@IF_CONT_LINE,$.);
         return 1;
     }
     return undef;
@@ -505,6 +507,7 @@ sub unroll_asm_structure()
     		if (@OP_ARG);
 		undef($OP);
 		define_label(pop(@IF_CONT_LBL));
+		pop(@IF_CONT_LINE);
 		return;
     }
 
