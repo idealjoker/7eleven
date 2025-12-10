@@ -1,51 +1,51 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Mon Oct 27 20:37:58 2025
+                    dlm: Thu Dec  4 21:00:23 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 136 38 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 417 29 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
-				    
+                    
 -Memory Mapw-
-				    
-$0000-$17FF 	6KB RAM (volatile)
-$1800-$1FFF		2KB RAM (battery backed)
-$2000-$2FFF 	unused?
-$3000-$37FF 	WPC-95 DMD frames (4 extra frames)
-$3800-$3FFF 	DMD frame (memory mapped; _DMD_LOW_PAGE)
-$3A00-$3BFF 	DMD frame (memory mapped; _DMD_HIGH_PAGE)
-$3C00-$3FFF 	ASIC registers
-$4000-$7FFF 	16KB banked ROM
-$8000-$FFFF 	32KB system ROM
-					  
-					  
+                    
+$0000-$17FF     6KB RAM (volatile)
+$1800-$1FFF     2KB RAM (battery backed)
+$2000-$2FFF     unused?
+$3000-$37FF     WPC-95 DMD frames (4 extra frames)
+$3800-$3FFF     DMD frame (memory mapped; _DMD_LOW_PAGE)
+$3A00-$3BFF     DMD frame (memory mapped; _DMD_HIGH_PAGE)
+$3C00-$3FFF     ASIC registers
+$4000-$7FFF     16KB banked ROM
+$8000-$FFFF     32KB system ROM
+                      
+                      
 -Memory Paging-
     
 - RAM uses PG#3E (not supported by 7eleven)
 
 - 1MB ROM space on WPC board
-	- organized into 64x16KB pages (PG#00-3D,3F)
-	- 32KB (PG#3F) permanently mapped to $8000-$FFFF
-	- 16KB (current game page) mapped to $4000-$7FFF
-	- up to 992MB (62 pages) for game assets
+    - organized into 64x16KB pages (PG#00-3D,3F)
+    - 32KB (PG#3F) permanently mapped to $8000-$FFFF
+    - 16KB (current game page) mapped to $4000-$7FFF
+    - up to 992MB (62 pages) for game assets
     
 - 1MB ROM chip (27C080/27C801):
-	- address range: $00000 - $FFFFF
-	- PG#00-3D (30 pages, 480KB)
-	- PG#3F    ( 2 pages,  32KB)
+    - address range: $00000 - $FFFFF
+    - PG#00-3D (30 pages, 480KB)
+    - PG#3F    ( 2 pages,  32KB)
 
 - T2 uses 512KB ROM chip (27C040/27C401):
-	- address range: $00000 - $7FFFF
-	- PG#20-3D (30 pages, 480KB)
-	- PG#3F    ( 2 pages,  32KB)
-	- May/2025: NOS AT28C040 EEPROM replacement available for $295 on eBay
+    - address range: $00000 - $7FFFF
+    - PG#20-3D (30 pages, 480KB)
+    - PG#3F    ( 2 pages,  32KB)
+    - May/2025: NOS AT28C040 EEPROM replacement available for $295 on eBay
 
 - FH uses 256KB ROM chip (27C020/27C201):
-	- address range: $00000 - $3FFFF
-	- PG#30-3D (14 pages, 224KB)
-	- PG#3E-3F ( 2 pages,  32KB)
+    - address range: $00000 - $3FFFF
+    - PG#30-3D (14 pages, 224KB)
+    - PG#3E-3F ( 2 pages,  32KB)
 
 
 -7eleven WPC Labels-
@@ -53,46 +53,46 @@ $8000-$FFFF 	32KB system ROM
 - every label has a hex page id (00-3D, FF) and a name
 
 - label definitions:
-	- .LBL <name> <pg:addr>
-	- name:
+    - .LBL <name> <pg:addr>
+    - name:
 
 - label references:
-	- [pg:]name
-	- pg prefix can be omitted for labels on same page
-	- pg prefix can be omitted for labels in prime RE 
+    - [pg:]name
+    - pg prefix can be omitted for labels on same page
+    - pg prefix can be omitted for labels in prime RE 
 
 
 -ROM Map-
 
-8Mb ROM									4Mb ROM
+8Mb ROM                                 4Mb ROM
 ----------------------------------------------------------------------
-$00000-$03FFF		PG#00
-$04000-$07FFF		PG#01
-$08000-$0CFFF		PG#02
-$0D000-$0FFFF		PG#03
+$00000-$03FFF       PG#00
+$04000-$07FFF       PG#01
+$08000-$0CFFF       PG#02
+$0D000-$0FFFF       PG#03
 
-$1xxxx				PG#04-07			
-$2xxxx				PG#08-0B			
-$3xxxx				PG#0C-0F			
-$4xxxx				PG#10-13			
-$5xxxx				PG#14-17			
-$6xxxx				PG#18-1B			
-$7xxxx				PG#1C-1F			
-$8xxxx				PG#20-23			$0xxxx
-$9xxxx				PG#24-27			$1xxxx
-$Axxxx				PG#28-2B			$2xxxx
-$Bxxxx				PG#2C-2F			$3xxxx
-$Cxxxx				PG#30-33			$4xxxx
-$Dxxxx				PG#34-37			$5xxxx
-$Exxxx				PG#38-3B			$6xxxx
+$1xxxx              PG#04-07            
+$2xxxx              PG#08-0B            
+$3xxxx              PG#0C-0F            
+$4xxxx              PG#10-13            
+$5xxxx              PG#14-17            
+$6xxxx              PG#18-1B            
+$7xxxx              PG#1C-1F            
+$8xxxx              PG#20-23            $0xxxx
+$9xxxx              PG#24-27            $1xxxx
+$Axxxx              PG#28-2B            $2xxxx
+$Bxxxx              PG#2C-2F            $3xxxx
+$Cxxxx              PG#30-33            $4xxxx
+$Dxxxx              PG#34-37            $5xxxx
+$Exxxx              PG#38-3B            $6xxxx
 
-$F0000-$F3FFF		PG#3C				$70000-73FFF
-$F4000-$F7FFF		PG#3D				$74000-77FFF
-$F8000-$FCFFF		PG#FF				$78000-7CFFF
-$FD000-$FFFFF		PG#FF				$7D000-7FFFF
+$F0000-$F3FFF       PG#3C               $70000-73FFF
+$F4000-$F7FFF       PG#3D               $74000-77FFF
+$F8000-$FCFFF       PG#FF               $78000-7CFFF
+$FD000-$FFFFF       PG#FF               $7D000-7FFFF
 
-PG 		= int(ROM_addr / 0x4000) except for FE=RAM and FF=8000-FFFF
-ADDR	= (ROM_addr % 0x4000) + 0x4000
+PG      = int(ROM_addr / 0x4000) except for FE=RAM and FF=8000-FFFF
+ADDR    = (ROM_addr % 0x4000) + 0x4000
 
 
 -RAM-
@@ -100,67 +100,67 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 .Player Memory Data.
 
 - syscalls
-	X=^memData_player[A]
-	X=^memData_playerUp
-	X=^playerGameByte[B]				B starts at 1
-	A=playerGameByte[B]					get byte
-	playerGameByte[B]=[A]				set byte
-	A=playerGameByte <gamebyte-id>		get byte
-	playerGameByte=[A] <gamebyte-id>	set byte
-	X=playerGameWord[B]					get word
-	playerGameWord[B]=[X]				set word
+    X=^memData_player[A]
+    X=^memData_playerUp
+    X=^playerGameByte[B]                B starts at 1
+    A=playerGameByte[B]                 get byte
+    playerGameByte[B]=[A]               set byte
+    A=playerGameByte <gamebyte-id>      get byte
+    playerGameByte=[A] <gamebyte-id>    set byte
+    X=playerGameWord[B]                 get word
+    playerGameWord[B]=[X]               set word
 
 - variables:
-	^PLAYER_DATA				pointer to RAM area of current player 
-	_SIZE_PLAYER_DATA			size of RAM area including buffers and game data (value in RAM?!)
-	_SIZE_PLAYER_GAME_DATA		number of game bytes in player data (value in RAM?!)
+    ^PLAYER_DATA                pointer to RAM area of current player 
+    _SIZE_PLAYER_DATA           size of RAM area including buffers and game data (value in RAM?!)
+    _SIZE_PLAYER_GAME_DATA      number of game bytes in player data (value in RAM?!)
 
 - buffer bytes:
-	00-07					lamps
-	08-15 					blinkbuf
-	16-23					flags
-	24-31					??? (8 bytes)
-	32		RAM_68			lamp blink state??
-	33						flags: $01 player_Gamestart_event executed
-	34-35					list of values that update audits when game is aborted on ball 3??
-	36						number of tickets earned??
+    00-07                   lamps
+    08-15                   blinkbuf
+    16-23                   flags
+    24-31                   ??? (8 bytes)
+    32      RAM_68          lamp blink state??
+    33                      flags: $01 player_Gamestart_event executed
+    34-35                   list of values that update audits when game is aborted on ball 3??
+    36                      number of tickets earned??
 
 - player game data:
-	- arbitrary sized RAM area for every player malloc'ed when WPC system is initialized
-	- size defined in ROM with reference at ^SIZE_PLAYER_DATA
-	- data start at offset 37 in player mem data
+    - arbitrary sized RAM area for every player malloc'ed when WPC system is initialized
+    - size defined in ROM with reference at ^SIZE_PLAYER_DATA
+    - data start at offset 37 in player mem data
 
 
 .RAM blocks.
 
 - linked list of RAM blocks (50 in T2)
-	B0-1					__next
-	B2						type
-	B3-46					44 bytes payload
+    B0-1                    __next
+    B2                      type
+    B3-46                   44 bytes payload
 
 - block types:
-	1						malloc'ed
-	5	
-	8						LampFX
+    1                       malloc'ed
+    5   
+    8                       LampFX
 
 - syscalls:
-	U=mallocBlock			allocate free block
-	U=freeBlock[U]			free block, U_out = ^FREE_BLOCKS
-	sys_free_block[U]		free block, U_out = ^FREE_BLOCKS
-	sys_free_blockChain[U]	free block and all linked to it
+    U=mallocBlock           allocate free block
+    U=freeBlock[U]          free block, U_out = ^FREE_BLOCKS
+    sys_free_block[U]       free block, U_out = ^FREE_BLOCKS
+    sys_free_blockChain[U]  free block and all linked to it
 
 
 .WPC Low-Level Heap.
 
 - heap grows upward, stack grows downward into free RAM area
-	- pointer to heap in ROM (^HEAP_START: =BOTTOM_OF_HEAP = 0CD1 in T2)
-	- pointer to current start of free heap in RAM (^FREE_RAM)
+    - pointer to heap in ROM (^HEAP_START: =BOTTOM_OF_HEAP = 0CD1 in T2)
+    - pointer to current start of free heap in RAM (^FREE_RAM)
 
 - malloc:
-	LDX 	^FREE_RAM
-	STX 	^allocated_RAM
-	LEAX	MALLOC_BYTES,X
-	STX     ^FREE_RAM
+    LDX     ^FREE_RAM
+    STX     ^allocated_RAM
+    LEAX    MALLOC_BYTES,X
+    STX     ^FREE_RAM
 
 - allocated RAM cannot be freed
 
@@ -177,68 +177,68 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 =Strings=
 
 - there are two types of strings used in WPC:
-	- WPC strings with #-escape
-	- sprintf format strings with \-escape and %-format
+    - WPC strings with #-escape
+    - sprintf format strings with \-escape and %-format
 
-- WPC strings	
-	- NUL (0) terminated ASCII
-	- hash escape sequences:
-		- called "pound clauses" in WMS error messages
-		- syntax: #<HEX># where <HEX> are 0-4 hex digits
-		- ## expands to the # character
-		- hex number is interpreted as WMS 16-segment display code
-			- codes used in T2, FH
-				#0#		???
-				#20#	vertical line from middle to bottom center???
-				#6308#	raised circle (upper half of 8)
-				#5C08#	baseline circle (lower half of 8)
-			- uses:
-				#20#string#0#	quote or emphasize string
-				N#6308#			French number symbol
-				#6308#/#5C08#	fancy(?) percent symbol
+- WPC strings   
+    - NUL (0) terminated ASCII
+    - hash escape sequences:
+        - called "pound clauses" in WMS error messages
+        - syntax: #<HEX># where <HEX> are 0-4 hex digits
+        - ## expands to the # character
+        - hex number is interpreted as WMS 16-segment display code
+            - codes used in T2, FH
+                #0#     ???
+                #20#    vertical line from middle to bottom center???
+                #6308#  raised circle (upper half of 8)
+                #5C08#  baseline circle (lower half of 8)
+            - uses:
+                #20#string#0#   quote or emphasize string
+                N#6308#         French number symbol
+                #6308#/#5C08#   fancy(?) percent symbol
 
-- sprintf format strings:	
-	- NUL (0) terminated ASCII
-	- backslash substitution:
-		\,	decimal separator (comma in US, period in Europe)
-		\n	<NEWLINE> (ASCII 10)
-		\t	<TAB> (ASCII 8)
-	  NOTES:
-	  	- no apparent way to print a backslash character except
-	  	  (perhaps) with a hash escape sequence
-		- because of the compile-time \-substitution, the \ needs to
-		  be doubled up in 7eleven source code
-	- %-formats:
-		- begin with %, followed by optional formatting modifiers, followed
-		  by a mandatory data-source specifier
-		- either uppper or lower case allowed for formatting modifiers and
-		  data-source specifier 		  
-		- data-source specifiers
-			A	register A value
-			B	register B value
-			D	register D value
-			U	register U value
-			Y	register Y value
-		- formatting modifiers (some have numerical arguments)
-			F#	set output width (display width?, numbers only?)
-			C#	center justify data in field of width #
-			L#  left justify data in field of width #
-			R#  right justify data in field of width #
-			K	suppress justification (trim to width only)
-			J	right- instead of left-trim strings that do not fit width
-			I	indirect (data source is address)
-			G	use low byte of data source (discard high byte)
-			H	use high byte of data source (discard low byte and shift high byte)
-			S	render WPC string (data source is string pointer)
-			M	render WPC table string (data source is string specifier)
-			T	render score followed by table string?
-			O	render 0 as 00
-			Z	render leading zeroes (suppressed by default)
-			X	do not convert value to BCD
-			P	do not print 1,000 separator character (, or . defined on adjustments)
-			
-			
-			
+- sprintf format strings:   
+    - NUL (0) terminated ASCII
+    - backslash substitution:
+        \,  decimal separator (comma in US, period in Europe)
+        \n  <NEWLINE> (ASCII 10)
+        \t  <TAB> (ASCII 8)
+      NOTES:
+        - no apparent way to print a backslash character except
+          (perhaps) with a hash escape sequence
+        - because of the compile-time \-substitution, the \ needs to
+          be doubled up in 7eleven source code
+    - %-formats:
+        - begin with %, followed by optional formatting modifiers, followed
+          by a mandatory data-source specifier
+        - either uppper or lower case allowed for formatting modifiers and
+          data-source specifier           
+        - data-source specifiers
+            A   register A value
+            B   register B value
+            D   register D value
+            U   register U value
+            Y   register Y value
+        - formatting modifiers (some have numerical arguments)
+            F#  set output width (display width?, numbers only?)
+            C#  center justify data in field of width #
+            L#  left justify data in field of width #
+            R#  right justify data in field of width #
+            K   suppress justification (trim to width only)
+            J   right- instead of left-trim strings that do not fit width
+            I   indirect (data source is address)
+            G   use low byte of data source (discard high byte)
+            H   use high byte of data source (discard low byte and shift high byte)
+            S   render WPC string (data source is string pointer)
+            M   render WPC table string (data source is string specifier)
+            T   render score followed by table string?
+            O   render 0 as 00
+            Z   render leading zeroes (suppressed by default)
+            X   do not convert value to BCD
+            P   do not print 1,000 separator character (, or . defined on adjustments)
+            
+            
+            
 
 ----------------------------------------------------------------------
 
@@ -248,81 +248,81 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 - Lamps are numbered from 1 for consistency with manual
 - Flags are NOT numbered from 1 
 
-	Bit Id			7eleven     
-	----------------------------
-	$00-$3F 		Lamp#01-40  
-	$40-$7F 		Flag#00-3F (Flag#00 is not usable?)
-	$80-$BF 		illegal
-	$C0-$FF         Flag#40-7F (Flag#40 is not usable?)
+    Bit Id          7eleven     
+    ----------------------------
+    $00-$3F         Lamp#01-40  
+    $40-$7F         Flag#00-3F (Flag#00 is not usable?)
+    $80-$BF         illegal
+    $C0-$FF         Flag#40-7F (Flag#40 is not usable?)
 
 
 -Bit Buffers / Lamp Matrices-
 
-	offset	meaning
-	------------------------------------------------------------
-	$00 	logical matrix
-	$08 	primary lamp matrix (used for blinking)
-	$10 	masked from primary ($08)
-	$18 	override data
-	$20 	masked from previous ($08,$18)
-	$28 	override data
-	$30 	masked from previous ($08,$18,$28)
-	$38 	override data
-	$40 	blink matrix (indepedent of locical state)
-	$48 	Flag#00-3F
-	$50     Flag#40-7F
+    offset  meaning
+    ------------------------------------------------------------
+    $00     logical matrix
+    $08     primary lamp matrix (used for blinking)
+    $10     masked from primary ($08)
+    $18     override data
+    $20     masked from previous ($08,$18)
+    $28     override data
+    $30     masked from previous ($08,$18,$28)
+    $38     override data
+    $40     blink matrix (indepedent of locical state)
+    $48     Flag#00-3F
+    $50     Flag#40-7F
 
 - turn on lamps / set flags:
-	1) Lamp: 			!lampOn <Lamp> 
-			   			!setBit <Lamp> $00 
-			   			JSR lamp[A]on
-			   			JSR setBit[AB] with B_in = $00
-			   			JSR lamp[A]on_blinkOff
-		- turn on logical lamp
-		- turn on physical lamp
-	2) Blinker: 		!blinkLamp <Lamp>
-			     		!setBit <Lamp> $40 
-				 		JSR blinkLamp[A]
-				 		JSR setBit[AB] with B_in = $40 
-		- turn on blink bit
-		- set physical lamp in sync with other blinking lamps
-	3) Flags:			!setFlag <Flag>
-						!setBit <Flag> $48
-					    JSR setBit[AB] with B_in = $48
+    1) Lamp:            !lampOn <Lamp> 
+                        !setBit <Lamp> $00 
+                        JSR lamp[A]on
+                        JSR setBit[AB] with B_in = $00
+                        JSR lamp[A]on_blinkOff
+        - turn on logical lamp
+        - turn on physical lamp
+    2) Blinker:         !blinkLamp <Lamp>
+                        !setBit <Lamp> $40 
+                        JSR blinkLamp[A]
+                        JSR setBit[AB] with B_in = $40 
+        - turn on blink bit
+        - set physical lamp in sync with other blinking lamps
+    3) Flags:           !setFlag <Flag>
+                        !setBit <Flag> $48
+                        JSR setBit[AB] with B_in = $48
 
 - turn off lamps / clear flags:
-	1) Lamp: 			!lampOff <Lamp>
-			   			!clearBit <Lamp> $00
-			   			JSR lamp[A]off
-			   			JSR lamp[A]off_blinkOff
-			   			JSR clearBit[AB] with B_in = $00
-		- turn off logical lamp bit
-		- turn off physical lamp, unless lamp is blinking
-	2) Blinker: 		!unblinkLamp <Lamp>
-				 		!clearBit <Lamp> $40
-				 		JSR unblinkLamp[A]
-                 		JSR clearBit[AB] with B_in = $40
-		- turn off blink bit
-		- set physical lamp in accordance with logical bit
-	3) Completely: 		!lampOff_blinkOff <Lamp>
-						JSR lamp[A]Off_blinkOff
+    1) Lamp:            !lampOff <Lamp>
+                        !clearBit <Lamp> $00
+                        JSR lamp[A]off
+                        JSR lamp[A]off_blinkOff
+                        JSR clearBit[AB] with B_in = $00
+        - turn off logical lamp bit
+        - turn off physical lamp, unless lamp is blinking
+    2) Blinker:         !unblinkLamp <Lamp>
+                        !clearBit <Lamp> $40
+                        JSR unblinkLamp[A]
+                        JSR clearBit[AB] with B_in = $40
+        - turn off blink bit
+        - set physical lamp in accordance with logical bit
+    3) Completely:      !lampOff_blinkOff <Lamp>
+                        JSR lamp[A]Off_blinkOff
 
 - toggle lamps / flags:
-	1) Lamp: 			JSR	toggleLamp[A]
-	2) Blinker: 		JSR toggle_blinkLamp[A]
-	3) Flag:			JSR toggleFlag[A]
+    1) Lamp:            JSR toggleLamp[A]
+    2) Blinker:         JSR toggle_blinkLamp[A]
+    3) Flag:            JSR toggleFlag[A]
 
 - test for lamp / flag state:
-	1) logical state: 	!lampOn? <Lamp>
-					  	JSR lamp[A]on? 
-					  	JSR bit[AB]isSet? with B_in = $00
-	2) blink state: 	JSR lamp[A]blinking?
-						JSR bit[AB]isSet? with B_in = $40
-	3) flag state: 		JSR flag[A]isSet?
-						JSR bit[AB]isSet? with B_in = $48
+    1) logical state:   !lampOn? <Lamp>
+                        JSR lamp[A]on? 
+                        JSR bit[AB]isSet? with B_in = $00
+    2) blink state:     JSR lamp[A]blinking?
+                        JSR bit[AB]isSet? with B_in = $40
+    3) flag state:      JSR flag[A]isSet?
+                        JSR bit[AB]isSet? with B_in = $48
 
 - Masking:
-	- for masking usage see T2 FX_HunterShipTarget_1_hit_handler
+    - for masking usage see T2 FX_HunterShipTarget_1_hit_handler
 
 ----------------------------------------------------------------------
 
@@ -330,94 +330,97 @@ ADDR	= (ROM_addr % 0x4000) + 0x4000
 
 - 1 byte id
 - 1 byte buffer offset
-	$00		lamps
-	$40		blink buffer
+    $00     lamps
+    $40     blink buffer
 - Bitgroup#01 includes all controlled lamps
 
 =BITGROUP_TABLE:
-	- WPC pointer table
-	- entry:
-		B0-1	^next bitgroup
-		B2-n	bitgroup defiition
-	- bitgroup definition:
-		$FA <bitgroup elt> [...] $FA
-	- bitgroup elements:
-		<Lamp>							single lamp
-		<Flag>							single flag
-		$81 <Bitgroup> $81				Bitgroup
-		$85 <from-bit> <to-bit> $85		flag or lamp range
+    - WPC pointer table
+    - entry:
+        B0-1    ^next bitgroup
+        B2-n    bitgroup defiition
+    - bitgroup definition:
+        $FA <bitgroup elt> [...] $FA
+    - bitgroup elements:
+        <Lamp>                          single lamp
+        <Flag>                          single flag
+        $81 <Bitgroup> $81              Bitgroup
+        $85 <from-bit> <to-bit> $85     flag or lamp range
 
 sys_bitgroupOp_ABXY
-	A	ROM page of hook routine
-	B	0C(rotLeft) 0E(fill), 04(???)
-	X	bitgroup + buffer offset
-	Y	address of hook routine
+    A   ROM page of hook routine
+    B   0C(rotLeft) 0E(fill), 04(???)
+    X   bitgroup + buffer offset
+    Y   address of hook routine
 
 ----------------------------------------------------------------------
 
 =Game Strings=
 
 - id word
-	- if positive 	 => index into =ENGLISH_GAMESTRINGS
-	- elsif id&$C000 => index into =ENGLISH_SYSTEM_STRINGS_2
-	- else			 => index into =ENGLISH_SYSTEM_STRINGS
+    - if positive    => index into =ENGLISH_GAMESTRINGS
+    - elsif id&$C000 => index into =ENGLISH_SYSTEM_STRINGS_2
+    - else           => index into =ENGLISH_SYSTEM_STRINGS
 
 ----------------------------------------------------------------------
 
 =Multiball Devices (MBDs) / Locks=
 
 - Notes:
-	- abstraction: query library for number of balls in play, lock status, etc
-	- monitoring only -- no solenoids are fired
-	- event driven: each lock has an event handler that is called with an event
-	  code
-	- dispatchers: different subsystems use !MBD_callHandler_A <CMD> to call
-	  the event handler routine 
-	- MSW_lock_handler:
-		- switch handler used for all locks with the lock number (1-based)
-		  encoded in the switch table
-		- dispatcher defining events $04 - $09, triggered by switch state
-		  changes
+    - abstraction: query library for number of balls in play, lock status, etc
+    - monitoring only -- no solenoids are fired
+    - event driven: each lock has an event handler that is called with an event
+      code
+    - dispatchers: different subsystems use !MBD_callHandler_A <CMD> to call
+      the event handler routine 
+    - MSW_lock_handler:
+        - switch handler used for all locks with the lock number (1-based)
+          encoded in the switch table
+        - dispatcher defining events $04 - $09, triggered by switch state
+          changes
 
 - Ball Accounting:
-	_BALLS_INSTALLED_IN_GAME
-		- RAM
-		- determined by counting the number of trough switches
-		- not directly relevant for game code
-	_BALLS_ACCOUNTED_FOR
-		- in protected RAM
-		- number of balls the game has proof of existence 
-		- usually equal to _BALLS_INSTALLED_IN_GAME but can be lower
-		  when balls get lost
-	_BALLS_IN_TROUGH
-		- number of balls currently in the trough 
-	_NUM_BALLS_LOCKED
-		- number of balls currently in any of the locks
-	_MIN_BALLS_NEEDED_IN_TROUGH_
-		- number of balls needed in trough for end-of-ball condition
-	_LOCKED_BALLS_DEFICIT
-		- ???
+    _BALLS_INSTALLED_IN_GAME
+        - RAM
+        - determined by counting the number of trough switches
+        - not directly relevant for game code
+    _BALLS_ACCOUNTED_FOR
+        - in protected RAM
+        - number of balls the game has proof of existence 
+        - usually equal to _BALLS_INSTALLED_IN_GAME but can be lower
+          when balls get lost
+    _BALLS_IN_TROUGH
+        - number of balls currently in the trough 
+    _NUM_BALLS_LOCKED
+        - number of balls currently in any of the locks
+    _MIN_BALLS_NEEDED_IN_TROUGH_
+        - number of balls needed in trough for end-of-ball condition
+    _LOCKED_BALLS_DEFICIT
+        - ???
 
 - T2 Lock list
-		0	Invalid Lock 
-		1	Balltrough
-		2	Left Scoop
-		3	Upper Scoop
-		4	Skull Popper
-		5	Cannon
+        0   Invalid Lock 
+        1   Balltrough
+        2   Left Scoop
+        3   Upper Scoop
+        4   Skull Popper
+        5   Cannon
 
 - lock data table
-	- =LOCKTABLE is WPC table with ^payloaddata for each lock
-	- 4-12 bytes per entry: (4 for Lock#00, 11 for BallTrough, 10 for scoops)
-		0			lock type (00 for Lock#00 (invalid), 01 for trough, 02 for scoops)
-		1-3			event handler reference (3 bytes)
-		trough
-			4-5		pointer to list of trough switches
-			6		SolCmd
-			7		pointer to table with 2 bytes
-			8-10	???
-		scoops
-			4-9		???
+    - =LOCKTABLE is WPC table with ^payloaddata for each lock
+    - 4-12 bytes per entry: (4 for Lock#00, 11 for BallTrough, 10 for scoops)
+        0           lock type (00 for Lock#00 (invalid), 01 for trough, 02 for scoops)
+        1-3         event handler reference (3 bytes)
+        trough (lock type $01)
+            4-5     pointer to list of trough switches
+            6       SolCmd
+            7       SolCmd(?)
+            8-10    ???
+        scoops (lock type $02)
+            4       switch
+            5       ???
+			6		eject SolCmd #1
+			7		eject SolCmd #2
 
 - lock data in RAM
 	- ^MBD_LOCK_DATA in RAM

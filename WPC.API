@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Dec  2 12:11:11 2025
+#                    dlm: Tue Dec  9 20:21:28 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 98 41 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 99 41 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -96,6 +96,7 @@
 #	Nov 25, 2025: - additions
 #				  - renamed some syscalls
 #	Dec  2, 2025: - renamed some syscalls
+#	Dec  9, 2025: - renamed some syscalls
 # END OF HISTORY
 
 #======================================================================
@@ -207,7 +208,7 @@ define_label('^SOL_QUEUE_TAIL',						0x03EC);
 VERSION_OFFSETS(-1,0);
 
 define_label('^HIGH_PRIORITY_THREAD',				0x0366+$VO);		
-define_label('^LOW_PRIORITY_THREADS',				0x036F+$VO);		
+define_label('^THREADS',							0x036F+$VO);		
 define_label('THREADLIST_NUL',						0x0371+$VO);		
 define_label('^FREE_RAM',							0x0380+$VO);	# heap
 define_label('=STRING_BUFFER',						0x0386+$VO);	# to 0x03B0 (43 bytes)
@@ -524,7 +525,7 @@ define_syscall('updateAudit[D]',					0x88D5,'U');
 define_syscall('syscall_88E5',						0x88E5,'W');
 define_syscall('longJSR',							0x88F5,'R');
 define_syscall('longJMP',							0x892F,'R',1);			# NOTE 1: does not return
-define_syscall('spawnThread_sibling_lowPriority',	0x8948,'R');
+define_syscall('spawnThread_sibling',				0x8948,'R');
 define_syscall('spawnThread_sibling_highPriority',	0x8983,'R');
 define_syscall('memCopy_to_X',						0x89BE,'PB');
 define_syscall('memCopy_from_Y',					0x89CE,'PB');
@@ -544,11 +545,11 @@ define_syscall('syscall_8AF5',						0x8AF5,'WW');
 define_syscall('syscall_8B07',						0x8B07,'WW');
 define_syscall('syscall_8B19',						0x8B19,'WW');
 define_syscall('syscall_8B2B',						0x8B2B,'WW');
-define_syscall('spawnThread_lowPriority',			0x8B3D,'TR');
+define_syscall('spawnThread',						0x8B3D,'TR');
 define_syscall('spawnThread_highPriority',			0x8B5A,'TR');
-define_syscall('killSpawnThread_lowPriority',		0x8B77,'TR');			# kill threads first, then spawn new one
+define_syscall('killSpawnThread',					0x8B77,'TR');			# kill threads first, then spawn new one
 define_syscall('killSpawnThread_highPriority',		0x8B9D,'TR');
-define_syscall('spawnThreadIfNeeded_lowPriority',	0x8BC3,'TR');			# don't spaawn if thread id already in use
+define_syscall('spawnThreadIfNeeded',				0x8BC3,'TR');			# don't spaawn if thread id already in use
 define_syscall('spawnThreadIfNeeded_HighPriority',	0x8BF7,'TR');
 define_syscall('memCopy',							0x8C2B,'WWB');
 define_syscall('syscall_8C3D',						0x8C3D,'WWW');
@@ -599,7 +600,7 @@ define_syscall('Thread_Dispatch_Loop_System_Busy',		0x9797+$VO);
 
 VERSION_OFFSETS(-246,0);
 define_syscall('X=^spawnThread[BXY]_highPriority', 		0x982E+$VO);	# 9738 -246
-define_syscall('X=^spawnThread[BXY]_lowPriority', 		0x983D+$VO);
+define_syscall('X=^spawnThread[BXY]',			 		0x983D+$VO);
 
 VERSION_OFFSETS(-270,0);
 define_syscall('sys_sleep[A]',							0x9894+$VO,'',2);	# 9894
@@ -683,7 +684,7 @@ define_syscall('X=^tableElt[AXY]',						0xAC89+$VO);
 define_syscall('bitgroup[D]_setAll',					0xADF9+$VO);
 define_syscall('bitgroup[D]_clearAll',					0xAE09+$VO);
 define_syscall('bitgroup[D]_allSet?',					0xAE19+$VO);
-define_syscall('bitgroup[D]_allOff?',					0xAE29+$VO);
+define_syscall('bitgroup[D]_allClear?',					0xAE29+$VO);
 define_syscall('bitgroupOp_bitSet?',					0xAE39+$VO);
 define_syscall('bitgroupOp_bitClear?',					0xAE46+$VO);
 define_syscall('bitgroupOp[ABXY]',						0xAE53+$VO);
