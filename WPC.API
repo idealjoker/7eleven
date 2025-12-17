@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Dec 17 09:45:16 2025
+#                    dlm: Wed Dec 17 15:20:12 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 269 58 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 267 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -152,6 +152,7 @@ define_label('_LAST_BUSY_EXEC_TIC',					0x52);
 define_label('^CURRENT_THREAD_DATA',				0x53);
 define_label('_HIGH_PRIORITY_THREAD_RUNNING',		0x57);
 define_label('_TMP58',								0x58);
+define_label('__SLEEP_TMP',							0x59);
 define_label('__SLEEP_TIME',						0x5B);
 define_label('__SLEEP_TIME+1',						0x5C);
 define_label('__FINDTHREAD_ID',						0x5D);
@@ -263,7 +264,7 @@ define_label('_BALLS_IN_TROUGH',				   	0x0CCF+$VO);
 define_label('_BALLS_INSTALLED_IN_GAME',		   	0x0CD0+$VO); 
 
 define_label('=BOTTOM_OF_HEAP',				   		0x0CD1+$VO); 
-define_label('=TOP_OF_EMPTY_THREADSTACK',			0x1728);
+define_label('=TOP_OF_STACK-3',						0x1728);
 define_label('=TOP_OF_STACK-1',						0x172A);
 define_label('=TOP_OF_STACK',						0x172B);
 define_label('=TOP_OF_STACK+3',						0x172E);
@@ -615,8 +616,9 @@ define_syscall('X=^spawnThread[BXY]',			 		0x983D+$VO);
 VERSION_OFFSETS(-270,0);
 define_syscall('sys_sleep[A]',							0x9894+$VO,'',2);	# 9894
 define_syscall('sys_sleep[B]',							0x9898+$VO,'',2);
-define_label('.sys_sleep_common',						0x989C+$VO,'',2);
+define_label('.sys_shortSleep_common',					0x989C+$VO);
 define_syscall('sys_sleep',								0x989E+$VO,'',2);
+define_label('.sys_sleep_common',						0x98BB+$VO);
 define_syscall('exitThread',							0x99A2+$VO,'',2);
 
 VERSION_OFFSETS(-314,0);

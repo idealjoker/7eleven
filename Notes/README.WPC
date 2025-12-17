@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Wed Dec 17 09:44:26 2025
+                    dlm: Wed Dec 17 13:48:19 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 608 0 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 599 64 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -593,21 +593,25 @@ sys_bitgroupOp_ABXY
 	$xx40-$xx4F		lock system
 
 - thread buffer with spawn values
-	0-1		parent.next		pointer to next thread in list
-	2		#$03 			marker for detecting memory corruption
-	3		#$00			LampFX threads have NE value; value used as B_in to bitgroupOp[ABXYU]
-	4		#$01
-	5-6						pointer to PC in this thread buffer
-	7-14					??? (8 bytes, registers?, lamps?, flags?)
-	15-16	__CURRENT_TIME	wakeup time
-	17-18	spawn Y_in		thread flags/id 
-	19						current ROM page
-	20-21	#$172E			=TOP_OF_STACK+3
-	22-39					18 bytes stack
-		34-35				PC during sleep??
-	40-41	#$0000			pointer to malloc'ed memory chain
-	42-43	#$0000			pointer to another memory chain (maybe extended stack?)
-	44		#$00 			flags (80: related to wakeup time))
+	0-1		parent.next			pointer to next thread in list
+	2		#$03 				MARKER for detecting memory corruption
+	3		#$00				LampFX threads have NE value; value used as B_in to bitgroupOp[ABXYU]
+	4		#$01				stack size (in units of 6 bytes)
+	5-6		^offset 34			pointer to PC? 
+	7-8		U					register value
+	9		A					register value
+	10		B					register value
+	11-12	X					register value
+	13-14	Y					register value
+	15-16	__CURRENT_TIME		wakeup time
+	17-18	spawn Y_in			thread flags/id 
+	19							current ROM page
+	20-21	#=TOP_OF_STACK+3 	stack pointer
+	22-39						18 bytes stack data
+	  34-35	thread code PC	
+	40-41	#$0000				pointer to malloc'ed memory chain
+	42-43	#$0000				extended stack data (pointer to memory chain)
+	44		#$00 				flags (80: related to wakeup time))
 
 ----------------------------------------------------------------------
 
