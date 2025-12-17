@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Dec  9 20:21:28 2025
+#                    dlm: Wed Dec 17 09:45:16 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 99 41 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 269 58 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -97,6 +97,8 @@
 #				  - renamed some syscalls
 #	Dec  2, 2025: - renamed some syscalls
 #	Dec  9, 2025: - renamed some syscalls
+#	Dec 16, 2025: - renamed some syscalls
+#	Dec 17, 2025: - removed bad syscall
 # END OF HISTORY
 
 #======================================================================
@@ -149,6 +151,7 @@ define_label('_LAST_IDLE_EXEC_TIC',					0x51);
 define_label('_LAST_BUSY_EXEC_TIC',					0x52);
 define_label('^CURRENT_THREAD_DATA',				0x53);
 define_label('_HIGH_PRIORITY_THREAD_RUNNING',		0x57);
+define_label('_TMP58',								0x58);
 define_label('__SLEEP_TIME',						0x5B);
 define_label('__SLEEP_TIME+1',						0x5C);
 define_label('__FINDTHREAD_ID',						0x5D);
@@ -159,6 +162,11 @@ define_label('__TIME_NEXT_MINUTE',					0x61);
 define_label('__RECORDED_TIME',						0x63);
 define_label('_EXEC_WATCHDOG',						0x65);
 
+define_label('_LAMPBLINKER_COUNTER',				0x68);
+define_label('_LAMPBLINKER_SYNCSTATE',				0x69);
+define_label('_LAMPBLINKER_COUNTDOWN_RESET',		0x6A);
+define_label('_LAMPBLINKER_COUNTDOWN',				0x6B);
+define_label('_LAMPBLINKER_DISABLED',				0x6C);
 define_label('_GI_POWERSAVER_TIMER',				0x6D);			# minutes
 
 define_label('_RELAYS_TRIAC_SHADOW',				0x74);
@@ -246,16 +254,19 @@ define_label('_DMD_FRAMESELECT_FB1_SHADOW',			0x0535+$VO);
 define_label('_DMD_FRAMESELECT_FB2_SHADOW',			0x0536+$VO);
 define_label('_DMD_ACTIVE_FRAME_SHADOW',			0x0537+$VO);
 
-define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN', 0x0CC9+$VO); 		# 59E
-define_label('_LOCKED_BALLS_DEFICIT',			   0x0CCA+$VO); 
-define_label('_NUM_BALLS_LOCKED',				   0x0CCB+$VO); 
-define_label('^MBD_LOCK_DATA',					   0x0CCC+$VO); 
-define_label('_MBD_NUM_LOCKS',					   0x0CCE+$VO); 
-define_label('_BALLS_IN_TROUGH',				   0x0CCF+$VO); 
-define_label('_BALLS_INSTALLED_IN_GAME',		   0x0CD0+$VO); 
+define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN', 	0x0CC9+$VO); 		# 59E
+define_label('_LOCKED_BALLS_DEFICIT',			   	0x0CCA+$VO); 
+define_label('_NUM_BALLS_LOCKED',				   	0x0CCB+$VO); 
+define_label('^MBD_LOCK_DATA',					   	0x0CCC+$VO); 
+define_label('_MBD_NUM_LOCKS',					   	0x0CCE+$VO); 
+define_label('_BALLS_IN_TROUGH',				   	0x0CCF+$VO); 
+define_label('_BALLS_INSTALLED_IN_GAME',		   	0x0CD0+$VO); 
 
 define_label('=BOTTOM_OF_HEAP',				   		0x0CD1+$VO); 
-define_label('=TOP_OF_STACK',						0x172A);
+define_label('=TOP_OF_EMPTY_THREADSTACK',			0x1728);
+define_label('=TOP_OF_STACK-1',						0x172A);
+define_label('=TOP_OF_STACK',						0x172B);
+define_label('=TOP_OF_STACK+3',						0x172E);
 
 define_label('=SCOREBUF_p1',						0x1730);
 define_label('=SCOREBUF_p2',						0x1736);
@@ -266,7 +277,7 @@ define_label('_RND_1',								0x1790);
 define_label('_RND_2',								0x1791);
 define_label('_RND_3',								0x1792);
 define_label('_DIAGNOSTICS_MODE',					0x1793);
-define_label('_MAX_PLAYER_IN_GAME',				0x1794);
+define_label('_MAX_PLAYER_IN_GAME',					0x1794);
 define_label('__DMD_FRAMESELECT',					0x1799);
 
 VERSION_OFFSETS(-6,0);
@@ -556,7 +567,6 @@ define_syscall('syscall_8C3D',						0x8C3D,'WWW');
 define_syscall('syscall_8C60',						0x8C60,'WWW');
 define_syscall('syscall_8C72',						0x8C72,'WW');
 define_syscall('syscall_8EE2',						0x8EE2);
-define_syscall('syscall_8EF6',						0x8EF6);
 define_syscall('sys_reset_memory',					0x8EFD);
 
 #----------------------------------------------------------------------
@@ -633,13 +643,13 @@ define_syscall('twiddle_BitShifter_for_flags',			0x9EAF+$VO);
 define_syscall('twiddle_BitShifter_success',			0x9EBF+$VO);
 define_syscall('twiddle_BitShifter_failure',			0x9EC3+$VO);
 define_syscall('toggleBit[AB]',							0x9ECA+$VO);
-define_syscall('bit[AB]isSet?',							0x9EDD+$VO);
+define_syscall('bit[AB]set?',							0x9EDD+$VO);
 define_syscall('sys_setBit[AB]',						0x9EF1+$VO);
 define_syscall('sys_toggleBit[AB]',						0x9F11+$VO);
 define_syscall('sys_clearBit[AB]',						0x9F18+$VO);
 define_syscall('BitShifter_setBit[AB]',					0x9F47+$VO);
 define_syscall('BitShifter_clearBit[AB]',				0x9F73+$VO);
-define_syscall('BitShifter_bit[AB]isSet?',				0x9FA0+$VO);
+define_syscall('BitShifter_bit[AB]set?',				0x9FA0+$VO);
 
 VERSION_OFFSETS(-332,0);
 define_syscall('lamp[A]on',								0xA03A+$VO);	# 9F6D
@@ -650,7 +660,7 @@ define_syscall('lamp[A]off_blinkOff',					0xA063+$VO);
 define_syscall('setFlag[A]',							0xA071+$VO);
 define_syscall('clearFlag[A]',							0xA07A+$VO);
 define_syscall('toggleFlag[A]',							0xA083+$VO);
-define_syscall('flag[A]isSet?',							0xA08C+$VO);
+define_syscall('flag[A]set?',							0xA08C+$VO);
 define_syscall('blinklamp[A]',							0xA095+$VO);
 define_syscall('unblinklamp[A]',						0xA09E+$VO);
 define_syscall('toggle_blinklamp[A]',					0xA0A7+$VO);

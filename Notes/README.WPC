@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Thu Dec  4 21:00:23 2025
+                    dlm: Wed Dec 17 09:44:26 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 417 29 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 608 0 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -268,7 +268,7 @@ ADDR    = (ROM_addr % 0x4000) + 0x4000
     $28     override data
     $30     masked from previous ($08,$18,$28)
     $38     override data
-    $40     blink matrix (indepedent of locical state)
+    $40     blink matrix (independent of locical state)
     $48     Flag#00-3F
     $50     Flag#40-7F
 
@@ -594,19 +594,19 @@ sys_bitgroupOp_ABXY
 
 - thread buffer with spawn values
 	0-1		parent.next		pointer to next thread in list
-	2		#$03 marker
-	3		#$00			LampFX threads have NE value
+	2		#$03 			marker for detecting memory corruption
+	3		#$00			LampFX threads have NE value; value used as B_in to bitgroupOp[ABXYU]
 	4		#$01
 	5-6						pointer to PC in this thread buffer
-	7-14					??? (4 bytes, registers?)
+	7-14					??? (8 bytes, registers?, lamps?, flags?)
 	15-16	__CURRENT_TIME	wakeup time
 	17-18	spawn Y_in		thread flags/id 
 	19						current ROM page
-	20-21	#$172E
-	22-33					??? (12 bytes, stack?)
-	34-35					current address (Program Counter)
+	20-21	#$172E			=TOP_OF_STACK+3
+	22-39					18 bytes stack
+		34-35				PC during sleep??
 	40-41	#$0000			pointer to malloc'ed memory chain
-	42-43	#$0000			pointer to another memory chain (maybe lampFX?)
+	42-43	#$0000			pointer to another memory chain (maybe extended stack?)
 	44		#$00 			flags (80: related to wakeup time))
 
 ----------------------------------------------------------------------
