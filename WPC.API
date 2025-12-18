@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Dec 17 15:20:12 2025
+#                    dlm: Wed Dec 17 22:12:51 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 267 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 270 29 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -264,10 +264,10 @@ define_label('_BALLS_IN_TROUGH',				   	0x0CCF+$VO);
 define_label('_BALLS_INSTALLED_IN_GAME',		   	0x0CD0+$VO); 
 
 define_label('=BOTTOM_OF_HEAP',				   		0x0CD1+$VO); 
-define_label('=TOP_OF_STACK-3',						0x1728);
-define_label('=TOP_OF_STACK-1',						0x172A);
-define_label('=TOP_OF_STACK',						0x172B);
-define_label('=TOP_OF_STACK+3',						0x172E);
+define_label('=TOP_OF_STACK-2',						0x1728);
+define_label('=TOP_OF_STACK',						0x172A);
+define_label('=TOP_OF_STACK+1',						0x172B);
+define_label('=TOP_OF_STACK+4',						0x172E);
 
 define_label('=SCOREBUF_p1',						0x1730);
 define_label('=SCOREBUF_p2',						0x1736);
