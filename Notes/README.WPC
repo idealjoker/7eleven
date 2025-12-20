@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Thu Dec 18 07:15:33 2025
+                    dlm: Sat Dec 20 14:13:52 2025
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 610 69 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 617 0 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -612,6 +612,10 @@ sys_bitgroupOp_ABXY
 	40-41	#$0000				pointer to malloc'ed memory chain
 	42-43	#$0000				extended stack data (pointer to memory chain)
 	44		#$00 				flags (80: related to wakeup time))
+									$80	- related to wakeup time
+										- set by many LampFX handlers
+										- time-critical threads(?), no drift allowed(?)
+									
 
 ----------------------------------------------------------------------
 
