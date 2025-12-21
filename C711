@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Nov 29 20:57:09 2025
+#                    dlm: Sat Dec 20 19:27:14 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 442 53 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 443 67 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -440,6 +440,7 @@
 #	Nov 23, 2025: - improved C711 error message of missing .ENDIF at EOF with info on
 #					which .IF is not closed (not very useful info)
 #	Nov 29, 2025: - remove remaing EOF error messages
+#	Dec 20, 2025: - (finally) made -L produce page addresses on WPC
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2172,48 +2173,52 @@ sub find_free_space()
 
 sub produce_output()
 {
-    if ($opt_L) {                                                                               # code listing
-        my($src_line,$src_addr,$src_lbl,$a);
-        for ($a=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {
-            next unless defined($SRC[$a]);                                                      # skip to next opcode
-            if (defined($src_addr)) {                                                           # if there was an opcode before (usually)
-                printf("<%04X> ",$src_addr);                                                    # print ROM address
-                my($bytes_done) = 0;
-                for (my($i)=0; $i<15; $i++) {                                                   # print (max 15) operation bytes
-                    $bytes_done |= ($i>0 && defined($SRC[$src_addr+$i]));
-                    if ($bytes_done) { printf("   "); }
-                    else             { printf("%02X ",$ROM[$src_addr+$i]); }
-                }
-                $src_line =~ s/(\w+)\s+/\1 /g;
-                if (length($src_lbl) > 0) {
-                    $src_line =~ s/^\s+//;
-                    $src_line = $' if ($src_line =~ m{^\^});                                    # allow for labels starting with ^
-                    $src_line =~ s{^$src_lbl:\s*}{}; 
-                    print("$src_lbl: $src_line\n");
-                } else {
-                    print("$src_line\n");                                                               
-                }
-            }
-            if ($a<=$MAX_ROM_ADDR) {
-                $src_line = $SRC[$a]; $src_addr = $a; $src_lbl = $LBL[$a];
-            }
-        } # for
-        printf("<%04X> ",$src_addr);                                                            # print ROM address of last statement
-        for (my($i)=0; $i<15; $i++) {                                                           # print (max 15) operation bytes
-            if ($src_addr+$i>$MAX_ROM_ADDR) { printf("   "); }
-            else                            { printf("%02X ",$ROM[$src_addr+$i]); }
-        }
-        $src_line =~ s/(\w+)\s+/\1 /g;
-        if (length($src_lbl) > 0) {
-            $src_line =~ s/^\s+//;
-            $src_line = $' if ($src_line =~ m{^\^});                                            # allow for labels starting with ^
-            $src_line =~ s/^$src_lbl:\s*//;
-            print("$src_lbl: $src_line\n");
-        } else {
-            print("$src_line\n");                                                               
-        }
-        exit(0);
-    } # if $opt_L
+	if ($opt_L) {																				# code listing
+		my($src_line,$src_addr,$src_lbl,$a);
+		for ($a=$MIN_ROM_ADDR; $a<=$MAX_ROM_ADDR; $a++) {
+			next unless defined($SRC[$a]);														# skip to next opcode
+			if (defined($src_addr)) {															# if there was an opcode before (usually)
+				if ($WMS_System eq 'WPC') {
+					printf("<%s> ",substr(code_ref($src_addr),1))								# print ROM address w/o $
+				} else {
+					printf("<%04X> ",$src_addr);												# print ROM address
+				}
+				my($bytes_done) = 0;
+				for (my($i)=0; $i<15; $i++) {													# print (max 15) operation bytes
+					$bytes_done |= ($i>0 && defined($SRC[$src_addr+$i]));
+					if ($bytes_done) { printf("   "); }
+					else			 { printf("%02X ",$ROM[$src_addr+$i]); }
+				}
+				$src_line =~ s/(\w+)\s+/\1 /g;
+				if (length($src_lbl) > 0) {
+					$src_line =~ s/^\s+//;
+					$src_line = $' if ($src_line =~ m{^\^});									# allow for labels starting with ^
+					$src_line =~ s{^$src_lbl:\s*}{}; 
+					print("$src_lbl: $src_line\n");
+				} else {
+					print("$src_line\n");															    
+				}
+			}
+			if ($a<=$MAX_ROM_ADDR) {
+				$src_line = $SRC[$a]; $src_addr = $a; $src_lbl = $LBL[$a];
+			}
+		} # for
+		printf("<%04X> ",$src_addr);															# print ROM address of last statement
+		for (my($i)=0; $i<15; $i++) {															# print (max 15) operation bytes
+			if ($src_addr+$i>$MAX_ROM_ADDR) { printf("	 "); }
+			else							{ printf("%02X ",$ROM[$src_addr+$i]); }
+		}
+		$src_line =~ s/(\w+)\s+/\1 /g;
+		if (length($src_lbl) > 0) {
+			$src_line =~ s/^\s+//;
+			$src_line = $' if ($src_line =~ m{^\^});											# allow for labels starting with ^
+			$src_line =~ s/^$src_lbl:\s*//;
+			print("$src_lbl: $src_line\n");
+		} else {
+			print("$src_line\n");															    
+		}
+		exit(0);
+	} # if $opt_L
 
 	if ($WMS_System == 6) {																		# System 6
 		if (defined($opt_o)) {																	# single linked output file
