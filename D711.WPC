@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Fri Dec 26 22:28:53 2025
+#                    dlm: Sat Dec 27 09:47:22 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 1879 14 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 160 57 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -157,6 +157,7 @@
 #				  - added \n comment magic for empty line
 #				  - renamed routine
 #				  - added decoding of DMD frames
+#	Dec 27, 2025: - added compression info for DMD frames
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -1822,6 +1823,8 @@ sub def_WPC_DMD_frame($$$)
 		undef($DMDFRAME[$x]);
     }
 
+	my($source_bytes) = 1;
+
 	for (my($x)=my($y)=0; $x<128;) {
 		if ($col >= 8) {
 			$opaddr = $addr;
@@ -1829,6 +1832,7 @@ sub def_WPC_DMD_frame($$$)
 			$col = 0;
         }
 		if (BYTE($addr) == $tag) {
+			$source_bytes += 3;
 			$decoded[$addr++] = 1;
 			push(@{$OPA[$opaddr]},sprintf('$%02X!',$tag));
 			$col++;
@@ -1852,6 +1856,7 @@ sub def_WPC_DMD_frame($$$)
 				renderByte(\$x,\$y,$val);
 			}
 		} else {
+			$source_bytes++;
 			$val = BYTE($addr); $decoded[$addr++] = 1;
 			push(@{$OPA[$opaddr]},sprintf('$%02X!',$val));
 			$col++;
@@ -1860,7 +1865,7 @@ sub def_WPC_DMD_frame($$$)
     }
 
 	if ($opt_D) {
-		printf("DMDframe#%d:\n ",$fNo);
+		printf("DMDframe#%d: (compression factor %.1f)\n ",$fNo,512/$source_bytes);
 		for (my($x)=0; $x<128; $x++) {
 			print('v');
 		}
