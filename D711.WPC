@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Wed Oct 22 08:35:34 2025
+#                    dlm: Fri Dec 26 22:28:53 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 155 51 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1879 14 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -137,7 +137,7 @@
 #				  - added disassembly of DisplayFX table
 #				  - added disassembly of adjustment tables
 #	Aug 13, 2025: - improved string table decoding
-#				  - updated disassemble_DMD_dataTable
+#				  - updated disassemble_DMD_frame_table
 #	Aug 20, 2025: - BUG: two of the INIT_MEM tables were wrong
 #	Aug ??, 2025: - added boolean while loops
 #	Aug 24, 2025: - added error message for invalid argument substitutions
@@ -153,6 +153,10 @@
 #				  - added APPLE_VERSION
 #	Oct 19, 2025: - added decimalization to argument magic
 #	Oct 22, 2025: - added support for :nolabel hint
+#	Dec 26, 2025: - added RTS empty line even if RTS is not full comment
+#				  - added \n comment magic for empty line
+#				  - renamed routine
+#				  - added decoding of DMD frames
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -879,13 +883,14 @@ sub disassemble_font_table()
 # DMD Data Table
 #----------------------------------------------------------------------
 
-sub disassemble_DMD_dataTable()
+sub disassemble_DMD_frame_table($)
 {
+	($opt_D) = @_;
 	$Address = 0x8288;
 	my($pg) = BYTE($Address+2);
-	$Address = def_WPC_ref('=DISPLAYFX_DATA_TABLE',undef,1);
+	$Address = def_WPC_ref('=DMD_ANIMATION_FRAMES',undef,1);
 	my($opg) = select_WPC_RPG($pg);
-	def_WPC_DMDdata('=DISPLAYFX_DATA_TABLE','DisplayFX Data Table');
+	def_WPC_DMDframes('=DMD_ANIMATION_FRAMES','DMD Animation Frame Table');
 	select_WPC_RPG($opg);
 }
 
@@ -914,7 +919,7 @@ sub apply_magic_WPC($$)
 	for (my($addr)=$fa; $addr<=$la-1; $addr++) {
 		next unless defined($OP[$addr]);
 
-		for (my($i)=1; $i<=@{$OPA[$addr]}; $i++) {								# define operands from comments (e.g. 1:#L_shootAgain)
+		for (my($i)=1; $i<=@{$OPA[$addr]}; $i++) {								
 			my($opa) = ($REM[$addr] =~ m{\b$i:(\S+)});
 			next unless defined($opa);
 
@@ -928,7 +933,7 @@ sub apply_magic_WPC($$)
 			} elsif ($opa ne 'nolabel') {										# nolabel handled in D711.pm
 	            $OPA[$addr][$i-1] = $opa;										# otherwise use it literally
 	        }						
-            substitute_identifier(\$OPA[$addr][$i-1]);
+            substitute_identifier(\$OPA[$addr][$i-1]);							# substitute system identifiers after mangling argument
 ##          print(STDERR "$OPA[$addr][$i-1]\n");
         }
 		
@@ -946,7 +951,8 @@ sub apply_magic_WPC($$)
 		} elsif ($IND[$addr] == $code_base_indent &&							# 3) add extra space after top-level "exit" instructions
 				 (isMember($OP[$addr],'RTS','LBRA','JMP') ||
 				  ($OP[$addr] eq '!' && $OPA[$addr][0] eq 'exitThread') ||
-				  $REM[$addr] eq 'RTS')) {
+				  $REM[$addr] =~ m{RTS} ||
+				  $REM[$addr] =~ m{\\n})) {
 			insert_empty_line($addr);
 		} elsif ($OPA[$addr][0] =~ m{[^\?]\?$}) {								# 4) _IF_true / _IF_false
 			my($noa) = $addr + 1;												#	 	execute when last arg ends with a ? but not with ??
@@ -1762,7 +1768,7 @@ sub def_WPC_fontAncilTable(@)
 # DMD Data Table
 #----------------------------------------------------------------------
 
-sub def_WPC_DMDdata(@)
+sub def_WPC_DMDframes(@)
 {
 	my($lbl,$divider_label) = @_;
 ##	print(STDERR "def_WPC_DMDdata(@_)\n");
@@ -1778,23 +1784,127 @@ sub def_WPC_DMDdata(@)
     
 	insert_divider($Address,$divider_label);
 
-	for (my($DMD)=0; WORD($Address)!=0xFFFF; $DMD++) {
+	for (my($DMDframe)=0; WORD($Address)!=0xFFFF; $DMDframe++) {
 		$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
 		$OP[$Address] = '.DR';
 		my($daddr) = WORD($Address);
 		my($dpg) = BYTE($Address+2);
-			my($opg) = select_WPC_RPG($dpg);
-			my($dlbl) = $LBL[$daddr];
-			$dlbl = sprintf('%02X:DisplayFX#%02X_data',BYTE($Address+2),$DMD) unless defined($dlbl);
-		    setLabel($dlbl,$daddr);
-		    select_WPC_RPG($opg);
+		my($opg) = select_WPC_RPG($dpg);
+		my($dlbl) = $LBL[$daddr];
+		$dlbl = sprintf('%02X:DMDframe#%d',BYTE($Address+2),$DMDframe) unless defined($dlbl);
+		def_WPC_DMD_frame($DMDframe,$dlbl,$daddr);
+	    select_WPC_RPG($opg);
 		push(@{$OPA[$Address]},sprintf('$%04X',$daddr));
 		push(@{$OPA[$Address]},sprintf('$%02X',BYTE($Address+2)));
-		$REM[$Address] = 'pointer to DisplayFX data' if !defined($REM[$Address]) && $DMD==0;
+		$REM[$Address] = 'pointer to DND frame data' if !defined($REM[$Address]) && $DMDframe==0;
 	    $decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
     }
 
     insert_empty_line($Address-3);
+}
+
+sub def_WPC_DMD_frame($$$)
+{
+	my($fNo,$lbl,$addr) = @_;
+
+	setLabel($lbl,$addr);
+
+	my($opaddr) = $addr;
+	$OP[$opaddr] = '.DB'; $IND[$opaddr] = $data_indent; $TYPE[$opaddr] = $CodeType_data;
+
+	my($xc) = 16;
+	my($yc) = 32;
+	my($tag) = BYTE($addr); $decoded[$addr++] = 1;
+	push(@{$OPA[$opaddr]},sprintf('$%02X!',$tag));
+	my($col) = 1;
+
+    for (my($x)=0; $x<128; $x++) {
+		undef($DMDFRAME[$x]);
+    }
+
+	for (my($x)=my($y)=0; $x<128;) {
+		if ($col >= 8) {
+			$opaddr = $addr;
+			$OP[$opaddr] = '.DB'; $IND[$opaddr] = $data_indent; $TYPE[$opaddr] = $CodeType_data;
+			$col = 0;
+        }
+		if (BYTE($addr) == $tag) {
+			$decoded[$addr++] = 1;
+			push(@{$OPA[$opaddr]},sprintf('$%02X!',$tag));
+			$col++;
+			my($len) = BYTE($addr); $decoded[$addr++] = 1;
+			if ($col >= 8) {
+				$opaddr = $addr - 1;
+				$OP[$opaddr] = '.DB'; $IND[$opaddr] = $data_indent; $TYPE[$opaddr] = $CodeType_data;
+				$col = 0;
+	        }
+			push(@{$OPA[$opaddr]},sprintf('$%02X!',$len));
+			$col++;
+			my($val) = BYTE($addr); $decoded[$addr++] = 1;
+			if ($col >= 8) {
+				$opaddr = $addr - 1;
+				$OP[$opaddr] = '.DB'; $IND[$opaddr] = $data_indent; $TYPE[$opaddr] = $CodeType_data;
+				$col = 0;
+	        } 
+			push(@{$OPA[$opaddr]},sprintf('$%02X!',$val));
+			$col++;
+			for (my($i)=0; $i<$len; $i++) {
+				renderByte(\$x,\$y,$val);
+			}
+		} else {
+			$val = BYTE($addr); $decoded[$addr++] = 1;
+			push(@{$OPA[$opaddr]},sprintf('$%02X!',$val));
+			$col++;
+			renderByte(\$x,\$y,$val);
+        }
+    }
+
+	if ($opt_D) {
+		printf("DMDframe#%d:\n ",$fNo);
+		for (my($x)=0; $x<128; $x++) {
+			print('v');
+		}
+		print("\n");
+		for (my($y)=0; $y<32; $y++) {
+			print('>');
+			for (my($x)=0; $x<128; $x++) {
+				print($DMDFRAME[$x][$y] ? '#' : ' ');
+			}
+			print("<\n");
+		}
+		print(' ');
+		for (my($x)=0; $x<128; $x++) {
+			print('^');
+		}
+	    print("\n\n");
+	}
+}
+
+sub renderByte($$$)
+{
+	my($x,$y,$val) = @_;
+
+	die("x,y = $$x,$$y") if ($$x >= 128);
+	die("x,y = $$x,$$y") if ($$y >= 32);
+
+	if ($val > 0) {
+		$DMDFRAME[$$x+0][$$y] = ($val & 0x01) ? 1 : 0;
+		$DMDFRAME[$$x+1][$$y] = ($val & 0x02) ? 1 : 0;
+		$DMDFRAME[$$x+2][$$y] = ($val & 0x04) ? 1 : 0;
+		$DMDFRAME[$$x+3][$$y] = ($val & 0x08) ? 1 : 0;
+		$DMDFRAME[$$x+4][$$y] = ($val & 0x10) ? 1 : 0;
+		$DMDFRAME[$$x+5][$$y] = ($val & 0x20) ? 1 : 0;
+		$DMDFRAME[$$x+6][$$y] = ($val & 0x40) ? 1 : 0;
+	    $DMDFRAME[$$x+7][$$y] = ($val & 0x80) ? 1 : 0;
+	}
+
+    if ($$y < 31) {
+    	$$y++;
+    } else {
+    	$$x += 8;
+    	$$y = 0;
+    }
+    
 }
 
 #----------------------------------------------------------------------

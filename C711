@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Dec 20 19:27:14 2025
+#                    dlm: Fri Dec 26 22:08:29 2025
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 443 67 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 444 74 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -441,6 +441,7 @@
 #					which .IF is not closed (not very useful info)
 #	Nov 29, 2025: - remove remaing EOF error messages
 #	Dec 20, 2025: - (finally) made -L produce page addresses on WPC
+#	Dec 26, 2025: - improved -A to check addresses even on non-label lines
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1055,12 +1056,22 @@ NO_ADDL:
 					die(sprintf("ROM address mismatch (\$%04X expected, \$%04X found) at input line $.\n",$tag_addr,$ADDR))
 						unless ($ADDR == $tag_addr);
 				}
-            }
+           }
 			push(@newly_defined_label,define_label($`));
 			set_label_type($MODE) if ($MODE > 0);
             shift(@_);
             next if (@_ == 0);                              			# label-only line => nothing to compile
-        }
+        } else {														# line w/o label
+			if ($opt_A && defined($tag_addr) && defined($ADDR) && $_[0] ne '.ORG') {		# verify <> address information
+				if (defined($RPG)) {
+					die(sprintf("ROM reference mismatch (%02X:%04X expected, %02X:%04X found) at input line $.\n",$tag_rpg,$tag_addr,$RPG,code_addr()))
+						unless (code_addr() == $tag_addr) && ($RPG == $tag_rpg);
+				} else {
+					die(sprintf("ROM address mismatch (\$%04X expected, \$%04X found) at input line $.\n",$tag_addr,$ADDR))
+						unless ($ADDR == $tag_addr);
+				}
+            }
+        }        	
     
         &expand_aliases;                                    			# expand aliases (except for .IFDEF, .IFNDEF, etc. which are handled in compile_pragma())
 		&expand_repeatBytes;											# expand $FF[512x] 255[2x]

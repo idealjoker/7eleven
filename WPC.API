@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Dec 17 22:12:51 2025
+#                    dlm: Fri Dec 26 15:38:47 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 270 29 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 826 47 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -99,6 +99,8 @@
 #	Dec  9, 2025: - renamed some syscalls
 #	Dec 16, 2025: - renamed some syscalls
 #	Dec 17, 2025: - removed bad syscall
+#	Dec 25, 2025: - reorganized ASIC labels
+#	Dec 26, 2025: - renamed some identifiers
 # END OF HISTORY
 
 #======================================================================
@@ -195,6 +197,10 @@ define_label('_ISR_MATRIXBYTE_TMP',					0x9D);
 define_label('_ISR_TMP_A',							0x9E);
 define_label('__ISR_TMP_X',							0x9F);
 
+define_label('_DMD_ISR_PIXELPLANE_SEL',				0xB4);
+define_label('_DMD_ISR_PIXELPLANE_1',				0xB5);
+define_label('_DMD_ISR_PIXELPLANE_2',				0xB6);
+
 define_label('=LAMP_MATRIX_00_LOGICAL',				0x02E0);		# Lamp and Bit Buffers
 define_label('=LAMP_MATRIX_08_PRIMARY',				0x02E8);		
 define_label('=LAMP_MATRIX_10_MASK',				0x02F0);		
@@ -213,6 +219,8 @@ define_label('_BLOCKS_FREE',						0x036C);		# number of free RAM blocks
 
 define_label('^SOL_QUEUE_HEAD',						0x03EA);
 define_label('^SOL_QUEUE_TAIL',						0x03EC);
+
+define_label('=OUTHOLE_BONUS',						0x05DB);		# 2 bytes per player
 
 VERSION_OFFSETS(-1,0);
 
@@ -251,9 +259,9 @@ define_label('_BALLSEARCH_SUSPEND_TIMER',			0x04C7+$VO);
 define_label('_TILTWARNINGS_LEFT',					0x04D4+$VO);
 
 define_label('_IO_BUFFER',							0x050E+$VO);		# Eli
-define_label('_DMD_FRAMESELECT_FB1_SHADOW',			0x0535+$VO);
-define_label('_DMD_FRAMESELECT_FB2_SHADOW',			0x0536+$VO);
-define_label('_DMD_ACTIVE_FRAME_SHADOW',			0x0537+$VO);
+define_label('_DMD_BUFSELECT_FB1_SHADOW',			0x0535+$VO);
+define_label('_DMD_BUFSELECT_FB2_SHADOW',			0x0536+$VO);
+define_label('_DMD_ACTIVE_FRAMEBUF_SHADOW',			0x0537+$VO);
 
 define_label('_MIN_BALLS_NEEDED_IN_TROUGH_4DRAIN', 	0x0CC9+$VO); 		# 59E
 define_label('_LOCKED_BALLS_DEFICIT',			   	0x0CCA+$VO); 
@@ -279,7 +287,7 @@ define_label('_RND_2',								0x1791);
 define_label('_RND_3',								0x1792);
 define_label('_DIAGNOSTICS_MODE',					0x1793);
 define_label('_MAX_PLAYER_IN_GAME',					0x1794);
-define_label('__DMD_FRAMESELECT',					0x1799);
+define_label('^DMD_FRAMEDATA',						0x1799);
 
 VERSION_OFFSETS(-6,0);
 ##define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$VO);
@@ -291,14 +299,32 @@ VERSION_OFFSETS(-6,0);
 #	- own analysis
 #----------------------------------------------------------------------
 
-define_label('__BITSHIFTER_ADDR',					0x3FF4);	# 15-0: R/W: The base address for the bit shifter. Writing to this address initializes the shifter. Reading from this address after a shift command returns the shifted address.
-define_label('_BITSHIFTER_BIT',						0x3FF6);	# 7-0: W: Sets the bit position for a shift command. 7-0: R: Returns the output of the last shift command as a bitmask.
-define_label('_BITSHIFTER_BIT2',					0x3FF7);	# 7-0: R/W:
+define_label('DEBUGGER_DATA',						0x3D60);	# Hardware Debugger
+define_label('DEBUGGER_CTRL',						0x3D61);
 
-define_label('_LAMP_COLUMN_STROBE',					0x3FE5);	# 7-0: W: Lamp matrix column strobe At most one bit in this register should be set. If all are clear, then no controlled lamps are enabled.
+define_label('_SERIAL_CTRL',						0x3E66);	# Serial Interface
+define_label('_SERIAL_DATA',						0x3E67);
+
+define_label('_PARALLEL_STATUS_PORT',				0x3FC0);	# Parallel Interface
+define_label('_PARALLEL_DATA_PORT',					0x3FC1);	
+define_label('_PARALLEL_STROBE_PORT',				0x3FC2);	
+define_label('_SERIAL_DATA_OUTPUT',					0x3FC3);	# Serial Interface
+define_label('_SERIAL_CTRL_OUTPUT',					0x3FC4);	
+define_label('_SERIAL_BAUD_SELECT',					0x3FC5);	
+define_label('_TICKET_DISPENSER_IO',				0x3FC6);	# Ticket Dispenser
+
+define_label('_SOUNDCARD_DATA',						0x3FDC);	# 7-0: R/W: Send/receive a byte of data to/from the sound board.
+define_label('_SOUNDCARD_STATUS',					0x3FDD);	# 7: R: WPC sound board read ready 0: R: DCS sound board read ready
+
+define_label('_SOL_GENERAL_ENABLE',	       			0x3FE0);	# 7-0: W: Enables for solenoids 25-29
+define_label('_SOL_HIGHPOWER_ENABLE',				0x3FE1);	# 7-0: W: Enables for solenoids 1-8
+define_label('_SOL_FLASHERS_ENABLE',				0x3FE2);	# 7-0: W: Enables for solenoids 17-24
+define_label('_SOL_LOWPOWER_ENABLE',				0x3FE3);	# 7-0: W: Enables for solenoids 9-16
 define_label('_LAMP_ROW_OUTPUT',					0x3FE4);	# 7-0: W: Lamp matrix row output
-
+define_label('_LAMP_COLUMN_STROBE',					0x3FE5);	# 7-0: W: Lamp matrix column strobe At most one bit in this register should be set. If all are clear, then no controlled lamps are enabled.
 define_label('_RELAYS_TRIAC',						0x3FE6);	# 7: W: Flipper enable relay 5: W: Coin door enable relay 4-0: W: General illumination enables
+define_label('_MPU_JUMPERS',						0x3FE7);	# 7-0: R: Jumper/DIP switch inputs
+define_label('_CABINET_COIN_SWITCHES',				0x3FE8);	# 7: R: Fourth coin switch 6: R: Right coin switch 5: R: Center coin switch 4: R: Left coin switch 3: R: Enter (Begin Test) button 2: R: Up button 1: R: Down button 0: R: Escape (Service Credit) button
 
 if (isMember($WPCV,'WPC(alpha)','WPC(89)','WPC(fliptronic)','WPC(DCS)')) {	# Pre-security
 	define_label('_SW_COLUMN_STROBE',				0x3FEA);	# W: exactly one bit must be set
@@ -308,30 +334,22 @@ if (isMember($WPCV,'WPC(alpha)','WPC(89)','WPC(fliptronic)','WPC(DCS)')) {	# Pre
 	define_label('_PIC_ROW_INPUT',					0x3FE9); 	# WPC-S
 }
 
-define_label('_SOL_HIGHPOWER_ENABLE',				0x3FE1);	# 7-0: W: Enables for solenoids 1-8
-define_label('_SOL_LOWPOWER_ENABLE',				0x3FE3);	# 7-0: W: Enables for solenoids 9-16
-define_label('_SOL_FLASHERS_ENABLE',				0x3FE2);	# 7-0: W: Enables for solenoids 17-24
-define_label('_SOL_GENERAL_ENABLE',	       			0x3FE0);	# 7-0: W: Enables for solenoids 25-29
-
-define_label('_SOUNDCARD_DATA',						0x3FDC);	# 7-0: R/W: Send/receive a byte of data to/from the sound board.
-define_label('_SOUNDCARD_STATUS',					0x3FDD);	# 7: R: WPC sound board read ready 0: R: DCS sound board read ready
-
 if ($WPCV eq 'WPC(alpha)') {						# Display
 	define_label('_ALPHANUMERIC_POS',				0x3FEB); 	# ALPHAnumeric display
 	define_label('_ALPHANUMERIC_ROW1',				0x3FEC); 	
 	define_label('_ALPHANUMERIC_ROW2',				0x3FEE); 	
 } else {
-	define_label('_DMD_ACTIVE_FRAME',				0x3FBF);	# Digital Matrix Display
-	define_label('_DMD_FRAMESELECT_FB1',			0x3FBE);	# W
-	define_label('_DMD_FRAMESELECT_FB2',			0x3FBC);	# W
-	define_label('=DMD_FRAMEBUF_FB1',				0x3800);
-	define_label('=DMD_FRAMEBUF_FB2',				0x3A00);
-	define_label('_DMD_SCANLINE',					0x3FBD);	# W: Request an FIRQ after a particular scanline is drawn; R: The last scanline that was drawn
+	define_label('_DMD_BUFSELECT_FB2',				0x3FBC);	# W
+	define_label('_DMD_FIRQ_SCANLINE',				0x3FBD);	# W: Request a FIRQ after a particular scanline is drawn; R: The last scanline that was drawn
+	define_label('_DMD_BUFSELECT_FB1',				0x3FBE);	# W
+	define_label('_DMD_ACTIVE_FRAMEBUF',			0x3FBF);	# W: takes effect after completion of current frame
+	define_label('=DMD_FRAMEBUF_1',					0x3800);
+	define_label('=DMD_FRAMEBUF_2',					0x3A00);
 	if ($WPCV eq 'WPC(95)') { 					
-		define_label('_DMD_FRAMESELECT_3200',		0x3FB8);	# W
-		define_label('_DMD_FRAMESELECT_3000',		0x3FB9);	# W
-		define_label('_DMD_FRAMESELECT_3600',		0x3FBA);	# W
-		define_label('_DMD_FRAMESELECT_3400',		0x3FBB);	# W
+		define_label('_DMD_BUFSELECT_3200',			0x3FB8);	# W
+		define_label('_DMD_BUFSELECT_3000',			0x3FB9);	# W
+		define_label('_DMD_BUFSELECT_3600',			0x3FBA);	# W
+		define_label('_DMD_BUFSELECT_3400',			0x3FBB);	# W
 		define_label('=DMD_FRAMEBUF_3000',			0x3000);    
 		define_label('=DMD_FRAMEBUF_3200',			0x3200);
 		define_label('=DMD_FRAMEBUF_3400',			0x3400);
@@ -351,16 +369,16 @@ if (isMember($WPCV,'WPC(fliptronic)','WPC(DCS)','WPC(security)','WPC(95)')) {
 	}
 }
 
-define_label('_TICKET_DISPENSER_IO',				0x3FC6);	# Ticket Dispenser
-
-define_label('_ASIC_IRQ_CTRL', 						0x3FFF);	
+define_label('_DIAGNOSTIC_LED',						0x3FF2);	# 7: R/W : The state of the diagnostic LED. >0=Off >1=On
+define_label('__BITSHIFTER_ADDR',					0x3FF4);	# 15-0: R/W: The base address for the bit shifter. Writing to this address initializes the shifter. Reading from this address after a shift command returns the shifted address.
+define_label('_BITSHIFTER_BIT',						0x3FF6);	# 7-0: W: Sets the bit position for a shift command. 7-0: R: Returns the output of the last shift command as a bitmask.
+define_label('_BITSHIFTER_BIT2',					0x3FF7);	# 7-0: R/W:
+define_label('_ASIC_ROM_LOCK',						0x3FF9);	# Not used
 define_label('_ASIC_PERIPH_TMR_FIRQ_CLEAR',			0x3FF8);	# clear or disable?
-
 define_label('_ASIC_CLOCK_HOURS',					0x3FFA);	# Time-of-day clock; R/W 
 define_label('_ASIC_CLOCK_MINUTES',					0x3FFB);	
-
-define_label('_ASIC_ROM_LOCK',						0x3FF9);	# Not used
 define_label('_ASIC_ROM_PAGE',						0x3FFC);	# R/W
+define_label('_ASIC_IRQ_CTRL', 						0x3FFF);	
 
 define_label('_ASIC_RAM_LOCK',						0x3FFD);	
 define_label('_ASIC_RAM_LOCKSIZE',					0x3FFE);	
@@ -368,23 +386,9 @@ if ($WPCV eq 'WPC(95)') {
 	define_label('_ASIC_RAM_PAGE',					0x3FF3); 	# W
 }
 
-define_label('_MPU_JUMPERS',						0x3FE7);	# 7-0: R: Jumper/DIP switch inputs
-define_label('_CABINET_COIN_SWITCHES',				0x3FE8);	# 7: R: Fourth coin switch 6: R: Right coin switch 5: R: Center coin switch 4: R: Left coin switch 3: R: Enter (Begin Test) button 2: R: Up button 1: R: Down button 0: R: Escape (Service Credit) button
-
-define_label('_DIAGNOSTIC_LED',						0x3FF2);	# 7: R/W : The state of the diagnostic LED. >0=Off >1=On
-
-define_label('_PARALLEL_STATUS_PORT',				0x3FC0);	# Parallel Interface
-define_label('_PARALLEL_DATA_PORT',					0x3FC1);	
-define_label('_PARALLEL_STROBE_PORT',				0x3FC2);	
-
-define_label('_SERIAL_CTRL',						0x3E66);	# Serial Interface
-define_label('_SERIAL_DATA',						0x3E67);	
-define_label('_SERIAL_DATA_OUTPUT',					0x3FC3);	
-define_label('_SERIAL_CTRL_OUTPUT',					0x3FC4);	
-define_label('_SERIAL_BAUD_SELECT',					0x3FC5);	
-
-define_label('DEBUGGER_DATA',						0x3D60);	# Hardware Debugger
-define_label('DEBUGGER_CTRL',						0x3D61);
+#----------------------------------------------------------------------
+# Checksum Control
+#----------------------------------------------------------------------
 
 define_label('CHECKSUM_INFO',						0xFFEC);	# Checksum Control
 define_label('CHECKSUM_INFO+1',						0xFFED);	
@@ -806,8 +810,9 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('ISR_lampMatrix_MUX',	       			0xDAC6);
  define_syscall('updateSoundCmdBuffer',	       			0xDDF1);
  define_syscall('IRQ_timer_handler??',					0xECCA);
- define_syscall('syscall_EF47',							0xEF47,'B');
- define_syscall('syscall_F647',							0xF647,'W');			
+ define_label('DMD_PWM_3level_ISR',						0xEE91);
+ define_syscall('DMD_render_firstRLEframe',				0xEF47,'D');
+ define_syscall('DMD_toggleFrameAndSleep[A]_[B]times',	0xF647,'BB');			
  define_syscall('NE=gameDisabled',						0xF759);
  define_syscall('wait4_Thread#0041_not_running',		0xF766);
  define_syscall('lastBall?',							0xF7EF,'');
@@ -817,8 +822,9 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('addBonus_5530',						0xFAB4);
  define_syscall('addBonus_9930',						0xFABA);
  define_syscall('addBonus[A]',							0xFABE);
- define_syscall('DMDsys_reset',						    0xFBAE);
- define_syscall('DMDsys_invertScreen',				    0xFBCB);
+ define_syscall('DMD_init_PWM_3level_frameBuf[A]',	    0xFB88);
+ define_syscall('DMD_init_FB1_FB2_display_FB2',		    0xFBAE);
+ define_syscall('DMD_invert_frame',					    0xFBCB);
  
  define_syscall('syscall_FE3C',							0xFE3C,'S');
 }

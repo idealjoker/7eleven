@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Thu Nov  6 11:27:04 2025
+#					 dlm: Fri Dec 26 22:25:46 2025
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 41 43 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 114 45 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -39,6 +39,8 @@
 #				  - BUG: alpha disassembled font and DMD tables
 #	Aug 12, 2025: - keep up-to-date with changes in D711.WPC
 #	Nov  6, 2025: - corrected some comments
+#	Dec 26, 2025: - adapted to change in [D711.WPC]
+#				  - added -D
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -58,9 +60,10 @@ die("Usage:\t$prog\n\t\t" .
 			"[produce -s)tructured code]\n\t\t" .
 			"[output -L)abel table]\n\t\t" .
 			"[output -l)abel definitions]\n\t\t" .
+			"[output -D)MD frames]\n\t\t" .
 			"[output -o)bject data <PG|FF> [se-t) <tag>]] [-p)rocess object <file>]\n\t\t" .
 			"-v <alpha|89> <ROM image>\n")
-	unless &getopts('acgi:lLo:p:Qst:v:w') && defined($opt_v) && @ARGV==1;
+	unless &getopts('acDgi:lLo:p:st:v:w') && defined($opt_v) && @ARGV==1;
 
 my($lbl);
 if ($opt_v =~ m{^[aA]}) {
@@ -108,7 +111,7 @@ if (defined($opt_p)) {														# process object file
 &D711::disassemble_lock_table();
 unless ($D711::WMS_System eq 'WPC(alpha)') {
 	&D711::disassemble_font_table();
-	&D711::disassemble_DMD_dataTable()
+	&D711::disassemble_DMD_frame_table($opt_D)
 }
 
 #----------------------------------------------------------------------
@@ -154,6 +157,9 @@ if ($opt_l) {																# dump label information
 	D711::dump_labels(1);													# fmt == 1 generates code that can be used with -i
 	exit(0);																# to make a disassembled file with all labels defined up-front
 }
+
+exit(0) if ($opt_D);														# DMD frame output already produced during decoding
+	
 
 if (defined($opt_o)) {														# dump obj information from single page (or FF for prime real estate)
 	if ($opt_o eq 'FF') {
