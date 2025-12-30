@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Fri Dec 26 15:38:47 2025
+#                    dlm: Tue Dec 30 15:51:18 2025
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 826 47 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 104 46 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -101,6 +101,7 @@
 #	Dec 17, 2025: - removed bad syscall
 #	Dec 25, 2025: - reorganized ASIC labels
 #	Dec 26, 2025: - renamed some identifiers
+#	Dec 30, 2025: - renamed another identifier
 # END OF HISTORY
 
 #======================================================================
@@ -287,7 +288,7 @@ define_label('_RND_2',								0x1791);
 define_label('_RND_3',								0x1792);
 define_label('_DIAGNOSTICS_MODE',					0x1793);
 define_label('_MAX_PLAYER_IN_GAME',					0x1794);
-define_label('^DMD_FRAMEDATA',						0x1799);
+define_label('^DMD_FRAMEBUF',						0x1799);
 
 VERSION_OFFSETS(-6,0);
 ##define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$VO);
