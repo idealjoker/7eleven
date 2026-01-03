@@ -1,0 +1,132 @@
+#!/usr/bin/env perl
+#======================================================================
+#                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
+#                    doc: Fri Jan  2 10:08:34 2026
+#                    dlm: Sat Jan  3 11:29:53 2026
+#                    (c) 2026 A.M. Thurnherr
+#                    uE-Info: 13 13 NIL 0 0 72 2 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+# Jan  2, 2026: - created
+# Jan  3, 2026: - made work
+# HISTORY END
+
+use strict;
+use warnings;
+use Imager;
+
+$0 =~ s@^.*/(.*)$@$1@;
+die("Usage: $0 <bit number> <image file>\n")
+        unless (@ARGV==2 && $ARGV[0] =~ m{^\d{1,3}$}
+						 && -f $ARGV[1]);
+
+my($image) = Imager->new(file=>$ARGV[1])								# read image file
+	|| die(Imager->errstr()); 
+
+my($w) = $image->getwidth();
+my($h) = $image->getheight();
+die("$ARGV[1]: invalid image dimensions: ${w}x${h}\n")
+	unless $w==128 && $h==32;
+
+##print(STDERR "$ARGV[1]:\n");
+##printf(STDERR "\tBitplane Requested = $ARGV[0]\n");
+
+my(@rawImg);															# decimate to 8 intensity levels
+my($minI,$maxI) = (999,-1);
+for (my($y)=0; $y<32; $y++) {
+	for (my($x)=0; $x<128; $x++) {
+		my($pixel) = $image->getpixel(x=>$x,y=>$y);
+		my($R,$G,$B,$A) = $pixel->rgba();
+		my($I) = int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
+		die($I) unless $I>=0 && $I<=0xFF;
+		$minI = $I if ($minI > $I);
+		$maxI = $I if ($maxI < $I);
+		$rawImg[$y][$x] = int($I/36.4) + 1;
+		die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<=7;
+    }
+}
+##printf(STDERR "\tInput  Color Depth = \$%02X .. \$%02X\n",$minI,$maxI);
+##printf(STDERR "\tOutput Color Depth = \$00 .. \$FF\n");
+
+my(@BP);																# extract bitplane
+for (my($y)=0; $y<32; $y++) {
+	for (my($xB)=0; $xB<16; $xB++) {
+		$BP[$y][$xB] = 0;
+		for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm=$xm<<1) {
+			if ($ARGV[0] == 0) {
+				$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & 0x01);
+            } elsif ($ARGV[0] == 1) {
+				$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & 0x02);
+            } elsif ($ARGV[0] == 2) {
+				$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & 0x04);
+            } else {
+				die;
+            }
+        }
+    }
+}
+
+my(@RLE);																# encode bitplane
+
+my(@byteVals);															# find unused tag
+for (my($y)=0; $y<32; $y++) {
+	for (my($x)=0; $x<16; $x++) {
+		$byteVals[$BP[$y][$x]]++;
+    }
+}
+my($tag);
+for (my($i)=1; $i<256; $i++) {
+	next if $byteVals[$i];
+	$tag = $i;
+	last;
+}
+die unless defined($tag);
+##printf(STDERR "\tRun Tag            = \$%02X\n",$tag);
+printf('$%02X ',$tag);
+
+##for (my($x)=0; $x<16; $x++) {
+##	for (my($y)=0; $y<32; $y++) {
+##		printf(STDERR '$%02X ',$BP[$y][$x]);
+##	}
+##	print(STDERR "\n");
+##}
+##print(STDERR "\n");
+
+my($bytes_output) = 0;
+
+my($x,$y) = (0,1);
+my($rl,$rv) = (1,$BP[0][0]);
+while (1) {
+	if ($BP[$y][$x] == $rv) {											# continue run
+		$rl++;
+    } elsif ($rl > 1) {													# output run
+    	printf('$%02X $%02X $%02X ',$tag,$rl,$rv);
+    	$bytes_output += 3;
+    	$rv = $BP[$y][$x];
+    	$rl = 1;
+    } else {															# output single value
+    	printf('$%02X ',$rv);
+    	$bytes_output++;
+    	$rv = $BP[$y][$x];
+    	$rl = 1;
+    }
+    $y++;
+    if ($y == 32) {
+    	$y = 0;
+    	$x++;
+    	last if $x == 16;
+    }
+}
+if ($rl > 1) {															# output final run or value
+   	printf('$%02X $%02X $%02X ',$tag,$rl,$rv);
+   	$bytes_output += 3;
+} else {			
+   	printf('$%02X ',$rv);
+   	$bytes_output++;
+}
+print("\n");
+
+##printf(STDERR "\tBytes Output       = $bytes_output (%d%% compressed size)\n",int(100*$bytes_output/512+0.5));
+
+exit(0);

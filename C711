@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri Dec 26 22:08:29 2025
+#                    dlm: Sat Jan  3 11:28:00 2026
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 444 74 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 450 14 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -442,10 +442,12 @@
 #	Nov 29, 2025: - remove remaing EOF error messages
 #	Dec 20, 2025: - (finally) made -L produce page addresses on WPC
 #	Dec 26, 2025: - improved -A to check addresses even on non-label lines
+#	Jan  3, 2026: - added generator support (back tics)
 # HISTORY END
 
 # RELEASE NOTES:
 #	- v1.2.0 (not yet released)
+#		- support for `generator`
 #		- support for ALIAS +/- const/ALIAS everywhere
 #		- support for .LAST_DEFINED[+/-const] during .DEFINEs
 #		- support for ALIAS+/-const (or ALIAS) during .DEFINEs
@@ -1020,6 +1022,10 @@ while (!eof()) {
 				$next_statement_to_optimize = $tmp[0];
 			}
 	    }
+	}
+
+	if (m{`(.*)`}) {													# expand generators (backtics)
+		$_ = $` . `$1` . $';
 	}
     
     if (defined($ADDR)) {                                   			# store source statement for listing, warnings, optimization 
@@ -1845,25 +1851,30 @@ sub resolve_labels()
         #       LDAB    =SolBuf{LSB}+2
         #----------------------------------------------------------------------
 
-		my($str,$encoder) = ($ROM[$a] =~ m/^'?(.+)\{([^}\s]+)\}'?/);					# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
-		if (defined($encoder)) {														# 	initial '? allows for strings with spaces e.g. in 'ls -l{ShellCmd}'
-			my($remainder) = $';
-##			print(STDERR "encoder($str,$encoder) [$ROM[$a]]\n") if $opt_T;
-			$encoder .= ".s$WMS_System"
-				if (-f "$PATH/C711_encoder.$encoder.s$WMS_System");
-			require "$PATH/C711_encoder.$encoder";
-			$encoder =~ s/\./_/g;														# replace . by _ in function name
-			my($ofs);																	# find statement base address
-			our($addr); die if defined($addr);											# UNUSED VARIABLE
-			for ($ofs=0; !defined($LINE[$a-$ofs]); $ofs++) {}
-##			my($expr) = sprintf("$encoder('%s',%d);",$str,$LINE[$a-$ofs]);
-			my($expr) = sprintf("$encoder('%s',%d);",$str,$a-$ofs);
-			my($ev) = eval($expr);
-            die("$encoder: $@") if $@;
-			$ROM[$a] = $ev . $remainder;
-##			printf(STDERR "ROM[%04X] = %02X\n",$a,$ROM[$a]) if $opt_T;
-		}
-        print(STDERR "\tnot an encoder\n") if $opt_T;
+  		my($str,$encoder);																# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
+  		if ($ROM[$a] =~ m{^'}) {														# string with embedded spaces, as in 'ls -l{ShellCmd}'
+  			($str,$encoder) = ($SRC[$a] =~ m{\s+'(.*){(.*)}'\s*$});
+  		} else {
+  			($str,$encoder) = ($ROM[$a] =~ m/^(.+)\{([^}\s]+)\}$/);
+  		}
+  		if (defined($encoder)) {														# 	initial '? allows for strings with spaces e.g. in 'ls -l{ShellCmd}'
+  			my($remainder) = $';
+  			print(STDERR "encoder($str,$encoder) [$ROM[$a]]\n") if $opt_T;
+  			$encoder .= ".s$WMS_System"
+  				if (-f "$PATH/C711_encoder.$encoder.s$WMS_System");
+  			require "$PATH/C711_encoder.$encoder";
+  			$encoder =~ s/\./_/g;														# replace . by _ in function name
+  			my($ofs);																	# find statement base address
+  			our($addr); die if defined($addr);											# UNUSED VARIABLE
+  			for ($ofs=0; !defined($LINE[$a-$ofs]); $ofs++) {}
+  			my($expr) = sprintf("$encoder('%s',%d);",$str,$a-$ofs);
+  			my($ev) = eval($expr);
+              die($@) if $@;
+  			$ROM[$a] = $ev . $remainder;
+  			printf(STDERR "ROM[%04X] = %02X\n",$a,$ROM[$a]) if $opt_T;
+  		} else {
+          print(STDERR "\tnot an encoder\n") if $opt_T;
+  		}
 
         #----------------------------------------------------------------------
         # Simple Label Arithmetic
@@ -2045,18 +2056,18 @@ sub expand_aliases()
 				my($p1,$p2);
 				($p1,$p2,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z0-9_]+\()?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
 				$pre = $p1 . $p2;
-				print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
+##				print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
             } else {																	# not encoder
 				($pre,$alias,$post) = ($_[$i] =~ m{^\[})								# M6809 indirect extended
 								    ? ($_[$i] =~ m{^(\[\#?)([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*\])$})
 								    : ($_[$i] =~ m{^(\#)?([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*)$}); # just an alias
 			}
-			print(STDERR "alias($_[$i]) -> $pre/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
+##			print(STDERR "alias($_[$i]) -> $pre/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
 
 			if ($alias =~ m{(\D+)([+-])(\d+)$}) {										# alias with constant added or subtracted; EXPERIMENTAL FEATURE
 				last if ($1 eq '.') || ($1 eq '.LAST_DEFINED');							# . and .LAST_DEFINED handled elsewhere
 				if (!defined($ALIAS{$alias}) && numberp($ALIAS{$1})) {					# code must be able to handle T-800 in a string
-					print(STDERR "$1:$2:$3\n") if $opt_T;
+##					print(STDERR "$1:$2:$3\n") if $opt_T;
 					$ALIAS_REFD{$1}++;
 					$_[$i] = sprintf("$pre%d$post",($2 eq '+')?($ALIAS{$1}+$3):($ALIAS{$1}-$3));
 					last;
@@ -2072,7 +2083,7 @@ sub expand_aliases()
 				splice(@_,$i,1,@sali);
 			}
 		}
-		print(STDERR "$_[$i]\n") if $opt_T;
+##		print(STDERR "$_[$i]\n") if $opt_T;
 	}
 }
 
