@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Dec 30 15:51:18 2025
+#                    dlm: Thu Jan  8 08:03:43 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 104 46 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 187 99 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -184,7 +184,7 @@ define_label('__SOLCMD_TABLE_ADDR+1',				0x7D);
 
 define_label('_BALLTILTED',							0x86);	
 define_label('_GAMEOVER',							0x87);	
-define_label('_BALLTROUGH_LOCKOUT',					0x88);	
+define_label('_BALLDRAINED',						0x88);			# set at EOB during bonus count
 define_label('_SND_CMD_HEAD_INDEX',					0x8A);	
 define_label('_SND_CMD_TAIL_INDEX',					0x8B);
 define_label('_IO_BUFFER_HEAD_INDEX',				0x8F);			# Eli
@@ -244,9 +244,17 @@ define_label('_BACKGROUND_MUSIC_PLAYING',			0x0445+$VO);
 define_label('_SOUND_CMD_CIRCULAR_BUFFER',			0x045E+$VO);
 define_label('^LAMPFX_LIST',						0x0477+$VO);
 unless ($WPCV eq 'WPC(alpha)') {
-	define_label('^DMD_PLAYING_ANIMATION_DATA',		0x0481);
-	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
-	define_label('_DMD_MODE_IN_EFFECT',				0x0487);
+##	define_label('^DMD_PLAYING_ANIMATION_DATA',		0x0481);
+##	define_label('_DMD_ANIMATION_PLAYING',			0x0483);
+##	define_label('_DMD_MODE_IN_EFFECT',				0x0487);
+	define_label('_DMD_FX_PLAYING',					0x0481);
+	define_label('_DMD_FLAGS',						0x0482);		# $01: background FX running
+	define_label('_DMD_BACKGROUND',					0x0483);
+	define_label('_DMD_SAVED_FX_PLAYING',			0x0484);
+	define_label('_DMD_SAVED_FLAGS',				0x0485);
+	define_label('_DMD_SAVED_BACKGROUND',			0x0486);
+	define_label('_DMD_BACKGROUND_MODE',				0x0487);
+	define_label('_DMD_SCOREDISPLAY_REDRAW_REQUIRED',	0x0488);
 }
 define_label('^PLAYER_DATA',						0x04AC+$VO);
 define_label('_SIZE_PLAYER_GAME_DATA',				0x04AF+$VO);

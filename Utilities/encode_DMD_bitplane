@@ -2,38 +2,59 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Sat Jan  3 11:29:53 2026
+#                    dlm: Fri Jan  9 15:33:46 2026
 #                    (c) 2026 A.M. Thurnherr
-#                    uE-Info: 13 13 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 32 14 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
 # Jan  2, 2026: - created
 # Jan  3, 2026: - made work
+# Jan  8, 2026: - improved to specify brigtness range
+#				- improved usage errors
+# Jan  9, 2026: - minor improvement with -v 1 output
+#				- made -v0 default
 # HISTORY END
 
+use Getopt::Std;
 use strict;
 use warnings;
 use Imager;
 
 $0 =~ s@^.*/(.*)$@$1@;
-die("Usage: $0 <bit number> <image file>\n")
-        unless (@ARGV==2 && $ARGV[0] =~ m{^\d{1,3}$}
-						 && -f $ARGV[1]);
 
-my($image) = Imager->new(file=>$ARGV[1])								# read image file
+die("Usage: $0 [brightness-l)evels <n[4]>] [-v)erbosity <n[0]>] <bitplane number> <image file>\n")
+        unless (getopts('l:v:') && @ARGV==2);
+
+my $bitplane 	= $ARGV[0];
+my $image_file	= $ARGV[1];
+our $opt_l = 4 unless defined($opt_l);
+our $opt_v = 0 unless defined($opt_v);
+
+die("$image_file: no such file or directory\n")
+	unless -f $image_file;
+die("$0: invalid bitplane number $bitplane\n")
+	unless $bitplane>=0 && $bitplane<=7;
+die("$0: invalid number of brighntess levels $opt_l\n")
+	unless $opt_l>=0 && $opt_l<=0xFF;
+
+my($image) = Imager->new(file=>$image_file)								# read image file
 	|| die(Imager->errstr()); 
 
 my($w) = $image->getwidth();
 my($h) = $image->getheight();
-die("$ARGV[1]: invalid image dimensions: ${w}x${h}\n")
+die("$image_file: invalid image dimensions: ${w}x${h}\n")
 	unless $w==128 && $h==32;
 
-##print(STDERR "$ARGV[1]:\n");
-##printf(STDERR "\tBitplane Requested = $ARGV[0]\n");
+if ($opt_v > 1) {
+	print(STDERR "$image_file:\n");
+	printf(STDERR "\tBitplane           = $bitplane\n");
+	printf(STDERR "\tBrightness Levels  = $opt_l\n");
+}
 
-my(@rawImg);															# decimate to 8 intensity levels
+my(@rawImg);															# decimate to $opt_l intensity levels
 my($minI,$maxI) = (999,-1);
+my($Istep) = 255 / ($opt_l - 1);
 for (my($y)=0; $y<32; $y++) {
 	for (my($x)=0; $x<128; $x++) {
 		my($pixel) = $image->getpixel(x=>$x,y=>$y);
@@ -42,33 +63,29 @@ for (my($y)=0; $y<32; $y++) {
 		die($I) unless $I>=0 && $I<=0xFF;
 		$minI = $I if ($minI > $I);
 		$maxI = $I if ($maxI < $I);
-		$rawImg[$y][$x] = int($I/36.4) + 1;
-		die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<=7;
+		$rawImg[$y][$x] = int($I/$Istep) + 1;
+		die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<=$opt_l;
     }
 }
-##printf(STDERR "\tInput  Color Depth = \$%02X .. \$%02X\n",$minI,$maxI);
-##printf(STDERR "\tOutput Color Depth = \$00 .. \$FF\n");
+if ($opt_v > 1) {
+	printf(STDERR "\tInput  Color Depth = \$%02X .. \$%02X\n",$minI,$maxI);
+	printf(STDERR "\tOutput Color Depth = \$00 .. \$%02X\n",$opt_l);
+}
+
 
 my(@BP);																# extract bitplane
+my($bitMask) = 0x01;
+for (my($i)=0; $i<$bitplane; $i++) { $bitMask <<= 1; }
 for (my($y)=0; $y<32; $y++) {
 	for (my($xB)=0; $xB<16; $xB++) {
 		$BP[$y][$xB] = 0;
 		for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm=$xm<<1) {
-			if ($ARGV[0] == 0) {
-				$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & 0x01);
-            } elsif ($ARGV[0] == 1) {
-				$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & 0x02);
-            } elsif ($ARGV[0] == 2) {
-				$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & 0x04);
-            } else {
-				die;
-            }
+			$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & $bitMask);
         }
     }
 }
 
 my(@RLE);																# encode bitplane
-
 my(@byteVals);															# find unused tag
 for (my($y)=0; $y<32; $y++) {
 	for (my($x)=0; $x<16; $x++) {
@@ -82,16 +99,21 @@ for (my($i)=1; $i<256; $i++) {
 	last;
 }
 die unless defined($tag);
-##printf(STDERR "\tRun Tag            = \$%02X\n",$tag);
 printf('$%02X ',$tag);
+if ($opt_v > 1) {
+	printf(STDERR "\tRLE Tag            = \$%02X\n",$tag);
+}
 
-##for (my($x)=0; $x<16; $x++) {
-##	for (my($y)=0; $y<32; $y++) {
-##		printf(STDERR '$%02X ',$BP[$y][$x]);
-##	}
-##	print(STDERR "\n");
-##}
-##print(STDERR "\n");
+if ($opt_v > 2) {
+	print(STDERR "\tImage Data:\n\t\t");
+	for (my($y)=0; $y<16; $y++) {
+	  for (my($x)=0; $x<32; $x++) {
+		  printf(STDERR '$%02X ',$BP[$x][$y]);
+	  }
+	  print(STDERR "\n");
+	  print(STDERR "\t\t") if $y<31;
+	}
+}
 
 my($bytes_output) = 0;
 
@@ -127,6 +149,10 @@ if ($rl > 1) {															# output final run or value
 }
 print("\n");
 
-##printf(STDERR "\tBytes Output       = $bytes_output (%d%% compressed size)\n",int(100*$bytes_output/512+0.5));
+if ($opt_v == 1) {
+	printf(STDERR "$image_file: %d%% compression\n",100-int(100*$bytes_output/512+0.5));
+} elsif ($opt_v > 1) {
+	printf(STDERR "\tBytes Output       = $bytes_output (%d%% compression)\n",100-int(100*$bytes_output/512+0.5));
+}
 
 exit(0);

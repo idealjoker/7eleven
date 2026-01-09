@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Jan  3 11:28:00 2026
+#                    dlm: Fri Jan  9 15:33:08 2026
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 450 14 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 446 81 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -443,6 +443,7 @@
 #	Dec 20, 2025: - (finally) made -L produce page addresses on WPC
 #	Dec 26, 2025: - improved -A to check addresses even on non-label lines
 #	Jan  3, 2026: - added generator support (back tics)
+#	Jan  9, 2026: - BUG: generator was evaluated even when code was not assembled
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1024,7 +1025,7 @@ while (!eof()) {
 	    }
 	}
 
-	if (m{`(.*)`}) {													# expand generators (backtics)
+	if ($IF_STACK[$#IF_STACK]>=0 && m{`(.*)`}) {						# expand generators (backtics)
 		$_ = $` . `$1` . $';
 	}
     
