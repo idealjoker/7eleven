@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Fri Jan  9 15:33:46 2026
+#                    dlm: Fri Jan  9 21:06:53 2026
 #                    (c) 2026 A.M. Thurnherr
-#                    uE-Info: 32 14 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 17 43 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -14,6 +14,7 @@
 #				- improved usage errors
 # Jan  9, 2026: - minor improvement with -v 1 output
 #				- made -v0 default
+#				- BUG: never produced black
 # HISTORY END
 
 use Getopt::Std;
@@ -54,7 +55,7 @@ if ($opt_v > 1) {
 
 my(@rawImg);															# decimate to $opt_l intensity levels
 my($minI,$maxI) = (999,-1);
-my($Istep) = 255 / ($opt_l - 1);
+my($Istep) = 256 / $opt_l;
 for (my($y)=0; $y<32; $y++) {
 	for (my($x)=0; $x<128; $x++) {
 		my($pixel) = $image->getpixel(x=>$x,y=>$y);
@@ -63,7 +64,8 @@ for (my($y)=0; $y<32; $y++) {
 		die($I) unless $I>=0 && $I<=0xFF;
 		$minI = $I if ($minI > $I);
 		$maxI = $I if ($maxI < $I);
-		$rawImg[$y][$x] = int($I/$Istep) + 1;
+		$rawImg[$y][$x] = int($I/$Istep);
+#		printf(STDERR "rawImg[$y][$x] = int($I/$Istep) = $rawImg[$y][$x]\n");
 		die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<=$opt_l;
     }
 }
@@ -79,10 +81,22 @@ for (my($i)=0; $i<$bitplane; $i++) { $bitMask <<= 1; }
 for (my($y)=0; $y<32; $y++) {
 	for (my($xB)=0; $xB<16; $xB++) {
 		$BP[$y][$xB] = 0;
-		for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm=$xm<<1) {
+		for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm<<=1) {
+#			printf(STDERR "rawImg[$y][(8*$xB)+$xb] & 0x%02X [$rawImg[$y][(8*$xB)+$xb]]\n",$bitMask),
 			$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & $bitMask);
         }
     }
+}
+
+if ($opt_v > 2) {
+	print(STDERR "\tImage Data:\n\t\t");
+	for (my($y)=0; $y<16; $y++) {
+	  for (my($x)=0; $x<32; $x++) {
+		  printf(STDERR '$%02X ',$BP[$x][$y]);
+	  }
+	  print(STDERR "\n");
+	  print(STDERR "\t\t") if $y<31;
+	}
 }
 
 my(@RLE);																# encode bitplane
@@ -102,17 +116,6 @@ die unless defined($tag);
 printf('$%02X ',$tag);
 if ($opt_v > 1) {
 	printf(STDERR "\tRLE Tag            = \$%02X\n",$tag);
-}
-
-if ($opt_v > 2) {
-	print(STDERR "\tImage Data:\n\t\t");
-	for (my($y)=0; $y<16; $y++) {
-	  for (my($x)=0; $x<32; $x++) {
-		  printf(STDERR '$%02X ',$BP[$x][$y]);
-	  }
-	  print(STDERR "\n");
-	  print(STDERR "\t\t") if $y<31;
-	}
 }
 
 my($bytes_output) = 0;
