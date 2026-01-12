@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Fri Jan  9 21:06:53 2026
+#                    dlm: Mon Jan 12 14:09:17 2026
 #                    (c) 2026 A.M. Thurnherr
-#                    uE-Info: 17 43 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 18 37 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -15,7 +15,18 @@
 # Jan  9, 2026: - minor improvement with -v 1 output
 #				- made -v0 default
 #				- BUG: never produced black
+# Jan 12, 2026: - added RELEASE NOTES
 # HISTORY END
+
+# RELEASE NOTES:
+#	This too requires the Imager PERL library. On a Mac, tis can be installed with the
+#   following commands:
+#		brew install pkg-config libpng jpeg giflib
+#		cpan Imager
+
+cpan
+
+install Imager 
 
 use Getopt::Std;
 use strict;
