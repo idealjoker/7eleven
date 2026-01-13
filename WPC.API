@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Jan 11 13:13:56 2026
+#                    dlm: Sun Jan 11 17:21:41 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 105 41 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 837 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -298,7 +298,7 @@ define_label('_RND_2',								0x1791);
 define_label('_RND_3',								0x1792);
 define_label('_DIAGNOSTICS_MODE',					0x1793);
 define_label('_MAX_PLAYER_IN_GAME',					0x1794);
-define_label('^DMD_FRAMEBUF_WIP',					0x1799);
+define_label('^DMD_WORKBUF',						0x1799);
 
 VERSION_OFFSETS(-6,0);
 ##define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$VO);
@@ -834,7 +834,7 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('addBonus_9930',						0xFABA);
  define_syscall('addBonus[A]',							0xFABE);
  define_syscall('DMD_init_PWM_3level_frameBuf[A]',	    0xFB88);
- define_syscall('DMD_init_mapped_FBs_display_FB@3A',	0xFBAE);
+ define_syscall('DMD_init_workBufFB1@38_displayFB2@3A',	0xFBAE);
  define_syscall('DMD_invert_frame',					    0xFBCB);
  
  define_syscall('syscall_FE3C',							0xFE3C,'S');

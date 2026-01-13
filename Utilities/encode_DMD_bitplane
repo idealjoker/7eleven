@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Mon Jan 12 14:09:17 2026
+#                    dlm: Mon Jan 12 19:11:01 2026
 #                    (c) 2026 A.M. Thurnherr
-#                    uE-Info: 18 37 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 45 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -15,7 +15,12 @@
 # Jan  9, 2026: - minor improvement with -v 1 output
 #				- made -v0 default
 #				- BUG: never produced black
+# Jan 10, 2026: - BUG: forgot to scale input image intensities
 # Jan 12, 2026: - added RELEASE NOTES
+#				- added encoding for new UVW bitplanes
+#				- BUG: level 3 was not in U
+#				- added -d)ither level 1 to try to decrease
+#				  flicker; this completely messes up compression
 # HISTORY END
 
 # RELEASE NOTES:
@@ -24,10 +29,6 @@
 #		brew install pkg-config libpng jpeg giflib
 #		cpan Imager
 
-cpan
-
-install Imager 
-
 use Getopt::Std;
 use strict;
 use warnings;
@@ -35,18 +36,21 @@ use Imager;
 
 $0 =~ s@^.*/(.*)$@$1@;
 
-die("Usage: $0 [brightness-l)evels <n[4]>] [-v)erbosity <n[0]>] <bitplane number> <image file>\n")
-        unless (getopts('l:v:') && @ARGV==2);
+die("Usage: $0 [brightness-l)evels <n[4]>] [-v)erbosity <n[0]>] [-d)ither level-1 between bitplanes UV] <bitplane number> <image file>\n")
+        unless (getopts('dl:v:') && @ARGV==2);
 
 my $bitplane 	= $ARGV[0];
 my $image_file	= $ARGV[1];
+
+our $opt_d;
 our $opt_l = 4 unless defined($opt_l);
 our $opt_v = 0 unless defined($opt_v);
 
 die("$image_file: no such file or directory\n")
 	unless -f $image_file;
 die("$0: invalid bitplane number $bitplane\n")
-	unless $bitplane>=0 && $bitplane<=7;
+	unless ($bitplane =~ m{^\d+$} && $bitplane>=0 && $bitplane<=7) ||
+		   ($bitplane =~ m{^[UuVvWw]$});
 die("$0: invalid number of brighntess levels $opt_l\n")
 	unless $opt_l>=0 && $opt_l<=0xFF;
 
@@ -64,9 +68,7 @@ if ($opt_v > 1) {
 	printf(STDERR "\tBrightness Levels  = $opt_l\n");
 }
 
-my(@rawImg);															# decimate to $opt_l intensity levels
-my($minI,$maxI) = (999,-1);
-my($Istep) = 256 / $opt_l;
+my($minI,$maxI) = (999,-1);												# scale to cover entire range
 for (my($y)=0; $y<32; $y++) {
 	for (my($x)=0; $x<128; $x++) {
 		my($pixel) = $image->getpixel(x=>$x,y=>$y);
@@ -75,38 +77,87 @@ for (my($y)=0; $y<32; $y++) {
 		die($I) unless $I>=0 && $I<=0xFF;
 		$minI = $I if ($minI > $I);
 		$maxI = $I if ($maxI < $I);
-		$rawImg[$y][$x] = int($I/$Istep);
-#		printf(STDERR "rawImg[$y][$x] = int($I/$Istep) = $rawImg[$y][$x]\n");
-		die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<=$opt_l;
     }
 }
 if ($opt_v > 1) {
-	printf(STDERR "\tInput  Color Depth = \$%02X .. \$%02X\n",$minI,$maxI);
-	printf(STDERR "\tOutput Color Depth = \$00 .. \$%02X\n",$opt_l);
+	printf(STDERR "\tInput  Color Range = \$%02X .. \$%02X\n",$minI,$maxI);
+	printf(STDERR "\tOutput Color Range = \$00 .. \$%02X\n",$opt_l-1);
+}
+
+my(@rawImg);															# decimate scaled input to $opt_l levels
+my($Istep) = 256 / $opt_l;												
+for (my($y)=0; $y<32; $y++) {
+	for (my($x)=0; $x<128; $x++) {
+		my($pixel) 		= $image->getpixel(x=>$x,y=>$y);
+		my($R,$G,$B,$A) = $pixel->rgba();
+		my($I) 			= int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
+		my($Iscaled) 	= ($I - $minI) / ($maxI - $minI) * 255;			# minI => 0, maxI => $FF
+		$rawImg[$y][$x] = int($Iscaled/$Istep);
+		die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<$opt_l;
+    }
+}
+if ($opt_v > 2) {
+	print(STDERR "\\Raw Image:\n\t\t");
+	for (my($y)=0; $y<32; $y++) {
+		for (my($x)=0; $x<128; $x++) {
+  			print(STDERR $rawImg[$y][$x]);
+		}
+		print(STDERR "\n");
+	  	print(STDERR "\t\t") if $y<31;
+	}
 }
 
 
 my(@BP);																# extract bitplane
-my($bitMask) = 0x01;
-for (my($i)=0; $i<$bitplane; $i++) { $bitMask <<= 1; }
-for (my($y)=0; $y<32; $y++) {
-	for (my($xB)=0; $xB<16; $xB++) {
-		$BP[$y][$xB] = 0;
-		for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm<<=1) {
-#			printf(STDERR "rawImg[$y][(8*$xB)+$xb] & 0x%02X [$rawImg[$y][(8*$xB)+$xb]]\n",$bitMask),
-			$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & $bitMask);
-        }
-    }
+
+if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
+	my($bitMask) = 0x01;
+	for (my($i)=0; $i<$bitplane; $i++) { $bitMask <<= 1; }
+	for (my($y)=0; $y<32; $y++) {
+		for (my($xB)=0; $xB<16; $xB++) {
+			$BP[$y][$xB] = 0;
+			for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm<<=1) {
+#				printf(STDERR "rawImg[$y][(8*$xB)+$xb] & 0x%02X [$rawImg[$y][(8*$xB)+$xb]]\n",$bitMask),
+				$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & $bitMask);
+			}
+		}
+	}
+} else {																# non-numerical (U, V, W)
+	for (my($y)=0; $y<32; $y++) {
+		for (my($xB)=0; $xB<16; $xB++) {
+			$BP[$y][$xB] = 0;
+			for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm<<=1) {
+				my($x) = (8*$xB) + $xb;
+				if ($bitplane =~ m{[uU]}) {								# bitplane U (levels 1(half),3)
+					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==3);
+					if ($opt_d) {
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2==$y%2);
+					} else {
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1);
+					}
+				} elsif ($bitplane =~ m{[vV]}) {						# bitplane V (levels 1(half),3)
+					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x] == 3);
+					if ($opt_d) {
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2!=$y%2);
+					}
+				} else {												# bitplane W (levels 2,3)
+					$BP[$y][$xB] |= $xm  if ($rawImg[$y][$x] > 1);
+				}
+			}
+		}
+	}
 }
 
 if ($opt_v > 2) {
-	print(STDERR "\tImage Data:\n\t\t");
-	for (my($y)=0; $y<16; $y++) {
-	  for (my($x)=0; $x<32; $x++) {
-		  printf(STDERR '$%02X ',$BP[$x][$y]);
-	  }
-	  print(STDERR "\n");
-	  print(STDERR "\t\t") if $y<31;
+	print(STDERR "\tBitplane:\n\t\t");
+	for (my($y)=0; $y<32; $y++) {
+		for (my($x)=0; $x<16; $x++) {
+	  		for (my($m)=0x01; $m<0x100; $m<<=1) {
+	  			print(STDERR ($BP[$y][$x] & $m) ? '@' : ' ');
+		  	}
+		}
+		print(STDERR "\n");
+	  	print(STDERR "\t\t") if $y<31;
 	}
 }
 
