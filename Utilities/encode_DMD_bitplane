@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Mon Jan 12 19:11:01 2026
+#                    dlm: Thu Jan 15 17:18:04 2026
 #                    (c) 2026 A.M. Thurnherr
-#                    uE-Info: 45 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 164 21 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -21,6 +21,12 @@
 #				- BUG: level 3 was not in U
 #				- added -d)ither level 1 to try to decrease
 #				  flicker; this completely messes up compression
+#				> but it is spectacularly successful!
+# Jan 14, 2026: - renamed dither to -i)nterlace <method>
+#				- implement column-wise interleaving to try to recover
+#				  compression
+# Jan 15, 2026: - since this does NOT improve compression, I made
+#				  -i0 default and use -i to change
 # HISTORY END
 
 # RELEASE NOTES:
@@ -36,15 +42,19 @@ use Imager;
 
 $0 =~ s@^.*/(.*)$@$1@;
 
-die("Usage: $0 [brightness-l)evels <n[4]>] [-v)erbosity <n[0]>] [-d)ither level-1 between bitplanes UV] <bitplane number> <image file>\n")
-        unless (getopts('dl:v:') && @ARGV==2);
+die("Usage: $0 \n" .
+		"\t[brightness-l)evels <n[4]>]\n" .
+		"\t[-v)erbosity <n[0]>]\n" .
+		"\t[use alternate -i)nterlace <method[0:none,1:cols,2:rows]>]\n" .
+		"\t\t<bitplane> <image file>\n")
+	        unless (getopts('i:l:v:') && @ARGV==2);
 
 my $bitplane 	= $ARGV[0];
 my $image_file	= $ARGV[1];
 
-our $opt_d;
-our $opt_l = 4 unless defined($opt_l);
-our $opt_v = 0 unless defined($opt_v);
+our $opt_i = -1 unless defined($opt_i);
+our $opt_l =  4 unless defined($opt_l);
+our $opt_v =  0 unless defined($opt_v);
 
 die("$image_file: no such file or directory\n")
 	unless -f $image_file;
@@ -97,7 +107,7 @@ for (my($y)=0; $y<32; $y++) {
     }
 }
 if ($opt_v > 2) {
-	print(STDERR "\\Raw Image:\n\t\t");
+	print(STDERR "\tRaw Image:\n\t\t");
 	for (my($y)=0; $y<32; $y++) {
 		for (my($x)=0; $x<128; $x++) {
   			print(STDERR $rawImg[$y][$x]);
@@ -130,15 +140,27 @@ if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
 				my($x) = (8*$xB) + $xb;
 				if ($bitplane =~ m{[uU]}) {								# bitplane U (levels 1(half),3)
 					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==3);
-					if ($opt_d) {
+					if ($opt_i == -1) {									# checkerboard interlacing
 						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2==$y%2);
-					} else {
+					} elsif ($opt_i == 1) {								# columns
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2==0);
+					} elsif ($opt_i == 2) {								# rows
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $y%2==0);
+					} elsif ($opt_i == 0) {								# none
 						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1);
+					} else {
+						die("$0: invalid interlace method -i $opt_i\n");
 					}
 				} elsif ($bitplane =~ m{[vV]}) {						# bitplane V (levels 1(half),3)
 					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x] == 3);
-					if ($opt_d) {
+					if ($opt_i == -1) {									# checkerboard
 						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2!=$y%2);
+					} elsif ($opt_i == 1) {								# columns
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2!=$y%2);
+					} elsif ($opt_i == 2) {								# rows
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $y%2==0);
+					} elsif ($opt_i != 0) {
+						die("$0: invalid interlace method -i $opt_i\n");
 					}
 				} else {												# bitplane W (levels 2,3)
 					$BP[$y][$xB] |= $xm  if ($rawImg[$y][$x] > 1);
