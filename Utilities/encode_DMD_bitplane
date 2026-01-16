@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Thu Jan 15 17:18:04 2026
+#                    dlm: Fri Jan 16 10:26:56 2026
 #                    (c) 2026 A.M. Thurnherr
-#                    uE-Info: 164 21 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 186 74 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -27,6 +27,7 @@
 #				  compression
 # Jan 15, 2026: - since this does NOT improve compression, I made
 #				  -i0 default and use -i to change
+# Jan 16, 2026: - added -s, -e, -Q
 # HISTORY END
 
 # RELEASE NOTES:
@@ -42,16 +43,25 @@ use Imager;
 
 $0 =~ s@^.*/(.*)$@$1@;
 
+#----------------------------------------------------------------------
+# Usage
+#----------------------------------------------------------------------
+
 die("Usage: $0 \n" .
+		"\t[-v)erbosity <n[0]>] [-Q)uiet (no code output)]\n" .
 		"\t[brightness-l)evels <n[4]>]\n" .
-		"\t[-v)erbosity <n[0]>]\n" .
+		"\t[apply constrast-s)tretching]\n" .
+		"\t[apply histogram-e)qualization\n" .
 		"\t[use alternate -i)nterlace <method[0:none,1:cols,2:rows]>]\n" .
 		"\t\t<bitplane> <image file>\n")
-	        unless (getopts('i:l:v:') && @ARGV==2);
+	        unless (getopts('ei:l:Qsv:') && @ARGV==2);
 
 my $bitplane 	= $ARGV[0];
 my $image_file	= $ARGV[1];
 
+our $opt_Q;
+our $opt_s;
+our $opt_e;
 our $opt_i = -1 unless defined($opt_i);
 our $opt_l =  4 unless defined($opt_l);
 our $opt_v =  0 unless defined($opt_v);
@@ -64,6 +74,10 @@ die("$0: invalid bitplane number $bitplane\n")
 die("$0: invalid number of brighntess levels $opt_l\n")
 	unless $opt_l>=0 && $opt_l<=0xFF;
 
+#----------------------------------------------------------------------
+# Read Image File
+#----------------------------------------------------------------------	
+
 my($image) = Imager->new(file=>$image_file)								# read image file
 	|| die(Imager->errstr()); 
 
@@ -75,39 +89,106 @@ die("$image_file: invalid image dimensions: ${w}x${h}\n")
 if ($opt_v > 1) {
 	print(STDERR "$image_file:\n");
 	printf(STDERR "\tBitplane           = $bitplane\n");
-	printf(STDERR "\tBrightness Levels  = $opt_l\n");
 }
 
-my($minI,$maxI) = (999,-1);												# scale to cover entire range
-for (my($y)=0; $y<32; $y++) {
-	for (my($x)=0; $x<128; $x++) {
-		my($pixel) = $image->getpixel(x=>$x,y=>$y);
-		my($R,$G,$B,$A) = $pixel->rgba();
-		my($I) = int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
-		die($I) unless $I>=0 && $I<=0xFF;
-		$minI = $I if ($minI > $I);
-		$maxI = $I if ($maxI < $I);
+#----------------------------------------------------------------------
+# Create $opt_l - Level Grayscale Image
+#	- options:
+#		- raw
+#		- contrast stretched (-s)
+#		- histogram equalized (-h)
+#---------------------------------------------------------------------- 
+
+my(@rawImg);															# decimated image
+
+if ($opt_e) {															# HISTOGRAM EQUALIZATION
+
+	my(@Ivec,%iVals);															
+	for (my($y)=0; $y<32; $y++) {										# create sorted intensity vector
+		for (my($x)=0; $x<128; $x++) {
+			my($pixel) = $image->getpixel(x=>$x,y=>$y);
+			my($R,$G,$B,$A) = $pixel->rgba();
+			my($I) = int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
+			die($I) unless $I>=0 && $I<=0xFF;
+			push(@Ivec,$I);
+			$iVals{$I}++;
+		}
+	}
+	@Ivec = sort { $a <=> $b } @Ivec;									
+	printf(STDERR "\tInput Brightness   = \$%02X .. \$%02X (%d distinct levels)\n",$Ivec[0],$Ivec[$#Ivec],scalar(keys(%iVals)))
+		if ($opt_v > 1);
+
+	my($minIout,$maxIout) = (999,-1);
+	my($Lstep) = 4096 / $opt_l;										
+	for (my($y)=0; $y<32; $y++) {										# decimate scaled input to $opt_l levels								
+		for (my($x)=0; $x<128; $x++) {	
+			my($pixel)		= $image->getpixel(x=>$x,y=>$y);
+			my($R,$G,$B,$A) = $pixel->rgba();
+			my($I)			= int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
+			my($Iout) 		= 0;
+			while ($Iout<$opt_l-1 && $I>$Ivec[($Iout+1)*$Lstep-1]) {
+				$Iout++;
+            }
+			$rawImg[$y][$x] = $Iout;
+			die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<$opt_l;
+			$minIout = $rawImg[$y][$x] if $rawImg[$y][$x] < $minIout;
+			$maxIout = $rawImg[$y][$x] if $rawImg[$y][$x] > $maxIout;
+		}
     }
-}
-if ($opt_v > 1) {
-	printf(STDERR "\tInput  Color Range = \$%02X .. \$%02X\n",$minI,$maxI);
-	printf(STDERR "\tOutput Color Range = \$00 .. \$%02X\n",$opt_l-1);
+	printf(STDERR "\tOutput Brightness  = \$%02X .. \$%02X\n",$minIout,$maxIout)
+		if ($opt_v > 1);
+
+} else {																# CONTRAST STRETCHING (-s) / RAW
+	my(%iVals);
+	my($minI,$maxI) = (999,-1); 										# find contrast limits
+	for (my($y)=0; $y<32; $y++) {										    
+		for (my($x)=0; $x<128; $x++) {
+			my($pixel) = $image->getpixel(x=>$x,y=>$y);
+			my($R,$G,$B,$A) = $pixel->rgba();
+			my($I) = int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
+			die($I) unless $I>=0 && $I<=0xFF;
+			$minI = $I if ($minI > $I);
+			$maxI = $I if ($maxI < $I);
+			$iVals{$I}++;
+		}
+	}
+	printf(STDERR "\tInput Brightness   = \$%02X .. \$%02X (%d distinct levels)\n",$minI,$maxI,scalar(keys(%iVals)))
+		if ($opt_v > 1);
+
+	my($minIout,$maxIout) = (999,-1);
+	my($Istep) = 256 / $opt_l;											# decimate scaled input to $opt_l levels
+	for (my($y)=0; $y<32; $y++) {										
+		for (my($x)=0; $x<128; $x++) {
+			my($pixel)		= $image->getpixel(x=>$x,y=>$y);
+			my($R,$G,$B,$A) = $pixel->rgba();
+			my($I)			= int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
+			my($Iout)		= $opt_s ? (($I - $minI) / ($maxI - $minI) * 255) : $I;
+			$rawImg[$y][$x] = int($Iout/$Istep);
+			die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<$opt_l;
+			$minIout = $rawImg[$y][$x] if $rawImg[$y][$x] < $minIout;
+			$maxIout = $rawImg[$y][$x] if $rawImg[$y][$x] > $maxIout;
+		}
+    }
+	printf(STDERR "\tOutput Brightness  = \$%02X .. \$%02X\n",$minIout,$maxIout)
+		if ($opt_v > 1);
+
 }
 
-my(@rawImg);															# decimate scaled input to $opt_l levels
-my($Istep) = 256 / $opt_l;												
-for (my($y)=0; $y<32; $y++) {
-	for (my($x)=0; $x<128; $x++) {
-		my($pixel) 		= $image->getpixel(x=>$x,y=>$y);
-		my($R,$G,$B,$A) = $pixel->rgba();
-		my($I) 			= int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
-		my($Iscaled) 	= ($I - $minI) / ($maxI - $minI) * 255;			# minI => 0, maxI => $FF
-		$rawImg[$y][$x] = int($Iscaled/$Istep);
-		die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<$opt_l;
-    }
+if ($opt_v > 1) {														# output brightness hisgtogram
+	my(@nPix);
+	for (my($y)=0; $y<32; $y++) {
+		for (my($x)=0; $x<128; $x++) {
+			$nPix[$rawImg[$y][$x]]++;
+		}
+	}
+	print(STDERR "\t\tFrequency:\n");
+	for (my($l)=0; $l<$opt_l; $l++) {
+		print(STDERR "\t\t\tlevel-$l: $nPix[$l]\n") if defined($nPix[$l]);
+	}
 }
-if ($opt_v > 2) {
-	print(STDERR "\tRaw Image:\n\t\t");
+
+if ($opt_v > 2) {														# output as ASCII 
+	print(STDERR "\tDecimated Raw Image:\n\t\t");
 	for (my($y)=0; $y<32; $y++) {
 		for (my($x)=0; $x<128; $x++) {
   			print(STDERR $rawImg[$y][$x]);
@@ -117,6 +198,11 @@ if ($opt_v > 2) {
 	}
 }
 
+#----------------------------------------------------------------------
+# Extract Bitplanes
+#	- 0, 1, 2 for WPC drivers
+#	- U, V, W for IDD
+#----------------------------------------------------------------------
 
 my(@BP);																# extract bitplane
 
@@ -170,7 +256,7 @@ if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
 	}
 }
 
-if ($opt_v > 2) {
+if ($opt_v > 3) {
 	print(STDERR "\tBitplane:\n\t\t");
 	for (my($y)=0; $y<32; $y++) {
 		for (my($x)=0; $x<16; $x++) {
@@ -182,6 +268,10 @@ if ($opt_v > 2) {
 	  	print(STDERR "\t\t") if $y<31;
 	}
 }
+
+#----------------------------------------------------------------------
+# Compress Bitmap
+#----------------------------------------------------------------------
 
 my(@RLE);																# encode bitplane
 my(@byteVals);															# find unused tag
@@ -197,7 +287,7 @@ for (my($i)=1; $i<256; $i++) {
 	last;
 }
 die unless defined($tag);
-printf('$%02X ',$tag);
+printf('$%02X ',$tag) unless defined($opt_Q);
 if ($opt_v > 1) {
 	printf(STDERR "\tRLE Tag            = \$%02X\n",$tag);
 }
@@ -210,12 +300,12 @@ while (1) {
 	if ($BP[$y][$x] == $rv) {											# continue run
 		$rl++;
     } elsif ($rl > 1) {													# output run
-    	printf('$%02X $%02X $%02X ',$tag,$rl,$rv);
+    	printf('$%02X $%02X $%02X ',$tag,$rl,$rv) unless defined($opt_Q);
     	$bytes_output += 3;
     	$rv = $BP[$y][$x];
     	$rl = 1;
     } else {															# output single value
-    	printf('$%02X ',$rv);
+    	printf('$%02X ',$rv) unless defined($opt_Q);
     	$bytes_output++;
     	$rv = $BP[$y][$x];
     	$rl = 1;
@@ -228,18 +318,22 @@ while (1) {
     }
 }
 if ($rl > 1) {															# output final run or value
-   	printf('$%02X $%02X $%02X ',$tag,$rl,$rv);
+   	printf('$%02X $%02X $%02X ',$tag,$rl,$rv) unless defined($opt_Q);
    	$bytes_output += 3;
 } else {			
-   	printf('$%02X ',$rv);
+   	printf('$%02X ',$rv) unless defined($opt_Q);
    	$bytes_output++;
 }
-print("\n");
+print("\n") unless defined($opt_Q);
 
 if ($opt_v == 1) {
 	printf(STDERR "$image_file: %d%% compression\n",100-int(100*$bytes_output/512+0.5));
 } elsif ($opt_v > 1) {
 	printf(STDERR "\tBytes Output       = $bytes_output (%d%% compression)\n",100-int(100*$bytes_output/512+0.5));
 }
+
+#----------------------------------------------------------------------
+# Done
+#----------------------------------------------------------------------
 
 exit(0);
