@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Fri Jan 16 10:26:56 2026
+#                    dlm: Sat Jan 17 09:34:45 2026
 #                    (c) 2026 A.M. Thurnherr
-#                    uE-Info: 186 74 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 126 107 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -28,13 +28,19 @@
 # Jan 15, 2026: - since this does NOT improve compression, I made
 #				  -i0 default and use -i to change
 # Jan 16, 2026: - added -s, -e, -Q
+# Jan 17, 2026: - added 5th brightness level (half tone)
 # HISTORY END
 
 # RELEASE NOTES:
-#	This too requires the Imager PERL library. On a Mac, tis can be installed with the
-#   following commands:
-#		brew install pkg-config libpng jpeg giflib
-#		cpan Imager
+#	- 5-level driver:
+#		- 2nd brightest level is treated as half-tone:
+#			- brightness : 0 1 2 2.5 3
+#			- pixel value: 0 1 2 3   4
+#		- requires at least 8 input levels
+#	- This tool requires the Imager PERL library. On a Mac, tis can be installed with the
+#     following commands:
+#		$ brew install pkg-config libpng jpeg giflib
+#		$ cpan Imager
 
 use Getopt::Std;
 use strict;
@@ -88,7 +94,6 @@ die("$image_file: invalid image dimensions: ${w}x${h}\n")
 
 if ($opt_v > 1) {
 	print(STDERR "$image_file:\n");
-	printf(STDERR "\tBitplane           = $bitplane\n");
 }
 
 #----------------------------------------------------------------------
@@ -96,7 +101,7 @@ if ($opt_v > 1) {
 #	- options:
 #		- raw
 #		- contrast stretched (-s)
-#		- histogram equalized (-h)
+#		- histogram equalized (-e)
 #---------------------------------------------------------------------- 
 
 my(@rawImg);															# decimated image
@@ -114,21 +119,37 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 			$iVals{$I}++;
 		}
 	}
-	@Ivec = sort { $a <=> $b } @Ivec;									
-	printf(STDERR "\tInput Brightness   = \$%02X .. \$%02X (%d distinct levels)\n",$Ivec[0],$Ivec[$#Ivec],scalar(keys(%iVals)))
+	@Ivec = sort { $a <=> $b } @Ivec;
+	my($nLvl) = scalar(keys(%iVals));
+	printf(STDERR "\tInput Brightness   = \$%02X .. \$%02X (%d distinct levels)\n",$Ivec[0],$Ivec[$#Ivec],$nLvl)
 		if ($opt_v > 1);
+	die("$image_file: insufficient color depth ($nLvl distinct levels) for -l $opt_l histogram equalization\n")
+		if ($opt_l == 5 && $nLvl < 8) ||
+		   ($opt_l != 4 && $nLvl < $opt_l);
 
 	my($minIout,$maxIout) = (999,-1);
-	my($Lstep) = 4096 / $opt_l;										
+	my($Lstep) = ($opt_l == 5) ? 4096 / 8								# work with 8 levels when using 5-level driver 
+							   : 4096 / $opt_l;										
 	for (my($y)=0; $y<32; $y++) {										# decimate scaled input to $opt_l levels								
 		for (my($x)=0; $x<128; $x++) {	
 			my($pixel)		= $image->getpixel(x=>$x,y=>$y);
 			my($R,$G,$B,$A) = $pixel->rgba();
 			my($I)			= int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
 			my($Iout) 		= 0;
-			while ($Iout<$opt_l-1 && $I>$Ivec[($Iout+1)*$Lstep-1]) {
-				$Iout++;
-            }
+            if ($opt_l == 5) {											# half-tones 0,1>0 2,3>1 4,5>2 6>3 7>4
+				while ($Iout<7 && $I>$Ivec[($Iout+1)*$Lstep-1]) {
+					$Iout++;
+        	    }
+            	if ($Iout < 7) {										# nominal levels: 0 1 2 2.5 3
+					$Iout = int($Iout/2);								# actual levels : 0 1 2  3  4
+				} else {
+					$Iout = 4;
+				}
+            } else {
+				while ($Iout<$opt_l-1 && $I>$Ivec[($Iout+1)*$Lstep-1]) {
+					$Iout++;
+        	    }
+        	}
 			$rawImg[$y][$x] = $Iout;
 			die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<$opt_l;
 			$minIout = $rawImg[$y][$x] if $rawImg[$y][$x] < $minIout;
@@ -152,18 +173,32 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 			$iVals{$I}++;
 		}
 	}
-	printf(STDERR "\tInput Brightness   = \$%02X .. \$%02X (%d distinct levels)\n",$minI,$maxI,scalar(keys(%iVals)))
+	my($nLvl) = scalar(keys(%iVals));
+	printf(STDERR "\tInput Brightness   = \$%02X .. \$%02X (%d distinct levels)\n",$minI,$maxI,$nLvl)
 		if ($opt_v > 1);
+# 	ERROR IS INCORRECT FOR GAME LEVELS
+#	die("$image_file: insufficient color depth ($nLvl distinct levels) for -l $opt_l\n")
+#		if ($opt_l == 5 && $nLvl<8) ||
+#		   ($opt_l != 4 && $nLvl<$opt_l);
 
 	my($minIout,$maxIout) = (999,-1);
-	my($Istep) = 256 / $opt_l;											# decimate scaled input to $opt_l levels
+	my($Istep) = ($opt_l == 5) ? 256 / 8								# work with 8 levels when using 5-level driver 
+							   : 256 / $opt_l;										
 	for (my($y)=0; $y<32; $y++) {										
 		for (my($x)=0; $x<128; $x++) {
 			my($pixel)		= $image->getpixel(x=>$x,y=>$y);
 			my($R,$G,$B,$A) = $pixel->rgba();
 			my($I)			= int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
 			my($Iout)		= $opt_s ? (($I - $minI) / ($maxI - $minI) * 255) : $I;
-			$rawImg[$y][$x] = int($Iout/$Istep);
+			$Iout = int($Iout/$Istep);
+            if ($opt_l == 5) {											# half-tones 0,1>0 2,3>1 4,5>2 6>3 7>4
+            	if ($Iout < 7) {										# nominal levels: 0 1 2 2.5 3
+					$Iout = int($Iout/2);								# actual levels : 0 1 2  3  4
+				} else {
+					$Iout = 4;
+				}
+            }
+			$rawImg[$y][$x] = $Iout;
 			die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<$opt_l;
 			$minIout = $rawImg[$y][$x] if $rawImg[$y][$x] < $minIout;
 			$maxIout = $rawImg[$y][$x] if $rawImg[$y][$x] > $maxIout;
@@ -174,7 +209,7 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 
 }
 
-if ($opt_v > 1) {														# output brightness hisgtogram
+if ($opt_v > 1) {														# output brightness histogram
 	my(@nPix);
 	for (my($y)=0; $y<32; $y++) {
 		for (my($x)=0; $x<128; $x++) {
@@ -183,7 +218,7 @@ if ($opt_v > 1) {														# output brightness hisgtogram
 	}
 	print(STDERR "\t\tFrequency:\n");
 	for (my($l)=0; $l<$opt_l; $l++) {
-		print(STDERR "\t\t\tlevel-$l: $nPix[$l]\n") if defined($nPix[$l]);
+		printf(STDERR "\t\t\tlevel-$l: %4d (%2d%%)\n",$nPix[$l],int(100*$nPix[$l]/4096)+.5) if defined($nPix[$l]);
 	}
 }
 
@@ -206,14 +241,18 @@ if ($opt_v > 2) {														# output as ASCII
 
 my(@BP);																# extract bitplane
 
+printf(STDERR "\tBitplane = $bitplane\n")
+	if $opt_v > 1;
+
 if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
+	die("$0: invalid bitplane for -l $opt_l\n")
+		if ($opt_l == 5);
 	my($bitMask) = 0x01;
 	for (my($i)=0; $i<$bitplane; $i++) { $bitMask <<= 1; }
 	for (my($y)=0; $y<32; $y++) {
 		for (my($xB)=0; $xB<16; $xB++) {
 			$BP[$y][$xB] = 0;
 			for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm<<=1) {
-#				printf(STDERR "rawImg[$y][(8*$xB)+$xb] & 0x%02X [$rawImg[$y][(8*$xB)+$xb]]\n",$bitMask),
 				$BP[$y][$xB] |= $xm if ($rawImg[$y][(8*$xB)+$xb] & $bitMask);
 			}
 		}
@@ -224,32 +263,32 @@ if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
 			$BP[$y][$xB] = 0;
 			for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm<<=1) {
 				my($x) = (8*$xB) + $xb;
-				if ($bitplane =~ m{[uU]}) {								# bitplane U (levels 1(half),3)
-					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==3);
+				if ($bitplane =~ m{[uU]}) {								# bitplane U (levels 1(half),3(half),4)
+					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==4);
 					if ($opt_i == -1) {									# checkerboard interlacing
-						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2==$y%2);
-					} elsif ($opt_i == 1) {								# columns
-						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2==0);
-					} elsif ($opt_i == 2) {								# rows
-						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $y%2==0);
-					} elsif ($opt_i == 0) {								# none
-						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1);
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 || $rawImg[$y][$x]==3) && $x%2==$y%2;
+					} elsif ($opt_i == 1) {								# column interlacing
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 || $rawImg[$y][$x]==3) && $x%2==0;
+					} elsif ($opt_i == 2) {								# row interlacing
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 || $rawImg[$y][$x]==3) && $y%2==0;
+					} elsif ($opt_i == 0) {								# no interlacing
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 || $rawImg[$y][$x]==3);
 					} else {
 						die("$0: invalid interlace method -i $opt_i\n");
 					}
-				} elsif ($bitplane =~ m{[vV]}) {						# bitplane V (levels 1(half),3)
-					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x] == 3);
+				} elsif ($bitplane =~ m{[vV]}) {						# bitplane V (levels 1(half),3(half),4)
+					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x] == 4);
 					if ($opt_i == -1) {									# checkerboard
-						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2!=$y%2);
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 || $rawImg[$y][$x]==3) && $x%2!=$y%2;
 					} elsif ($opt_i == 1) {								# columns
-						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2!=$y%2);
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 || $rawImg[$y][$x]==3) && $x%2==1;
 					} elsif ($opt_i == 2) {								# rows
-						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $y%2==0);
+						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 || $rawImg[$y][$x]==3) && $y%2==1;
 					} elsif ($opt_i != 0) {
 						die("$0: invalid interlace method -i $opt_i\n");
 					}
-				} else {												# bitplane W (levels 2,3)
-					$BP[$y][$xB] |= $xm  if ($rawImg[$y][$x] > 1);
+				} else {												# bitplane W (levels 2,4)
+					$BP[$y][$xB] |= $xm  if ($rawImg[$y][$x]==2 || $rawImg[$y][$x]==4);
 				}
 			}
 		}
@@ -257,7 +296,7 @@ if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
 }
 
 if ($opt_v > 3) {
-	print(STDERR "\tBitplane:\n\t\t");
+	print(STDERR "\tBitplane Data:\n\t\t");
 	for (my($y)=0; $y<32; $y++) {
 		for (my($x)=0; $x<16; $x++) {
 	  		for (my($m)=0x01; $m<0x100; $m<<=1) {
