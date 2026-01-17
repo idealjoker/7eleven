@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Sat Jan 17 09:34:45 2026
+#                    dlm: Sat Jan 17 13:14:06 2026
 #                    (c) 2026 A.M. Thurnherr
-#                    uE-Info: 126 107 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 32 61 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -29,6 +29,7 @@
 #				  -i0 default and use -i to change
 # Jan 16, 2026: - added -s, -e, -Q
 # Jan 17, 2026: - added 5th brightness level (half tone)
+#				- BUG: level 3/5 did not appear on bitplane W
 # HISTORY END
 
 # RELEASE NOTES:
@@ -287,8 +288,8 @@ if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
 					} elsif ($opt_i != 0) {
 						die("$0: invalid interlace method -i $opt_i\n");
 					}
-				} else {												# bitplane W (levels 2,4)
-					$BP[$y][$xB] |= $xm  if ($rawImg[$y][$x]==2 || $rawImg[$y][$x]==4);
+				} else {												# bitplane W (levels 2,3,4)
+					$BP[$y][$xB] |= $xm  if ($rawImg[$y][$x] > 1);
 				}
 			}
 		}
