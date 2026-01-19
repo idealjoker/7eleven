@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sat Dec 20 14:13:52 2025
+                    dlm: Mon Jan 19 12:49:45 2026
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 617 0 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 538 0 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -529,6 +529,63 @@ sys_bitgroupOp_ABXY
 	B4		LampFX#
 	B5		???
 	B6		matrix flags (04:LM#10;  40:LM#20;  80:LM#30)
+
+----------------------------------------------------------------------
+
+=Display Effects (DisplayFX)=
+
+
+- !displayFX #
+	- passes regs B, X(?), U(?); not A, probably not Y
+	- priority:
+		- higher number FX interrupt lower numbers
+		- lower number FX not started
+	- FX restarting
+		- effect is restarted unless flag $20 is set
+	  
+
+- defined in =DISPLAYFX_TABLE
+	- each entry is 5 bytes:
+		B0		PRIORITY
+					$00		always run (in T2 only used for DMD_NOP (end_displayFX) and DMD_Knocker (RTS?!)
+		B1		FLAGS
+					F01		BACKGROUND EFFECT
+								- when clear:
+									- continue with flags specified in DISPLAYFX_TABLE
+								- when set:
+									- when tilted, do not start FX
+									- in running game or gameOver, continue with B1=$4D 
+									- exclusive flag (not used in combination with others)
+					F08		GAME-OVER FX
+								- when clear:
+									- in gameOver, never start FX
+								- when set:
+									- in gameOver, always start FX
+					F10 	IN-GAME FX
+								- when clear:
+									- in running game, never start FX 
+								- when set:
+									- in running game, always start FX
+					F20		PROTECTED FROM RESTART
+								- when clear:
+									- interrupted by same priority FX
+								- when set:
+									- protected from interruption by same priority FX
+									
+								
+
+- Terminator-2:
+		F01		used exclusively or not at all
+					score display 
+					attract mode 
+					test mode
+					tilt 
+					buyIn countdown
+					hurryUp
+					Paybacktime
+					loadCannon countdown
+					SuperJackpot lit
+				
 
 ----------------------------------------------------------------------
 
