@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Jan 19 12:48:14 2026
+#                    dlm: Mon Jan 26 09:32:55 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 107 38 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 108 27 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -105,6 +105,7 @@
 #	Jan 11, 2026: - renamed DMD/ASIC vars
 #	Jan 18, 2026: - added DMD_WORKBUFs
 #	Jan 19, 2026: - renamed DFX labels
+#	Jan 26, 2026: - updated
 # END OF HISTORY
 
 #======================================================================
@@ -224,8 +225,6 @@ define_label('_BLOCKS_FREE',						0x036C);		# number of free RAM blocks
 define_label('^SOL_QUEUE_HEAD',						0x03EA);
 define_label('^SOL_QUEUE_TAIL',						0x03EC);
 
-define_label('=OUTHOLE_BONUS',						0x05DB);		# 2 bytes per player
-
 VERSION_OFFSETS(-1,0);
 
 define_label('^HIGH_PRIORITY_THREAD',				0x0366+$VO);		
@@ -269,9 +268,15 @@ define_label('_TILTWARNINGS_LEFT',					0x04D4+$VO);
 
 define_label('=IO_BUFFER',							0x050E+$VO);		# Eli
 
-define_label('_DMD_FRAMEBUFFER@3800_SHADOW',		0x0535+$VO);
-define_label('_DMD_FRAMEBUFFER@3A00_SHADOW',		0x0536+$VO);
-define_label('_DMD_ACTIVE_FRAMEBUF_SHADOW',			0x0537+$VO);
+unless ($WPCV eq 'WPC(alpha)') {
+	define_label('__DMD_XY',						0x0533+$VO);
+	define_label('_DMD_Y',							0x0534+$VO);
+	define_label('_DMD_FRAMEBUFFER@3800_SHADOW',	0x0535+$VO);
+	define_label('_DMD_FRAMEBUFFER@3A00_SHADOW',	0x0536+$VO);
+	define_label('_DMD_ACTIVE_FRAMEBUF_SHADOW',		0x0537+$VO);
+}
+
+define_label('=OUTHOLE_BONUS',						0x05DB+$VO);		# 2 bytes per player
 
 define_label('=DMD_WORKBUF_1',						0x0652+$VO);
 define_label('=DMD_WORKBUF_2',						0x0852+$VO);
@@ -461,12 +466,12 @@ define_syscall('memSetBY',							0x8378,'B');
 define_syscall('solCmd',							0x8385,'O');
 define_syscall('pulseFlasher',						0x8392,'B');
 define_syscall('solCmd_wait',						0x839F,'B');
-define_syscall('syscall_83B0',						0x83B0,'B');			# FH
-define_syscall('syscall_83C1',						0x83C1,'B');
-define_syscall('syscall_83CE',						0x83CE,'B');
+define_syscall('syscall_83B0',						0x83B0,'B');			# FH, solenoid related
+define_syscall('TRIAC_on',							0x83C1,'B');
+define_syscall('TRIAC_off',							0x83CE,'B');
 define_syscall('setGIbrightness80',					0x83DB,'B');
 define_syscall('setGIbrightness81',					0x83E8,'B');
-define_syscall('syscall_83F5',						0x83F5,'B');
+define_syscall('syscall_83F5',						0x83F5,'B');			# Flasher FX?
 define_syscall('syscall_8402',						0x8402,'L');
 define_syscall('syscall_840F',						0x840F,'L');
 define_syscall('lampOn',							0x841C,'L');
@@ -754,6 +759,7 @@ define_syscall('soundCardCmd[AB]',						0xC0ED+$VO);
 VERSION_OFFSETS(-273,0);
 define_syscall('end_lampFX',							0xC65F+$VO);	# C5CF -273
 define_syscall('abort_lampFX[A]',						0xC6E0+$VO);	# C5CF -273
+define_syscall('displayFX[A]_from_LampFX_okay?',		0xC755+$VO);
 define_syscall('displayFX[A]',							0xC791+$VO);
 
 #if ($WPCV eq 'WPC(alpha)') {							# clashes with obj-based migration
@@ -804,16 +810,16 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('syscall_B8D5',							0xB8D5,'WWW');
  define_syscall('strcopy_[BX]to[Y]_maxlen44',			0xB97B);
  define_syscall('lampFX[A]',							0xCC3A);
- define_syscall('syscall_C923',							0xC923,'B');
+ define_syscall('freezeFrame_then_end_displayFX',		0xC923,'B');
+ define_syscall('end_(also)bgDisplayFX',				0xC94E);
  define_syscall('end_displayFX',						0xC952);
- define_syscall('setDMDanimation_playing[A]',			0xCAB0);
  define_syscall('DMDanimation[A]_playing?',				0xCAB4);
- define_syscall('setDMDfunction[A]', 					0xCABD);
- define_syscall('A=DMDmode_in_effect',					0xCADE);
- define_syscall('replay_last_DMDanimation??',			0xCAE2);
+ define_syscall('DMD_end_bgDisplayFX[A]', 				0xCABD);
+ define_syscall('A=DMD_bgDisplayFX',					0xCADE);
+ define_syscall('DMD_restart_bgDisplayFX',				0xCAE2);
  define_syscall('pushSndCommand[A]',			        0xC17C);
- define_syscall('syscall_D6BC',							0xD6BC,'WB');
- define_syscall('syscall_D730',							0xD730,'BBB');
+ define_syscall('A=stringWidth',						0xD6BC,'gf');
+ define_syscall('draw_spriteChar[A]',					0xD730,'fxy');
  define_syscall('printf_leftAdjusted',					0xD77D,'gfxy');
  define_syscall('printf_centered',						0xD799,'gfxy');
  define_syscall('printf_rightAdjusted',					0xD7B4,'gfxy');
@@ -822,7 +828,7 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('sys_printf_rightAdjusted',				0xD7E9);
  define_syscall('ISR_lampMatrix_MUX',	       			0xDAC6);
  define_syscall('updateSoundCmdBuffer',	       			0xDDF1);
- define_syscall('IRQ_timer_handler??',					0xECCA);
+ define_syscall('DMD_disable_grayscale_driver',			0xE142);
  define_label('DMD_PWM_3level_ISR',						0xEE91);
  define_syscall('DMD_render_firstRLEframe',				0xEF47,'D');
  define_syscall('DMD_toggleFrameAndSleep[A]_[B]times',	0xF647,'BB');			
@@ -839,7 +845,8 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('DMD_init_workBufFB1@38_displayFB2@3A',	0xFBAE);
  define_syscall('DMD_invert_frame',					    0xFBCB);
  
- define_syscall('syscall_FE3C',							0xFE3C,'S');
+ define_syscall('switch_active?',						0xFE3C,'S');
+ define_syscall('render_STRINGBUF_font[B]',				0xFE49);
 }
 
 # non-global
@@ -901,7 +908,9 @@ $Hook[37]		= 'Slamtilt_override';
 $Hook[44]		= 'gameStart_ballsMissing';
 $Hook[45]		= 'endOfBall_preThreads';
 $Hook[46]		= 'Gamestart_pre_initBall';
+$Hook[48]		= 'resetSolenoidSystem_override';
 
+$Hook[59]		= 'nextBall_override(nonStandard)';
 $Hook[59]		= 'load_gameString_override';
 
 $Hook[66]		= 'slamTilt_override';
@@ -913,9 +922,13 @@ $Hook[75]		= 'lamp_and_displayFX_initialize_override';
 $Hook[77]		= 'displayFX_override';
 $Hook[78]		= 'lampFX_override';
 
+$Hook[86]		= 'SWI2_prePanic';
+$Hook[88]		= 'handleBackgroundTasks_post';
+
 $Hook[90]		= 'initWPC_preIRQstart';
 $Hook[91]		= 'IRQtimer';
 $Hook[95]		= 'renderChar_override';
+$Hook[96]		= 'renderChar_post';
 $Hook[98]		= 'preISR';
 $Hook[99]		= 'postISR';
 

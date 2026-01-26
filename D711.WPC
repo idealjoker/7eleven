@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Dec 27 09:47:22 2025
+#                    dlm: Mon Jan 26 09:32:15 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 160 57 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 162 54 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -95,7 +95,7 @@
 #				  - greatly improved system pointer decoding
 #	Jun 21, 2025: - added def_WPC_bitgroup_table
 #	Jun 22, 2025: - made it work
-#	Jun 23, 2025: - added def_WPC_FXtable()
+#	Jun 23, 2025: - added def_WPC_lampFXtable()
 #				  - re-added goood bitgroup table decoding
 #				  - reduced WPC table indents to same as code
 #	Jun 24, 2025: - added WPC stuff
@@ -158,6 +158,8 @@
 #				  - renamed routine
 #				  - added decoding of DMD frames
 #	Dec 27, 2025: - added compression info for DMD frames
+#	Jan 26, 2026: - added Lamp# and DisplayFX# magic
+#				  - decode LampFX byte#10 as DisplayFX
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -649,7 +651,7 @@ sub disassemble_system_pointers()
 		def_WPC_switchTable(undef,'SWITCH TABLE',1);				# label already defined, follow code
 	$Address = 0x81CE; push(@skipAddr,$Address);
 		$Address = def_WPC_ref('=LAMPFX_TABLE');
-		def_WPC_FXtable(undef,'LAMP EFFECTS TABLE');
+		def_WPC_lampFXtable(undef,'LAMP EFFECTS TABLE');
 	$Address = 0x81D1; push(@skipAddr,$Address);
 		$Address = def_WPC_ref('=DISPLAYFX_TABLE');
 		def_WPC_displayFXtable(undef,'DISPLAY EFFECTS TABLE');
@@ -932,6 +934,17 @@ sub apply_magic_WPC($$)
 				$num = hex($') if ($num =~ m{^\$});
 				$OPA[$addr][$i-1] = sprintf("$pre%d$post",$num);
 			} elsif ($opa ne 'nolabel') {										# nolabel handled in D711.pm
+				if ($opa =~ m{Lamp#$}) {										# e.g. 1:#Lamp#
+					my($pre) = $`;
+					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{1,2})$});
+					die unless defined($num);
+					$opa = sprintf("${pre}Lamp#%d",hex($num));
+				} elsif ($opa =~ m{DisplayFX#$}) {								# e.g. 1:#DisplayFX#
+					my($pre) = $`;
+					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{1,2})$});
+					die unless defined($num);
+					$opa = "${pre}DisplayFX#$num";
+				}
 	            $OPA[$addr][$i-1] = $opa;										# otherwise use it literally
 	        }						
             substitute_identifier(\$OPA[$addr][$i-1]);							# substitute system identifiers after mangling argument
@@ -1973,13 +1986,13 @@ sub def_WPC_switchTable(@)
 }   
 		    
 #----------------------------------------------------------------------
-# FX Table
+# LampFX Table
 #----------------------------------------------------------------------
 
-sub def_WPC_FXtable(@)
+sub def_WPC_lampFXtable(@)
 {
 	my($lbl,$divider_label,$follow_code) = @_;
-#	print(STDERR "def_WPC_FXTable(@_)\n");
+#	print(STDERR "def_WPC_lampFXTable(@_)\n");
 
 	die unless defined($Address);
 	return if ($decoded[$Address]);												
@@ -2023,7 +2036,8 @@ sub def_WPC_FXtable(@)
 		$opaddr += 3;
 		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
 		$OP[$opaddr] = '.DB';
-		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
+##		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address))); $decoded[$Address++] = 1;
+		push(@{$OPA[$opaddr]},sprintf('DisplayFX#%02X',BYTE($Address))); $decoded[$Address++] = 1;
 	}
     insert_empty_line($Address);
 }   

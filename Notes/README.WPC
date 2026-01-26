@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Mon Jan 19 12:49:45 2026
+                    dlm: Mon Jan 26 08:01:56 2026
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 538 0 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 514 33 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -511,7 +511,7 @@ sys_bitgroupOp_ABXY
 		B5
 		B6
 		B7-9	Handler Reference
-		BA
+		B10		stacked DisplayFX
 	- typical entry:
 		.DB $B0 								B0
 		.DB $00 								B1	    
@@ -573,20 +573,6 @@ sys_bitgroupOp_ABXY
 									- protected from interruption by same priority FX
 									
 								
-
-- Terminator-2:
-		F01		used exclusively or not at all
-					score display 
-					attract mode 
-					test mode
-					tilt 
-					buyIn countdown
-					hurryUp
-					Paybacktime
-					loadCannon countdown
-					SuperJackpot lit
-				
-
 ----------------------------------------------------------------------
 
 =Switches=
@@ -743,12 +729,11 @@ $13
 
 ----------------------------------------------------------------------
 
-=System Calls=
+=Font Data=
 
-!lampOn <lamp>
-	- turns on logical lamp bit and M08 (main matrix)
-	- if lamp already blinking, leave it blinking
+- =FONTS table
+	- not a WPC table with header
+	- list of 3-byte references to font data
 
-!memClear <addr> <16-bit len>
+- Font Data Structure:
 	
-... and heaps more ...
