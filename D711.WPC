@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Jan 26 09:32:15 2026
+#                    dlm: Mon Jan 26 21:40:01 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 162 54 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 947 52 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -160,6 +160,7 @@
 #	Dec 27, 2025: - added compression info for DMD frames
 #	Jan 26, 2026: - added Lamp# and DisplayFX# magic
 #				  - decode LampFX byte#10 as DisplayFX
+#				  - added StringSpec#, Thread# magic
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -936,14 +937,34 @@ sub apply_magic_WPC($$)
 			} elsif ($opa ne 'nolabel') {										# nolabel handled in D711.pm
 				if ($opa =~ m{Lamp#$}) {										# e.g. 1:#Lamp#
 					my($pre) = $`;
-					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{1,2})$});
+					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{2})$});
 					die unless defined($num);
 					$opa = sprintf("${pre}Lamp#%d",hex($num));
+                } elsif ($opa =~ m{Gamestring#$}) {								# e.g. 1:#Gamestring#
+					my($pre) = $`;
+					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{4})$});
+					die unless defined($num);
+					$opa = sprintf("${pre}Gamestring#%d",hex($num));
 				} elsif ($opa =~ m{DisplayFX#$}) {								# e.g. 1:#DisplayFX#
 					my($pre) = $`;
-					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{1,2})$});
+					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{2})$});
 					die unless defined($num);
 					$opa = "${pre}DisplayFX#$num";
+				} elsif ($opa =~ m{StringSpec#$}) {								# e.g. 1:#StringSpec#
+					my($pre) = $`;
+					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{4})$});
+					die(sprintf("addr=%X, opa=$opa, pre=$pre, OPA=$OPA[$addr][$i-1] OP=$OP[$addr]",$addr)) unless defined($num);
+					$opa = "${pre}StringSpec#$num";
+				} elsif ($opa =~ m{Thread#$}) {									# e.g. 1:#Thread#
+					my($pre) = $`;
+					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{4})$});
+					die(sprintf("addr=%X, opa=$opa, pre=$pre, OPA=$OPA[$addr][$i-1] OP=$OP[$addr]",$addr)) unless defined($num);
+					$opa = "${pre}Thread#$num";
+				} elsif ($opa =~ m{Error#$}) {									# e.g. 1:#Error#
+					my($pre) = $`;
+					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{2})$});
+					die(sprintf("addr=%X, opa=$opa, pre=$pre, OPA=$OPA[$addr][$i-1] OP=$OP[$addr]",$addr)) unless defined($num);
+					$opa = "${pre}Error#$num";
 				}
 	            $OPA[$addr][$i-1] = $opa;										# otherwise use it literally
 	        }						

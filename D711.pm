@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Wed Oct 22 08:09:24 2025
+#					 dlm: Mon Jan 26 21:27:13 2026
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 331 56 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 332 76 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -329,6 +329,7 @@
 #	Aug 28, 2025: - added def_WBlist_hex
 #				  - added labeling to def_wordblock_hex
 #	Oct 22, 2025: - added support for <arg>:nolabel hint
+#	Jan 26, 2026: - adapted to use implicit :nolabel for e.g. 1:#StringSpec#
 # END OF HISTORY
 
 # TO-DO:
@@ -753,27 +754,27 @@ sub substitute_labels(@)                                        		# replace addr
     $fa = 0 unless defined($fa);
     $la = $#ROM unless defined($la);
 
-    for (local($addr)=$fa; $addr<=$la; $addr++) {
+    for (local($addr)=$fa; $addr<=$la; $addr++) {						# don't substitute labels for 1:nolabel and 1:#LampFX#
         for (my($i)=1; $i<=@{$OPA[$addr]}; $i++) {
         	my($opa) = ($REM[$addr] =~ m{\b$i:(\S+)});
             $OPA[$addr][$i-1] = substitute_label($addr,$i-1)
-            	unless ($opa eq 'nolabel');
+            	unless ($opa eq 'nolabel' || $opa =~ m{#$});
         }
     }
-    foreach my $addr (keys(%label_arith_exprs)) {               # substitude expressions defined with def_lbl_arith()
+    foreach my $addr (keys(%label_arith_exprs)) {               		# substitude expressions defined with def_lbl_arith()	
         die unless (@{$OPA[$addr-1]} == 1);
         die if ($WMS_System =~ m{^WPC});
         $OPA[$addr-1][0] = ($OPA[$addr-1][0] =~ /^#/) ? '#' : '';
         $OPA[$addr-1][0] .= $label_arith_exprs{$addr};
     }
-    foreach my $addr (keys(%pointer)) {                         # substitude labels defined with def_ptr2lbl()
+    foreach my $addr (keys(%pointer)) {                         		# substitude labels defined with def_ptr2lbl()
         die(sprintf("%04X: $OP[$addr] @{$OPA[$addr]}",$addr)) unless (@{$OPA[$addr]} == 1);
         die if ($WMS_System =~ m{^WPC});
         $OPA[$addr][0] = $pointer{$addr};
     }
 }
 
-sub disassemble_unfollowed_labels()                             # from begin/end6800 and def_byteblock_code
+sub disassemble_unfollowed_labels()                             		# from begin/end6800 and def_byteblock_code
 {
     foreach $Address (@unfollowed_lbl) {
         def_code() unless (defined($OP[$Address]));
