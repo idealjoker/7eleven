@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Thu Jan 29 09:07:13 2026
+#                    dlm: Thu Jan 29 14:43:14 2026
 #                    (c) 2026 idealjoker@mailbox.org
-#                    uE-Info: 46 18 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 35 70 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -32,6 +32,7 @@
 #				- BUG: level 3/5 did not appear on bitplane W
 # Jan 28, 2026: - started implementing gamma correction (-g)
 # Jan 29, 2026: - made gamma correction work
+#				- BUG: gamma correction -s was working wrong way round
 # HISTORY END
 
 # RELEASE NOTES:
@@ -123,7 +124,7 @@ for (my($y)=0; $y<32; $y++) {											# create grayscale intensity image
 		my($pixel) = $image->getpixel(x=>$x,y=>$y);						# (-g adjustment is irrelevant when -e is used)
 		my($R,$G,$B,$A) = $pixel->rgba();
 		my($I) = int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
-		$I = int(0xFF*($I/0xFF)**(1/$opt_g)+0.5)
+		$I = int(0xFF*($I/0xFF)**($opt_g)+0.5)
 			if defined($opt_g);
 		$rawImg[$y][$x] = $I;
 	}
