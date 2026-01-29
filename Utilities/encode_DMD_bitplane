@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Sat Jan 17 13:14:06 2026
-#                    (c) 2026 A.M. Thurnherr
-#                    uE-Info: 32 61 NIL 0 0 72 2 2 4 NIL ofnI
+#                    dlm: Thu Jan 29 09:07:13 2026
+#                    (c) 2026 idealjoker@mailbox.org
+#                    uE-Info: 46 18 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -30,11 +30,20 @@
 # Jan 16, 2026: - added -s, -e, -Q
 # Jan 17, 2026: - added 5th brightness level (half tone)
 #				- BUG: level 3/5 did not appear on bitplane W
+# Jan 28, 2026: - started implementing gamma correction (-g)
+# Jan 29, 2026: - made gamma correction work
 # HISTORY END
 
 # RELEASE NOTES:
+#	- gamma correction
+#		- file_gamma * decoding_gamma * display_gamma = viewing_gamma
+#		- see [https://www.w3.org/TR/PNG-GammaAppendix.html]
+#			plasma DMD 		display_gamma 	= 1.0 	(assumed)
+#			source image 	file_gamma		= 2.2 	(assumed)
+#							viewing_gamma	= 1.25 	(assumed)
+#			-g			    decoding_gamma	= 0.57 	(calculated)
 #	- 5-level driver:
-#		- 2nd brightest level is treated as half-tone:
+#		- with -g1, 2nd brightest level is treated as half-tone 
 #			- brightness : 0 1 2 2.5 3
 #			- pixel value: 0 1 2 3   4
 #		- requires at least 8 input levels
@@ -57,11 +66,12 @@ $0 =~ s@^.*/(.*)$@$1@;
 die("Usage: $0 \n" .
 		"\t[-v)erbosity <n[0]>] [-Q)uiet (no code output)]\n" .
 		"\t[brightness-l)evels <n[4]>]\n" .
+		"\t[apply -g)amma <correction>\n" .
 		"\t[apply constrast-s)tretching]\n" .
 		"\t[apply histogram-e)qualization\n" .
 		"\t[use alternate -i)nterlace <method[0:none,1:cols,2:rows]>]\n" .
 		"\t\t<bitplane> <image file>\n")
-	        unless (getopts('ei:l:Qsv:') && @ARGV==2);
+	        unless (getopts('g:ei:l:Qsv:') && @ARGV==2);
 
 my $bitplane 	= $ARGV[0];
 my $image_file	= $ARGV[1];
@@ -69,6 +79,7 @@ my $image_file	= $ARGV[1];
 our $opt_Q;
 our $opt_s;
 our $opt_e;
+our $opt_g;
 our $opt_i = -1 unless defined($opt_i);
 our $opt_l =  4 unless defined($opt_l);
 our $opt_v =  0 unless defined($opt_v);
@@ -107,14 +118,23 @@ if ($opt_v > 1) {
 
 my(@rawImg);															# decimated image
 
+for (my($y)=0; $y<32; $y++) {											# create grayscale intensity image
+	for (my($x)=0; $x<128; $x++) {										# (adjusting for -g if needed)
+		my($pixel) = $image->getpixel(x=>$x,y=>$y);						# (-g adjustment is irrelevant when -e is used)
+		my($R,$G,$B,$A) = $pixel->rgba();
+		my($I) = int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
+		$I = int(0xFF*($I/0xFF)**(1/$opt_g)+0.5)
+			if defined($opt_g);
+		$rawImg[$y][$x] = $I;
+	}
+}
+
 if ($opt_e) {															# HISTOGRAM EQUALIZATION
 
 	my(@Ivec,%iVals);															
 	for (my($y)=0; $y<32; $y++) {										# create sorted intensity vector
 		for (my($x)=0; $x<128; $x++) {
-			my($pixel) = $image->getpixel(x=>$x,y=>$y);
-			my($R,$G,$B,$A) = $pixel->rgba();
-			my($I) = int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
+			my($I) = $rawImg[$y][$x];
 			die($I) unless $I>=0 && $I<=0xFF;
 			push(@Ivec,$I);
 			$iVals{$I}++;
@@ -129,28 +149,38 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 		   ($opt_l != 4 && $nLvl < $opt_l);
 
 	my($minIout,$maxIout) = (999,-1);
-	my($Lstep) = ($opt_l == 5) ? 4096 / 8								# work with 8 levels when using 5-level driver 
-							   : 4096 / $opt_l;										
+	my(@llim); 															# level limits
+	if ($opt_l == 5) {													# 5-level driver (linear, half-tone, gamma)
+		if (!defined($opt_g)) {											#	linear
+			for (my($i)=0; $i<=$opt_l; $i++) {
+				$llim[$i] = $i * 4096 / $opt_l;
+			}
+		} elsif ($opt_g == 1) {											#	half tone
+			@llim = (0,1024,2048,3072,3584,4096);
+		} else {														#	gamma correction
+			for (my($i)=0; $i<=$opt_l; $i++) {
+				$llim[$i] = 4096 * ($i/$opt_l)**(1/$opt_g);
+			}
+		}
+	} else {															# regular (not 5-level) drivers (linear, gamma)
+		if (defined($opt_g)) {											#	gamma correction
+			for (my($i)=0; $i<=$opt_l; $i++) {
+				$llim[$i] = 4096 * ($i/$opt_l)**(1/$opt_g);
+			}
+		} else {														#	linear
+			for (my($i)=0; $i<=$opt_l; $i++) {
+				$llim[$i] = $i * 4096 / $opt_l;
+			}
+		}
+	}
+
 	for (my($y)=0; $y<32; $y++) {										# decimate scaled input to $opt_l levels								
 		for (my($x)=0; $x<128; $x++) {	
-			my($pixel)		= $image->getpixel(x=>$x,y=>$y);
-			my($R,$G,$B,$A) = $pixel->rgba();
-			my($I)			= int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
-			my($Iout) 		= 0;
-            if ($opt_l == 5) {											# half-tones 0,1>0 2,3>1 4,5>2 6>3 7>4
-				while ($Iout<7 && $I>$Ivec[($Iout+1)*$Lstep-1]) {
-					$Iout++;
-        	    }
-            	if ($Iout < 7) {										# nominal levels: 0 1 2 2.5 3
-					$Iout = int($Iout/2);								# actual levels : 0 1 2  3  4
-				} else {
-					$Iout = 4;
-				}
-            } else {
-				while ($Iout<$opt_l-1 && $I>$Ivec[($Iout+1)*$Lstep-1]) {
-					$Iout++;
-        	    }
-        	}
+			my($I)	  = $rawImg[$y][$x];
+			my($Iout) = 0;
+			while ($Iout<$opt_l-1 && $I>$Ivec[$llim[$Iout+1]]) {
+				$Iout++;
+			}
 			$rawImg[$y][$x] = $Iout;
 			die unless $rawImg[$y][$x]>=0 && $rawImg[$y][$x]<$opt_l;
 			$minIout = $rawImg[$y][$x] if $rawImg[$y][$x] < $minIout;
@@ -165,9 +195,7 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 	my($minI,$maxI) = (999,-1); 										# find contrast limits
 	for (my($y)=0; $y<32; $y++) {										    
 		for (my($x)=0; $x<128; $x++) {
-			my($pixel) = $image->getpixel(x=>$x,y=>$y);
-			my($R,$G,$B,$A) = $pixel->rgba();
-			my($I) = int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
+			my($I) = $rawImg[$y][$x];
 			die($I) unless $I>=0 && $I<=0xFF;
 			$minI = $I if ($minI > $I);
 			$maxI = $I if ($maxI < $I);
@@ -187,10 +215,9 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 							   : 256 / $opt_l;										
 	for (my($y)=0; $y<32; $y++) {										
 		for (my($x)=0; $x<128; $x++) {
-			my($pixel)		= $image->getpixel(x=>$x,y=>$y);
-			my($R,$G,$B,$A) = $pixel->rgba();
-			my($I)			= int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
-			my($Iout)		= $opt_s ? (($I - $minI) / ($maxI - $minI) * 255) : $I;
+			my($I) = $rawImg[$y][$x];
+			die($I) unless $I>=0 && $I<=0xFF;
+			my($Iout) = $opt_s ? (($I - $minI) / ($maxI - $minI) * 255) : $I;
 			$Iout = int($Iout/$Istep);
             if ($opt_l == 5) {											# half-tones 0,1>0 2,3>1 4,5>2 6>3 7>4
             	if ($Iout < 7) {										# nominal levels: 0 1 2 2.5 3
@@ -223,11 +250,14 @@ if ($opt_v > 1) {														# output brightness histogram
 	}
 }
 
-if ($opt_v > 2) {														# output as ASCII 
+if ($opt_v > 2) {														# output as ASCII
+	my(@c) = ($opt_l <= 5) ? ('@','*','+','-',' ')
+						   : ('@','#','*','+','-',':','.',' ');
+	
 	print(STDERR "\tDecimated Raw Image:\n\t\t");
 	for (my($y)=0; $y<32; $y++) {
 		for (my($x)=0; $x<128; $x++) {
-  			print(STDERR $rawImg[$y][$x]);
+  			print(STDERR $c[$rawImg[$y][$x]]);
 		}
 		print(STDERR "\n");
 	  	print(STDERR "\t\t") if $y<31;
