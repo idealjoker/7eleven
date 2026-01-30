@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Thu Jan 29 14:43:14 2026
+#                    dlm: Fri Jan 30 08:34:57 2026
 #                    (c) 2026 idealjoker@mailbox.org
-#                    uE-Info: 35 70 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 37 40 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -33,9 +33,17 @@
 # Jan 28, 2026: - started implementing gamma correction (-g)
 # Jan 29, 2026: - made gamma correction work
 #				- BUG: gamma correction -s was working wrong way round
+#				- BUG: both now wrong way round
+#				- replaced -l5 -g1 by -h
+# Jan 30, 2026: - added reduced level output warning
+#				- added level limit output for debugging
 # HISTORY END
 
 # RELEASE NOTES:
+#	- recommendations:
+#		driver 		-l5 (better than -h)
+#		contrast	orig, -s stretched, -e histogram equalized (may reduce levels)
+#		gamma		-g0.57 nominal, increase to darken image
 #	- gamma correction
 #		- file_gamma * decoding_gamma * display_gamma = viewing_gamma
 #		- see [https://www.w3.org/TR/PNG-GammaAppendix.html]
@@ -43,8 +51,8 @@
 #			source image 	file_gamma		= 2.2 	(assumed)
 #							viewing_gamma	= 1.25 	(assumed)
 #			-g			    decoding_gamma	= 0.57 	(calculated)
-#	- 5-level driver:
-#		- with -g1, 2nd brightest level is treated as half-tone 
+#	- 5-level half-tone driver:
+#		- with -h, 5-level driver is enabled and 2nd brightest level is treated as half-tone 
 #			- brightness : 0 1 2 2.5 3
 #			- pixel value: 0 1 2 3   4
 #		- requires at least 8 input levels
@@ -66,13 +74,13 @@ $0 =~ s@^.*/(.*)$@$1@;
 
 die("Usage: $0 \n" .
 		"\t[-v)erbosity <n[0]>] [-Q)uiet (no code output)]\n" .
-		"\t[brightness-l)evels <n[4]>]\n" .
+		"\t[brightness-l)evels <n[4]>] [-h)alftone 5-level driver]\n" .
 		"\t[apply -g)amma <correction>\n" .
 		"\t[apply constrast-s)tretching]\n" .
 		"\t[apply histogram-e)qualization\n" .
 		"\t[use alternate -i)nterlace <method[0:none,1:cols,2:rows]>]\n" .
 		"\t\t<bitplane> <image file>\n")
-	        unless (getopts('g:ei:l:Qsv:') && @ARGV==2);
+	        unless (getopts('g:hei:l:Qsv:') && @ARGV==2);
 
 my $bitplane 	= $ARGV[0];
 my $image_file	= $ARGV[1];
@@ -81,10 +89,20 @@ our $opt_Q;
 our $opt_s;
 our $opt_e;
 our $opt_g;
-our $opt_i = -1 unless defined($opt_i);
-our $opt_l =  4 unless defined($opt_l);
+our $opt_h;
+our $opt_l;
 our $opt_v =  0 unless defined($opt_v);
+our $opt_i = -1 unless defined($opt_i);
 
+if (defined($opt_l)) {
+	die("$0: invalid option combination <-l $opt_l -h>\n")
+		if $opt_h;
+} elsif ($opt_h) {
+	$opt_l = 5;
+} else {
+	$opt_l = 4;
+}
+ 
 die("$image_file: no such file or directory\n")
 	unless -f $image_file;
 die("$0: invalid bitplane number $bitplane\n")
@@ -121,11 +139,11 @@ my(@rawImg);															# decimated image
 
 for (my($y)=0; $y<32; $y++) {											# create grayscale intensity image
 	for (my($x)=0; $x<128; $x++) {										# (adjusting for -g if needed)
-		my($pixel) = $image->getpixel(x=>$x,y=>$y);						# (-g adjustment is irrelevant when -e is used)
+		my($pixel) = $image->getpixel(x=>$x,y=>$y);						
 		my($R,$G,$B,$A) = $pixel->rgba();
-		my($I) = int(sqrt($R**2/3+$G**2/3+$B**2/3)+0.5);
-		$I = int(0xFF*($I/0xFF)**($opt_g)+0.5)
-			if defined($opt_g);
+		my($I) = sqrt($R**2/3+$G**2/3+$B**2/3);
+		$I = 0xFF*($I/0xFF)**(1/$opt_g)									# -g adjustment is irrelevant when -e is used
+			if defined($opt_g) && !$opt_e;
 		$rawImg[$y][$x] = $I;
 	}
 }
@@ -138,11 +156,15 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 			my($I) = $rawImg[$y][$x];
 			die($I) unless $I>=0 && $I<=0xFF;
 			push(@Ivec,$I);
-			$iVals{$I}++;
+			$iVals{int($I+0.5)}++;
 		}
 	}
 	@Ivec = sort { $a <=> $b } @Ivec;
+
 	my($nLvl) = scalar(keys(%iVals));
+#	foreach my $val (keys(%iVals)) {
+#		print(STDERR "$val\n");
+#	}
 	printf(STDERR "\tInput Brightness   = \$%02X .. \$%02X (%d distinct levels)\n",$Ivec[0],$Ivec[$#Ivec],$nLvl)
 		if ($opt_v > 1);
 	die("$image_file: insufficient color depth ($nLvl distinct levels) for -l $opt_l histogram equalization\n")
@@ -152,21 +174,21 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 	my($minIout,$maxIout) = (999,-1);
 	my(@llim); 															# level limits
 	if ($opt_l == 5) {													# 5-level driver (linear, half-tone, gamma)
-		if (!defined($opt_g)) {											#	linear
+		if (!defined($opt_h)) {											#	linear
 			for (my($i)=0; $i<=$opt_l; $i++) {
 				$llim[$i] = $i * 4096 / $opt_l;
 			}
-		} elsif ($opt_g == 1) {											#	half tone
-			@llim = (0,1024,2048,3072,3584,4096);
-		} else {														#	gamma correction
+		} elsif (defined($opt_g)) {										#	gamma correction
 			for (my($i)=0; $i<=$opt_l; $i++) {
-				$llim[$i] = 4096 * ($i/$opt_l)**(1/$opt_g);
+				$llim[$i] = 4096 * ($i/$opt_l)**$opt_g;
 			}
+		} else {														# 	half tone
+			@llim = (0,1024,2048,3072,3584,4096);
 		}
 	} else {															# regular (not 5-level) drivers (linear, gamma)
 		if (defined($opt_g)) {											#	gamma correction
 			for (my($i)=0; $i<=$opt_l; $i++) {
-				$llim[$i] = 4096 * ($i/$opt_l)**(1/$opt_g);
+				$llim[$i] = 4096 * ($i/$opt_l)**$opt_g;
 			}
 		} else {														#	linear
 			for (my($i)=0; $i<=$opt_l; $i++) {
@@ -191,6 +213,15 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 	printf(STDERR "\tOutput Brightness  = \$%02X .. \$%02X\n",$minIout,$maxIout)
 		if ($opt_v > 1);
 
+	if ($opt_v > 1) {
+		print(STDERR "\tBrightness Limits  = ");
+		for (my($i)=0; $i<@llim-1 && $Ivec[$llim[$i]]<0xFF; $i++) {
+			printf(STDERR "%d%% ",int($Ivec[$llim[$i]]/2.55+0.5));
+#			printf(STDERR "%d ",$Ivec[$llim[$i]]);
+		}
+		print(STDERR "100%\n");
+	}
+
 } else {																# CONTRAST STRETCHING (-s) / RAW
 	my(%iVals);
 	my($minI,$maxI) = (999,-1); 										# find contrast limits
@@ -212,15 +243,15 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 #		   ($opt_l != 4 && $nLvl<$opt_l);
 
 	my($minIout,$maxIout) = (999,-1);
-	my($Istep) = ($opt_l == 5) ? 256 / 8								# work with 8 levels when using 5-level driver 
-							   : 256 / $opt_l;										
+	my($Istep) = $opt_h ? 256 / 8										# work with 8 levels when using half-tone driver
+						: 256 / $opt_l;										
 	for (my($y)=0; $y<32; $y++) {										
 		for (my($x)=0; $x<128; $x++) {
 			my($I) = $rawImg[$y][$x];
 			die($I) unless $I>=0 && $I<=0xFF;
 			my($Iout) = $opt_s ? (($I - $minI) / ($maxI - $minI) * 255) : $I;
 			$Iout = int($Iout/$Istep);
-            if ($opt_l == 5) {											# half-tones 0,1>0 2,3>1 4,5>2 6>3 7>4
+            if ($opt_h) {												# half-tones 0,1>0 2,3>1 4,5>2 6>3 7>4
             	if ($Iout < 7) {										# nominal levels: 0 1 2 2.5 3
 					$Iout = int($Iout/2);								# actual levels : 0 1 2  3  4
 				} else {
@@ -238,16 +269,24 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 
 }
 
-if ($opt_v > 1) {														# output brightness histogram
-	my(@nPix);
-	for (my($y)=0; $y<32; $y++) {
-		for (my($x)=0; $x<128; $x++) {
-			$nPix[$rawImg[$y][$x]]++;
-		}
+my(@nPix);
+for (my($y)=0; $y<32; $y++) {
+	for (my($x)=0; $x<128; $x++) {
+		$nPix[$rawImg[$y][$x]]++;
 	}
+}
+my($lout) = 0;
+for (my($l)=0; $l<$opt_l; $l++) {
+	$lout++ if defined($nPix[$l]);
+}
+print(STDERR "WARNING: $image_file: output has only $lout out of $opt_l available levels\n")
+	unless $lout == $opt_l;
+
+if ($opt_v > 1) {														# output brightness histogram
 	print(STDERR "\t\tFrequency:\n");
 	for (my($l)=0; $l<$opt_l; $l++) {
-		printf(STDERR "\t\t\tlevel-$l: %4d (%2d%%)\n",$nPix[$l],int(100*$nPix[$l]/4096)+.5) if defined($nPix[$l]);
+		printf(STDERR "\t\t\tlevel-$l: %4d (%2d%%)\n",$nPix[$l],int(100*$nPix[$l]/4096)+.5)
+			if defined($nPix[$l]);
 	}
 }
 
@@ -273,7 +312,7 @@ if ($opt_v > 2) {														# output as ASCII
 
 my(@BP);																# extract bitplane
 
-printf(STDERR "\tBitplane = $bitplane\n")
+printf(STDERR "\tBitplane           = $bitplane\n")
 	if $opt_v > 1;
 
 if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
