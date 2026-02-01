@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Fri Jan 30 08:34:57 2026
+#                    dlm: Sun Feb  1 09:45:40 2026
 #                    (c) 2026 idealjoker@mailbox.org
-#                    uE-Info: 37 40 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 111 43 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -37,6 +37,7 @@
 #				- replaced -l5 -g1 by -h
 # Jan 30, 2026: - added reduced level output warning
 #				- added level limit output for debugging
+# Feb  1, 2026: - added 7-level bitplanes ABCD
 # HISTORY END
 
 # RELEASE NOTES:
@@ -107,7 +108,7 @@ die("$image_file: no such file or directory\n")
 	unless -f $image_file;
 die("$0: invalid bitplane number $bitplane\n")
 	unless ($bitplane =~ m{^\d+$} && $bitplane>=0 && $bitplane<=7) ||
-		   ($bitplane =~ m{^[UuVvWw]$});
+		   ($bitplane =~ m{^[UuVvWwAaBbCcDd]$});
 die("$0: invalid number of brighntess levels $opt_l\n")
 	unless $opt_l>=0 && $opt_l<=0xFF;
 
@@ -306,8 +307,13 @@ if ($opt_v > 2) {														# output as ASCII
 
 #----------------------------------------------------------------------
 # Extract Bitplanes
-#	- 0, 1, 2 for WPC drivers
-#	- U, V, W for IDD
+#	- 0, 1, 2 for binary-encoded bitplane drivers
+#		- WPC drivers use 0 & 1
+#		- experimental 8-level driver uses all three
+#	- U, V, W
+#		- 5-level driver
+#	- A, B, C, D
+#		- 7-level driver
 #----------------------------------------------------------------------
 
 my(@BP);																# extract bitplane
@@ -315,7 +321,7 @@ my(@BP);																# extract bitplane
 printf(STDERR "\tBitplane           = $bitplane\n")
 	if $opt_v > 1;
 
-if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
+if ($bitplane =~ m{^\d+$}) {											# binary-encoded bitplanes (bit number)
 	die("$0: invalid bitplane for -l $opt_l\n")
 		if ($opt_l == 5);
 	my($bitMask) = 0x01;
@@ -328,13 +334,31 @@ if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
 			}
 		}
 	}
-} else {																# non-numerical (U, V, W)
+} else {																# non-numerical (A-D, U-W)
 	for (my($y)=0; $y<32; $y++) {
 		for (my($xB)=0; $xB<16; $xB++) {
 			$BP[$y][$xB] = 0;
 			for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm<<=1) {
 				my($x) = (8*$xB) + $xb;
-				if ($bitplane =~ m{[uU]}) {								# bitplane U (levels 1(half),3(half),4)
+				if (CORE::fc($bitplane) eq CORE::fc('A')) {							# bitplane A
+					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1) || ($rawImg[$y][$x]==2) ||
+										   ($rawImg[$y][$x]==3 && $x%2==$y%2) ||
+										   ($rawImg[$y][$x]==5) || ($rawImg[$y][$x]==6);
+				} elsif (CORE::fc($bitplane) eq CORE::fc('B')) {					# bitplane B
+					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==3 && $x%2==$y%2) ||
+										   ($rawImg[$y][$x]==4) ||
+										   ($rawImg[$y][$x]==5 && $x%2==$y%2) ||
+										   ($rawImg[$y][$x]==6);
+				} elsif (CORE::fc($bitplane) eq CORE::fc('C')) {					# bitplane C
+					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==2) ||
+										   ($rawImg[$y][$x]==3 && $x%2!=$y%2) ||
+										   ($rawImg[$y][$x]==5 && $x%2!=$y%2) ||
+										   ($rawImg[$y][$x]==6);
+				} elsif (CORE::fc($bitplane) eq CORE::fc('D')) {					# bitplane D
+					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==3 && $x%2!=$y%2) ||
+										   ($rawImg[$y][$x]==4) || ($rawImg[$y][$x]==5) ||
+										   ($rawImg[$y][$x]==6);
+				} elsif (CORE::fc($bitplane) eq CORE::fc('U')) {					# bitplane U
 					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==4);
 					if ($opt_i == -1) {									# checkerboard interlacing
 						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 || $rawImg[$y][$x]==3) && $x%2==$y%2;
@@ -347,7 +371,7 @@ if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
 					} else {
 						die("$0: invalid interlace method -i $opt_i\n");
 					}
-				} elsif ($bitplane =~ m{[vV]}) {						# bitplane V (levels 1(half),3(half),4)
+				} elsif (CORE::fc($bitplane) eq CORE::fc('V')) {					# bitplane V
 					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x] == 4);
 					if ($opt_i == -1) {									# checkerboard
 						$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 || $rawImg[$y][$x]==3) && $x%2!=$y%2;
@@ -358,8 +382,10 @@ if ($bitplane =~ m{^\d+$}) {											# numerical (bit number)
 					} elsif ($opt_i != 0) {
 						die("$0: invalid interlace method -i $opt_i\n");
 					}
-				} else {												# bitplane W (levels 2,3,4)
+				} elsif (CORE::fc($bitplane) eq CORE::fc('W')) {					# bitplane W
 					$BP[$y][$xB] |= $xm  if ($rawImg[$y][$x] > 1);
+				} else {
+					die("$0: invalid bitplane <$bitplane>\n");
 				}
 			}
 		}
