@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Sun Feb  1 09:45:40 2026
+#                    dlm: Wed Feb  4 14:44:44 2026
 #                    (c) 2026 idealjoker@mailbox.org
-#                    uE-Info: 111 43 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 41 49 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -38,6 +38,7 @@
 # Jan 30, 2026: - added reduced level output warning
 #				- added level limit output for debugging
 # Feb  1, 2026: - added 7-level bitplanes ABCD
+# Feb  4, 2026: - BUG: 7-level encoding was wrong
 # HISTORY END
 
 # RELEASE NOTES:
@@ -341,22 +342,26 @@ if ($bitplane =~ m{^\d+$}) {											# binary-encoded bitplanes (bit number)
 			for (my($xb,$xm)=(0,0x01); $xb<8; $xb++,$xm<<=1) {
 				my($x) = (8*$xB) + $xb;
 				if (CORE::fc($bitplane) eq CORE::fc('A')) {							# bitplane A
-					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1) || ($rawImg[$y][$x]==2) ||
+					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2==$y%2) ||
+										   ($rawImg[$y][$x]==2) ||
 										   ($rawImg[$y][$x]==3 && $x%2==$y%2) ||
-										   ($rawImg[$y][$x]==5) || ($rawImg[$y][$x]==6);
+										   ($rawImg[$y][$x]==5) ||
+										   ($rawImg[$y][$x]==6);
 				} elsif (CORE::fc($bitplane) eq CORE::fc('B')) {					# bitplane B
 					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==3 && $x%2==$y%2) ||
 										   ($rawImg[$y][$x]==4) ||
 										   ($rawImg[$y][$x]==5 && $x%2==$y%2) ||
 										   ($rawImg[$y][$x]==6);
 				} elsif (CORE::fc($bitplane) eq CORE::fc('C')) {					# bitplane C
-					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==2) ||
+					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==1 && $x%2!=$y%2) ||
+										   ($rawImg[$y][$x]==2) ||
 										   ($rawImg[$y][$x]==3 && $x%2!=$y%2) ||
 										   ($rawImg[$y][$x]==5 && $x%2!=$y%2) ||
 										   ($rawImg[$y][$x]==6);
 				} elsif (CORE::fc($bitplane) eq CORE::fc('D')) {					# bitplane D
 					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==3 && $x%2!=$y%2) ||
-										   ($rawImg[$y][$x]==4) || ($rawImg[$y][$x]==5) ||
+										   ($rawImg[$y][$x]==4) ||
+										   ($rawImg[$y][$x]==5) ||
 										   ($rawImg[$y][$x]==6);
 				} elsif (CORE::fc($bitplane) eq CORE::fc('U')) {					# bitplane U
 					$BP[$y][$xB] |= $xm if ($rawImg[$y][$x]==4);
