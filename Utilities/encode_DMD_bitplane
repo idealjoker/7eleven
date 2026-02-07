@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Wed Feb  4 14:44:44 2026
+#                    dlm: Sat Feb  7 12:16:14 2026
 #                    (c) 2026 idealjoker@mailbox.org
-#                    uE-Info: 41 49 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 42 59 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -39,6 +39,8 @@
 #				- added level limit output for debugging
 # Feb  1, 2026: - added 7-level bitplanes ABCD
 # Feb  4, 2026: - BUG: 7-level encoding was wrong
+# Feb  6, 2026: - updated to use relative luminance scaling
+# Feb  7, 2026: - BUG: runs longer than 255 bytes were possible
 # HISTORY END
 
 # RELEASE NOTES:
@@ -139,14 +141,28 @@ if ($opt_v > 1) {
 
 my(@rawImg);															# decimated image
 
-for (my($y)=0; $y<32; $y++) {											# create grayscale intensity image
-	for (my($x)=0; $x<128; $x++) {										# (adjusting for -g if needed)
+sub lin($)																# linearize gamma-encoded color channel
+{
+	return $_[0] / 12.92 if ($_[0] <= 0.03928);
+	return (($_[0] + 0.055) / 1.055)**2.4;
+}
+
+sub gam($)																# apply user-specified gamma correction
+{
+	return $_[0] unless defined($opt_g);
+	return $_[0]**$opt_g;
+}
+	
+
+for (my($y)=0; $y<32; $y++) {											# create relative luminance (grayscale) image
+	for (my($x)=0; $x<128; $x++) {										# (correct for gamma compression in source)
 		my($pixel) = $image->getpixel(x=>$x,y=>$y);						
 		my($R,$G,$B,$A) = $pixel->rgba();
-		my($I) = sqrt($R**2/3+$G**2/3+$B**2/3);
-		$I = 0xFF*($I/0xFF)**(1/$opt_g)									# -g adjustment is irrelevant when -e is used
-			if defined($opt_g) && !$opt_e;
-		$rawImg[$y][$x] = $I;
+		$R = lin($R/0xFF);												# linearize normalized R/G/B values
+		$G = lin($G/0xFF);
+		$B = lin($B/0xFF);
+		$rawImg[$y][$x] = int(0.5+0xFF*gam(0.2126*$R + 0.7152*$G + 0.0722*$B));	# calculate gamma-corrected relative luminance in byte range
+		die("rawImg[$y][$x] = $rawImg[$y][$x]") if ($rawImg[$y][$x] > 0xFF);
 	}
 }
 
@@ -438,7 +454,7 @@ my($bytes_output) = 0;
 my($x,$y) = (0,1);
 my($rl,$rv) = (1,$BP[0][0]);
 while (1) {
-	if ($BP[$y][$x] == $rv) {											# continue run
+	if ($BP[$y][$x] == $rv && $rl <  0xFF) {							# continue run
 		$rl++;
     } elsif ($rl > 1) {													# output run
     	printf('$%02X $%02X $%02X ',$tag,$rl,$rv) unless defined($opt_Q);

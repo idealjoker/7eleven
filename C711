@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Fri Jan  9 15:33:08 2026
+#                    dlm: Sat Feb  7 12:16:51 2026
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 446 81 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 448 40 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -444,6 +444,8 @@
 #	Dec 26, 2025: - improved -A to check addresses even on non-label lines
 #	Jan  3, 2026: - added generator support (back tics)
 #	Jan  9, 2026: - BUG: generator was evaluated even when code was not assembled
+#	Feb  7, 2026: - added .ASSUME_DEFINED xxx || yyy syntax (really ugly)
+#				  - fiddled with aliases
 # HISTORY END
 
 # RELEASE NOTES:
@@ -689,6 +691,13 @@ our(%JSR_TRG);															# number of calls to subroutines for -J
 our(@IF_CONT_LBL,@IF_CONT_LINE,@LOOP_DONE_LBL);							# structured programming
 
 our($IVM_DISABLED);														# flag indicating that IVM is disabled; set by .ENABLE_IVM/.DISABLE_IVM
+
+##	my($ALIAS_NAME_SPECCHARS) = '`~!@#%^*\(\)_\-=\[{\]}|:"<,>\./\?\]\[\*';
+##	my($ALIAS_NAME_RE) = "[A-Za-z$ALIAS_NAME_SPECCHARS][A-Za-z0-9$ALIAS_NAME_SPECCHARS]*";
+	my($ALIAS_NAME_SPECCHARS) = '`~!@#%^*\(\)_\-\+=\[{\]}|:"<,>\./\?\]\[\*';
+	my($ALIAS_NAME_SPECCHARS_NOARITH) = '`~!@#%^*\(\)_=\[{\]}|:"<,>\./\?\]\[\*';
+	my($ALIAS_NAME_RE) = "[A-Za-z0-9$ALIAS_NAME_SPECCHARS]+";
+	my($ALIAS_NAME_RE_NOARITH) = "[A-Za-z0-9$ALIAS_NAME_SPECCHARS_NOARITH]+";
 
 #----------------------------------------------------------------------
 # Load System Dependent Libraries
@@ -2041,9 +2050,9 @@ sub match_pragma($$$)
 sub expand_aliases()                                        
 {														    
 	for (my($i)=0; $i<@_; $i++) {
-		next if ($i == 1 && match_pragma($_[0],'.DEF','INE'));							# forgeting this caused a lot of confusion when I accidentally redefined the number 47 :)
-		next if ($i == 1 && match_pragma($_[0],'.UNDEF','INE'));
-		next if ($i == 1 && match_pragma($_[0],'.DECL','ARE'));
+		next if ($i <= 1 && match_pragma($_[0],'.DEF','INE'));							# forgeting this caused a lot of confusion when I accidentally redefined the number 47 :)
+		next if ($i <= 1 && match_pragma($_[0],'.UNDEF','INE'));
+		next if ($i <= 1 && match_pragma($_[0],'.DECL','ARE'));
 		next if match_pragma($_[0],'.IFDEF','');
 		next if match_pragma($_[0],'.ELSE_IFDEF','');
 		next if match_pragma($_[0],'.IFNDEF','');
@@ -2057,18 +2066,19 @@ sub expand_aliases()
 				my($p1,$p2);
 				($p1,$p2,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z0-9_]+\()?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
 				$pre = $p1 . $p2;
-##				print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
+				print(STDERR "$_[$i] $p1/$p2/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
             } else {																	# not encoder
 				($pre,$alias,$post) = ($_[$i] =~ m{^\[})								# M6809 indirect extended
 								    ? ($_[$i] =~ m{^(\[\#?)([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*\])$})
-								    : ($_[$i] =~ m{^(\#)?([A-Za-z\?0-9_\.\#\[\]\+-]+)(.*)$}); # just an alias
+								    : ($_[$i] =~ m{^(\#)?([A-Za-z\?0-9_^\.\#\[\]\+-]+)(.*)$}); # just an alias
+##								    : ($_[$i] =~ m{^(\#)?($ALIAS_NAME_RE)(.*)$}); 		# just an alias (DOES NOT WORK!!!)
 			}
-##			print(STDERR "alias($_[$i]) -> $pre/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
+			print(STDERR "alias#$i($_[$i]) -> $pre/$alias/$post [$ALIAS{$alias}]\n") if $opt_T;
 
 			if ($alias =~ m{(\D+)([+-])(\d+)$}) {										# alias with constant added or subtracted; EXPERIMENTAL FEATURE
 				last if ($1 eq '.') || ($1 eq '.LAST_DEFINED');							# . and .LAST_DEFINED handled elsewhere
 				if (!defined($ALIAS{$alias}) && numberp($ALIAS{$1})) {					# code must be able to handle T-800 in a string
-##					print(STDERR "$1:$2:$3\n") if $opt_T;
+					print(STDERR "$1:$2:$3\n") if $opt_T;
 					$ALIAS_REFD{$1}++;
 					$_[$i] = sprintf("$pre%d$post",($2 eq '+')?($ALIAS{$1}+$3):($ALIAS{$1}-$3));
 					last;
@@ -2084,7 +2094,7 @@ sub expand_aliases()
 				splice(@_,$i,1,@sali);
 			}
 		}
-##		print(STDERR "$_[$i]\n") if $opt_T;
+		print(STDERR "\t substituted <$_[$i]>\n") if $opt_T;
 	}
 }
 
@@ -2465,11 +2475,16 @@ sub compile_common_pragma()
     	if ($OP eq '.ERROR');
 
 	if ($OP eq '.ASSUME_DEFINED') { 													# .ASSUME_DEFINED
-		die("Syntax: .ASSUME_DEFINED id[...] (<@_> at input line $.)\n")
+		die("Syntax: .ASSUME_DEFINED id[...] or id || id (<@_> at input line $.)\n")
 			unless (@OP_ARG >= 1);
-		for my $sym (@OP_ARG) {
-			die("Undefined alias <$sym> assumed defined at input line $.\n")
-				unless defined($ALIAS{$sym});
+		if (@OP_ARG==3 && $OP_ARG[1] eq '||') {
+			die("Both aliases undefined <@OP_ARG> at input line $.\n")
+				unless defined($ALIAS{$OP_ARG[0]}) || defined($ALIAS{$OP_ARG[2]});
+		} else {
+			for my $sym (@OP_ARG) {
+				die("Undefined alias <$sym> assumed defined at input line $.\n")
+					unless defined($ALIAS{$sym});
+			}
 		}
 		return 1;
 	}
@@ -2525,13 +2540,6 @@ sub compile_common_pragma()
     #-----------------------------------------
     # Defines (Aliases & Conditional Assembly)
     #-----------------------------------------
-
-##	my($ALIAS_NAME_SPECCHARS) = '`~!@#%^*\(\)_\-=\[{\]}|:"<,>\./\?\]\[\*';
-##	my($ALIAS_NAME_RE) = "[A-Za-z$ALIAS_NAME_SPECCHARS][A-Za-z0-9$ALIAS_NAME_SPECCHARS]*";
-	my($ALIAS_NAME_SPECCHARS) = '`~!@#%^*\(\)_\-\+=\[{\]}|:"<,>\./\?\]\[\*';
-	my($ALIAS_NAME_SPECCHARS_NOARITH) = '`~!@#%^*\(\)_=\[{\]}|:"<,>\./\?\]\[\*';
-	my($ALIAS_NAME_RE) = "[A-Za-z0-9$ALIAS_NAME_SPECCHARS]+";
-	my($ALIAS_NAME_RE_NOARITH) = "[A-Za-z0-9$ALIAS_NAME_SPECCHARS_NOARITH]+";
 
 	if (match_pragma($OP,'.DEF','INE')) { 												# .DEFINE (define alias)
 		die("Syntax: .DEF[INE] name [value...] (<@_> at input line $.)\n")
