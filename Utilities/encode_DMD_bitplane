@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Sat Feb  7 12:16:14 2026
+#                    dlm: Sat Feb  7 17:55:38 2026
 #                    (c) 2026 idealjoker@mailbox.org
-#                    uE-Info: 42 59 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 44 44 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -41,6 +41,7 @@
 # Feb  4, 2026: - BUG: 7-level encoding was wrong
 # Feb  6, 2026: - updated to use relative luminance scaling
 # Feb  7, 2026: - BUG: runs longer than 255 bytes were possible
+#				- BUG: opt_g now wrong again
 # HISTORY END
 
 # RELEASE NOTES:
@@ -150,7 +151,7 @@ sub lin($)																# linearize gamma-encoded color channel
 sub gam($)																# apply user-specified gamma correction
 {
 	return $_[0] unless defined($opt_g);
-	return $_[0]**$opt_g;
+	return $_[0]**(1/$opt_g);
 }
 	
 
@@ -198,7 +199,7 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 			}
 		} elsif (defined($opt_g)) {										#	gamma correction
 			for (my($i)=0; $i<=$opt_l; $i++) {
-				$llim[$i] = 4096 * ($i/$opt_l)**$opt_g;
+				$llim[$i] = 4096 * ($i/$opt_l)**(1/$opt_g);
 			}
 		} else {														# 	half tone
 			@llim = (0,1024,2048,3072,3584,4096);
@@ -206,7 +207,7 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 	} else {															# regular (not 5-level) drivers (linear, gamma)
 		if (defined($opt_g)) {											#	gamma correction
 			for (my($i)=0; $i<=$opt_l; $i++) {
-				$llim[$i] = 4096 * ($i/$opt_l)**$opt_g;
+				$llim[$i] = 4096 * ($i/$opt_l)**(1/$opt_g);
 			}
 		} else {														#	linear
 			for (my($i)=0; $i<=$opt_l; $i++) {
