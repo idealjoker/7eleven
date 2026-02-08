@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Sat Feb  7 17:55:38 2026
+#                    dlm: Sun Feb  8 09:37:06 2026
 #                    (c) 2026 idealjoker@mailbox.org
-#                    uE-Info: 44 44 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 107 33 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -42,20 +42,16 @@
 # Feb  6, 2026: - updated to use relative luminance scaling
 # Feb  7, 2026: - BUG: runs longer than 255 bytes were possible
 #				- BUG: opt_g now wrong again
+# Feb  8, 2026: - added gamma of human vision, for consistency with -g1 (default) 
 # HISTORY END
 
 # RELEASE NOTES:
 #	- recommendations:
 #		driver 		-l5 (better than -h)
 #		contrast	orig, -s stretched, -e histogram equalized (may reduce levels)
-#		gamma		-g0.57 nominal, increase to darken image
+#		gamma		-g1 (default) accounts for 2.2 of human vision and linearity of DMD
 #	- gamma correction
-#		- file_gamma * decoding_gamma * display_gamma = viewing_gamma
 #		- see [https://www.w3.org/TR/PNG-GammaAppendix.html]
-#			plasma DMD 		display_gamma 	= 1.0 	(assumed)
-#			source image 	file_gamma		= 2.2 	(assumed)
-#							viewing_gamma	= 1.25 	(assumed)
-#			-g			    decoding_gamma	= 0.57 	(calculated)
 #	- 5-level half-tone driver:
 #		- with -h, 5-level driver is enabled and 2nd brightest level is treated as half-tone 
 #			- brightness : 0 1 2 2.5 3
@@ -91,15 +87,15 @@ my $bitplane 	= $ARGV[0];
 my $image_file	= $ARGV[1];
 
 our $opt_Q;
-our $opt_s;
 our $opt_e;
 our $opt_g;
 our $opt_h;
-our $opt_l;
-our $opt_v =  0 unless defined($opt_v);
 our $opt_i = -1 unless defined($opt_i);
+our $opt_l;
+our $opt_s;
+our $opt_v =  0 unless defined($opt_v);
 
-if (defined($opt_l)) {
+if (defined($opt_l)) {														# driver selection
 	die("$0: invalid option combination <-l $opt_l -h>\n")
 		if $opt_h;
 } elsif ($opt_h) {
@@ -107,8 +103,12 @@ if (defined($opt_l)) {
 } else {
 	$opt_l = 4;
 }
+
+$opt_g = 1 unless defined($opt_g);											# default gamma
+$opt_g *= 2.2;																# human visioin
+	
  
-die("$image_file: no such file or directory\n")
+die("$image_file: no such file or directory\n")								# argument checking
 	unless -f $image_file;
 die("$0: invalid bitplane number $bitplane\n")
 	unless ($bitplane =~ m{^\d+$} && $bitplane>=0 && $bitplane<=7) ||
@@ -192,27 +192,12 @@ if ($opt_e) {															# HISTOGRAM EQUALIZATION
 
 	my($minIout,$maxIout) = (999,-1);
 	my(@llim); 															# level limits
-	if ($opt_l == 5) {													# 5-level driver (linear, half-tone, gamma)
-		if (!defined($opt_h)) {											#	linear
-			for (my($i)=0; $i<=$opt_l; $i++) {
-				$llim[$i] = $i * 4096 / $opt_l;
-			}
-		} elsif (defined($opt_g)) {										#	gamma correction
-			for (my($i)=0; $i<=$opt_l; $i++) {
-				$llim[$i] = 4096 * ($i/$opt_l)**(1/$opt_g);
-			}
-		} else {														# 	half tone
-			@llim = (0,1024,2048,3072,3584,4096);
-		}
-	} else {															# regular (not 5-level) drivers (linear, gamma)
-		if (defined($opt_g)) {											#	gamma correction
-			for (my($i)=0; $i<=$opt_l; $i++) {
-				$llim[$i] = 4096 * ($i/$opt_l)**(1/$opt_g);
-			}
-		} else {														#	linear
-			for (my($i)=0; $i<=$opt_l; $i++) {
-				$llim[$i] = $i * 4096 / $opt_l;
-			}
+	if (defined($opt_h)) {												# 5-level half-tone driver
+		die unless ($opt_l == 5);
+		@llim = (0,1024,2048,3072,3584,4096);
+	} else {															# gamma-corrected driver
+		for (my($i)=0; $i<=$opt_l; $i++) {
+			$llim[$i] = 4096 * ($i/$opt_l)**(1/$opt_g);
 		}
 	}
 
