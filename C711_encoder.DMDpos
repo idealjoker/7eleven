@@ -1,0 +1,30 @@
+#======================================================================
+#                    C 7 1 1 _ E N C O D E R . D M D P O S 
+#                    doc: Sat Feb 14 15:35:35 2026
+#                    dlm: Sat Feb 14 15:40:52 2026
+#                    (c) 2026 idealjoker@mailbox.org
+#                    uE-Info: 26 38 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Feb 14, 2026: - created
+# HISTORY END
+
+sub DMDpos($$)
+{
+	my($str,$addr) = @_;
+	my($line) = $LINE[$addr];
+	
+	my($x,$y) = ($str =~ m{^(\d{1,3}),(\d{1,2})});
+	die("Invalid argument <$str> (need #,#) at input line $line\n")
+		unless defined($y);
+	die("Invalid DMD x position <$x> (need 0-127) at input line $line\n")
+		unless ($x>=0 && $x<=127);
+	die("Invalid DMD y position <$y> (need 0-31) at input line $line\n")
+		unless ($y>=0 && $y<=31);
+
+	return sprintf('$%02X%02X',$x,$y);
+}
+
+1;
+
