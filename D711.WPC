@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Jan 26 21:40:01 2026
+#                    dlm: Tue Feb 17 14:29:04 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 947 52 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 166 54 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -161,6 +161,9 @@
 #	Jan 26, 2026: - added Lamp# and DisplayFX# magic
 #				  - decode LampFX byte#10 as DisplayFX
 #				  - added StringSpec#, Thread# magic
+#	Feb 17, 2026: - made RTS in comment only add newline if it stands alone
+#				  - BUG: \n in comments only handled properly without
+#						 other magic in same statement
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -986,8 +989,7 @@ sub apply_magic_WPC($$)
 		} elsif ($IND[$addr] == $code_base_indent &&							# 3) add extra space after top-level "exit" instructions
 				 (isMember($OP[$addr],'RTS','LBRA','JMP') ||
 				  ($OP[$addr] eq '!' && $OPA[$addr][0] eq 'exitThread') ||
-				  $REM[$addr] =~ m{RTS} ||
-				  $REM[$addr] =~ m{\\n})) {
+				  $REM[$addr] =~ m{^RTS$})) {
 			insert_empty_line($addr);
 		} elsif ($OPA[$addr][0] =~ m{[^\?]\?$}) {								# 4) _IF_true / _IF_false
 			my($noa) = $addr + 1;												#	 	execute when last arg ends with a ? but not with ??
@@ -996,20 +998,23 @@ sub apply_magic_WPC($$)
 				$noa++;
 				die if $noa > 0xFFFF;
 			}
-			if    ($OP[$noa] eq '_IF_CC') 		{ $OP[$noa] = '_IF_true'; }			#  boolean values: IF
+			if    ($OP[$noa] eq '_IF_CC') 		{ $OP[$noa] = '_IF_true'; }		#  boolean values: IF
 			elsif ($OP[$noa] eq '__IF_CC') 		{ $OP[$noa] = '__IF_true'; }		
 			elsif ($OP[$noa] eq '_IF_CS') 		{ $OP[$noa] = '_IF_false'; }		
 			elsif ($OP[$noa] eq '__IF_CS') 		{ $OP[$noa] = '__IF_false'; }		
-			elsif ($OP[$noa] eq 'BCC') 			{ $OP[$noa] = 'Btrue'; }			# branches
+			elsif ($OP[$noa] eq 'BCC') 			{ $OP[$noa] = 'Btrue'; }		# branches
 			elsif ($OP[$noa] eq 'BCS') 			{ $OP[$noa] = 'Bfalse'; }			
 			elsif ($OP[$noa] eq 'LBCC') 		{ $OP[$noa] = 'LBtrue'; }			
 			elsif ($OP[$noa] eq 'LBCS') 		{ $OP[$noa] = 'LBfalse'; }			
 			elsif ($OP[$noa] eq '_WHILE_CC') 	{ $OP[$noa] = '_WHILE_true'; }		
 			elsif ($OP[$noa] eq '_WHILE_CS') 	{ $OP[$noa] = '_WHILE_false'; }		
 		}
+
+		insert_empty_line($addr) if $REM[$addr] =~ m{^\\n$};					# extra space requested
+
 	}
 
-	$Address = $Lbl{'RST_handler'};											# APPLE_VERSION
+	$Address = $Lbl{'RST_handler'};												# APPLE_VERSION
 	die($Address) unless numberp($Address);
 	$LBL[$Address-2] = 'APPLE_VERSION';
 
