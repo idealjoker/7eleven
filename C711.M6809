@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Sat Nov 29 20:49:09 2025
+#                    dlm: Wed Feb 18 16:43:10 2026
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 510 27 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 44 63 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -40,6 +40,8 @@
 #	Oct 30, 2025: - BUG: LEAX UTILITY_RAM+2,X was interpreted as LEAX 2,X (RE anchor)
 #	Nov 21, 2025: - BUG: erroneous inline args after JSR were silently ignored
 #	Nov 29, 2025: - added @IF_CONT_LINE
+#	Feb 18, 2026: - turned errors about JSR/JMP into different page into warnings that
+#				    can be suppressed with -w (also in comment)
 # HISTORY END
 
 use strict vars;
@@ -47,7 +49,8 @@ use strict vars;
 our($OP,@OP_ARG,%JSR_TRG,@ROM,$ADDR,$RPG,%LBL,@IF_CONT_LBL,@IF_CONT_LINE,
 	@LOOP_LBL,@LOOP_DONE_LBL,$EXEC6809_BLOCK_ID,$OPTIMIZABLE_LABEL_PREFIX,
 	$EIGHT_BIT_LABEL_PREFIX,$SIXTEEN_BIT_LABEL_PREFIX,@newly_defined_label,
-	$WMS_System,$IVM_DISABLED,@SC_ARGS,%SYSCALL,$DP,$opt_T);
+	$WMS_System,$IVM_DISABLED,@SC_ARGS,%SYSCALL,$DP,$opt_T,$opt_w,
+	@warnings_suppressed);
 
 my($last_RTS_addr,@forward_lexical_RTS_branch);
 my($last_exitThread_addr,@forward_lexical_exitThread_branch);
@@ -1197,21 +1200,24 @@ sub compile_asm()
 
 	return 1 if asm_6809_op('BSR','s',0x8D);
 	return 1 if asm_6809_op('LBSR','L',0x17);
+
+	my($op_addr) = $ADDR;
 	if (asm_6809_op('JMP','DXO',0x0E,0x6E,0x7E)) {
-		if ($OP_ARG[0] =~ m{^[0-9A-Fa-f]{2}:}) {							# check for JSR into other page attempt
+		if ($OP_ARG[0] =~ m{^[0-9A-Fa-f]{2}:}) {							# check for JMP into other page attempt
 			my($tpg) = hex(substr($OP_ARG[0],0,2));
-			die("Invalid JMP into different page <$OP @OP_ARG[0..$#OP_ARG]> at input line $.\n")
-				unless ($tpg == 0xFF || $tpg == $RPG);
+			print(STDERR "WARNING: JMP into different page <$OP @OP_ARG[0..$#OP_ARG]> at input line $.\n")
+				unless ($opt_w || isMember($op_addr,@warnings_suppressed) || $tpg == 0xFF || $tpg == $RPG);
 		}
 		return 1;
 	}
 	
+	$op_addr = $ADDR;
 	if (asm_6809_op('JSR','DXO',0x9D,0xAD,0xBD)) {							# System Call Handling
 
 		if ($OP_ARG[0] =~ m{^[0-9A-Fa-f]{2}:}) {							# check for JSR into other page attempt
 			my($tpg) = hex(substr($OP_ARG[0],0,2));
-			die("Invalid JSR into different page <$OP @OP_ARG[0..$#OP_ARG]> at input line $.\n")
-				unless ($tpg == 0xFF || $tpg == $RPG);
+			print(STDERR "WARNING: JSR into different page <$OP @OP_ARG[0..$#OP_ARG]> at input line $.\n")
+				unless ($opt_w || isMember($op_addr,@warnings_suppressed) || $tpg == 0xFF || $tpg == $RPG);
 		}
 
 		unless (defined($SYSCALL{$OP_ARG[0]})) {							# not a syscall => no inline args allowed
