@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . C O D E S T R U C T U R E A N A L Y S I S 
 #                    doc: Sun Aug 25 10:59:34 2024
-#                    dlm: Sat Jun 21 08:23:05 2025
+#                    dlm: Wed Feb 18 08:52:49 2026
 #                    (c) idealjoker@mailbox.org
-#                    uE-Info: 47 32 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 48 71 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -45,6 +45,7 @@
 #						 was a closer potential target
 #	Jun 21, 2025: - BUG: disassembly of lex labels got confused because the same
 #						 target can serve both as fwd and backward ref
+#	Feb 18, 2026: - changed unstructured test to boolean (from defined)
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -613,7 +614,7 @@ sub process_code_structure($$)
 			pop(@BEGIN_BLOCK); pop(@END_BLOCK);
 		}
 		next unless defined($OP[$addr]);
-		next if defined($unstructured[$addr]);
+		next if $unstructured[$addr];
 
 		# [06/15/25] None of the following matches while disassembling FH and T2. 
 		# This can be either because there are no long loops or because the code 
@@ -706,7 +707,7 @@ sub process_code_structure($$)
 			pop(@BEGIN_BLOCK); pop(@END_BLOCK);
 		}
 		next unless defined($OP[$addr]);
-		next if defined($unstructured[$addr]);
+		next if $unstructured[$addr];
 
 		next if cs_if_else($addr,$eaddr,'BNE','BRA','_IF_EQ','_ELSE','_ENDIF');				# M6800/6809 (short) if-statements
 		next if cs_if_else($addr,$eaddr,'BEQ','BRA','_IF_NE','_ELSE','_ENDIF');
