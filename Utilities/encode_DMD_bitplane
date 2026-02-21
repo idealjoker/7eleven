@@ -2,9 +2,9 @@
 #======================================================================
 #                    U T I L I T I E S / E N C O D E _ D M D _ B I T P L A N E 
 #                    doc: Fri Jan  2 10:08:34 2026
-#                    dlm: Sun Feb  8 09:37:06 2026
+#                    dlm: Sat Feb 21 13:32:38 2026
 #                    (c) 2026 idealjoker@mailbox.org
-#                    uE-Info: 107 33 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 47 26 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -42,7 +42,9 @@
 # Feb  6, 2026: - updated to use relative luminance scaling
 # Feb  7, 2026: - BUG: runs longer than 255 bytes were possible
 #				- BUG: opt_g now wrong again
-# Feb  8, 2026: - added gamma of human vision, for consistency with -g1 (default) 
+# Feb  8, 2026: - added gamma of human vision, for consistency with -g1 (default)
+# Feb 20, 2026: - added -n
+# Feb 21, 2026: - added -w
 # HISTORY END
 
 # RELEASE NOTES:
@@ -75,13 +77,15 @@ $0 =~ s@^.*/(.*)$@$1@;
 
 die("Usage: $0 \n" .
 		"\t[-v)erbosity <n[0]>] [-Q)uiet (no code output)]\n" .
+		"\t[suppress -w)arnings]\n" .
+		"\t[-n)umeric output on -v3]\n" .
 		"\t[brightness-l)evels <n[4]>] [-h)alftone 5-level driver]\n" .
 		"\t[apply -g)amma <correction>\n" .
 		"\t[apply constrast-s)tretching]\n" .
 		"\t[apply histogram-e)qualization\n" .
 		"\t[use alternate -i)nterlace <method[0:none,1:cols,2:rows]>]\n" .
 		"\t\t<bitplane> <image file>\n")
-	        unless (getopts('g:hei:l:Qsv:') && @ARGV==2);
+	        unless (getopts('g:hei:l:nQsv:w') && @ARGV==2);
 
 my $bitplane 	= $ARGV[0];
 my $image_file	= $ARGV[1];
@@ -92,8 +96,10 @@ our $opt_g;
 our $opt_h;
 our $opt_i = -1 unless defined($opt_i);
 our $opt_l;
+our $opt_n;
 our $opt_s;
 our $opt_v =  0 unless defined($opt_v);
+our $opt_w;
 
 if (defined($opt_l)) {														# driver selection
 	die("$0: invalid option combination <-l $opt_l -h>\n")
@@ -284,7 +290,7 @@ for (my($l)=0; $l<$opt_l; $l++) {
 	$lout++ if defined($nPix[$l]);
 }
 print(STDERR "WARNING: $image_file: output has only $lout out of $opt_l available levels\n")
-	unless $lout == $opt_l;
+	unless $opt_w || $lout == $opt_l;
 
 if ($opt_v > 1) {														# output brightness histogram
 	print(STDERR "\t\tFrequency:\n");
@@ -301,7 +307,7 @@ if ($opt_v > 2) {														# output as ASCII
 	print(STDERR "\tDecimated Raw Image:\n\t\t");
 	for (my($y)=0; $y<32; $y++) {
 		for (my($x)=0; $x<128; $x++) {
-  			print(STDERR $c[$rawImg[$y][$x]]);
+  			print(STDERR $opt_n ? $rawImg[$y][$x] : $c[$rawImg[$y][$x]]);
 		}
 		print(STDERR "\n");
 	  	print(STDERR "\t\t") if $y<31;
