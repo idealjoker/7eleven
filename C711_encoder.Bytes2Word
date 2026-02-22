@@ -1,0 +1,30 @@
+#======================================================================
+#                    C 7 1 1 _ E N C O D E R . 2 B Y T E S 
+#                    doc: Sun Feb 22 09:01:42 2026
+#                    dlm: Sun Feb 22 09:04:49 2026
+#                    (c) 2026 idealjoker@mailbox.org
+#                    uE-Info: 13 14 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Feb 22, 2026: - creaetd
+# HISTORY END
+
+sub Bytes2Word($$)
+{
+	my($str,$addr) = @_;
+	my($line) = $LINE[$addr];
+	
+	my($x,$y) = ($str =~ m{^(\d{1,3}),(\d{1,2})});
+	die("Invalid argument <$str> (need #,#) at input line $line\n")
+		unless defined($y);
+	die("Invalid byte value <$x> at input line $line\n")
+		unless ($x>=0 && $x<=0xFF);
+	die("Invalid byte value <$y> at input line $line\n")
+		unless ($y>=0 && $y<=0xFF);
+
+	return sprintf('$%02X%02X',$x,$y);
+}
+
+1;
+
