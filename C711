@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Feb 18 16:38:17 2026
+#                    dlm: Mon Aug 10 16:17:15 2026
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 449 49 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 450 93 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -447,6 +447,7 @@
 #	Feb  7, 2026: - added .ASSUME_DEFINED xxx || yyy syntax (really ugly)
 #				  - fiddled with aliases
 #	Feb 18, 2026: - exported @warnings_suppressed
+#	Aug 10, 2026: - added error when trying to define label starting with [ and ending with ]
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1449,6 +1450,9 @@ sub check_duplicate_label_types()
 		my($lbl,$addr,$allow_relabel) = @_;
 		printf(STDERR "define_label($lbl,%04X,$allow_relabel) [%02X:%04X]\n",$addr,$RPG,code_addr($addr)) if $opt_T;
 
+		die("Invalid label <$lbl> starting with [ and ending with ] at input line $. (Implementation Restriction)\n")
+			if ($lbl =~ m{^\[.*\]$});
+
 		if ($lbl eq 'ANALYSIS_GAP') {													# ignore gap labels
 			$last_label_addr = -1;
 			return;
@@ -2095,7 +2099,7 @@ sub expand_aliases()
 				splice(@_,$i,1,@sali);
 			}
 		}
-		print(STDERR "\t substituted <$_[$i]>\n") if $opt_T;
+		print(STDERR "\t substituted <$_[$i]> [@_]\n") if $opt_T;
 	}
 }
 
