@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . S Y S T E M 1 1 
 #                    doc: Mon May 27 16:52:24 2024
-#                    dlm: Wed May  7 11:41:35 2025
+#                    dlm: Thu Jun 25 18:59:45 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 94 57 NIL 0 0 72 0 2 4 NIL ofnI
+#                    uE-Info: 148 0 NIL 0 0 72 0 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -145,10 +145,12 @@ sub init_system_11() {													# system 11 magic (done after reading ROM)
 			def_code($lbl);
 			$Address = $Lbl{$lbl}+0x08;
 			$lbl = 'kill_this_thread'; def_code($lbl);
-		$Address = $Lbl{$lbl}+0x2A;     
+			$Address = $Lbl{$lbl}+0x2A;     
 	        $lbl = 'kill_thread'; def_code($lbl);
-    } elsif (BYTE($Lbl{'WVM_exitThread'}+15) == 0x9C) {			# Rollergames
-		print(STDERR "WARNING: unsupported System 11C code detected!\n");
+##    } elsif (BYTE($Lbl{'WVM_exitThread'}+15) == 0x9C) {			# Rollergames & Taxi
+##		print(STDERR "WARNING: unsupported System 11C code detected!\n");
+##    } else {
+##		print(STDERR "WARNING: System 11 code detected!\n");
     }
 
 }

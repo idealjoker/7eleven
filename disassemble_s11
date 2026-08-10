@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ S 1 1 
 #					 doc: Wed May  7 09:51:43 2025
-#					 dlm: Thu Jun 25 09:31:53 2026
+#					 dlm: Thu Jun 25 18:51:03 2026
 #					 (c) 2019 idealjoker@mailbox.org
-#					 uE-Info: 27 64 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 29 71 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -25,6 +25,8 @@
 #	Jul  5, 2025: - toggled logic of -g
 #	Nov  6, 2025: - removed -u from usage message and comment
 #	Jun 25, 2026: - made switch_table_address heuristic optional
+#				  - undid stupid mod and fixed code instead
+#				  - BUG: MAX_SWITCH not used in switch table heuristics
 # HISTORY END
 
 #----------------------------------------------------------------------
@@ -86,30 +88,31 @@ if (defined($opt_i)) {													# include files with perl code
 # Find Switch Table
 #----------------------------------------------------------------------
 
-unless ($switch_table_addr > 0) {
-	my($nSwFound,$switch_table_addr,$table_ptr_addr);
-	for (my($addr)=$D711::MIN_ROM_ADDR; $addr<$D711::MAX_ROM_ADDR; $addr++) {
-		next unless (D711::BYTE($addr)==3 &&
-					 D711::BYTE($addr-1)>=48 && D711::BYTE($addr-1)<=64 &&
-					 D711::WORD($addr+1)>=$D711::MIN_ROM_ADDR && D711::WORD($addr+1)<$D711::MAX_ROM_ADDR &&
-					 D711::WORD($addr+3)>=$D711::MIN_ROM_ADDR && D711::WORD($addr+3)<$D711::MAX_ROM_ADDR &&
-					 D711::WORD($addr+5)>=$D711::MIN_ROM_ADDR && D711::WORD($addr+5)<$D711::MAX_ROM_ADDR);
-##	printf(STDERR "Switch Table candidate at %04X\n",D711::WORD($addr+3));
-		my($len);
-		for ($len=0; D711::WORD(D711::WORD($addr+3)+1+3*$len)>=$D711::MIN_ROM_ADDR &&
-					 D711::WORD(D711::WORD($addr+3)+1+3*$len)!=0xFFFF && 
-					 D711::WORD(D711::WORD($addr+3)+1+3*$len)<=$D711::MAX_ROM_ADDR; $len++) {}
-		unless ($nSwFound > $len) {
-			$nSwFound = $len;
-			$switch_table_addr = D711::WORD($addr+3);
-			$table_ptr_addr = $addr+3;
-		}
-	}
+my($nSwFound,$switch_table_addr,$table_ptr_addr);
+
+for (my($addr)=$D711::MIN_ROM_ADDR; $addr<$D711::MAX_ROM_ADDR; $addr++) {
+	next unless (D711::BYTE($addr)==3 &&												# MAX PLAYER
+				 D711::BYTE($addr-1)>=48 && D711::BYTE($addr-1)<=64 &&					# MAX SWITCH
+				 D711::WORD($addr+1)>=$D711::MIN_ROM_ADDR && D711::WORD($addr+1)<$D711::MAX_ROM_ADDR &&		# 3 randome system pointers
+				 D711::WORD($addr+3)>=$D711::MIN_ROM_ADDR && D711::WORD($addr+3)<$D711::MAX_ROM_ADDR &&
+				 D711::WORD($addr+5)>=$D711::MIN_ROM_ADDR && D711::WORD($addr+5)<$D711::MAX_ROM_ADDR);
+##	printf(STDERR "Switch Table candidate at %04X... [MAX_SWITCH = %d",D711::WORD($addr+3),D711::BYTE($addr-1));
+	my($len);
+	for ($len=0; D711::WORD(D711::WORD($addr+3)+1+3*$len)>=$D711::MIN_ROM_ADDR &&
+				 D711::WORD(D711::WORD($addr+3)+1+3*$len)!=0xFFFF && 
+				 D711::WORD(D711::WORD($addr+3)+1+3*$len)<=$D711::MAX_ROM_ADDR; $len++) {}
+##	printf(STDERR " table length = $len]\n");				 
+	unless ($nSwFound > $len) {
+		$nSwFound = $len;
+		$switch_table_addr = D711::WORD($addr+3);
+		$table_ptr_addr = $addr+3;
+    }
 	
-	if ($nSwFound > 42) {
-##	printf(STDERR "Switch Table found at %04X ($nSwFound entires)\n",$switch_table_addr);
+	if ($nSwFound >= D711::BYTE($table_ptr_addr-4)) {
+		$nSwFound = D711::BYTE($table_ptr_addr-4);
+##		printf(STDERR "Switch Table found at %04X ($nSwFound entires)\n",$switch_table_addr);
 	} else {
-		die(sprintf("Switch Table not found (best candidate at %04X ($nSwFound entires)\n",$switch_table_addr));
+		die(sprintf("Switch Table not found (most promising candidate at %04X ($nSwFound entires)\n",$switch_table_addr));
 	}
 }
 
