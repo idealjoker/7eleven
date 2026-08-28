@@ -15,6 +15,8 @@
 #   Jul 28, 2025: - adapted to changed 2nd arg
 # HISTORY END
 
+#eg blink(L_name){PinOp}
+
 sub PinOp_s6($$)
 {
 	my($str,$addr) = @_;
@@ -25,26 +27,10 @@ sub PinOp_s6($$)
 		unless defined($arg);
 ##	print(STDERR "PinOp_s6: $op($arg)\n");
 
-	if ($op eq 'blink') {
-		if ($arg =~ m/^Scriptlamp#([0-7])/) {
-			return hex($1) | 0xF0;
-        } else {
-			die("PinOp_s6: cannot decode Scriptlamp argument '$arg' at input line $src_line\n");
-        }
-	} 
-
-	if ($op eq 'toggle') {
-		if ($arg =~ m/^Scriptlamp#([0-7])/) {
-			return hex($1) | 0xF8;
-        } else {
-			die("PinOp_s6: cannot decode Scriptlamp argument '$arg' at input line $src_line\n");
-        }
-	} 
-
 	if ($op eq 'setBit') {
-		if ($arg =~ m/^Lamp#([0-9A-Fa-f]{2})/) {
+		if ($arg =~ m/^Lamp#([0-9A-Fa-f]{2})$/) {
 			return hex($1);
-        } elsif ($arg =~ m/^Flag#([0-9A-Fa-f]{2})/) {
+        } elsif ($arg =~ m/^Flag#([0-9A-Fa-f]{2})$/) {
 			return hex($1) + 0x40;
         } else {
 			die("PinOp_s6: cannot decode bit argument '$arg' at input line $src_line\n");
@@ -52,33 +38,17 @@ sub PinOp_s6($$)
 	} 
 
 	if ($op eq 'clearBit') {
-		if ($arg =~ m/^Lamp#([0-9A-Fa-f]{2})/) {
+		if ($arg =~ m/^Lamp#([0-9A-Fa-f]{2})$/) {
 			return hex($1) | 0x80;
-        } elsif ($arg =~ m/^Flag#([0-9A-Fa-f]{2})/) {
+        } elsif ($arg =~ m/^Flag#([0-9A-Fa-f]{2})$/) {
 			return hex($1) + 0x40 | 0x80;
         } else {
 			die("PinOp_s6: cannot decode bit argument '$arg' at input line $src_line\n");
         }
     }
 
-	if ($op eq 'advance') {
-		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
-			return hex($1) | 0x60;
-        } else {
-			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
-        }
-    }
-
-	if ($op eq 'drain') {
-		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
-			return hex($1) | 0xE0;
-        } else {
-			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
-        }
-    }
-
 	if ($op eq 'rotRight') {
-		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
+		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1,2})$/) {
 			return hex($1) | 0x50;
         } else {
 			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
@@ -86,28 +56,104 @@ sub PinOp_s6($$)
     }
 
 	if ($op eq 'rotLeft') {
-		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
+		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1,2})$/) {
 			return hex($1) | 0x58;
         } else {
 			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
         }
     }
 
+	if ($op eq 'advance') {  # what is fill?  like rotate, but doesn't carry over back to the start (?)
+		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1,2})$/) {
+			return hex($1) | 0x60;
+		} else {
+			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
+		}
+	}
+
+	if ($op eq 'unadvance') {  # what is fill?  like rotate, but doesn't carry over back to the start (?)
+		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1,2})$/) {
+			return hex($1) | 0x68;
+		} else {
+			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
+		}
+	}
+
 	if ($op eq 'clear') {
-		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
+		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1,2})$/) {
 			return hex($1) | 0x70;
         } else {
 			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
         }
     }
 
-	if ($op eq 'fill') {
-		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1})/) {
+	if ($op eq 'fill') {  # what is 'fill' is this actaully 'set' ?
+		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1,2})$/) {
 			return hex($1) | 0x78;
         } else {
 			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
         }
     }
+
+	# 80-CF: clearBit (above)
+
+	# D0 + D8: not used per @Slochar
+
+	if ($op eq 'drain') { # what is 'drain' ?
+		if ($arg =~ m/^Bitgroup#([0-9A-Fa-f]{1,2})$/) {
+			return hex($1) | 0xE0;
+        } else {
+			die("PinOp_s6: cannot decode bitgroup argument '$arg' at input line $src_line\n");
+        }
+    }
+
+	if ($op eq 'fire') {
+		if ($arg =~ m/^SolOp#0?([0-7])$/) {
+			return hex($1) | 0xE8;
+		} else {
+			die("PinOp_s6: cannot decode Solop argument '$arg' at input line $src_line\n");
+		}
+	}
+
+	if ($op eq 'blink') {
+		if ($arg =~ m/^Scriptlamp#(0?[0-7])$/) {
+			return hex($1) | 0xF0;
+		}
+		elsif ($arg =~ m/^Lamp#([0-9A-Fa-f]{2})$/) {
+			my($lamp) = hex($1);
+			my($a) = $LBL{'SCRIPT_LAMPS'};
+			my($i)=0;
+			for(;$i<8;$i++) {
+				last if ($ROM[$a+$i] == $lamp);
+			}
+				die("PinOp_s6: lamp '$arg' not found in SCRIPT_LAMPS at input line $src_line\n")
+			if ($i==8);
+			# print(STDERR "$lamp $a $i $ROM[$a+$i]\n");
+			return hex($i) | 0xF0;
+		} else {
+			die("PinOp_s6: cannot decode Scriptlamp argument '$arg' at input line $src_line\n");
+		}
+	} 
+
+	if ($op eq 'toggle') {  # note: toggle blinking, not toggle the light itself
+		if ($arg =~ m/^Scriptlamp#(0?[0-7])$/) {
+			return hex($1) | 0xF8;
+		} 
+		elsif ($arg =~ m/^Lamp#([0-9A-Fa-f]{2})$/) {
+			my($lamp) = hex($1);
+			my($a) = $LBL{'SCRIPT_LAMPS'};
+			my($i)=0;
+			for(;$i<8;$i++) {
+				last if ($ROM[$a+$i] == $lamp);
+			}
+				die("PinOp_s6: lamp '$arg' not found in SCRIPT_LAMPS at input line $src_line\n")
+			if ($i==8);
+			# print(STDERR "$lamp $a $i $ROM[$a+$i]\n");
+			return hex($i) | 0xF8;
+		} else {
+			die("PinOp_s6: cannot decode Scriptlamp argument '$arg' at input line $src_line\n");
+	  }
+	} 
 
 	die("PinOps_s6: cannot decode '$str'\n");
 }

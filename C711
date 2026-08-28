@@ -996,7 +996,7 @@ while (!eof()) {
 					$suppress=1,last if m{^\s*$s};
 				}
 				unless ($suppress) {
-#				print(STDERR "[Optimizer: optimizing $_]\n");
+ 					#print(STDERR "[Optimizer: optimizing $_]\n");
 					my($subst) = 0; 									# optimize this statement
 				    
 					$subst += s/\bJMP\b/BRA/g;							# JMP
@@ -1061,18 +1061,19 @@ NO_ADDL:
 
     $MODE = 0 if $opt_f;												# force compilation of "dirty" source files
 
-	printf(STDERR "$. \[ADDR=%04X MODE=$MODE IF_STACK=$IF_STACK[$#IF_STACK]]: %s (@newly_defined_label)\n",$ADDR,"@_")
-		if $opt_T;														# trace compilation
+		printf(STDERR "$. \[ADDR=%04X MODE=$MODE IF_STACK=$IF_STACK[$#IF_STACK]]: %s (@newly_defined_label)\n",$ADDR,"@_")
+			if $opt_T;														# trace compilation
 
     if ($IF_STACK[$#IF_STACK] >= 0) {                       			# currently assembling code
-        if ($_[0] =~ m{:$}) {                               			# define label
-			if ($opt_A && defined($tag_addr)) { # && defined($ADDR)) {			# verify <> address information
-				if (defined($RPG)) {
-					die(sprintf("ROM reference mismatch (%02X:%04X expected, %02X:%04X found) at input line $.\n",$tag_rpg,$tag_addr,$RPG,code_addr()))
-						unless (code_addr() == $tag_addr) && ($RPG == $tag_rpg);
-				} else {
-					die(sprintf("ROM address mismatch (\$%04X expected, \$%04X found) at input line $.\n",$tag_addr,$ADDR))
-						unless ($ADDR == $tag_addr);
+			if ($_[0] =~ m{:$}) {                               			# define label
+				if ($opt_A && defined($tag_addr)) { # && defined($ADDR)) {			# verify <> address information
+					if (defined($RPG)) {
+						die(sprintf("ROM reference mismatch (%02X:%04X expected, %02X:%04X found) at input line $.\n",$tag_rpg,$tag_addr,$RPG,code_addr()))
+							unless (code_addr() == $tag_addr) && ($RPG == $tag_rpg);
+					} else {
+						die(sprintf("ROM address mismatch (\$%04X expected, \$%04X found) at input line $.\n",$tag_addr,$ADDR))
+							unless ($ADDR == $tag_addr);
+					}
 				}
            }
 			push(@newly_defined_label,define_label($`));
@@ -1099,10 +1100,11 @@ NO_ADDL:
         $OP[$ADDR] = $OP;                                   			# make available to OPTIMIZER
 ##        printf(STDERR "\tOP[%04X] = ",$ADDR), print(STDERR "$OP @OP_ARG\n") if $opt_T;
 
-        &unroll_structure;  	                              			# _IF, _Loop, etc.  
-        next unless defined($OP);                           			# some structure keywords only generate labels
+
+			&unroll_structure;  	                              			# _IF, _Loop, etc.  
+			next unless defined($OP);                           			# some structure keywords only generate labels
     } else {
-		($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
+			($OP,@OP_ARG) = @_;                                 			# make available to all subroutines (local)
     }
 
 	next if &compile_pragma;                              				# .ORG, .DB, .ENDIF, etc.; also done while not currently compiling code!
@@ -1574,11 +1576,16 @@ sub labelValue($$)																		# addr<0: line no; addr>=0: address
 			print(STDERR "WARNING: Referencing remote label <$lbl> while there also is local label <$llb> defined at input line $line\n")
 				if !$opt_w && !isMember($addr,@warnings_suppressed) && $pg != $cpg && numberp($LBL{$llb});
 	        return $LBL{$lbl};
-		} else {																		# System 7-11
-			die(sprintf("Undefined label <$lbl> at input line $line\n"))
-				unless numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$};
-	        return $LBL{$lbl};
-	    }
+		} else {	
+			if (numberp($LBL{$lbl}) || $lbl =~ m{#[0-9A-Fa-f]{2}$}) {																	# System 7-11
+				return $LBL{$lbl};
+			}
+			else {
+				# uncomment to find which call caused the error
+				# for (print STDERR "Stack Trace:\n", my $i = 0; (my @call_details = (caller($i++))); ) { print STDERR $call_details[1].":".$call_details[2]." in function ".$call_details[3]."\n"; }
+				die(sprintf("Undefined label <$lbl @ %02X> at input line $line\n", $addr))
+			}
+		}
 	}
 }
 
@@ -1759,21 +1766,32 @@ sub resolve_labels()
 				next if numberp($ROM[$a]);                                          
 	        }
 		} else {
-			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})([-+|&].*)?$/ || 					# substitute all system identifiers
+			if ($ROM[$a] =~ m/^Adj#([0-9A-Fa-f]{2})([-+|&=].*)?$/ || 					# substitute all system identifiers
 				$ROM[$a] =~ m/^Sol#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
-				$ROM[$a] =~ m/^Lamp#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Bitgroup#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
 				$ROM[$a] =~ m/^Switch#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
-				$ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/ ||
-				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})([-+|&].*)?$/) {
-					$ROM[$a] = hex($1) . $2;											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
-					next if numberp($ROM[$a]);											# we are done, if we have a number
-	        }
-	        if ($ROM[$a] =~ m/^Flag#([0-9A-Fa-f]{2})([-+|&].*)?$/) {	                # flags are lamps with bit 6 set 
-    	        $ROM[$a] = hex($1) + 64 . $2;
+				$ROM[$a] =~ m/^Thread#([0-9A-Fa-f]{2})([-+|&].*)?$/
+			) {
+				$ROM[$a] = hex($1) . $2;											# decimal, and with trailing arithmetic (e.g. Lamp#3C|$40)
+				next if numberp($ROM[$a]);											# we are done, if we have a number
+			}
+			if ($ROM[$a] =~ m/^Sound#([0-9A-Fa-f]{2})([-+|&].*)?$/) {
+				my($sound) = hex($1);
+				if ($sound >=0 && $sound < 32) { # sounds start at 80, but that's harder to read, so allow 0-31 as well
+					$sound += 0x80;
+				}
+				$ROM[$a] = $sound . $2;											
+				next if numberp($ROM[$a]);											
+			}
+			if ($ROM[$a] =~ m/^(!)?Lamp#([0-9A-Fa-f]{2})([-+|&].*)?$/) {	                # lamps can be negated in conditions
+				$ROM[$a] = ((hex($2))|($1 eq '!' ?0x80 : 0)) . $3;
 				next if numberp($ROM[$a]);                                          
-	        }
-	    }
+			}
+			if ($ROM[$a] =~ m/^(!)?Flag#([0-9A-Fa-f]{2})([-+|&].*)?$/) {	                # flags are lamps with bit 6 set 
+				$ROM[$a] = ((hex($2) + 64)|($1 eq '!' ?0x80 : 0)) . $3;
+				next if numberp($ROM[$a]);                                          
+			}
+		}
         print(STDERR "\tnot a system identifier\n") if $opt_T;
 
         my($ms) = '^\\' . $EIGHT_BIT_LABEL_PREFIX;                                      # 8-bit relative address
@@ -1903,7 +1921,8 @@ sub resolve_labels()
         }
         print(STDERR "\tnot an expression\n") if $opt_T;
 
-        $ROM[$a] = labelValue($a,$ROM[$a]);												# this will always trigger an error unless ROM[a] is numeric
+				$ROM[$a] = labelValue($a,$ROM[$a]);												# this will always trigger an error unless ROM[a] is numeric
+			}
     }
     
     for (my($a)=$FIRST_ADDR; $a<=$MAX_ROM_ADDR; $a++) {                                 # finally, split signed words & check ranges
@@ -2064,10 +2083,9 @@ sub expand_aliases()
 		next if match_pragma($_[0],'.IFUNDEF','');
 		next if match_pragma($_[0],'.ASSUME_DEFINED','');
 		next if match_pragma($_[0],'.ASSUME_UNDEFINED','');
-			
-		while (1) {																		# loop through nested aliases
+		while (1) { # process line repeatedly until no aliases are left
 			my($pre,$alias,$post);
-			if ($_[$i] =~ m/{.+}/) {													# encoder
+			if ($_[$i] =~ m/{.+}/) {													# .*(alias){encoder}
 				my($p1,$p2);
 				($p1,$p2,$alias,$post) = ($_[$i] =~ m{^([\#\[])?([A-Za-z0-9_]+\()?([A-Za-z\?0-9_\.\#\+-]+)(.*)$});
 				$pre = $p1 . $p2;
