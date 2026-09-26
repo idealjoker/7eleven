@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Jun  6 11:49:42 2026
+#					 dlm: Sat Sep 26 13:52:36 2026
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 2874 36 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 336 79 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -331,6 +331,9 @@
 #	Oct 22, 2025: - added support for <arg>:nolabel hint
 #	Jan 26, 2026: - adapted to use implicit :nolabel for e.g. 1:#StringSpec#
 #	Jun  6, 2026: - added def_wordbyteblock_hex
+#	Sep 26, 2026: - BUG: set_label() did overwrite
+#				  - BUG: overwriteLabel() did not deal with RPG correctly
+#				  - BUG: relabeling auto labels did not work correctly with RPG
 # END OF HISTORY
 
 # TO-DO:
@@ -506,7 +509,7 @@ sub setLabel($$@)
 #		if (length($lbl) == 0);
 	return '' if (length($lbl) == 0);			    						# not sure if/when this is necessary
 
-	$lbl = sprintf('{%04X}%s',$addr,$') 									# STICKY -> fill address; not sure this was every fully implemented
+	$lbl = sprintf('{%04X}%s',$addr,$') 									# STICKY -> fill address; not sure this was ever fully implemented
 		if ($lbl =~ /^{}/);
 
     my($faddr) = $addr;														# full address (with WPC page)
@@ -529,11 +532,12 @@ sub setLabel($$@)
 	undef($Lbl{$LBL[$addr]})												# overwrite existing auto label with non-auto label
 		if (($LBL[$addr] =~ m{_[0-9A-F]{4}$}) &&							#	otherwise, make duplicate
 			!($lbl =~ m{_[0-9A-F]{4}$}));
+
 	if (defined($Lbl{$lbl}) && $Lbl{$lbl}!=$addr && $Lbl{$lbl} ne $faddr) { # trying to re-define label with different address
 		if (numberp($Lbl{$lbl})) {
 			die(sprintf("setLabel(%s,\$%04X): label already defined at \$%04X\n",$lbl,$addr,$Lbl{$lbl}));
 		} else {
-			die(sprintf("setLabel(%s,\$%04X): label already defined at $Lbl{$lbl}\n",$lbl,$addr,$Lbl{$lbl}));
+			die(sprintf("setLabel(%s,\$%04X): label already defined at $Lbl{$lbl} (ne $faddr)\n",$lbl,$addr,$Lbl{$lbl}));
 		}
 ##		my($tl,$pg);														# make unique
 #		if ($lbl =~ m{(\[[0-9A-F]{2}\])$}) {
@@ -547,26 +551,52 @@ sub setLabel($$@)
 #		while (defined($Lbl{$tl.$i.$pg})) { $i++; }
 #		$lbl = $tl.$i.$pg;
 	}
-	$LBL[$addr] = $lbl; 													# define label
-	$Lbl{$lbl} = $faddr;
-	$LblPg{$lbl} = $pg;
+
+	my($opg,$olbl) = split(/:/,$lbl);											# allow overwriting of local with global label only
+	if (!defined($LBL[$addr]) || $LBL[$addr] eq $olbl) {
+		die("$LBL[$addr],$lbl,$pg") unless ($pg >= $start_page);
+		$LBL[$addr] = $lbl;
+		$Lbl{$lbl} = $faddr;
+		$LblPg{$lbl} = $pg;
+	} elsif ($LBL[$addr] ne $lbl) {
+		print(STDERR "refusing to overwrite $LBL[$addr] with $lbl ($lbl ne $olbl)\n")
+			if $t;
+	}
+
 	printf(STDERR " -> $lbl (pg=%02X)\n",$LblPg{$lbl}) if $t;
 	return $lbl;
 }
 
-*define_label = \&setLabel;                                     			# for compatibility with [C711]
+*define_label = \&setLabel;                                     # for compatibility with [C711]
 
 sub overwriteLabel($$@)
 {
 	my($lbl,$addr,$pg) = @_;
 ##	printf(STDERR "overwriteLabel($lbl,%04X,$pg)\n",$addr);
-##	die("$LBL[$addr] -> $lbl") if ($addr == 0x5253);
 
-	select_WPC_RPG($pg,12) if defined($pg);
-	undef($Lbl{$LBL[$addr]});
-	$LBL[$addr] = $lbl; 													# define label
-	$Lbl{$lbl} = $addr;
-    $LblPg{$lbl} = $pg;
+	my($oPG);
+	$oPG = select_WPC_RPG($pg,12) if defined($pg);
+
+	if (defined($LBL[$addr]) && $LBL[$addr] ne $lbl && $LBL[$addr] ne sprintf('%02X:%s',$pg,$lbl)) {
+		print(STDERR "WARNING: label <$LBL[$addr]> renamed to <$lbl>\n")
+			if $warn_relabel;
+		undef($Lbl{$LBL[$addr]});
+	}
+
+	$lbl = $' if ($lbl =~ m{^[0-9A-F]{2}:});					# strip WPC page prefix
+
+	if (defined($pg) && $pg ne 0xFF) {
+		$LBL[$addr] = sprintf('%02X:%s',$pg,$lbl); 				# define label
+		$Lbl{$lbl} = sprintf("%02X:%04X",$pg,$addr);
+	    $LblPg{$lbl} = $pg;
+	} else {
+		$LBL[$addr] = $lbl; 									# define label
+		$Lbl{$lbl} = $addr;
+	    $LblPg{$lbl} = $pg;
+	}
+    
+##	printf(STDERR "\t$LBL[$addr],$Lbl{$lbl},$LblPg{$lbl}\n");
+	select_WPC_RPG($oPG,12) if defined($pg);
 	return $lbl;
 }
 
@@ -725,8 +755,8 @@ sub substitute_label($$)                                        		# replace addr
             }
         } else {														# WPC label
             my($pg,$ad) = split(':',$Lbl{$auto_lbl});
-            die unless ($pg == $LblPg{$auto_lbl});
             $pg = hex($pg); $ad = hex($ad);
+            die("$pg == $LblPg{$auto_lbl}") unless ($pg == $LblPg{$auto_lbl});
             if (($ad == $taddr) && ($pg==$_cur_RPG || $pg==0xFF)) {		# matching WPC label 
                 $Lbl_refs{$auto_lbl}++;
                 if ($_cur_RPG==$cpg || $cur_RPG==0xFF) {				# label on same page or in prime RE => remove pg prefix

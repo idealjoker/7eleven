@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Jan 26 09:32:55 2026
+#                    dlm: Sat Sep 26 13:54:09 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 108 27 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 110 40 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -106,6 +106,8 @@
 #	Jan 18, 2026: - added DMD_WORKBUFs
 #	Jan 19, 2026: - renamed DFX labels
 #	Jan 26, 2026: - updated
+#	Sep 25, 2026: - renamed adjustemnts syscalls
+#   Sep 26, 2026: - imported 3B syscalls
 # END OF HISTORY
 
 #======================================================================
@@ -132,7 +134,7 @@ sub VERSION_OFFSETS($$)
 
 	if ($WPCV eq 'WPC(alpha)') {										# D711.pm
 		$VO = $alpha;
-	} elsif ($WPCV eq 'WPC(89)') {
+a	} elsif ($WPCV eq 'WPC(89)') {
 		$VO = $DMD;
 	} else {
 		die("WPC.API: $WPCV not yet implemented\n");
@@ -218,6 +220,8 @@ define_label('=LAMP_MATRIX_38_DATA',				0x0318);
 define_label('=BLINK_MATRIX',						0x0320);
 define_label('=FLAGS',								0x0328);
 define_label('=FLAGS_HIGH',							0x0330);
+
+define_label('^=FEATURE_SETTINGS',					0x0339);
 
 define_label('^FREE_BLOCKS',						0x036A);		# RAM blocks for malloc/free
 define_label('_BLOCKS_FREE',						0x036C);		# number of free RAM blocks 
@@ -306,6 +310,8 @@ define_label('_RND_3',								0x1792);
 define_label('_DIAGNOSTICS_MODE',					0x1793);
 define_label('_MAX_PLAYER_IN_GAME',					0x1794);
 define_label('^DMD_WORKBUF',						0x1799);
+
+define_label('=ADJUSTMENT_SETTINGS',				0x1B1D);
 
 VERSION_OFFSETS(-6,0);
 ##define_label('_BALLS_ACCOUNTED_FOR',				0x1ED0+$VO);
@@ -424,7 +430,7 @@ define_label('ROM_VERSION',							0xFFEF);
 #			F	Flag#					$$
 #			f	Font#					$$
 #			G	Bitgroup#				$$
-#			g	Gamestring#
+#			g	GameString#
 #				StringSpec#				$$$$	for strings with high-bit set
 #			L	Lamp# 					
 #			N	Sound# 					
@@ -621,10 +627,10 @@ define_syscall('update_Checksum_block[A]',				0x9252+$VO);
 define_syscall('update_Checksum_block[A]_and_lockRAM',	0x9265+$VO);
 define_syscall('init_Checksum_block[A]',				0x926B+$VO);
 define_syscall('D=Checksum[XY]_good?',					0x928A+$VO);
-define_syscall('Y=adjustmentA??==1',					0x92D4+$VO);
-define_syscall('A=adjustmentA??==1',					0x92DE+$VO);
-define_syscall('D=adjustmentA??==1',					0x92EC+$VO);
-define_syscall('Y=adjustmentA??',						0x92F8+$VO);
+define_syscall('Y=adj[A]_value==1?',					0x92D4+$VO);
+define_syscall('A=adj[A]_value==1?',					0x92DE+$VO);
+define_syscall('D=adj[A]_value==1?',					0x92EC+$VO);
+define_syscall('Y=adj[A]_value',						0x92F8+$VO);
 define_syscall('switch[B]closed?',						0x93E4+$VO);
 define_syscall('Bitshifter_testUnknownSwitchState[B]',	0x93ED+$VO);
 define_syscall('Bitshifter_testSwitch[BX]',				0x93F6+$VO);
@@ -692,7 +698,7 @@ define_syscall('lamp[A]blinking?',						0xA0B0+$VO);
 define_syscall('lamp[A]on?',							0xA0B9+$VO);
 
 VERSION_OFFSETS(-145,0);
-define_syscall('copy_Gamestring[X]_to_STRING_BUFFER',	0xA3D7+$VO);
+define_syscall('copy_GameString[X]_to_STRING_BUFFER',	0xA3D7+$VO);
 define_syscall('memCopy[AXY]',							0xA6B9+$VO);	# A628
 define_syscall('memClear[AY]',							0xA6C4+$VO);
 define_syscall('memClear[ABY]',							0xA6D1+$VO);
@@ -873,6 +879,11 @@ if ($WPCV eq 'WPC(89)') {
 
 VERSION_OFFSETS(1916,0);
 define_syscall('3B:BYU=MBD_dataRefs[A]', 	         	0x7076+$VO, '', 3); # 77F2 + 1916
+define_syscall('3B:A=MBD_ballsInPlay_allDrained?',	  	0x7031+$VO, '', 3);
+define_syscall('3B:A=MBD_ballsLocked[A]==1?',		  	0x7041+$VO, '', 3);
+define_syscall('3B:A=MBD_lockEnabled[A]==1?',		  	0x704C+$VO, '', 3);
+define_syscall('3B:A=MBD_ballsInTrough_troughIdle?',  	0x7057+$VO, '', 3);
+define_syscall('3B:.A=ballsInPlay_allDrained?', 	  	0x7065+$VO, '', 3);
 
 #----------------------------------------------------------------------
 # System Hooks
@@ -913,6 +924,7 @@ $Hook[48]		= 'resetSolenoidSystem_override';
 $Hook[59]		= 'nextBall_override(nonStandard)';
 $Hook[59]		= 'load_gameString_override';
 
+$Hook[64]		= 'BX=^adj[A]_tableElt_override';
 $Hook[66]		= 'slamTilt_override';
 $Hook[69]		= 'update_Startbutton_lamp';
 
@@ -1147,7 +1159,7 @@ $Error[0x62] = 'ERR_largest_HSTD_table_value_not_large_enough';
 $Error[0x63] = 'ERR_def_status_must_have_DEF_EQMAY_set';
 $Error[0x64] = 'ERR_could_not_allocate_block_for_test_mode';
 $Error[0x65] = 'ERR_audit_formatting_number_invalid';
-$Error[0x66] = 'ERR_adjustment_name__must_specify_TRUE_in_adj_table';
+$Error[0x66] = 'ERR_adjustment_name_must_specify_TRUE_in_adj_table';
 $Error[0x67] = 'ERR_thread_dispatcher_got_a_non-thread_block_to_dispatch';
 $Error[0x68] = 'ERR_bad_special_help_routine_requested';
 $Error[0x69] = 'ERR_thread_terminated_by_RTS';

@@ -2,9 +2,9 @@
 #======================================================================
 #					 D I S A S S E M B L E _ W P C 
 #					 doc: Fri Mar 14 17:24:34 2025
-#					 dlm: Fri Dec 26 22:25:46 2025
+#					 dlm: Sat Sep 26 13:54:32 2026
 #					 (c) 2024 idealjoker@mailbox.org
-#					 uE-Info: 114 45 NIL 0 0 72 2 2 4 NIL ofnI
+#					 uE-Info: 44 38 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # WMS WPC Game Disassembly Instructions
@@ -41,6 +41,7 @@
 #	Nov  6, 2025: - corrected some comments
 #	Dec 26, 2025: - adapted to change in [D711.WPC]
 #				  - added -D
+#	Sep 26, 2026: - added warn_relabel
 # END OF HISTORY
 
 #----------------------------------------------------------------------
@@ -83,6 +84,7 @@ D711->import("WPC($lbl)","\$opt_Q = $opt_l;");
 $D711::print_addrs	=  $opt_a;												# -a) include hex addresses in output
 $D711::print_code	=  $opt_c;												# -c) include code bytes in output
 $D711::fill_gaps	= !$opt_g;												# -g) exclude gap data
+$D711::warn_relabel =  $opt_l;												# warn about relabeling when producing labels
 
 #----------------------------------------------------------------------
 # Load ROM

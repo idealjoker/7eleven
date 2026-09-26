@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Tue Aug  4 09:07:21 2026
+                    dlm: Sat Sep 26 10:12:58 2026
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 668 0 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 735 29 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -718,7 +718,23 @@ sys_bitgroupOp_ABXY
 
 =Adjustments=
 
-- Feature adjustments are numbered as in manual (T2: AD01-AD19; $Adj[0x01-0x13])
+- adjustment ids
+	- Feature adjustments are numbered as in manual (T2: AD01-AD19; $Adj[0x01-0x13])
+	- positive are indices into FEATURE_ADJUSTMENTS_TABLE
+	- negative are indices into STANDARD_ADJUSTMENTS_TABLE
+
+- adjustment tables
+	=STANDARD_ADJUSTMENTS_TABLE
+	=FEATURE_ADJUSTMENTS_TABLE
+
+- adjustment table entries (12 bytes)
+	B0-1	default value
+	B2-3	minimum value
+	B4-5	maximum value
+	B6-8	1) ^choices string list (ROM reference)
+			2) increment step + $00 (for numerical settings)
+	B9-11	^adjustment handler (ROM reference)
+	
 
 ----------------------------------------------------------------------
 

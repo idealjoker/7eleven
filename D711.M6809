@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . M 6 8 0 9 
 #                    doc: Tue Jul 16 07:22:07 2024
-#                    dlm: Thu Aug 14 10:36:10 2025
+#                    dlm: Sat Sep 26 13:12:02 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 73 55 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 811 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 #----------------------------------------------------------------------
@@ -71,6 +71,7 @@
 #	Aug 12, 2025: - DMD# -> DisplayFX#
 #	Aug 13, 202%: - added support for Gamestring#, StringSpec#, Font#, DMD_X# and DMD_Y#
 #	Aug 14, 2025: - removed forced mode '<' from op_DIR
+#	Sep 25, 2026: - added Sysstring[2]
 # HISTORY END
 
 # NOTES:
@@ -558,12 +559,14 @@ sub disassemble_syscall($$)
 			push(@{$OPA[$oaddr]},sprintf('Font#%02X',BYTE($addr)));
 			push(@{$OI[$oaddr]},sprintf('%02X',BYTE($addr)));
 			$decoded[$addr++] = 1;
-		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'g') {											# g: Gamestring# or StringSpec#
+		} elsif (substr($SC_ARGS[$sc],$i,1) eq 'g') {											# g: StringSpec#
 			my($sno) = WORD($addr);
-			if ($sno >= 0x8000) {
-				push(@{$OPA[$oaddr]},sprintf('StringSpec#%04X',$sno));
+			if ($sno < 0x8000) {
+				push(@{$OPA[$oaddr]},sprintf('GameString#%d',$sno));
+			} elsif ($sno & 0x4000) {
+				push(@{$OPA[$oaddr]},sprintf('SystemString2#%d',$sno&0x3FFF));
 			} else {
-				push(@{$OPA[$oaddr]},sprintf('Gamestring#%d',$sno));
+				push(@{$OPA[$oaddr]},sprintf('SystemString#%d',$sno&0x7FFF));
 			}
             push(@{$OI[$oaddr]},sprintf('%04X',WORD($addr)));
             $decoded[$addr++] = $decoded[$addr++] = 1;			
@@ -804,8 +807,9 @@ sub disassemble_asm_nbytes(@)																	# disassemble 6809 CPU code with b
 			my($oaddr) = $addr - 3;
 			my($sc);
 			for ($sc=0; $sc<@SYSCALL; $sc++) {
-				die("Undefined syscall label <$SYSCALL[$sc]>\n")
-					unless defined($Lbl{$SYSCALL[$sc]}) || ($SC_NOTE[$sc] == 3 && $_cur_RPG != 0x3B);		
+				unless (defined($Lbl{$SYSCALL[$sc]}) || ($SC_NOTE[$sc] == 3 && $_cur_RPG != 0x3B)) {
+					die("Undefined syscall label <$SYSCALL[$sc]> in pg $_cur_RPG ($Lbl{$SYSCALL[$sc]})\n");
+				}
 				next if $SC_NOTE[$sc] == 2;														# NOTE 2: JMP target syscall
 				if (disassemble_syscall($sc,$rv)) {
 					die(sprintf("syscall $SYSCALL[$sc] can only be called from PG#3B (not PG#%02X)\n",$_cur_RPG))
