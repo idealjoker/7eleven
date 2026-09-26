@@ -664,18 +664,18 @@ sys_bitgroupOp_ABXY
 - thread mask flags:
 	$0200		unused/reserved
 	$0400		unused/reserved
-	$0800		killed in sys_initBall_event (ball start)
-	$1000		killed in sys_endBall_and_exit (ball end) after thread delay
-	$2000		killed in sys_tilt (tilt)
-	$4000		killed in sys_killThreads_gameStart (game start)
+	$0800		not killed in sys_initBall_event (ball start)
+	$1000		not killed in sys_endBall_and_exit (ball end) after thread delay
+	$2000		not killed in sys_tilt (tilt)
+	$4000		not killed in sys_killThreads_gameStart (game start)
 	$8000		waited for in sys_endBall_and_exit (15s timeout)
 
 - popular flag combinations
-	$00xx		protected (not killed by system); not waited for
-	$78xx		unprotected; not waited for
-	$20xx		killed on tilt only; not waited for (e.g. ball search)
-	$38xx		??? (bobtilt swing delay)
-	$18xx		killed on ball start and ball end (bobtilt switch debounce)
+	$00xx		unprotected ; not waited for
+	$78xx		fully protected; not waited for
+	$20xx		protected from tilt; not waited for (e.g. T2 ball search)
+	$38xx		protected from tilt and EOB, waited for (e.g. T2 bobtilt swing delay)
+	$18xx		not killed on ball start and ball end (keep running across games; e.g. bobtilt switch debounce)
 
 - system thread ids:
 	$xx12-$xx14		tilt system
