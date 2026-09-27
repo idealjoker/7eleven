@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sat Sep 26 13:54:09 2026
+#                    dlm: Sun Sep 27 11:28:14 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 110 40 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 111 30 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -107,7 +107,8 @@
 #	Jan 19, 2026: - renamed DFX labels
 #	Jan 26, 2026: - updated
 #	Sep 25, 2026: - renamed adjustemnts syscalls
-#   Sep 26, 2026: - imported 3B syscalls
+#   Sep 26, 2026: - imported 3B syscalls, added hook
+#	Sep 27, 2026: - added hook
 # END OF HISTORY
 
 #======================================================================
@@ -934,6 +935,7 @@ $Hook[75]		= 'lamp_and_displayFX_initialize_override';
 $Hook[77]		= 'displayFX_override';
 $Hook[78]		= 'lampFX_override';
 
+$Hook[82]		= 'disable_grayscaleDriver_override';
 $Hook[86]		= 'SWI2_prePanic';
 $Hook[88]		= 'handleBackgroundTasks_post';
 
