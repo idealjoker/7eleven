@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Sat Sep 26 13:55:05 2026
+#                    dlm: Mon Sep 28 17:54:55 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 174 69 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 175 68 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -172,6 +172,7 @@
 #				  - BUG: many comments in tables were overwritten
 #	Sep 26, 2026: - renamed Gamestring, Sysstring[2]
 #				  - BUG: define_syscall did not defined correct label
+#	Sep 28, 2026: - BUG: argument magic did not allow for trailing !
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -963,7 +964,7 @@ sub apply_magic_WPC($$)
 					$opa = "${pre}DisplayFX#$num";
 				} elsif ($opa =~ m{StringSpec#$}) {								# e.g. 1:#StringSpec#
 					my($pre) = $`;
-					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{4})$});
+					my($num) = ($OPA[$addr][$i-1] =~ m{^$pre\$([0-9A-F]{4})!?$});
 					die(sprintf("addr=%X, opa=$opa, pre=$pre, OPA=$OPA[$addr][$i-1] OP=$OP[$addr]",$addr)) unless defined($num);
 					if (hex($num) < 0x8000) {
 						$opa = sprintf("${pre}GameString#%d",hex($num));
