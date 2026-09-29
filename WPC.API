@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Sep 27 11:28:14 2026
+#                    dlm: Tue Sep 29 16:06:27 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 111 30 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 112 41 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -109,6 +109,7 @@
 #	Sep 25, 2026: - renamed adjustemnts syscalls
 #   Sep 26, 2026: - imported 3B syscalls, added hook
 #	Sep 27, 2026: - added hook
+#	Sep 29, 2026: - renamed audit syscall
 # END OF HISTORY
 
 #======================================================================
@@ -562,7 +563,7 @@ define_syscall('syscall_8895',						0x8895,'W');
 define_syscall('syscall_88A5',						0x88A5,'W');
 define_syscall('syscall_88B5',						0x88B5,'W');
 define_syscall('syscall_88C5',						0x88C5,'W');
-define_syscall('updateAudit[D]',					0x88D5,'U');
+define_syscall('incrementAudit',					0x88D5,'U');
 define_syscall('syscall_88E5',						0x88E5,'W');
 define_syscall('longJSR',							0x88F5,'R');
 define_syscall('longJMP',							0x892F,'R',1);			# NOTE 1: does not return

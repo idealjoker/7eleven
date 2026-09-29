@@ -1,9 +1,9 @@
 #======================================================================
 #                    D 7 1 1 . W P C 
 #                    doc: Thu Jul 18 06:34:49 2024
-#                    dlm: Mon Sep 28 17:54:55 2026
+#                    dlm: Tue Sep 29 16:03:46 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 175 68 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 177 33 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # WPC Disassembly 
@@ -173,6 +173,8 @@
 #	Sep 26, 2026: - renamed Gamestring, Sysstring[2]
 #				  - BUG: define_syscall did not defined correct label
 #	Sep 28, 2026: - BUG: argument magic did not allow for trailing !
+#				  - added def_WPC_testTable()
+#	Sep 29, 2026: - added def_WPC_audits_table();
 # END OF HISTORY 
 
 #----------------------------------------------------------------------
@@ -674,12 +676,42 @@ sub disassemble_system_pointers()
 	$Address = 0x81D7; push(@skipAddr,$Address);
 		$Address = def_WPC_ref('=CHECKSUMBLOCK_TABLE_2');
 		def_WPC_checksumBlocks_table(undef,'CHECKSUM-BLOCK TABLE');
+	$Address = 0x81E0; push(@skipAddr,$Address);
+		$Address = def_WPC_ref('=STANDARD_AUDITS_TABLE');
+		def_WPC_audits_table(0,'STANDARD AUDITS TABLE');
+	$Address = 0x81E3; push(@skipAddr,$Address);
+		$Address = def_WPC_ref('=FEATURE_AUDITS_TABLE');
+		def_WPC_audits_table(1,'FEATURE AUDITS TABLE');
 	$Address = 0x81EC; push(@skipAddr,$Address);
 		$Address = def_WPC_ref('=STANDARD_ADJUSTMENTS_TABLE');
 		def_WPC_adjustment_table('STANDARD','STANDARD ADJUSTMENTS TABLE');
 	$Address = 0x81EF; push(@skipAddr,$Address);
 		$Address = def_WPC_ref('=FEATURE_ADJUSTMENTS_TABLE');
 		def_WPC_adjustment_table('FEATURE','FEATURE ADJUSTMENTS TABLE');
+	$Address = 0x81FE; push(@skipAddr,$Address);
+		$Address = def_WPC_ref('=UNKNOWN_TEST_DATA_81FE');
+		def_WPC_testTable('TESTDATA_81FE','WPC Data Table');
+	$Address = 0x8201; push(@skipAddr,$Address);
+		$Address = def_WPC_ref('=UNKNOWN_TEST_DATA_8201');
+		def_WPC_testTable('TESTDATA_8201','WPC Data Table');
+	$Address = 0x8204; push(@skipAddr,$Address);
+		$Address = def_WPC_ref('=UNKNOWN_TEST_DATA_8204');
+		def_WPC_testTable('TESTDATA_8204','WPC Data Table');
+	$Address = 0x8207; push(@skipAddr,$Address);
+		$Address = def_WPC_ref('=UNKNOWN_INSTALL_DATA_8207');
+		def_WPC_testTable('INSTALLDATA_8207','WPC Data Table',1);	# no handler
+	$Address = 0x820A; push(@skipAddr,$Address);
+		$Address = def_WPC_ref('=UNKNOWN_INSTALL_DATA_820A');
+		def_WPC_testTable('INSTALLDATA_820A','WPC Data Table',1);	# no handler
+	$Address = 0x820D; push(@skipAddr,$Address);
+		$Address = def_WPC_ref('=UNKNOWN_TEST_DATA_820D');
+		def_WPC_testTable('TESTDATA_820D','WPC Data Table');
+	$Address = 0x8210; push(@skipAddr,$Address);
+		$Address = def_WPC_ref('=UNKNOWN_TEST_DATA_8210');
+		def_WPC_testTable('TESTDATA_8210','WPC Data Table');
+	$Address = 0x8213; push(@skipAddr,$Address);
+		$Address = def_WPC_ref('=UNKNOWN_TEST_DATA_8213');
+		def_WPC_testTable('TESTDATA_8213','WPC Data Table');
 	$Address = 0x8216; push(@skipAddr,$Address);
 		$Address = def_WPC_ref('SOLCMD_LIST_1');
 		def_wordlist_hex(0x0000,undef);
@@ -801,15 +833,11 @@ sub disassemble_system_pointers()
 	my(@knownL)	  = ('SHOOTERLANE_SWITCH','SIZE_PLAYER_GAME_DATA','BALLSEARCH_TIMER','STARTBUTTON_LAMP');
 
 	my(@tblRef) = (0x81A8,0x81B9,0x81BC,0x81BF,0x81C8,0x81CB,
-				   0x81D4,0x81D7,0x81DA,0x81DD,0x81E0,0x81E3,0x81E6,
-				   0x81E9,0x81F2,0x81F5,0x81F8,0x81FB,
-				   0x81FE,0x8201,0x8204,0x8207,0x820A,0x820D,0x8210,
-				   0x8213);
+				   0x81D4,0x81D7,0x81DA,0x81DD,0x81E6,
+				   0x81E9,0x81F2,0x81F5,0x81F8,0x81FB);
 	my(@tblLbl) = (0x81A8,'=LAMP_INIT_MEM','=BLINK_INIT_MEM','=FLAGS_INIT_MEM',
 				   0x81C8,0x81CB,0x81D4,0x81D7,'=SCORE_TABLE',0x81DD,
-				   0x81E0,0x81E3,0x81E6,0x81E9,0x81F2,0x81F5,0x81F8,0x81FB,
-				   0x81FE,0x8201,0x8204,0x8207,0x820A,0x820D,0x8210,
-				   0x8213);				   
+				   0x81E6,0x81E9,0x81F2,0x81F5,0x81F8,0x81FB);
 
 	my(@ptr) 	  = (0x81AE);										# pointers (not refs)
 	
@@ -1304,15 +1332,36 @@ sub def_WPC_adjustment_table($@)
 			push(@{$OPA[$Address]},sprintf('$%04X!',WORD($Address)));
 			push(@{$OPA[$Address]},sprintf('$%04X!',$minVal));
 			push(@{$OPA[$Address]},sprintf('$%04X!',$maxVal));
-			$REM[$Address] = sprintf('Adj#%d: default, min, max (BCD)',$r) unless defined($REM[$Address]);
+##			$REM[$Address] = sprintf('Adj#%d: default, min, max (BCD)',$r) unless defined($REM[$Address]);
+			if ($type eq 'STANDARD') {
+				$REM[$Address] = defined($Adj[$r+0x80]) ? $Adj[$r+0x80] : sprintf('Adj#%d',$r+0x80)
+		            unless defined($REM[$Address]);
+		    } else {
+				$REM[$Address] = defined($Adj[$r]) ? $Adj[$r] : sprintf('Adj#%d',$r)
+		            unless defined($REM[$Address]);
+		    }
 		} else {																				# decimal numeric or list
 			push(@{$OPA[$Address]},sprintf('%d',WORD($Address)));
 			push(@{$OPA[$Address]},sprintf('%d',$minVal));
 			push(@{$OPA[$Address]},sprintf('%d',$maxVal));
 			if (BYTE($Address+8) == 0) {														# numeric
-				$REM[$Address] = sprintf('Adj#%d: default, min, max (decimal)',$r) unless defined($REM[$Address]);
+##				$REM[$Address] = sprintf('Adj#%d: default, min, max (decimal)',$r) unless defined($REM[$Address]);
+				if ($type eq 'STANDARD') {
+					$REM[$Address] = defined($Adj[$r+0x80]) ? $Adj[$r+0x80] : sprintf('Adj#%d',$r+0x80)
+						unless defined($REM[$Address]);
+				} else {
+					$REM[$Address] = defined($Adj[$r]) ? $Adj[$r] : sprintf('Adj#%d',$r)
+						unless defined($REM[$Address]);
+	            }
 			} else {																			# list
-				$REM[$Address] = sprintf('Adj#%d: default, min, max (choice list)',$r) unless defined($REM[$Address]);
+##				$REM[$Address] = sprintf('Adj#%d: default, min, max (choice list)',$r) unless defined($REM[$Address]);
+				if ($type eq 'STANDARD') {
+					$REM[$Address] = defined($Adj[$r+0x80]) ? $Adj[$r+0x80] : sprintf('Adj#%d',$r+0x80)
+						unless defined($REM[$Address]);
+				} else {
+					$REM[$Address] = defined($Adj[$r]) ? $Adj[$r] : sprintf('Adj#%d',$r)
+						unless defined($REM[$Address]);
+	            }
 			}
 		}
 		$decoded[$Address++] = $decoded[$Address++] = 1;
@@ -1372,7 +1421,7 @@ sub def_WPC_adjustment_table($@)
 				push(@{$OPA[$Address]},sprintf('%d',WORD($Address)));
 				push(@{$OPA[$Address]},sprintf('%d',BYTE($Address+2)));
 			}
-			$REM[$Address] = 'step size' unless defined($REM[$Address]);
+##			$REM[$Address] = 'step size' unless defined($REM[$Address]);
 			$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
 	    }
 		die unless VALID_ROMREF();
@@ -1396,8 +1445,12 @@ sub def_WPC_adjustment_table($@)
 	}
     return;
 
-##	insert_empty_line($Address-2);
+	insert_empty_line($Address-2);
 }
+
+#----------------------------------------------------------------------
+# Display FX Table
+#----------------------------------------------------------------------
 
 sub def_WPC_displayFXtable($@)
 {
@@ -1472,6 +1525,55 @@ sub def_WPC_displayFXtable($@)
 }
 
 #----------------------------------------------------------------------
+# Display FX Table
+#----------------------------------------------------------------------
+
+sub def_WPC_audits_table($$@)
+{
+	my($feature,$lbl,$divider_label) = @_;
+##	printf(STDERR "def_WPC_audit_table(@_) @%02X:%04X\n",$_cur_RPG,$Address);
+
+	die unless defined($Address);
+	return if ($decoded[$Address]);												
+	return if defined($OP[$Address]);
+
+	if (defined($lbl)) {
+		$lbl = $` if ($lbl =~ m{\[[0-9A-F]{2}\]$}); 								
+	    setLabel($lbl,$Address);
+	}
+    
+	insert_divider($Address,$divider_label);
+
+	$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
+	$OP[$Address] = '.DWB';
+	my($rows,$cols) = (WORD($Address),BYTE($Address+2));
+	push(@{$OPA[$Address]},$rows);
+	push(@{$OPA[$Address]},$cols);
+	$REM[$Address] = 'number of table rows, bytes per row' unless defined($REM[$Address]);
+	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+
+	my($TSA) = $Address;												# Table Start Address
+	die unless $cols == 1;
+
+	for (my($r)=0; $r<$rows; $r++) {
+		my($opaddr) = $Address;
+		$IND[$opaddr] = $code_base_indent; $TYPE[$opaddr] =  $CodeType_data;
+		unless (defined($REM[$opaddr])) {
+			if ($feature && defined($Audit[$r])) {
+				$REM[$opaddr] = $Audit[$r];
+			} elsif (!$feature && defined($Audit[$r+0x8000])) {
+				$REM[$opaddr] = $Audit[$r+0x8000];
+			} else {
+				$REM[$opaddr] = sprintf('Audit#%04X',$r+(!$feature*0x8000));
+			}
+		}
+		$OP[$opaddr] = '.DB';
+		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address)));
+		$decoded[$Address++] = 1;
+	}
+}
+
+#----------------------------------------------------------------------
 # Checksum Blocks
 #----------------------------------------------------------------------
 
@@ -1514,7 +1616,46 @@ sub def_WPC_checksumBlocks_table($@)
 		push(@{$OPA[$opaddr]},sprintf('$%02X!',BYTE($Address)));
 		$decoded[$Address++] = 1;
 	}
-    return;
+}
+
+#----------------------------------------------------------------------
+# Test Table
+#----------------------------------------------------------------------
+
+sub def_WPC_testTable(@)
+{
+	my($lbl,$divider_label,$no_handler) = @_;
+
+	insert_divider($Address,$divider_label);
+
+	$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
+	$OP[$Address] = '.DWB';
+	my($rows,$cols) = (WORD($Address),BYTE($Address+2));
+	push(@{$OPA[$Address]},$rows);
+	push(@{$OPA[$Address]},$cols);
+	$REM[$Address] = '# of test entries' unless defined($REM[$Address]);
+	$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] = 1;
+
+	for (my($r)=0; $r<$rows; $r++) {
+		$IND[$Address] = $code_base_indent; $TYPE[$Address] =  $CodeType_data;
+		$OP[$Address] = '.DW';
+		push(@{$OPA[$Address]},sprintf('$%04X',WORD($Address)));
+		my($haddr) = WORD($Address+2);
+		push(@{$OPA[$Address]},sprintf('$%04X',$haddr));
+		push(@{$OPA[$Address]},sprintf('$%04X',WORD($Address+4)));
+		push(@{$OPA[$Address]},sprintf('$%04X',WORD($Address+6)));
+		$REM[$Address] = '1:StringSpec#';
+		unless ($no_handler) {
+			my($sAddr) = $Address;
+			$Address = $haddr;
+			def_code($lbl . '_handler');
+			$Address = $sAddr;
+	    }
+		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] =
+		$decoded[$Address++] = $decoded[$Address++] = $decoded[$Address++] =
+		$decoded[$Address++] = $decoded[$Address++] = 1;
+	}
+	insert_empty_line($Address-8);
 }
 
 #----------------------------------------------------------------------
