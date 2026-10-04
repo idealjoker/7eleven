@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Tue Sep 29 16:06:27 2026
+#                    dlm: Sun Oct  4 13:36:55 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 112 41 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 936 28 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -110,6 +110,7 @@
 #   Sep 26, 2026: - imported 3B syscalls, added hook
 #	Sep 27, 2026: - added hook
 #	Sep 29, 2026: - renamed audit syscall
+#	Oct  3, 2026: - added label & renamed syscalls
 # END OF HISTORY
 
 #======================================================================
@@ -264,13 +265,18 @@ unless ($WPCV eq 'WPC(alpha)') {
 define_label('^PLAYER_DATA',						0x04AC+$VO);
 define_label('_SIZE_PLAYER_GAME_DATA',				0x04AF+$VO);
 define_label('_SIZE_PLAYER_DATA',					0x04AE+$VO);
+
 define_label('_BALL_SYSTEM_BUSY',					0x04B0+$VO);
 define_label('_CRON_MINUTE_COUNTER_1',				0x04B4+$VO);
 define_label('_CRON_MINUTE_COUNTER_2',				0x04B5+$VO);
 define_label('_CRON_MINUTE_LASTEXEC',				0x04B6+$VO);
 define_label('^DIAGNOSTICS_MODE_RAM',				0x04B7+$VO);
+
 define_label('_BALLSEARCH_SUSPEND_TIMER',			0x04C7+$VO);
+
 define_label('_TILTWARNINGS_LEFT',					0x04D4+$VO);
+
+define_label('^TMP_STRING',							0x04E7+$VO);
 
 define_label('=IO_BUFFER',							0x050E+$VO);		# Eli
 
@@ -719,9 +725,10 @@ define_syscall('setGIbrightness81[A]',					0xAB4B+$VO);
 define_syscall('setGIbrightness[AB]',     				0xAB53+$VO);
 define_syscall('sys_setGIbrightness[AB]',				0xAB56+$VO);
 
-define_syscall('BX=^tableElt[AX]',						0xAC5B+$VO);
-define_syscall('X=^tableElt[ABX]',						0xAC5E+$VO);
-define_syscall('X=^tableElt[AXY]',						0xAC89+$VO);
+define_syscall('BX=^sysTable[X]_elt[A]',				0xAC5B+$VO);
+define_syscall('X=^table[BX]_elt[A]',					0xAC5E+$VO);
+define_syscall('BX=^sysTable[X]_elt[Y]',				0xAC89+$VO);
+define_syscall('X=^table[BX]_elt[Y]',					0xAC8C+$VO);
 
 define_syscall('bitgroup[D]_setAll',					0xADF9+$VO);
 define_syscall('bitgroup[D]_clearAll',					0xAE09+$VO);
@@ -923,9 +930,10 @@ $Hook[45]		= 'endOfBall_preThreads';
 $Hook[46]		= 'Gamestart_pre_initBall';
 $Hook[48]		= 'resetSolenoidSystem_override';
 
-$Hook[59]		= 'nextBall_override(nonStandard)';
+$Hook[58]		= 'nextBall_override';
 $Hook[59]		= 'load_gameString_override';
 
+$Hook[61]		= 'sysName[AX]_override';
 $Hook[64]		= 'BX=^adj[A]_tableElt_override';
 $Hook[66]		= 'slamTilt_override';
 $Hook[69]		= 'update_Startbutton_lamp';

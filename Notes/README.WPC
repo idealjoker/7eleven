@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sat Sep 26 10:12:58 2026
+                    dlm: Sat Oct  3 13:14:22 2026
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 735 29 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 735 0 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -711,8 +711,26 @@ sys_bitgroupOp_ABXY
 
 =Audits=
 
-- Feature audits are numbered as in manual (T2: AU1 - AU38; Audit[0x0001] - Audit[0x0026])
-- Standard audits (system audits) are all over the place (T2 Audit[0x801E-1F] are standard AU01 and AU24, respectively)
+- audit ids
+	- Feature audits are numbered as in manual (T2: AU1 - AU38; Audit[0x0001] -
+	  Audit[0x0026])
+	- Standard audits (system audits) are all over the place (T2 Audit[0x801E-1F]
+      are standard AU01 and AU24, respectively, and have the same flags)
+
+- audit tables
+	=STANDARD_AUDITS_TABLE      
+	=FEATURE_AUDITS_TABLE
+
+- audit flags:
+	$01		
+	$02		
+	$04		
+	$08		
+	$10		
+
+- T2
+	- all feature audits have flags $03
+	- all(?) secret audits have flags $00	
 
 ----------------------------------------------------------------------
 

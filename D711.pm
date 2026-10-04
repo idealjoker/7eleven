@@ -1,9 +1,9 @@
 #======================================================================
 #					 D 7 1 1 . P M 
 #					 doc: Fri May 10 17:13:17 2019
-#					 dlm: Sat Sep 26 13:52:36 2026
+#					 dlm: Sun Oct  4 15:51:41 2026
 #					 (c) 2019 idealjoker@mailbox.org
-#                    uE-Info: 336 79 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 337 58 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams System 6-11 Disassembler
@@ -334,6 +334,7 @@
 #	Sep 26, 2026: - BUG: set_label() did overwrite
 #				  - BUG: overwriteLabel() did not deal with RPG correctly
 #				  - BUG: relabeling auto labels did not work correctly with RPG
+#	Oct  4, 2026: - added allow_labeling to def_word_hex()
 # END OF HISTORY
 
 # TO-DO:
@@ -1906,12 +1907,12 @@ sub def_ptr2lbl($)
 
 sub def_word_hex(@)                                                                 # data word (not pointer)
 {
-    my($lbl,$divider_label,$rem) = @_;
+    my($lbl,$divider_label,$rem,$allow_labeling) = @_;
     die unless defined($Address);
     setLabel($lbl,$Address);
     $Address+=2,return unless ($Address>=$MIN_ROM_ADDR && $Address<=$MAX_ROM_ADDR);
     $OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] = $CodeType_data;
-    $OPA[$Address][0] = sprintf('$%04X!',WORD($Address));
+    $OPA[$Address][0] = $allow_labeling ? sprintf('$%04X',WORD($Address)) : sprintf('$%04X!',WORD($Address));
     $REM[$Address] = $rem unless defined($REM[$Address]);
     insert_divider($Address,$divider_label);
     $decoded[$Address] = $decoded[$Address+1] = 1; $Address += 2;
@@ -2872,7 +2873,8 @@ sub def_wordblock_hex(@)                                                        
     insert_divider($Address,$divider_label) if defined($divider_label);
 
     $OP[$Address] = '.DW'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
-    $OPA[$Address][0] = sprintf($allow_labeling?'$%04X':'$%04X!',WORD($Address)); $REM[$Address] = $rem unless defined($REM[$Address]);
+    $OPA[$Address][0] = sprintf($allow_labeling?'$%04X':'$%04X!',WORD($Address));
+	$REM[$Address] = $rem unless defined($REM[$Address]);
     $decoded[$Address++] = $decoded[$Address++] = 1;
 
     for (my($i)=2; $i<$nbytes; $i+=2) {
@@ -2880,7 +2882,7 @@ sub def_wordblock_hex(@)                                                        
         $OPA[$Address][0] = sprintf($allow_labeling?'$%04X':'$%04X!',WORD($Address));
         $decoded[$Address++] = $decoded[$Address++] = 1;
     }
-    insert_empty_line($Address-2);
+##  insert_empty_line($Address-2);												# why would any sober person have this here???
 }
 
 
