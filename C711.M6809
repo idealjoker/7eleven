@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Wed Feb 18 16:43:10 2026
+#                    dlm: Fri Oct 16 18:38:53 2026
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 44 63 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 45 34 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -42,6 +42,7 @@
 #	Nov 29, 2025: - added @IF_CONT_LINE
 #	Feb 18, 2026: - turned errors about JSR/JMP into different page into warnings that
 #				    can be suppressed with -w (also in comment)
+#	Oct 15, 2026: - added comments
 # HISTORY END
 
 use strict vars;
@@ -451,22 +452,22 @@ sub unroll_asm_structure()
     # M6809 If Statements
     #----------------------------------------
 
-	return if macro_IF_6809('_IF_EQ','BNE');
-	return if macro_IF_6809('_IF_NE','BEQ');
-	return if macro_IF_6809('_IF_GE','BLT');
-	return if macro_IF_6809('_IF_LE','BGT');
-	return if macro_IF_6809('_IF_GT','BLE');
-	return if macro_IF_6809('_IF_LT','BGE');
-	return if macro_IF_6809('_IF_LS','BHI');
-	return if macro_IF_6809('_IF_HI','BLS');
-	return if macro_IF_6809('_IF_CS','BCC');
+	return if macro_IF_6809('_IF_EQ','BNE');		# if equal
+	return if macro_IF_6809('_IF_NE','BEQ');		# if not equal
+	return if macro_IF_6809('_IF_GE','BLT');		# if greater or equal (signed)
+	return if macro_IF_6809('_IF_LE','BGT');		# if less or equal (signed)
+	return if macro_IF_6809('_IF_GT','BLE');		# if greater than (signed)
+	return if macro_IF_6809('_IF_LT','BGE');		# if less than (signed)
+	return if macro_IF_6809('_IF_LS','BHI');		# if less or same (unsigned)
+	return if macro_IF_6809('_IF_HI','BLS');		# if higher (unsigned)
+	return if macro_IF_6809('_IF_CS','BCC');		# if smaller (unsigned)
 	return if macro_IF_6809('_IF_false','BCC');
-	return if macro_IF_6809('_IF_CC','BCS');
+	return if macro_IF_6809('_IF_CC','BCS');		# if greater or same (unsigned)
 	return if macro_IF_6809('_IF_true','BCS');
 	return if macro_IF_6809('_IF_VS','BVC');
 	return if macro_IF_6809('_IF_VC','BVS');
-	return if macro_IF_6809('_IF_MI','BPL');
-	return if macro_IF_6809('_IF_PL','BMI');
+	return if macro_IF_6809('_IF_MI','BPL');		# if negative
+	return if macro_IF_6809('_IF_PL','BMI');		# if positive
 
 	return if macro_IF_6809('__IF_EQ','LBNE');
 	return if macro_IF_6809('__IF_NE','LBEQ');
