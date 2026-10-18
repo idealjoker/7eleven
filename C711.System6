@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . S Y S T E M 6 
 #                    doc: Mon Jun  2 09:55:01 2025
-#                    dlm: Fri Jul 25 17:15:41 2025
+#                    dlm: Sun Oct 18 12:22:51 2026
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 56 102 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 18 0 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -11,7 +11,8 @@
 #	Jun 16, 2025: - added compile_pragma()
 #	Jul  3, 2025: - added compilation_magic()
 #	Jul 25, 2025: - added syntax checking for PRAGMAs in  non-compiled code
-#                 - BUG: pragma filter was too lose  
+#                 - BUG: pragma filter was too lose
+#	Oct 18, 2026: - added support for .DATA_MODE, .M6800_MODE
 # HISTORY END
 
 use strict vars;
@@ -57,12 +58,31 @@ sub compile_pragma()
 
 	return 1 if compile_common_pragma();
 	if ($IF_STACK[$#IF_STACK] < 0) {										# not compiling code => syntax check
+##		return (isMember($OP,'.M6800_MODE','.DATA_MODE')) ? 1 : 0;
 		die("Unknown mode-$MODE .PRAGMA <$OP @OP_ARG> on line $.\n")
 			unless $OP eq '.ORG';
 		return 1;
 	}
 
-	our($MODE,@ROM,$MIN_ROM_ADDR,$MAX_ROM_ADDR,$opt_v,$opt_t,$opt_1,@LINE,$FIRST_ADDR);
+	#------------------------------
+	# Mode Checking
+	#------------------------------
+
+	our(@ROM,$MIN_ROM_ADDR,$MAX_ROM_ADDR,$opt_v,$opt_t,$opt_1,@LINE,$FIRST_ADDR);
+
+	if ($MODE==0 && $OP eq '.M6800_MODE') {    
+		die("Syntax: .M6800_MODE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$MODE = 1;
+		return 1;
+	}
+
+	if ($OP eq '.DATA_MODE') {	  
+		die("Syntax: .DATA_MODE (<@_> at input line $.)\n")
+			unless (@OP_ARG == 0);
+		$MODE = 0;																		# don't set to mode 3, because after any data mode byte, there can be any mode
+		return 1;
+    }
 
 	#-----------------------------------------------------------
 	# Address Management
@@ -97,6 +117,7 @@ sub compile_pragma()
 					unless $opt_1;
 			}
 		}
+		$MODE = 0;																# set mode to undefined
 		return 1;
 	}
 

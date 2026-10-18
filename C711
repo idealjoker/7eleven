@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Mon Oct  5 09:09:34 2026
+#                    dlm: Sun Oct 18 12:17:09 2026
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 456 48 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1057 0 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -454,6 +454,8 @@
 #				  - BUG: StdAdjName produced wrong code
 #	Oct  4, 2026: - re-organized usage message
 #				  - BUG: -n not in usage message
+#	Oct 18, 2026: - BUG: backtic sub did not work any more for Ideal.s6
+#				  - made C711_OPENSSL_SHELLCMD optional (added default)
 # HISTORY END
 
 # RELEASE NOTES:
@@ -903,8 +905,8 @@ unless ($LIB_API eq '') {
 #----------------------------------------------------------------------
 
 if (defined($opt_l)) {
-	die("-l: need openssl command in environment (\$C711_OPENSSL_SHELLCMD)\n")
-		unless length($ENV{C711_OPENSSL_SHELLCMD}) > 0;
+	my($openssl) = (length($ENV{C711_OPENSSL_SHELLCMD}) > 0)
+				 ? $ENV{C711_OPENSSL_SHELLCMD} : 'openssl';
 	die("$opt_l: need LIB_MIN_ADDR for linking\n")						# check address range
 		unless defined($LIB_MIN_ADDR);
 	printf(STDERR "$opt_l: WARNING: system code (\$%04X-\$%04X) outside " .
@@ -912,7 +914,7 @@ if (defined($opt_l)) {
 						$LIB_MIN_ADDR,$LIB_MAX_ADDR,$MIN_ROM_ADDR,$MAX_ROM_ADDR)
 		if ($LIB_MIN_ADDR > $MAX_ROM_ADDR || $LIB_MAX_ADDR < $MIN_ROM_ADDR);
 
-	my($hd) = `$ENV{C711_OPENSSL_SHELLCMD} sha256 $opt_l`;									# verify sha256 hash (using openssl)
+	my($hd) = `$openssl sha256 $opt_l`;									# verify sha256 hash (using openssl)
 	my($fn,$hash) = ($hd =~ m{^SHA2-256\((.*)\)= ([0-9a-fA-F]{64})$});
 	die("$opt_l: invalid hash specifier <$hd>\n")
         unless defined($hash);
@@ -1247,8 +1249,8 @@ unless ($opt_w || $opt_L) {
 produce_output();                                           # output either code listing or ROM image files
 
 if (defined($opt_I)) {										# output Interface (API)
-	die("-I: need openssl command in environment (\$C711_OPENSSL_SHELLCMD)\n")
-		unless length($ENV{C711_OPENSSL_SHELLCMD}) > 0;
+	my($openssl) = (length($ENV{C711_OPENSSL_SHELLCMD}) > 0)
+				 ? $ENV{C711_OPENSSL_SHELLCMD} : 'openssl';
 	printf("code_address_range(0x%04X,0x%04X);\n",
 		$MIN_ROM_ADDR,$MAX_ROM_ADDR);
 	my($sum,$carry) = (0,0);
@@ -1266,7 +1268,7 @@ if (defined($opt_I)) {										# output Interface (API)
 	printf("code_checksum(0x%02X);\n",$sum);		
 
 	if (defined($opt_o)) {									# single linked output 
-		chomp(my($hash) = `$ENV{C711_OPENSSL_SHELLCMD} sha256 $opt_o`);
+		chomp(my($hash) = `$openssl sha256 $opt_o`);
 		print("code_hash('$hash');\n");
     }
 	foreach my $lbl (sort { $LBL{$a} <=> $LBL{$b} } keys(%LBL)) {
@@ -1883,15 +1885,14 @@ sub resolve_labels()
         #       LDAB    =SolBuf{LSB}+2
         #----------------------------------------------------------------------
 
-  		my($str,$encoder);																# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
+  		my($str,$encoder,$remainder);													# "encoder" (e.g. LDAA #Sol_GI_playfield:off{SolCmd} )
   		if ($ROM[$a] =~ m{^'}) {														# string with embedded spaces, as in 'ls -l{ShellCmd}'
-  			($str,$encoder) = ($SRC[$a] =~ m{\s+'(.*){(.*)}'\s*$});
+  			($str,$encoder) = ($ROM[$a] =~ m{^'(.+)\{(.*)\}.*$});
   		} else {
-  			($str,$encoder) = ($ROM[$a] =~ m/^(.+)\{([^}\s]+)\}$/);
+ 			($str,$encoder,$remainder) = ($ROM[$a] =~ m/^(.+)\{([^}\s]+)\}(.*)$/);
   		}
   		if (defined($encoder)) {														# 	initial '? allows for strings with spaces e.g. in 'ls -l{ShellCmd}'
-  			my($remainder) = $';
-  			print(STDERR "encoder($str,$encoder) [$ROM[$a]]\n") if $opt_T;
+  			print(STDERR "encoder($str,$encoder) [$ROM[$a]] rem=$remainder\n") if $opt_T;
   			$encoder .= ".s$WMS_System"
   				if (-f "$PATH/C711_encoder.$encoder.s$WMS_System");
   			require "$PATH/C711_encoder.$encoder";
