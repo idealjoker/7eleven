@@ -46,7 +46,7 @@
 require "$PATH/System$WMS_System.API";
 
 #----------------------------------------------------------------------
-# System Switches
+# System Definitions (hardcoded)
 #----------------------------------------------------------------------
 
 $Switch[0x00] = 'SW_bobTilt';					 
@@ -58,10 +58,6 @@ $Switch[0x05] = 'SW_coinLeft';
 $Switch[0x06] = 'SW_slamTilt';
 $Switch[0x07] = 'SW_HSreset';
 $Switch[0x08] = 'SW_outhole';
-
-#----------------------------------------------------------------------
-# System Lamps
-#----------------------------------------------------------------------
 
 $Lamp[0x30] = 'L_sys_bonusOverflow';	  
 $Lamp[0x31] = 'L_sys_BB_1pGame';
@@ -80,6 +76,18 @@ $Lamp[0x3D] = 'L_sys_BB_gameOver';
 $Lamp[0x3E] = 'L_sys_BB_samePlayerShootsAgain';
 $Lamp[0x3F] = 'L_sys_BB_highScore';
 
+$SoundCmd[0x00] = 'SC_10';
+$SoundCmd[0x01] = 'SC_100';
+$SoundCmd[0x02] = 'SC_1k';
+$SoundCmd[0x03] = 'SC_10k';
+$SoundCmd[0x04] = 'SC_100k';
+
+$Sol[8] = 'S_sound_1';
+$Sol[9] = 'S_sound_2';
+$Sol[10] = 'S_sound_3';
+$Sol[11] = 'S_sound_4';
+$Sol[12] = 'S_sound_5';
+
 #----------------------------------------------------------------------
 # Switch Scripts
 #	- consists of preamble with control byte, debounce interval, etc.
@@ -96,21 +104,53 @@ $Lamp[0x3F] = 'L_sys_BB_highScore';
 
 sub def_switch_script($$@)										
 {
-	my($sn,$addr,$stripBang) = @_;
+	my($sn,$addr,$stripBang) = @_; # switch name (eg, SW_eject), start address, ?
 	return if $decoded[$addr];
 
 	$Address = $addr;
-	my($SC) = BYTE($Address);
-	def_byte_hex($sn . '_script','Switch Script',				# script control byte
-					'control byte [' . (($SC & 0b0001) ? 'long' : 'short')
-									 . (($SC >> 4) ? sprintf(' with %d pinops',($SC >> 4)) : '')
-									 . ']');	    
+	my($SC) = BYTE($Address);  
 	my($slen) = 2;												# script statement length
 	$slen += 4 if ($SC & 0b0001);								# extended script
-	$slen += ($SC >> 4);										# pinops
-	def_byte_dec('',undef,'debounce timer') if ($SC & 0b0100);	# debounce timer
-	def_byteblock_hex(2,'',undef,'solenoid op') if ($SC & 0b1000);	# solenoid command & timer
-	def_switch_conditional($slen);
+	$slen += ($SC >> 4);	
+										# pinops
+	setLabel($sn . '_script', $addr);
+	insert_divider($addr, 'Switch Script');
+	$OP[$addr] = '_SwitchScriptConfig';
+	$IND[$addr] = 4; 
+	$TYPE[$addr] =	$CodeType_asm;
+
+	my($nOps) = $SC >> 4;
+	if ($nOps > 0) {
+		push(@{$OPA[$addr]}, sprintf('Ops(%i)', $nOps));
+	}
+	if ($SC & 0b0001) {
+		push(@{$OPA[$addr]}, 'Ext');
+	}
+	if ($SC & 0b0010) {
+		push(@{$OPA[$addr]}, 'SolInTilt');
+	}
+	if ($SC & 0b0100) {
+		$OPA[$addr][-1] .= " \\\n" 
+			if (@OPA[$addr] > 0);
+		push(@{$OPA[$addr]}, sprintf("Debounce(%i-tics)", BYTE($addr+1)));
+		$decoded[$Address++] = 1;
+	}
+	if ($SC & 0b1000) {
+		$OPA[$addr][-1] .= " \\\n" 
+			if (@OPA[$addr] > 0);
+		push(@{$OPA[$addr]}, sprintf('Fire(Sol#%02X:%X-tics{SolCmd.s6})', BYTE($Address+1) & 0x0F, BYTE($Address+1) >> 4));
+		$decoded[$Address++] = 1;
+
+		my($delay) = BYTE($Address+1);
+		if ($delay > 0) {
+			push(@{$OPA[$addr]}, sprintf('After(%i-tics)', $delay));
+			$decoded[$Address++] = 1;
+		}
+	}
+	$decoded[$Address++] = 1;
+
+
+	def_switch_conditional($slen, $SC);
 
 	if ($stripBang) {
 		for (my($a)=$addr; $a<$Address; $a++) {
@@ -127,12 +167,12 @@ sub grow_switch_scripts()
 		$Address = $SSaddr[$i];
 		my($slen) = $SSslen[$i];
 		while (!$decoded[$Address]) {
-			def_switch_conditional($slen);
+			def_switch_conditional($slen, $SS_SC[$i]);
 			for (my($a)=$SSaddr[$i]; $a<$Address; $a++) {					# remove bangs
 				foreach my $opa (@{$OPA[$a]}) {
 					$opa =~ s/(.*)!/\1/;
 				}
-	        }
+			}
 			last if (BYTE($Address-$slen) == 0);							# script ends with SS_DEFAULT
 		}
 	}
@@ -140,45 +180,322 @@ sub grow_switch_scripts()
 
 sub def_switch_conditional($)
 {
-	my($slen) = @_;
+	my($slen, $SC) = @_;
 
 	my($bAddress) = $Address;
+	my($nOps) = $SC >> 4;
 	$OP[$bAddress] = '.DB';
-	$IND[$bAddress] = 8; 
+	$IND[$bAddress] = 4; 
 	$TYPE[$bAddress] =	$CodeType_data;
-	$REM[$bAddress] = 'conditional branch';
-	my($cond);																# conditional
-	if (BYTE($Address) == 0) {
-		$cond = 'SS_DEFAULT';
-	} elsif (BYTE($Address) < 0x40) {
-		$cond = sprintf('Lamp#%02X',BYTE($Address));
-	} elsif (BYTE($Address) < 0x80) {
-		$cond = sprintf('Flag#%02X',BYTE($Address)-0x40);
-	} else {
-		$cond = sprintf('Adj#%02X',BYTE($Address)-0x80);
-	} 
-	push(@{$OPA[$bAddress]},$cond);
+	my($cond) = BYTE($Address);
+	push(@{$OPA[$bAddress]},($cond == 0)			# conditional
+								? 'SS_DEFAULT' 
+								: ($cond < 0x40) 
+									? sprintf('Lamp#%02X',$cond) 
+									: ($cond & 0b10000000)
+									 ? sprintf('$%02X!',$cond) # todo: handle LMC adjustment checks
+									: sprintf('Flag#%02X',$cond-0x40));
 	$decoded[$Address++] = 1;
 
-	push(@{$OPA[$bAddress]},score_str(BYTE($Address),$Address,$opt_A));
+	push(@{$OPA[$bAddress]},score_str(BYTE($Address),$Address,$opt_A) . ($Address+1 < $bAddress+$slen && !($SC & 0b0001) ? " \\\n" : ''));
 	$decoded[$Address++] = 1;
 
-#	if ($SC & 0b0001) { 													# extended script (code unnecessary)
-#		for (my($i)=0; $i<4; $i++) {
-#			push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
-#		$decoded[$Address++] = 1;
-#		}
-#	}
+	# extended script
+	if ($SC & 0b0001) { 				
+		my($addr) = $Address;
+		$OP[$Address] = '_ExtendedScript';
+		$IND[$addr] = 8; 
+		$TYPE[$addr] =	$CodeType_asm;
 
-	while ($Address < $bAddress+$slen) {
-		push(@{$OPA[$bAddress]},sprintf('$%02X!',BYTE($Address)));
+		my($cond) = BYTE($Address+0);
+		if ($cond > 0) { # condition
+			my($not) = $cond & 0b10000000;
+			$cond = $cond & 0b01111111;
+			push(@{$OPA[$addr]}, sprintf('If%s(%s)', $not? 'Not' : '',
+								($cond < 0x40) 
+									? sprintf('Lamp#%02X',$cond) 
+									: sprintf('Flag#%02X',$cond-0x40)));
+		}
+
+		push(@{$OPA[$addr]}, '{');
+		if (BYTE($addr+1) != 0 || BYTE($addr+2) != 0 || BYTE($addr+3) != 1) {
+
+			my($sound) = BYTE($Address+1);
+			if ($sound > 0) {
+				my($x) = $sound >> 4;
+				my($num) = $sound & 0x0F;
+				# push(@{$OPA[$addr]}, sprintf('Play(%s%i)', $x? sprintf('%ix', $x) : '', $sound & 0x0F));  
+				# push(@{$OPA[$addr]}, sprintf('Play(%i)', $sound));
+				$num = $SoundCmd[$num] if defined $SoundCmd[$num];
+				if ($x == 1) {
+					push(@{$OPA[$addr]}, sprintf('%s{SoundCmd}', $num));
+				}
+				else {
+					push(@{$OPA[$addr]}, sprintf('%ix%s{SoundCmd}', $x, $num));
+				}
+			}
+
+			my($pinop) = BYTE($Address+2);
+			if ($pinop > 0) {
+				push(@{$OPA[$addr]}, sprintf('%s', decode_pinop($pinop)));
+			}
+
+			my($misc) = BYTE($Address+3);
+			if (($misc & 0x0F) != 1) {
+				push(@{$OPA[$addr]}, sprintf('ScoreX(%i)', $misc & 0x0F));
+			}
+			if ($misc & 0b00010000) {
+				push(@{$OPA[$addr]}, 'AwardEB');
+			}
+			if ($misc & 0b00100000) {
+				push(@{$OPA[$addr]}, 'AwardSpecial');
+			}
+
+		}
+		push(@{$OPA[$addr]}, '}');
+		if ($nOps) {
+			$OPA[$addr][-1] .=" \\\n";
+		}
+		$decoded[$Address++] = 1;
+		$TYPE[$Address] =	$CodeType_asm;
+		$decoded[$Address++] = 1;
+		$TYPE[$Address] =	$CodeType_asm;
+		$decoded[$Address++] = 1;
+		$TYPE[$Address] =	$CodeType_asm;
+		$decoded[$Address++] = 1;
+		
+		if ($nOps) {
+			$bAddress = $addr;
+		}
+	}
+
+	# PinOps
+	for (my($i)=0; $i<$nOps; $i++) {
+		my($op) = BYTE($Address);
+		my($sop) = decode_pinop($op);
+
+		if (length($sop) > 5 && $i != $nOps-1) {
+			$sop .= " \\\n";
+		}
+
+		push(@{$OPA[$bAddress]},$sop);
 		$decoded[$Address++] = 1;
 	}
 
-	if (BYTE($Address-$slen) != 0) {										# other conditional exist, save info for later processing
+	if ($cond != 0) {										# other conditional exist, save info for later processing
 		push(@SSaddr,$Address);
 		push(@SSslen,$slen);
-    }
+		push(@SS_SC,$SC);
+	}
+}
+
+sub decode_pinop($) {
+	my($op) = @_;
+	my($sop) = sprintf('$%02X!',$op);
+
+	if ($op == 0) {	$sop = "nop";	}
+	elsif ($op <= 0x3F) { $sop = sprintf("setBit(Lamp#%02X){PinOp}", $op & 0x3F); }
+	elsif ($op <= 0x4F) { $sop = sprintf("setBit(Flag#%02X){PinOp}", ($op - 0x40) & 0x0F); }
+	elsif (($op & ~0x07) == 0x50) { $sop = sprintf("rotRight(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0x58) { $sop = sprintf("rotLeft(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0x60) { $sop = sprintf("advance(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0x68) { $sop = sprintf("unadvance(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0x70) { $sop = sprintf("clear(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0x78) { $sop = sprintf("fill(Bitgroup#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x3F) == 0x80) { $sop = sprintf("clearBit(Lamp#%02X){PinOp}", $op & 0x3F); }
+	elsif (($op & ~0x0F) == (0x80|0x40)) { $sop = sprintf("clearBit(Flag#%02X){PinOp}", $op & 0x0F); }
+	# elsif (($op & ~0x0F) == 0xD0) { } # unknown op(s)
+	elsif (($op & ~0x07) == 0xE0) { $sop = sprintf("drain(Flag#%02X){PinOp}", $op & 0x07); }
+	elsif (($op & ~0x07) == 0xE8) { $sop = sprintf("fire(SolOp#0%i){PinOp}", $op & 0x07); } 
+	elsif (($op & ~0x07) == 0xF0) { 
+		my($a) = $Lbl{'SCRIPT_LAMPS'}+($op & 0x07);
+		# print(STDERR "lamp $op&0x07 = $a, ".BYTE($a)."\n");
+		$sop = sprintf("blink(Lamp#%02X){PinOp}", BYTE($a));
+	}
+	elsif (($op & ~0x07) == 0xF8) { 
+		my($a) = $Lbl{'SCRIPT_LAMPS'}+($op & 0x07);
+		# print(STDERR "lamp $op&0x07 = $a, ".BYTE($a)."\n");
+		$sop = sprintf("toggle(Lamp#%02X){PinOp}", BYTE($a));
+	}
+
+	return $sop;
+}
+
+sub def_intervals() {
+	def_byte_hex('INTERVAL_TRIGGER_1');
+	def_byte_hex('INTERVAL_TRIGGER_2');
+	def_byte_hex('INTERVAL_TRIGGER_3');
+	def_byte_hex('INTERVAL_TRIGGER_4');
+	def_byte_hex('BLINK_DELAY');
+	for (my($i)=1; $i<5; $i++) {
+		setLabel("INTERVAL_TRIGGER_PINOP_$i",$Address);
+		$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		push(@{$OPA[$Address]}, decode_pinop(BYTE($Address)));
+    $decoded[$Address++] = 1;
+	}
+}
+
+sub def_data_matrix_block($$$) {
+	my($label,$type,$count) = @_;
+	my($bAddress) = $Address;
+	setLabel($label, $bAddress);
+	$OP[$bAddress] = sprintf("_%sData", $type);
+	$IND[$bAddress] = $data_indent; $TYPE[$bAddress] =  $CodeType_data;
+	my($n) = 0;
+	for(my($j)=0; $j<$count; $j++) {
+		my($col) = BYTE($Address);
+		$TYPE[$Address] =	$CodeType_asm;
+		$decoded[$Address++] = 1;
+
+		for(my($i)=0; $i<8; $i++) {
+			my($val) = $col & (1 << $i);
+			if ($val) {
+				if (push(@{$OPA[$bAddress]}, sprintf("%s#%02X", $type, $n)) % 4 == 0 && $j+1!=$count) {
+					$OPA[$bAddress][-1] .= " \\\n";
+				}
+			}
+			$n++;
+		}
+	}
+}
+
+sub def_sound_table() {
+	setLabel('SOUND_TABLE',$Address);
+	insert_divider($Address,'Sound Table');
+
+	for (my($i)=0; $i<16; $i++) {
+		if (BYTE($Address)==0 && BYTE($Address+1)==0) {
+			def_byteblock_hex(2,'','', sprintf("%02i{SoundCmd} (unused)", $i), 0);
+			next;
+		}
+		$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		push(@{$OPA[$Address]}, decode_solCmd_or_sound(BYTE($Address)));
+		push(@{$OPA[$Address]}, sprintf('$%02X!', BYTE($Address+1)));
+		$REM[$Address] = sprintf("%02i{SoundCmd}", $i). (defined($SoundCmd[$i])? ": $SoundCmd[$i]" : '');
+    $decoded[$Address++] = 1;
+    $decoded[$Address++] = 1;
+	}
+}
+
+sub def_sol_tables() {
+	setLabel('PINOP_SOLCMD_TABLE',$Address);
+	insert_divider($Address,'PinOp Solenoid Tables');
+
+	for (my($i)=0; $i<8; $i++) {
+		$OP[$Address] = '.DB'; $IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		push(@{$OPA[$Address]}, BYTE($Address)>>4? sprintf("Sol#%02X:%i-tics{SolCmd}", BYTE($Address)&0x0F, BYTE($Address)>>4) : '$00');
+		$REM[$Address] = sprintf("Cmd#0%i", $i) . (BYTE($Address)>>4? '' : ' (unused)');
+    $decoded[$Address++] = 1;
+	}
+	insert_empty_line($Address-1);
+
+	my($bAddress) = $Address;
+	setLabel('PINOP_SOLOP_TABLE',$Address);
+	for (my($i)=0; $i<8; $i++) {
+		my($n) = BYTE($Address)>>4;
+		my($start) = BYTE($Address)&0x0F;
+		$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+		if ($n) {
+			$OP[$Address] = '_SolOp';
+			# push(@{$OPA[$Address]}, "0$i:");
+			push(@{$OPA[$Address]}, $n == 1?
+															sprintf("Cmd#0%i", $start)
+														: sprintf("Cmd#0%i-0%i", $start, $start+$n-1 )
+															);
+		}
+		else {
+			$OP[$Address] = '.DB';
+			push(@{$OPA[$Address]}, BYTE($Address)); 
+		}													
+		$REM[$Address] = sprintf("SolOp#0%i", $i) . (defined($SolOp[$i])? ": $SolOp[$i]" : '') . (!$n? ' (unused)' : '');
+    $decoded[$Address++] = 1;
+	}
+}
+
+sub def_game_logic_table() {
+	$Address = WORD(0x60D0);												# Status Update Table
+	my($n) = (WORD(0x60D2) - $Address) / 9;
+	if ($n > 0) {
+		die unless ($n==int($n));
+		insert_divider($Address,'Game Logic Table');
+		for (my($i)=1; $i<=$n; $i++) {
+			setLabel("gameLogic_$i",$Address);
+			$OP[$Address] = '_GameLogic';
+			$IND[$Address] = $data_indent; $TYPE[$Address] =  $CodeType_data;
+
+			my($bAddress) = $Address;
+			my($adjCond) = BYTE($bAddress+0);
+			my($preCond1) = BYTE($bAddress+1);
+			my($preCond2) = BYTE($bAddress+2);
+			my($cmd) = 'If';
+			if ($adjCond) {
+				push(@{$OPA[$bAddress]}, sprintf("$cmd(Adj#%02X=%02i)", $adjCond>>4, $adjCond&0x0F));
+				$cmd = 'And';
+			}
+			if ($preCond1) {
+				my($cond) = $preCond1;
+				my($not) = $cond & 0b10000000;
+				$cond = $cond & 0b01111111;
+				push(@{$OPA[$bAddress]}, sprintf("$cmd%s(%s)", $not? 'Not' : '',
+								($cond < 0x40) 
+									? sprintf('Lamp#%02X',$cond) 
+									: sprintf('Flag#%02X',$cond-0x40)));
+				$cmd = 'And';
+			}
+			if ($preCond2) {
+				my($cond) = $preCond2;
+				my($not) = $cond & 0b10000000;
+				$cond = $cond & 0b01111111;
+				push(@{$OPA[$bAddress]}, sprintf("$cmd%s(%s)", $not? 'Not' : '',
+								($cond < 0x40) 
+									? sprintf('Lamp#%02X',$cond) 
+									: sprintf('Flag#%02X',$cond-0x40)));
+				$cmd = 'And';
+			}
+			push(@{$OPA[$bAddress]}, "{ \\\n");
+
+			for(my($j)=3; $j<=5; $j++) {
+				my($cond) = BYTE($bAddress+$j);
+				my($op) = BYTE($bAddress+$j+3);
+				next unless $cond || $op;
+
+				if ($cond) {
+					my($not) = $cond & 0b10000000;
+					$cond = $cond & 0b01111111;
+					push(@{$OPA[$bAddress]}, sprintf("If%s(%s)", $not? 'Not' : '',
+								($cond < 0x40) 
+									? sprintf('Lamp#%02X',$cond) 
+									: sprintf('Flag#%02X',$cond-0x40)));
+				}
+
+				push(@{$OPA[$bAddress]}, decode_pinop($op) . " \\\n");
+			}
+
+			push(@{$OPA[$bAddress]}, "}");
+
+			for(my($j)=0; $j<9; $j++) {
+				$TYPE[$Address] =	$CodeType_asm;
+				$decoded[$Address++] = 1;
+			}
+		}
+	}
+}
+
+sub def_soundlist() {
+	my($bAddress) = $Address;
+	def_bytelist_hex(0, '');
+	
+	for(my($i) = 0;$i<@{$OPA[$bAddress]};$i++) {
+		$OPA[$bAddress][$i] = decode_solCmd_or_sound(BYTE($bAddress+$i));
+	}
+}
+
+sub decode_solCmd_or_sound($) {
+	my($byte) = @_;
+	return '$FF!' if $byte == 0xFF;
+	return $byte>=0x80? 
+				sprintf("Sound#%02X", $byte - 0x80) 
+			: sprintf("Sol#%02X:%i-tics{SolCmd}", $byte&0x0F, $byte>>4)
 }
 
 #----------------------------------------------------------------------
@@ -190,6 +507,7 @@ sub disassemble_System6($)
 	our($opt_A) = @_;														# export into def_switch_script
 
 	$systemAliases{SS_DEFAULT} = 0;											# Switch Script conditional
+	$systemAliases{nop} = 0;											# Switch Script conditional
 
 	$Address = 0x6000;														# Game Definition Table
 	def_byte_hex('GAMEROM_CHECKSUM');
@@ -226,33 +544,21 @@ sub disassemble_System6($)
 	def_byte_hex('BALLSERVE_SOLCMD_AND_1EB_FLAG');
 	def_byte_LampOrFlag('EXTRABALL_LAMP');
 	def_byte_hex('MAX_PLAYER');
-	def_byte_hex('INTERVAL_TRIGGER_1');
-	def_byte_hex('INTERVAL_TRIGGER_2');
-	def_byte_hex('INTERVAL_TRIGGER_3');
-	def_byte_hex('INTERVAL_TRIGGER_4');
-	def_byte_hex('BLINK_DELAY');
-	def_byte_hex('INTERVAL_TRIGGER_PINOP_1');
-	def_byte_hex('INTERVAL_TRIGGER_PINOP_2');
-	def_byte_hex('INTERVAL_TRIGGER_PINOP_3');
-	def_byte_hex('INTERVAL_TRIGGER_PINOP_4');
-	def_byte_LampOrFlag('SCRIPT_LAMPS');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
-		def_byte_LampOrFlag('');
+	def_intervals();
+	setLabel('SCRIPT_LAMPS', $Address);
+	for (my($i)=0; $i<8; $i++) {
+		def_byte_LampOrFlag('','',sprintf("Scriptlamp#0%i", $i) . (defined($Scriptlamp[$i])? ": $Scriptlamp[$i]" : ''));
+	}
 	def_bitgrouptable(8,'BITGROUP_TABLE');
-	def_byteblock_hex(8,'LAMPS_INITDATA','Lamp/Flag Initialization and Memory Data');
-	def_byteblock_hex(2,'FLAGS_INITDATA');
-	def_byteblock_hex(8,'BLINK_INITDATA');
-	def_byteblock_hex(8,'LAMPS_MEMDATA');
-	def_byteblock_hex(2,'FLAGS_MEMDATA');
-	def_byteblock_hex(8,'BLINK_MEMDATA');
-	def_byteblock_hex_cols(32,2,'SOUND_TABLE','Sound Table');
-	def_byteblock_hex(8,'PINOP_SOLCMD_TABLE','PinOp Solenoid Tables');
-	def_byteblock_hex(8,'PINOP_SOLOP_TABLE');
+	insert_divider($Address, 'Lamp/Flag Initialization and Memory Data');
+	def_data_matrix_block('LAMPS_INITDATA', 'Lamp', 8);
+	def_data_matrix_block('FLAGS_INITDATA', 'Flag', 2);
+	def_data_matrix_block('BLINK_INITDATA', 'Lamp', 8);
+	def_data_matrix_block('LAMPS_MEMDATA', 'Lamp', 8);
+	def_data_matrix_block('FLAGS_MEMDATA', 'Flag', 2);
+	def_data_matrix_block('BLINK_MEMDATA', 'Lamp', 8);
+	def_sound_table();
+	def_sol_tables();
 	def_byte_hex('BONUSCOUNT_BONUSX_DELAY','Outhole Bonus Data');
 	def_byte_hex('BONUSCOUNT_SOUND');
 	def_byte_hex('BONUSCOUNT_DELAY');
@@ -265,10 +571,13 @@ sub disassemble_System6($)
 		def_byte_LampOrFlag('');
 		def_byte_LampOrFlag('');
 	def_byteblock_hex(4,'BONUSX_VALUE_TABLE');
-	def_byte_hex('SPECIAL_SCORE','Misc Game Data');
+	def_byte_hex('SPECIAL_SCORE','Misc Game Data'); 
+		$OPA[$Address-1][0] = score_str(BYTE($Address-1),$Address-1,$opt_A);
 	def_byte_hex('SYSSND_CREDIT','System Sounds');
+		$OPA[$Address-1][0] = decode_solCmd_or_sound(BYTE($Address-1));
 	def_byte_hex('SYSSND_CREDIT_DELAY');
 	def_byte_hex('SYSSND_TILTWARNING');
+		$OPA[$Address-1][0] = decode_solCmd_or_sound(BYTE($Address-1));
 	def_ptr_hex('GAMELOGIC_TABLE','System Pointers');
 	def_ptr_hex('GAMELOGIC_TABLE_END');
 	def_ptr_hex('GAMEEVENTS_TABLE');
@@ -321,16 +630,7 @@ sub disassemble_System6($)
 		}
 	}
 
-	$Address = WORD(0x60D0);												# Status Update Table
-	my($n) = (WORD(0x60D2) - $Address) / 9;
-	if ($n > 0) {
-		die unless ($n==int($n));
-		insert_divider($Address,'Game Logic Table');
-		def_byteblock_hex_cols(9,9,'gameLogic_1');			 
-		for (my($i)=2; $i<=$n; $i++) {
-			def_byteblock_hex_cols(9,9,"gameLogic_$i");
-		}
-	}
+	def_game_logic_table();
     
 	$Address = WORD(0x60D4);												# Game Event Table
 	my($n) = (WORD(0x60D6) - $Address) / 4;
@@ -353,36 +653,43 @@ sub disassemble_System6($)
 		$Address = WORD(0x60E0+2*$p);										# Sound Scripts
 		next if $decoded[$Address];
 		def_byte_hex(sprintf('p%dStart_sndList',$p+1));
-		def_bytelist_hex(0,'');
+		def_soundlist();
 	}
 	$Address = WORD(0x60E8); 
 	unless ($decoded[$Address]) {
 		def_byte_hex('match_sndList');
-		def_bytelist_hex(0,'');
+		def_soundlist();
 	}
 	$Address = WORD(0x60EA); 
 	unless ($decoded[$Address]) {
 		def_byte_hex('highScore_sndList');
-		def_bytelist_hex(0,'');
+		def_soundlist();
 	}
 	$Address = WORD(0x60EC); 
 	unless ($decoded[$Address]) {
 		def_byte_hex('gameOver_sndList');
-		def_bytelist_hex(0,'');
+		def_soundlist();
 	}
 
 	$Address = WORD(0x60F3);												# Attract Mode Data
 	insert_divider($Address,'Attract Mode Lamp Data');
 	my($n) = BYTE(0x60F2) + 1;
-	def_byteblock_hex(6,'attract_mode_data');
-	for (my($i)=2; $i<=$n; $i++) {
-		def_byteblock_hex(6,'');
+	def_data_matrix_block('attract_mode_data', 'Lamp', 6);
+	for (my($i)=1; $i<=$n; $i++) {
+		def_data_matrix_block('', 'Lamp', 6);
 	}
 
 	for (my($i)=0; $i<@switchScriptCandidateAddr; $i++) {
 		next if $decoded[$switchScriptCandidateAddr[$i]];
 		def_switch_script($switchScriptCandidateName[$i],$switchScriptCandidateAddr[$i]);
     }
+
+	# named adjustments
+	for (my($i)=0; $i<@Adj; $i++) {
+		next unless defined($Adj[$i]);
+		define_label(".AD_".($Adj[$i]=~s/^A_//r), 0x01A3 + $i*2);
+		define_label(".AD_".($Adj[$i]=~s/^A_//r)."+1", 0x01A3 + $i*2 +1);
+	}
 }
 
 sub disassemble_greenROM()
@@ -518,10 +825,40 @@ sub apply_magic_System6($)
 			if ($OP[$addr-2] eq 'LDAA' && $OPA[$addr-2][0] =~ m{^#}) {
 				$OPA[$addr-2][0] =~ m{\$(..)};
 				$OPA[$addr-2][0] = '#' . score_str(hex($1),$addr,$opt_A);
-            } else {
-				printf(STDERR "WARNING: unknown score value (register A) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
-            }
-        }
+			} else {
+				printf(STDERR "WARNING: unknown score value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+			}
+		}
+		if (direct_code_path($addr,'^sys_testBit\[A\]$') ||
+			direct_code_path($addr,'^sys_blinkLamp\[A\]$') ||
+			direct_code_path($addr,'^sys_clearBit\[A\]$') ||
+			direct_code_path($addr,'^sys_setBit\[A\]$')
+		) {
+			if ($OP[$addr-2] eq 'LDAA' && $OPA[$addr-2][0] =~ m{^#}) {
+				$OPA[$addr-2][0] =~ m{\$(..)};
+				$OPA[$addr-2][0] = '#' . (hex($1) < 0x40
+									? sprintf('Lamp#%02X',hex($1)) 
+									: sprintf('Flag#%02X',hex($1)-0x40));
+			} else {
+				printf(STDERR "WARNING: unknown lamp/flag value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+			}
+		}
+		if (direct_code_path($addr,'^sys_PinOp\[A\]$')) {
+			if ($OP[$addr-2] eq 'LDAA' && $OPA[$addr-2][0] =~ m{^#}) {
+				$OPA[$addr-2][0] =~ m{\$(..)};
+				$OPA[$addr-2][0] = '#' . decode_pinop(hex($1));
+			} else {
+				printf(STDERR "WARNING: unknown pinop value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+			}
+		}	
+		if (direct_code_path($addr,'^sys_solCmdOrPlaySound\[A\]$')) {
+			if ($OP[$addr-2] eq 'LDAA' && $OPA[$addr-2][0] =~ m{^#}) {
+				$OPA[$addr-2][0] =~ m{\$(..)};
+				$OPA[$addr-2][0] = '#' . decode_solCmd_or_sound(hex($1));
+			} else {
+				printf(STDERR "WARNING: unknown solCmd value (no preceding LDAA #<...>) for syscall $OPA[$addr][0] at address \$%04X\n",$addr);
+			}
+		}	
 		if (direct_code_path($addr,'^sys_switch_script$')) {
 			my($script_addr);
 			if ($OP[$addr-5] eq 'LDX') {

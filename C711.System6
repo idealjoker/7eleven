@@ -16,7 +16,7 @@
 
 use strict vars;
 
-our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE,$ADDR);
+our(%SYSCALL,@SC_ADDR,@SC_ARGS,@SC_NOTE,$ADDR,$MODE,@OP_ARG,$OP,@ROM, @OP, %ALIAS);
 
 #----------------------------------------------------------------------
 # Compilation Magic
@@ -32,6 +32,292 @@ sub unroll_structure()
 
 sub asm_macros()
 {
+	if ($MODE==0 || $MODE==1) {
+		if ($OP eq '_SwitchScriptConfig') {
+			set_label_type(0);
+
+			my($cfg) = 0x00;
+			my($startAddr) = $ADDR++;
+
+			foreach my $arg (@OP_ARG) {
+				if ($arg =~ m/Ext/) {
+					$cfg |= 0b00000001;
+				}
+				elsif ($arg =~ m/SolInTilt/) {
+					$cfg |= 0b00000010;
+				}
+				elsif ($arg =~ m/Debounce\((\$?[\dA-Fa-f]{1,2})(-ms|-tics)\)/) {
+					if ($cfg & 0b1000) { die("Syntax: _SwitchScriptConfig Debounce() must come before Fire() at input line $.\n"); }
+					$cfg |= 0b00000100;
+					my($val) = ($1 =~ m{^\$}) ? hex($1) : $1;
+					$ROM[$ADDR++] = ($2 eq '-ms') ? $val / 16 : $val;
+				}
+				elsif ($arg =~ /^Fire\(([^,]*)(,(\$?[\dA-Fa-f]{1,2})(-ms|-tics))?\)$/) {
+					$cfg |= 0b00001000;
+					$ROM[$ADDR++] = $1;
+					my($delay) = ($3 =~ m{^\$}) ? hex($3) : $3;
+					$ROM[$ADDR++] = defined($2)? (($4 eq '-ms') ? $delay / 16 : $delay) : 0;
+				}
+				elsif ($arg =~ /^After\((\$?[\dA-Fa-f]{1,2})(-ms|-tics)\)$/) {
+					if (!($cfg & 0b1000)) { die("Syntax: _SwitchScriptConfig Fire() must come before After() at input line $.\n"); }
+					my($units) = $2;
+					my($delay) = ($1 =~ m{^\$}) ? hex($1) : $1;
+					$ROM[$ADDR-1] = ($units eq '-ms') ? $delay / 16 : $delay;
+				}
+				elsif ($arg =~ m/Ops\((\d{1,2})\)/) {
+					my($val) = ($1 =~ m{^\$}) ? hex($1) : $1;
+					die("invalid _SwitchScriptConfig Ops count ($1) at input line $.\n")
+						unless numberp($val) && $val>=0 && $val<=15; 
+					$cfg |= $val << 4;
+				}
+				else {
+					die("Syntax Error on '$arg' at input line $.\n Usage: _SwitchScriptConfig Ext SolInTilt Debounce(-ms|-tics) Fire(SolCmd) After(-ms|-tics) Ops:(<1-15>)\n");
+				}
+			}
+
+			$ROM[$startAddr] = $cfg; 																# .DB xx
+			$MODE=0,return 1;
+		}
+		elsif ($OP =~ /^_ExtendedScript[\w\\]*$/) {
+			set_label_type(0);
+			my($startAddr) = $ADDR;
+			$ROM[$ADDR++] = 0; 																# .DB xx
+			$ROM[$ADDR++] = 0; 																# .DB xx
+			$ROM[$ADDR++] = 0; 																# .DB xx
+			$ROM[$ADDR++] = 1; 																# .DB xx
+
+			my($i)=0;
+			for (; $i<@OP_ARG; ) {	
+				my($arg) = $OP_ARG[$i++];
+				# print(STDERR "arg $i: '$arg', ");
+				if ($arg =~ /^If(Not)?\(([^\)]+)\)\{?$/) {
+					my($cond) = $2;
+					my($neg) = $1;
+					if ($cond =~ /^!(.*)$/) {
+						$neg = 1;
+						$cond = $1
+					}
+					$cond = $ALIAS{$cond} if defined($ALIAS{$cond});
+					if ($neg) {
+						if(numberp($cond)) {
+							$cond |= 0b10000000;
+						}
+						else {
+							$cond = '!'.$cond;
+						}
+					}
+					$ROM[$startAddr+0] = $cond;
+				}
+				elsif ($arg =~ /^\{\}?/) {}
+				elsif ($arg eq '}') {}
+				elsif ($arg =~ /^$/) {}
+				elsif ($arg =~ m/^Play\(([^\)]+)\)\}?$/) {
+					$ROM[$startAddr+1] = $1;
+				}
+				elsif ($arg =~ m/^(.*\{SoundCmd\})(\}?)$/) {
+					$ROM[$startAddr+1] = $1;
+					next unless !defined($2);
+				}
+				elsif ($arg =~ m/^Do\((.+)\)\}?$/) {
+					my($op) = $1;
+					$op = $ALIAS{$op} if defined($ALIAS{$op});
+					$ROM[$startAddr+2] = $op;
+				}
+				elsif ($arg =~ m/^(.*\{PinOp\})(\}?)$/) {
+					my($op) = $1;
+					$ROM[$startAddr+2] = $op;
+					next unless !defined($2);
+				}
+				elsif ($arg =~ m/^ScoreX\((\d{1,2})\)\}?$/) {
+					my($val) = ($1 =~ m{^\$}) ? hex($1) : $1;
+					die("invalid _ExtendedScript ScoreX($1) at input line $.\n")
+						unless numberp($val) && $val>=0 && $val<=15; 
+					$ROM[$startAddr+3] &= 0xF0;
+					$ROM[$startAddr+3] |= $val;
+				}
+				elsif ($arg =~ /^AwardEB\}?$/) {
+					$ROM[$startAddr+3] |= 0b00010000;
+				}
+				elsif ($arg =~ /^AwardSpecial\}?$/) {
+					$ROM[$startAddr+3] |= 0b00100000;
+				}
+				else {
+					die("Syntax Error on '$arg' at input line $.\n  Usage: _ExtendedScript If(<Lamp or Flag>) { <SoundCmd> <PinOp> ScoreX(<1-15>) AwardEB AwardSpecial } <addl PinOps>\n");
+				}
+
+				last if ($arg =~ /\}$/);
+			}
+
+			# printf(STDERR "left: from $i in  @OP_ARG |  $ROM[$startAddr+0] $ROM[$startAddr+1] $ROM[$startAddr+2] $ROM[$startAddr+3]\n");
+
+			# finish off any PinOps appended to the extended script
+			for (; $i<@OP_ARG; $i++) {		
+				$ROM[$ADDR++] = $OP_ARG[$i];
+			}
+			$MODE=0,return 1;
+		}
+		elsif ($OP =~ /^_SolOp$/) {
+			set_label_type(0);
+			my($op) = 0;
+
+			foreach my $arg (@OP_ARG) {
+				# if ($arg =~ m/#\d:?/) { }
+				if ($arg =~ m/^Cmd#0?(\d)(-0(\d))?$/) {
+					my($n) = hex($1);
+						die("Syntax Error: Sol Cmd '$arg' must be between 0 and 7 at input line $.\n")
+					unless ($n>=0 && $n<=7);
+					if (defined ($3)) {
+						my($n2) = hex($3);
+						# dual
+							die("Syntax Error: Sol Cmd '$arg' must be between 0 and 7 at input line $.\n")
+						unless ($n>=0 && $n<=7);
+						$op = $n | (($n2-$n+1)<<4);
+					}
+					elsif ($op == 0) {
+						# first one = start index
+						$op |= $n;
+						$op |= 1 << 4; # default to 1 usage
+					}
+					else {
+						$op &= 0x0F;
+						$op |= $n-($op&0x0F)+1
+					}
+				}
+				elsif ($arg eq '-') { }
+				else {
+					die("Syntax Error on '$arg' at input line $.\nUsage: _SolOp #<num>: Cmd#01-07\n");
+				}
+			}
+			if ($op == 0) {
+				die("Syntax Error: Usage: _SolOp #<num>: Cmd#01-07 at input line $.\n");
+			}
+			
+
+			$ROM[$ADDR++] = $op;
+			$MODE=0,return 1;
+		}
+		elsif ($OP =~ /^_GameLogic[\w\\]*$/) {
+			set_label_type(0);
+			my($bAddress) = $ADDR;
+			for(my($j)=0; $j<9; $j++) {
+				$ROM[$ADDR+$j] = 0; 																# .DB xx
+			}
+
+			my($i)=0;
+			# preconditions
+			for (; $i<@OP_ARG; ) {	
+				my($arg) = $OP_ARG[$i++];
+				if ($arg =~ /^(If|And)(Not)?\(([^\)]+)\)\{?$/) {
+					my($cond) = $3;
+					my($neg) = $2;
+					if ($cond =~ /^([^=]+)=([0-9A-Fa-f]{2})$/) {
+						my($adj) = $1;
+						my($b) = ($2 =~ m{^\$}) ? hex($2) : $2;
+							die("invalid _GameLogic =$2 in '$arg' at input line $.\n")
+						unless numberp($b) && $b>=0 && $b<=15; 
+
+						$adj = $ALIAS{$adj} if defined($ALIAS{$adj});
+						$adj =~ /^Adj#([0-9A-Fa-f]{2})$/;
+						my($a) = ($1 =~ m{^\$}) ? hex($1) : $1;
+							die("invalid _GameLogic Adj#$1 in '$arg' at input line $.\n")
+						unless numberp($a) && $a>=0 && $a<=15; 
+						$ROM[$ADDR++] = ($a << 4) | $b;
+					}
+					else {
+						if ($ADDR == $bAddress) { $ADDR++; } # skip adjustment field if not specified
+						if ($cond =~ /^!(.*)$/) {
+							$neg = 1;
+							$cond = $1;
+						}
+						$cond = $ALIAS{$cond} if defined($ALIAS{$cond});
+						if ($neg) {
+							if(numberp($cond)) {
+								$cond |= 0b10000000;
+							}
+							else {
+								$cond = '!'.$cond;
+							}
+						}
+						$ROM[$ADDR++] = $cond;
+					}
+				}
+				elsif ($arg eq '{') {}
+				else {
+					die("Syntax Error on '$arg' at input line $.\n  Usage: _GameLogic If(Adj#<0-15>=<0-15>) And(<Lamp or Flag>) { If(<Lamp or Flag>) <PinOp> }\n");
+				}
+
+				last if ($arg =~ /\{$/);
+			}
+
+			$ADDR = $bAddress + 3;
+
+			# operations
+			for (; $i<@OP_ARG; ) {	
+				my($arg) = $OP_ARG[$i++];
+				if ($arg =~ /^If(Not)?\(([^\)]+)\)$/) {
+					my($cond) = $2;
+					my($neg) = $1;
+					if ($ADDR == $bAddress) { $ADDR++; } # skip adjustment field if not specified
+					if ($cond =~ /^!(.*)$/) {
+						$neg = 1;
+						$cond = $1;
+					}
+					$cond = $ALIAS{$cond} if defined($ALIAS{$cond});
+					if ($neg) {
+						if(numberp($cond)) {
+							$cond |= 0b10000000;
+						}
+						else {
+							$cond = '!'.$cond;
+						}
+					}
+					$ROM[$ADDR] = $cond;
+				}
+				elsif ($arg =~ /^(.+\{PinOp\})(\})?$/) {
+					my($op) = $1;
+					my($exit) = $2;
+					$ROM[$ADDR++ + 3] = $op;
+					next unless $exit;
+				}
+				elsif ($arg eq '}') {}
+				else {
+					die("Syntax Error on '$arg' at input line $.\n  Usage: _GameLogic If(Adj#<0-15>=<0-15>) And(<Lamp or Flag>) { If(<Lamp or Flag>) <PinOp>  }\n");
+				}
+
+				last if ($arg =~ /\}$/);
+			}
+			
+				die(sprintf("Syntax Error, %i unexpected token(s) after } at input line $.\n  Usage: _GameLogic If(Adj#<0-15>=<0-15>) And(<Lamp or Flag>) { If(<Lamp or Flag>) <PinOp>  }\n", @OP_ARG - $i))
+			unless ($i == @OP_ARG);
+
+			$ADDR = $bAddress + 9;
+			
+			$MODE=0,return 1;
+		}
+		elsif ($OP =~ /^_(Lamp|Flag)Data[\w\\]*$/) {
+			my($type) = $1;
+			my($offset) = $type eq 'Lamp'? 0 : 0x40;
+			my($bytes) = $type eq 'Lamp'? 8 : 2;
+			set_label_type(0);
+			my($bAddress) = $ADDR;
+			for(my($j)=0; $j<$bytes; $j++) {
+				$ROM[$ADDR++] = 0; 																# .DB xx
+			}
+
+			foreach my $arg (@OP_ARG) {
+				if ($arg =~ /^$type#([0-9A-Fa-f]{2})$/) {
+					my($n) = hex($1);
+					$ROM[$bAddress + ($n >> 3)] |= 1 << ($n & 0b111);
+				}
+				else {
+					die(sprintf("Syntax Error on '$arg' at input line $.\n  Usage: _%sData %s#<num>  ...\n", $type, $type));
+				}
+			}
+
+			$MODE=0,return 1;
+		}
+	}
+
 	return asm_6800_macros();												# in [C711.M6800]
 }
 

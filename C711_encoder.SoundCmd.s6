@@ -10,6 +10,9 @@
 #	Oct 30, 2024: - created
 #   Jul 28, 2025: - adapted to changed 2nd arg
 
+# eg 9xST_Joker_score{SoundCmd}
+# where ST_Joker_score is a label set to an index in the SOUND_TABLE
+
 sub SoundCmd_s6($$)
 {
 	my($str,$addr) = @_;

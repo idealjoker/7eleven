@@ -1,0 +1,28 @@
+#======================================================================
+#                    C 7 1 1 . S O U N D . S 6 
+#                    doc: Wed Oct 30 08:18:58 2024
+#                    dlm: Wed Oct 30 09:50:12 2024
+#                    (c) 2023 idealjoker@mailbox.org
+#                    uE-Info: 17 1 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# eg SND_Name{Sound} or Sound#93{Sound}
+
+sub Sound_s6($$)
+{
+	my($str,$src_line) = @_;
+
+	my($snd) = ($str =~m/^Sound#([0-9A-Fa-f]{2})$/);
+	die("Sound: cannot decode '$str' at input line $src_line\n")
+		unless defined($snd);
+
+	$snd = hex($snd);
+
+	die("Sound: invalid sound number '$str' at input line $src_line\n")
+		unless numberp($snd) && (($snd >= 0 && $snd < 32) || ($snd-0x80 >= 0 && $snd-0x80 < 32));
+
+	return 
+}
+
+1;
+
