@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . M 6 8 0 9 
 #                    doc: Wed May 21 21:53:39 2025
-#                    dlm: Fri Oct 16 18:38:53 2026
+#                    dlm: Wed Oct 21 17:40:03 2026
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 45 34 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 1227 62 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -43,6 +43,7 @@
 #	Feb 18, 2026: - turned errors about JSR/JMP into different page into warnings that
 #				    can be suppressed with -w (also in comment)
 #	Oct 15, 2026: - added comments
+#	Oct 21, 2026: - improved error message
 # HISTORY END
 
 use strict vars;
@@ -1222,7 +1223,8 @@ sub compile_asm()
 		}
 
 		unless (defined($SYSCALL{$OP_ARG[0]})) {							# not a syscall => no inline args allowed
-			die("Invalid inline arguments in subroutine call <$OP_ARG[0] @OP_ARG[1..$#OP_ARG]> at input line $.\n")
+##			die("Invalid inline arguments in subroutine call <$OP_ARG[0] @OP_ARG[1..$#OP_ARG]> at input line $.\n")
+			die("Unknown syscall <$OP_ARG[0]> at input line $.\n")
 				unless @OP_ARG == 1;
 			return 1;
 		}
