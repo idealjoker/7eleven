@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sun Oct 18 12:17:09 2026
+#                    dlm: Wed Oct 21 07:58:14 2026
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 1057 0 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 459 63 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -456,6 +456,7 @@
 #				  - BUG: -n not in usage message
 #	Oct 18, 2026: - BUG: backtic sub did not work any more for Ideal.s6
 #				  - made C711_OPENSSL_SHELLCMD optional (added default)
+#	Oct 21, 2026: - BUG: unfinished _IF error message was wrong
 # HISTORY END
 
 # RELEASE NOTES:
@@ -1141,10 +1142,10 @@ NO_ADDL:
     }
 }
 
-die("Unfinished .IF at input line $IF_STACK_LINE[$#IF_STACK])\n")	# End-of-File checks
+die("Unfinished .IF at input line $IF_STACK_LINE[$#IF_STACK]\n")	# End-of-File checks
     if ($IF_STACK[$#IF_STACK] != 0);
 
-die("Unfinished .IF at input line $IF_CONT_LINE[$#IF_CONT_LINE]\n")
+die("Unfinished _IF/__IF at input line $IF_CONT_LINE[$#IF_CONT_LINE]\n")
     if (@IF_CONT_LINE);
 
 die("Unfinished .LOCK_PAGE at input line $locked_page_line\n")
