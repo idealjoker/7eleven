@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sat Oct  3 13:14:22 2026
+                    dlm: Sat Oct 24 16:00:21 2026
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 735 0 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 541 45 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -480,9 +480,9 @@ sys_bitgroupOp_ABXY
 		4	Switch (used in MBD_LT02_forceEject[A])
 
 
-- Lock Event Handlers
-	- usage: !MBD_callHandler_A <CMD>
-	- Handler Codes
+- Lock Events
+	- generated with !MBD_callHandler[A] <LockEvent>
+	- LockEvent List
  	    ------------------------------------------------------------------------------------------
 		code	trg	dispatcher							notes	function
  	    ------------------------------------------------------------------------------------------
@@ -490,11 +490,11 @@ sys_bitgroupOp_ABXY
 		$02		T	MBD_eventDispatcher					1,2		END BALL 	(ball has drained)
 		$03		T	MBD_eventDispatcher					3		LOCK CHANGE (MBD dispatcher called)
 
-		$04		L	MSW_lock_handler 							BALL EJECTED FROM INACTIVE LOCK (switch opened)
+		$04		L	MSW_lock_handler 					5		BALL EJECTED FROM INACTIVE LOCK (switch opened)
 		$05		L	MSW_lock_handler							BALL EJECTED FROM ACTIVE LOCK (switch opened)
 				L	MBD_LT02(scoop)_eject						LOCK EJECT REQUESTED (sycall MBD_lockEject[A])
 		$06		L	MSW_lock_handler							BALL EJECT FAILED (switch closed less than 1s after it opened; error condition)
-		$07		L	MSW_lock_handler							SWITCH CLOSED (switch handler)
+		$07		L	MSW_lock_handler					3		SWITCH CLOSED (switch handler)
 		$08		L	MSW_lock_handler							LOCK LOST (switch re-opened after closing; lock active)
 		$09		L	MSW_lock_handler							BALL ESCAPED (switch opened after closing)
 		$0A		L	MBD_LT02(scoop)_eject				4		BALL EJECT REQUESTED (delay thread)
@@ -528,7 +528,17 @@ sys_bitgroupOp_ABXY
 	- Notes: 1) action required 
 			 2) event handler must not return
 			 3) not intended for delay
-			 4) intended for delay		
+			 4) intended for delay
+			 5) error condition; there is no event corresponding directly to switch-open
+
+	- Example Event Handlers:
+		- T2 Cannon
+			- normal sequence:
+				- load: $07 (SWITCH CLOSED)
+				- shoot: $0A (EJECT REQUESTED) $0D (EJECT WAIT4READY) $0B (EJECT DONE)
+			- handled:
+				$07 switch handler
+				$04	unexpected switch opening
 
 ----------------------------------------------------------------------
 
