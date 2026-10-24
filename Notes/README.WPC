@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Sat Oct 24 16:00:21 2026
+                    dlm: Fri Oct 23 17:13:13 2026
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 541 45 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 640 74 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -639,15 +639,15 @@ sys_bitgroupOp_ABXY
 	1		unknown
 	2-4		HANDLER (3-byte ref)
 	5		unknown
-	6		unknown
-	7		PAYLOAD (most often a lamp, but for locks it is the MBD lock number)
-	8		FLAGS F1
-	9		FLAGS F2
+	6		PAYLOAD (most often a lamp, but for locks it is the MBD lock number)
+	7		FLAGS F1
+	8		FLAGS F2
+	9		unknown
 	10		unknown
-	11		unknown
 
 - switch FLAGS F1
-	$10		if set, !switchActive? returns true when the switch is open (i.e. negate switch logic)
+	$10		when set, !switchActive? returns true when the switch is open (i.e. negate switch logic)
+	$20		when set, switch is not included in 90-ball switch-health test
 
 - switch FLAGS F2
 	$40		always set except for coin switches
