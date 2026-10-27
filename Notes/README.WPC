@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Fri Oct 23 17:13:13 2026
+                    dlm: Tue Oct 27 13:42:34 2026
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 640 74 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 43 0 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -40,7 +40,6 @@ $8000-$FFFF     32KB system ROM
     - address range: $00000 - $7FFFF
     - PG#20-3D (30 pages, 480KB)
     - PG#3F    ( 2 pages,  32KB)
-    - May/2025: NOS AT28C040 EEPROM replacement available for $295 on eBay
 
 - FH uses 256KB ROM chip (27C020/27C201):
     - address range: $00000 - $3FFFF

@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Sun Oct  4 13:36:55 2026
+#                    dlm: Mon Oct 26 20:44:25 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 936 28 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 114 35 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -111,6 +111,7 @@
 #	Sep 27, 2026: - added hook
 #	Sep 29, 2026: - renamed audit syscall
 #	Oct  3, 2026: - added label & renamed syscalls
+#	Oct 26, 2026: - renamed syscall
 # END OF HISTORY
 
 #======================================================================
@@ -848,7 +849,7 @@ if ($WPCV eq 'WPC(89)') {
  define_syscall('DMD_render_firstRLEframe',				0xEF47,'D');
  define_syscall('DMD_toggleFrameAndSleep[A]_[B]times',	0xF647,'BB');			
  define_syscall('NE=gameDisabled',						0xF759);
- define_syscall('wait4_Thread#0041_not_running',		0xF766);
+ define_syscall('A=ballsInTrough_onceIdle',				0xF766);
  define_syscall('lastBall?',							0xF7EF,'');
  define_syscall('growJackpot[A]',						0xFA7D);
  define_syscall('addBonus_1130',						0xFAA8);
