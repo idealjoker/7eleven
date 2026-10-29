@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Mon Oct 26 20:44:25 2026
+#                    dlm: Wed Oct 28 13:39:15 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 114 35 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 800 41 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -797,7 +797,7 @@ define_syscall('drain',									0xFDC6+$VO,'GB');
 define_syscall('fill',									0xFDD8+$VO,'GB');
 define_syscall('toggleAll',								0xFDEA+$VO,'GB');
 
-define_syscall('MBD_callHandler[A]',               		0xFDFC+$VO,'B',3);          # NOTE 3: must only be called from PG#3B
+define_syscall('MBD_callHandler_lock[A]',          		0xFDFC+$VO,'B',3);          # NOTE 3: must only be called from PG#3B
 define_syscall('switchActive[B]?',						0xFE0D+$VO);
 
 #----------------------------------------------------------------------
