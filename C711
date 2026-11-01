@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Wed Oct 21 07:58:14 2026
+#                    dlm: Sat Oct 31 10:54:32 2026
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 459 63 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 460 83 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -457,6 +457,7 @@
 #	Oct 18, 2026: - BUG: backtic sub did not work any more for Ideal.s6
 #				  - made C711_OPENSSL_SHELLCMD optional (added default)
 #	Oct 21, 2026: - BUG: unfinished _IF error message was wrong
+#	Oct 31, 2026: - BUG: all PRAGMA usage messages were wrong (statement not shown)
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2388,17 +2389,17 @@ sub compile_common_pragma()
     #-----------------------
 
     if ($OP eq '.ENDIF') {                                                              # .ENDIF
-        die("Syntax: .ENDIF (<@_> at input line $.)\n")
+        die("Syntax: .ENDIF (<$OP @OP_ARG> at input line $.)\n")
             unless (@OP_ARG == 0);
         die("unexpected .ENDIF at input line $.\n")                                     # no .IF to end
             if ($IF_STACK[$#IF_STACK] == 0);
         pop(@IF_STACK); pop(@IF_STACK_LINE);
-        printf(STDERR "%d: @_ -> [@IF_STACK]\n",$.) if defined($opt_C);
+        printf(STDERR "%d: $OP @OP_ARG -> [@IF_STACK]\n",$.) if defined($opt_C);
         return 1;
     }
 
     if ($OP eq '.ELSE') {                                                               # .ELSE
-        die("Syntax: .ELSE (<@_> at input line $.)\n")
+        die("Syntax: .ELSE (<$OP @OP_ARG> at input line $.)\n")
             unless (@OP_ARG == 0);
         if ($IF_STACK[$#IF_STACK] == 1) {                                               # then, assembling -> else, not assembling
             $IF_STACK[$#IF_STACK] = -1;
@@ -2409,12 +2410,12 @@ sub compile_common_pragma()
         } elsif ($IF_STACK[$#IF_STACK] != -2) {                                         # nested if, not assembling
             die("unexpected .ELSE at input line $. [@IF_STACK]\n");
         }
-        printf(STDERR "%d: @_ -> [@IF_STACK]\n",$.) if defined($opt_C);
+        printf(STDERR "%d: $OP @OP_ARG -> [@IF_STACK]\n",$.) if defined($opt_C);
         return 1;
     }
 
     if ($OP eq '.IFDEF') {                                                              # .IFDEF
-        die("Syntax: .IFDEF id [|| id[...]] (<@_> at input line $.)\n")
+        die("Syntax: .IFDEF id [|| id[...]] (<$OP @OP_ARG> at input line $.)\n")
             unless (@OP_ARG >= 1);
 		if ($IF_STACK[$#IF_STACK] < 0) {												# currently not assembling => skip entire nested if
 			push(@IF_STACK,-2);
@@ -2423,7 +2424,7 @@ sub compile_common_pragma()
 	        my($result);
     	    for (my($i)=0; $i<@OP_ARG; $i+=2) {
     	    	if ($i > 0) {
-    	    		die("cannot decode .IFDEF (<@_> at input line $.)\n")
+    	    		die("cannot decode .IFDEF (<$OP @OP_ARG> at input line $.)\n")
     	    			unless ($OP_ARG[$i-1] eq '||');
     	    	}
         		$ALIAS_REFD{$OP_ARG[$i]}++;
@@ -2432,12 +2433,12 @@ sub compile_common_pragma()
 			push(@IF_STACK,$result ? 1 : -1);
 			push(@IF_STACK_LINE,$.);
         }
-        printf(STDERR "%d: @_ -> [@IF_STACK]\n",$.) if defined($opt_C);
+        printf(STDERR "%d: $OP @OP_ARG -> [@IF_STACK]\n",$.) if defined($opt_C);
         return 1;
     }
 
     if ($OP eq '.ELSE_IFDEF') {                                                        	# .ELSE_IFDEF
-        die("Syntax: .ELSE_IFDEF id [|| id[...]] (<@_> at input line $.)\n")
+        die("Syntax: .ELSE_IFDEF id [|| id[...]] (<$OP @OP_ARG> at input line $.)\n")
             unless (@OP_ARG >= 1);
         if ($IF_STACK[$#IF_STACK] == 1) {                                               # then, assembling -> else, not assembling
 			$IF_STACK[$#IF_STACK] = -3;
@@ -2445,7 +2446,7 @@ sub compile_common_pragma()
 	        my($result);
     	    for (my($i)=0; $i<@OP_ARG; $i+=2) {
     	    	if ($i > 0) {
-    	    		die("cannot decode .ELSE_IFDEF (<@_> at input line $.)\n")
+    	    		die("cannot decode .ELSE_IFDEF (<$OP @OP_ARG> at input line $.)\n")
     	    			unless ($OP_ARG[$i-1] eq '||');
     	    	}
         		$ALIAS_REFD{$OP_ARG[$i]}++;
@@ -2457,13 +2458,13 @@ sub compile_common_pragma()
         } elsif ($IF_STACK[$#IF_STACK] != -2) {                                         # nested if, not assembling
             die("unexpected .ELSE_IFDEF at input line $. [@IF_STACK]\n");
         }
-        printf(STDERR "%d: @_ -> [@IF_STACK]\n",$.) if defined($opt_C);
+        printf(STDERR "%d: $OP @OP_ARG -> [@IF_STACK]\n",$.) if defined($opt_C);
         return 1;
     }
 		            
 
     if ($OP eq '.IFNDEF' || $OP eq '.IFUNDEF') {                                        # .IFUNDEF
-        die("Syntax: .IFUNDEF id (<@_> at input line $.)\n")
+        die("Syntax: .IFUNDEF id (<$OP @OP_ARG> at input line $.)\n")
             unless (@OP_ARG == 1);
         $ALIAS_REFD{$OP_ARG[0]}++;
         if ($IF_STACK[$#IF_STACK] >= 0) {
@@ -2473,7 +2474,7 @@ sub compile_common_pragma()
             push(@IF_STACK,-2);
 			push(@IF_STACK_LINE,$.);
         }
-        printf(STDERR "%d: @_ -> [@IF_STACK]\n",$.) if defined($opt_C);
+        printf(STDERR "%d: $OP @OP_ARG -> [@IF_STACK]\n",$.) if defined($opt_C);
         return 1;
     }
 
@@ -2499,7 +2500,7 @@ sub compile_common_pragma()
     	if ($OP eq '.ERROR');
 
 	if ($OP eq '.ASSUME_DEFINED') { 													# .ASSUME_DEFINED
-		die("Syntax: .ASSUME_DEFINED id[...] or id || id (<@_> at input line $.)\n")
+		die("Syntax: .ASSUME_DEFINED id[...] or id || id (<$OP @OP_ARG> at input line $.)\n")
 			unless (@OP_ARG >= 1);
 		if (@OP_ARG==3 && $OP_ARG[1] eq '||') {
 			die("Both aliases undefined <@OP_ARG> at input line $.\n")
@@ -2514,7 +2515,7 @@ sub compile_common_pragma()
 	}
 
 	if ($OP eq '.ASSUME_UNDEFINED') { 													# .ASSUME_UNDEFINED
-		die("Syntax: .ASSUME_UNDEFINED id[...] (<@_> at input line $.)\n")
+		die("Syntax: .ASSUME_UNDEFINED id[...] (<$OP @OP_ARG> at input line $.)\n")
 			unless (@OP_ARG >= 1);
 		for my $sym (@OP_ARG) {
 			die("Defined alias <$sym> assumed undefined at input line $.\n")
@@ -2529,7 +2530,7 @@ sub compile_common_pragma()
     #---------------------------------
 
 	if ($OP eq '.SUPPRESS_OPTIMIZATION') {											    
-		die("Syntax: .SUPPRESS_OPTIMIZATION <string> (<@_> at input line $.)\n")
+		die("Syntax: .SUPPRESS_OPTIMIZATION <string> (<$OP @OP_ARG> at input line $.)\n")
 			unless (@OP_ARG == 1);
 		push(@optimization_suppressed,$OP_ARG[0]);
 		return 1;
@@ -2541,7 +2542,7 @@ sub compile_common_pragma()
 	#--------------------
 
 	if ($OP eq '.LOCK_ROM_PAGE') {											    
-		die("Syntax: .LOCK_ROM_PAGE (<@_> at input line $.)\n")
+		die("Syntax: .LOCK_ROM_PAGE (<$OP @OP_ARG> at input line $.)\n")
 			unless (@OP_ARG == 0);
 		$locked_page = ($ADDR >> 8);
 		$locked_page_line = $.;
@@ -2549,7 +2550,7 @@ sub compile_common_pragma()
 	}
 
 	if ($OP eq '.UNLOCK_ROM_PAGE') {											  
-		die("Syntax: .UNLOCK_ROM_PAGE (<@_> at input line $.)\n")
+		die("Syntax: .UNLOCK_ROM_PAGE (<$OP @OP_ARG> at input line $.)\n")
 			unless (@OP_ARG == 0);
 		die("unexpected .UNLOCK_ROM_PAGE at input line $.\n")
 			unless defined($locked_page);
@@ -2566,7 +2567,7 @@ sub compile_common_pragma()
     #-----------------------------------------
 
 	if (match_pragma($OP,'.DEF','INE')) { 												# .DEFINE (define alias)
-		die("Syntax: .DEF[INE] name [value...] (<@_> at input line $.)\n")
+		die("Syntax: .DEF[INE] name [value...] (<$OP @OP_ARG> at input line $.)\n")
 			unless (@OP_ARG >= 1);
 		die("Invalid character in alias name <$OP_ARG[0]> at input line $. [$ALIAS_NAME_RE]\n")
 			unless ($OP_ARG[0] =~ m{^$ALIAS_NAME_RE$});				
@@ -2618,7 +2619,7 @@ sub compile_common_pragma()
 	}
 
 	if (match_pragma($OP,'.UNDEF','INE')) {												# .UNDEF (undefine alias)
-		die("Syntax: .UNDEF[INE] name [value...] (<@_> at input line $.)\n")			# using this prevents warnings of used but not defined defines  
+		die("Syntax: .UNDEF[INE] name [value...] (<$OP @OP_ARG> at input line $.)\n")			# using this prevents warnings of used but not defined defines  
 			unless (@OP_ARG >= 1);
 		die if ($OP_ARG[0] eq 'ALIAS_IS_DEFINED');
 		$ALIAS_REFD{$OP_ARG[0]} = -99;
@@ -2628,7 +2629,7 @@ sub compile_common_pragma()
 	}
 
 	if (match_pragma($OP,'.DECL','ARE')) {												# .DECLARE (undefine alias)
-		die("Syntax: .DECL[ARE] name [...](<@_> at input line $.)\n") 					# using this prevents warnings but does not set value
+		die("Syntax: .DECL[ARE] name [...](<$OP @OP_ARG> at input line $.)\n") 					# using this prevents warnings but does not set value
 			unless (@OP_ARG >= 1);
 		foreach my $id (@OP_ARG) {
 			die if ($id =~ m{^!.*!$});
@@ -2642,7 +2643,7 @@ sub compile_common_pragma()
 	#--------
 
 	if ($OP eq '.LBL' || $OP eq '.LABEL') { 											# .LBL/.LABEL (define label)
-		die("Syntax: .LBL id value (<@_> at input line $.)\n")
+		die("Syntax: .LBL id value (<$OP @OP_ARG> at input line $.)\n")
 			unless (@OP_ARG == 2);
 		my($a) = $OP_ARG[1];
 		$a = hex($a) if ($a =~ m{^\$([0-9a-fA-F]+)$});
@@ -2651,7 +2652,7 @@ sub compile_common_pragma()
 	}
 
 	if ($OP eq '.RELBL' || $OP eq '.RELABEL') { 										# .RELBL/.RELABEL (redefine label)
-		die("Syntax: .LBL id value (<@_> at input line $.)\n")
+		die("Syntax: .LBL id value (<$OP @OP_ARG> at input line $.)\n")
 			unless (@OP_ARG == 2);
 		my($a) = $OP_ARG[1];
 		$a = hex($a) if ($a =~ m{^\$([0-9a-fA-F]+)$});
@@ -2665,7 +2666,7 @@ sub compile_common_pragma()
 
 	if (($MODE == 0) || ($MODE == 3)) {		
 		if ($OP eq '.DB') { 																# .DB (define data bytes)
-			die("Syntax: .DB byte-val[...] (<@_> at input line $.)\n")
+			die("Syntax: .DB byte-val[...] (<$OP @OP_ARG> at input line $.)\n")
 				unless (@OP_ARG >= 1);
 			set_label_type(3);
 			while (@OP_ARG > 0) {
@@ -2676,7 +2677,7 @@ sub compile_common_pragma()
 		}
 	    
 		if ($OP eq '.DW') { 																# .DW (define data words)
-			die("Syntax: .DW word-val[...] (<@_> at input line $.)\n")
+			die("Syntax: .DW word-val[...] (<$OP @OP_ARG> at input line $.)\n")
 				unless (@OP_ARG >= 1);
 			set_label_type(3);
 			while (@OP_ARG > 0) {
@@ -2692,7 +2693,7 @@ sub compile_common_pragma()
 		}
 	
 		if ($OP eq '.DBW') {																# .DBW (define byte and words)
-			die("Syntax: .DBW byte-val word-val[...] (<@_> at input line $.)\n")
+			die("Syntax: .DBW byte-val word-val[...] (<$OP @OP_ARG> at input line $.)\n")
 				unless (@OP_ARG >= 2);
 			set_label_type(3);
 			$ROM[$ADDR++] = $OP_ARG[0];
@@ -2708,7 +2709,7 @@ sub compile_common_pragma()
 		}
 	
 		if ($OP eq '.DBWB') {																# .DBW (define byte and words)
-			die("Syntax: .DBW byte-val word-val byte-val[...] (<@_> at input line $.)\n")
+			die("Syntax: .DBW byte-val word-val byte-val[...] (<$OP @OP_ARG> at input line $.)\n")
 				unless (@OP_ARG >= 3);
 			set_label_type(3);
 			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
@@ -2724,7 +2725,7 @@ sub compile_common_pragma()
 		}
 	
 		if ($OP eq '.DBBW') {																# .DBBW (define 2 bytes followed by words)
-			die("Syntax: .DBBW byte-val byte-vale word-val[...] (<@_> at input line $.)\n")
+			die("Syntax: .DBBW byte-val byte-vale word-val[...] (<$OP @OP_ARG> at input line $.)\n")
 				unless (@OP_ARG >= 3);
 			set_label_type(3);
 			$ROM[$ADDR++] = $OP_ARG[0]; shift(@OP_ARG);
@@ -2741,7 +2742,7 @@ sub compile_common_pragma()
 		}
 	
 		if ($OP eq '.DWB') {																# .DWB (define word and bytes)
-			die("Syntax: .DWB word-val byte-val[...] (<@_> at input line $.)\n")
+			die("Syntax: .DWB word-val byte-val[...] (<$OP @OP_ARG> at input line $.)\n")
 				unless (@OP_ARG >= 2);
 			set_label_type(3);
 			unless ($OP_ARG[0] =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {							# label
@@ -2757,7 +2758,7 @@ sub compile_common_pragma()
 	    }
 
 		if ($OP eq '.DWWB') {																# .DWWB (define 2 words followed by byte(s))
-			die("Syntax: .DWWB word-val word-val byte-val[...] (<@_> at input line $.)\n")
+			die("Syntax: .DWWB word-val word-val byte-val[...] (<$OP @OP_ARG> at input line $.)\n")
 				unless (@OP_ARG >= 3);
 			set_label_type(3);
 			unless ($OP_ARG[0] =~ m{^([\$%]?)([0-9A-Fa-f]+)$}) {							# label
