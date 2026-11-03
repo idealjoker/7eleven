@@ -1,0 +1,45 @@
+#======================================================================
+#                    C 7 1 1 . S O L C M D . S 6 
+#                    doc: Tue Oct 29 19:54:45 2024
+#                    dlm: Wed Oct 30 08:51:53 2024
+#                    (c) 2023 idealjoker@mailbox.org
+#                    uE-Info: 11 48 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Oct 29, 2024: - created
+#	Oct 30, 2024: - added line numbers to errors
+
+# eg  Ext|SolInTilt|Debounce:ms|Sol#02:3-tics|Ops:<1-15>{ScriptConfig.s6}
+# or	Simple{ScriptConfig.s6}  
+# each part (separated by |) is optional
+
+sub ScriptConfig_s6($$)
+{
+	my($str,$src_line) = @_;
+
+	if ($str == 'Simple') { return 0x00; }
+
+	my($cfg) = 0x00;
+
+	if ($str =~ m/[^|]Ext[|$]/) {
+		$cfg |= 0b00000001
+	}
+	if ($str =~ m/[^|]SolInTilt[|$]/) {
+		$cfg |= 0b00000010
+	}
+	if ($str =~ m/[^|]Debounce:(\d+)[|$]/) {
+		$cfg |= 0b00000010
+	}
+
+	my(@args) = split(/|/, $str);
+	foreach($)
+
+	die("SolCmd: cannot decode '$str' at input line $src_line\n")
+		unless ($tics > 0 && $tics < 8);
+
+	return $cfg;
+}
+
+1;
+
