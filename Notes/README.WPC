@@ -1,9 +1,9 @@
 ======================================================================
                     N O T E S / R E A D M E . W P C 
                     doc: Wed Aug 28 09:00:38 2024
-                    dlm: Wed Oct 28 10:56:05 2026
+                    dlm: Wed Nov  4 15:13:43 2026
                     (c) 2024 idealjoker@mailbox.orgn
-                    uE-Info: 502 73 NIL 0 0 72 2 2 4 NIL ofnI
+                    uE-Info: 243 72 NIL 0 0 72 2 2 4 NIL ofnI
 ======================================================================
 
 =Memory=
@@ -240,7 +240,7 @@ ADDR    = (ROM_addr % 0x4000) + 0x4000
             O   render 0 as 00
             Z   render leading zeroes (suppressed by default)
             X   do not convert value to BCD
-            P   do not print 1,000 separator character (, or . defined on adjustments)
+            P   do not print 1,000 separator character (, or . defined in adjustments)
             
             
             

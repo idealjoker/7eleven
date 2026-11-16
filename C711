@@ -2,9 +2,9 @@
 #======================================================================
 #                    C 7 1 1 
 #					 doc: Sat Jan  4 13:07:44 2020
-#                    dlm: Sat Oct 31 10:54:32 2026
+#                    dlm: Mon Nov 16 12:18:43 2026
 #                    (c) 2020 idealjoker@mailbox.org
-#                    uE-Info: 460 83 NIL 0 0 72 10 2 4 NIL ofnI
+#                    uE-Info: 461 78 NIL 0 0 72 10 2 4 NIL ofnI
 #======================================================================
 
 # Williams Systme 7-11 Compiler
@@ -458,6 +458,7 @@
 #				  - made C711_OPENSSL_SHELLCMD optional (added default)
 #	Oct 21, 2026: - BUG: unfinished _IF error message was wrong
 #	Oct 31, 2026: - BUG: all PRAGMA usage messages were wrong (statement not shown)
+#	Nov 16, 2026: - BUG: -L produced wrong address info on last line of output
 # HISTORY END
 
 # RELEASE NOTES:
@@ -2261,7 +2262,11 @@ sub produce_output()
 				$src_line = $SRC[$a]; $src_addr = $a; $src_lbl = $LBL[$a];
 			}
 		} # for
-		printf("<%04X> ",$src_addr);															# print ROM address of last statement
+		if ($WMS_System eq 'WPC') {
+			printf("<%s> ",substr(code_ref($src_addr),1))										# print ROM address w/o $
+		} else {
+			printf("<%04X> ",$src_addr);														# print ROM address of last statement
+		}
 		for (my($i)=0; $i<15; $i++) {															# print (max 15) operation bytes
 			if ($src_addr+$i>$MAX_ROM_ADDR) { printf("	 "); }
 			else							{ printf("%02X ",$ROM[$src_addr+$i]); }

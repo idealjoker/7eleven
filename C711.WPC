@@ -1,9 +1,9 @@
 #======================================================================
 #                    C 7 1 1 . W P C 
 #                    doc: Mon May 26 08:07:03 2025
-#                    dlm: Fri Nov 21 08:28:37 2025
+#                    dlm: Mon Nov 16 12:14:32 2026
 #                    (c) 2025 idealjoker@mailbox.org
-#                    uE-Info: 30 0 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 30 64 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -27,6 +27,7 @@
 #	Jul 27, 2025: - improved reference checking
 #				  - disabled unused .DxRy definitions
 #	Nov 21, 2025: - added .INLINE_ARGS
+#	Nov 16, 2026: - BUG: -L produces wrong addresses in prime RE
 # HISTORY END
 
 use strict vars;
@@ -148,7 +149,7 @@ sub code_ref(@)															# 1MB ROM -> pg:address
 	$ROM_addr = $ADDR unless defined($ROM_addr);
 	my($RPG) = int($ROM_addr / 0x4000);
 	return ($RPG <= 0x3D) ? sprintf('$%02X:%04X',$RPG,($ROM_addr % 0x4000) + 0x4000)
-						  : sprintf('$FF:%04X',($ROM_addr - 0x3D*0x4000));
+						  : sprintf('$FF:%04X',($ROM_addr - 0x3C*0x4000));
 }
 
 

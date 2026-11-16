@@ -1,0 +1,29 @@
+#!/usr/bin/perl
+#======================================================================
+#                    U T I L I T I E S / E X P O R T _ D M D _ F R A M E S 
+#                    doc: Mon Nov 16 10:51:13 2026
+#                    dlm: Mon Nov 16 12:31:15 2026
+#                    (c) 2026 idealjoker@mailbox.org
+#                    uE-Info: 23 65 NIL 0 0 72 0 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#  Nov 16, 2026: - created
+
+die("Usage: $0 <WPC-ROM-file> <WPC-code-listing>\n")
+	unless (@ARGV == 2);
+my($ROM) = shift;
+
+LINE: while (<>) {
+	my(@t) = split;
+	my($pg,$addr) = ($t[0] =~ m{^<(..):(....)>});
+	die($t[0]) unless defined($pg);
+	for (my($i)=1; $i<@t; $i++) {
+		if ($t[$i] =~ m{^DMDframe#(\d+):}) {
+			printf("apexdmd $ROM B%s_A%s %03d.pbm\n",$pg,$addr,$1);
+			next LINE;
+        }
+    }
+}
+
+exit(0);
