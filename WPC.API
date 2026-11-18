@@ -1,9 +1,9 @@
 #======================================================================
 #                    W P C . A P I 
 #                    doc: Thu Jul 18 06:39:55 2024
-#                    dlm: Wed Oct 28 13:39:15 2026
+#                    dlm: Tue Nov 17 17:30:18 2026
 #                    (c) 2024 idealjoker@mailbox.org
-#                    uE-Info: 800 41 NIL 0 0 72 2 2 4 NIL ofnI
+#                    uE-Info: 115 50 NIL 0 0 72 2 2 4 NIL ofnI
 #======================================================================
 
 # HISTORY:
@@ -112,6 +112,7 @@
 #	Sep 29, 2026: - renamed audit syscall
 #	Oct  3, 2026: - added label & renamed syscalls
 #	Oct 26, 2026: - renamed syscall
+# 	Nov 17, 2026: - a few minor addition and fixes
 # END OF HISTORY
 
 #======================================================================
@@ -564,7 +565,7 @@ define_syscall('syscall_8840',						0x8840,'W');
 define_syscall('syscall_884D',						0x884D,'W');
 define_syscall('syscall_885D',						0x885D,'W');
 define_syscall('syscall_886A',						0x886A,'W');
-define_syscall('syscall_8877',						0x8877,'W');
+define_syscall('playSoundW',						0x8877,'W');
 define_syscall('syscall_8885',						0x8885,'W');
 define_syscall('syscall_8895',						0x8895,'W');
 define_syscall('syscall_88A5',						0x88A5,'W');
@@ -757,7 +758,7 @@ define_syscall('.X=^score[A]tableEntry_Y=4',			0xBA8B+$VO);
 define_syscall('addScore[A]',							0xBA99+$VO);
 define_syscall('addScore[A]_withLocalMultiplier[B]',	0xBAA4+$VO);
 define_syscall('addScore[A]_with1xLocalMultiplier',		0xBABB+$VO);
-define_syscall('addScore[AB]]',							0xBAC5+$VO);
+define_syscall('addScore[AB]',							0xBAC5+$VO);
 define_syscall('addScore[ABX]',							0xBACD+$VO);
 define_label('.addScore_multiplier_error',				0xBADA+$VO);
 define_label('.addScore_continue',						0xBAE0+$VO);
@@ -942,6 +943,7 @@ $Hook[69]		= 'update_Startbutton_lamp';
 $Hook[71]		= 'renderCreditInfo_override';
 $Hook[73]		= 'initSoundSystem_override';
 $Hook[75]		= 'lamp_and_displayFX_initialize_override';
+$Hook[76]		= 'award_Special_override';
 $Hook[77]		= 'displayFX_override';
 $Hook[78]		= 'lampFX_override';
 
@@ -1046,7 +1048,7 @@ $Adj[0xA1]		= 'AD_game_restart';						# AD33
 #$Audit[0x8013] = 'AU_unknown8013';							# 8013 & 8014 updated together from startbutton
 #$Audit[0x8014] = 'AU_unknown8014';
 #$Audit[0x8016] = 'AU_';
-#$Audit[0x8017] = 'AU_';
+#$Audit[0x8017] = 'AU_Specials';
 
 $Audit[0x801B] = 'AU_extraBalls';							# Standard Audit #13
 $Audit[0x801D] = 'AU_minutesOn??';							# Standard Audit #22
