@@ -1,0 +1,65 @@
+#!/usr/bin/env perl
+#======================================================================
+#                    U T I L I T I E S / R E T A B 
+#                    doc: Fri Nov 20 08:43:33 2026
+#                    dlm: Fri Nov 20 12:24:04 2026
+#                    (c) 2026 idealjoker@mailbox.org
+#                    uE-Info: 18 62 NIL 0 0 72 2 2 4 NIL ofnI
+#======================================================================
+
+# HISTORY:
+#	Nov 20, 2026: - created
+
+# NOTES:
+#	- tabs in input are copied to output, assuming that they already
+#	  have the correct width 
+#	- to change the tab-width of a file, first detab it e.g. 
+#	  with expand(1) and then enab it with this utility
+#	- doing so will remove all tabs from comments and strings!
+
+my($TAB) = 4;
+if (@ARGV > 0 && $ARGV[0] =~ m{^\d+$}) {
+	$TAB = $ARGV[0];
+	shift;
+}
+
+die("Usage: $0 [tab-width] [input-file]\n")
+	if @ARGV > 1;
+die("$ARGV[0]: $!\n")
+	if (@ARGV==1 && ! -f $ARGV[0]);
+
+while (<>) {
+	my($i) = my($col) = 0;
+	my($passthrough) = 0;
+SPACE:
+	while ($i < length($_)) {
+		if (!$passthrough && substr($_,$i,1) eq ' ') {			# space at $i
+			my($j);
+			for ($j=$i+1; substr($_,$j,1) eq ' '; $j++) {
+				if (($col+($j-$i))%$TAB == 0) {
+					print("\t");
+					$col += ($j-$i);
+					$i = $j;
+					next SPACE;
+                } 
+            }
+            if (($j-$i) == $TAB) {
+				print("\t");
+				$col += $TAB;
+				$i = $j;
+            }
+        }
+
+		$passthrough = 1
+			if (substr($_,$i,1) =~ m{[;'"]});
+		print(substr($_,$i,1));
+		$col++;
+		if (substr($_,$i,1) eq "\t") {
+			while ($col%$TAB != 0) { $col++; }
+        }
+		$i++;
+    }
+	$col = 0;
+}
+
+exit(0);
